@@ -164,6 +164,6 @@ test("the organizer hide last unserved buyer filter is not on the merchant table
   assert.match(app, /filterBuyerIdsHidingLastUnservedBuyer\(/u);
   assert.match(app, /hideLastUnservedBuyer/u);
   assert.match(app, /persistWorkspaceDisplaySettings\(/u);
-  assert.match(html, /hide-last-unserved-buyer, hide-first-unserved-buyer, hide-last-leftover-only-buyer, hide-first-leftover-only-buyer, hide-last-winner-allocated-buyer, hide-first-winner-allocated-buyer, and hide-first-uncovered-leftover-buyer choices are kept/u);
+  assert.match(html, /hide-last-unserved-buyer, hide-first-unserved-buyer, hide-last-leftover-only-buyer, hide-first-leftover-only-buyer, hide-last-winner-allocated-buyer, hide-first-winner-allocated-buyer, hide-first-uncovered-leftover-buyer, and hide-last-uncovered-leftover-buyer choices are kept/u);
   assert.match(html, /Older workspace files without them still show every buyer/u);
 });

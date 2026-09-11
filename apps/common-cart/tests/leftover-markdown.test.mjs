@@ -31,7 +31,8 @@ import {
   createLeftoverUncoveredMaximumMarkdown,
   createLeftoverUncoveredMinimumMarkdown,
   createLeftoverUncoveredCountMarkdown,
-  createLeftoverUncoveredLeftoverOnlyCountMarkdown
+  createLeftoverUncoveredLeftoverOnlyCountMarkdown,
+  createLeftoverUncoveredLeftoverOnlyRemainingMarkdown
 } from "../src/model.js";
 
 function leftoverFixture() {
@@ -1721,6 +1722,113 @@ test("the buyer room copies leftover uncovered leftover-only count with a textar
   assert.match(app, /Count only\. This is not a merchant export/u);
   assert.match(app, /if \(key === "F7"\) \{\s*event\.preventDefault\(\);\s*copyLeftoverUncoveredLeftoverOnlyCount\(\);/u);
   assert.match(html, /aria-keyshortcuts="F7"/u);
+});
+
+test("leftover uncovered leftover-only remaining Markdown is organizer-private leftover-only buyer units", () => {
+  const scenario = leftoverFixture();
+  scenario.title = "SECRET_TITLE";
+  scenario.buyers[0].id = "SECRET_ID";
+  scenario.buyers[0].maxOrderTotal = 987654.32;
+  const markdown = createLeftoverUncoveredLeftoverOnlyRemainingMarkdown(scenario);
+  const coverage = computeResidualCoverage(scenario);
+  const leftoverOnlyUnits = scenario.buyers
+    .filter((buyer) => [...(coverage.secondary?.selectedBuyerIds ?? []), ...(coverage.tertiary?.selectedBuyerIds ?? [])].includes(buyer.id))
+    .reduce((sum, buyer) => sum + buyer.quantity, 0);
+  assert.ok(coverage.leftoverBuyerCount > 0);
+  assert.equal(markdown.trim().includes("\n"), false);
+  assert.match(markdown, /leftover uncovered leftover-only remaining \(organizer private\)/);
+  assert.match(markdown, /Not a merchant export/);
+  assert.match(markdown, new RegExp(`: ${leftoverOnlyUnits}\\.`));
+  assert.doesNotMatch(markdown, /leftover uncovered remaining \(organizer private\)/);
+  assert.doesNotMatch(markdown, /leftover uncovered leftover-only count \(organizer private\)/);
+  assert.equal(markdown.includes("SECRET_TITLE"), false);
+  assert.equal(markdown.includes("SECRET_LABEL"), false);
+  assert.equal(markdown.includes("SECRET_ID"), false);
+  assert.equal(markdown.includes("987654.32"), false);
+  assert.equal(markdown.includes("maxUnitPrice"), false);
+  assert.equal(markdown.includes("leftoverBuyerIds"), false);
+  assert.equal(markdown.includes("Tea room"), false);
+  assert.equal(markdown.includes("Leaf Collective"), false);
+  assert.equal(markdown.includes("Harbour Roasters"), false);
+  assert.notEqual(markdown, createLeftoverUncoveredLeftoverOnlyCountMarkdown(scenario));
+  assert.notEqual(markdown, createLeftoverUncoveredCountMarkdown(scenario));
+  assert.notEqual(markdown, createLeftoverUncoveredRemainingMarkdown(scenario));
+  assert.notEqual(markdown, createLeftoverUncoveredMaximumMarkdown(scenario));
+  assert.notEqual(markdown, createLeftoverUncoveredMinimumMarkdown(scenario));
+  assert.notEqual(markdown, createUncoveredLeftoverUnitCountMarkdown(scenario));
+  assert.notEqual(markdown, createUncoveredLeftoverCountsMarkdown(scenario));
+});
+
+test("leftover uncovered leftover-only remaining Markdown is honest when leftover after the winner is missing", () => {
+  const scenario = leftoverFixture();
+  scenario.buyers.forEach((buyer) => {
+    buyer.category = "Coffee beans";
+    buyer.allowedVariants = ["Medium roast"];
+    buyer.maxUnitPrice = 30;
+    buyer.latestDeliveryDays = 10;
+  });
+  scenario.offers.forEach((offer) => { offer.minimumUnits = 1; offer.capacity = 5000; });
+  const coverage = computeResidualCoverage(scenario);
+  assert.equal(coverage.leftoverBuyerCount, 0);
+  const markdown = createLeftoverUncoveredLeftoverOnlyRemainingMarkdown(scenario);
+  assert.match(markdown, /leftover uncovered leftover-only remaining \(organizer private\): none\. Not a merchant export\./);
+  assert.doesNotMatch(markdown, /leftover uncovered remaining \(organizer private\)/);
+  assert.doesNotMatch(markdown, /leftover uncovered leftover-only count \(organizer private\)/);
+  assert.equal(markdown.includes("SECRET_LABEL"), false);
+  assert.equal(markdown.includes("Leaf Collective"), false);
+  assert.equal(markdown.includes("Harbour Roasters"), false);
+  assert.notEqual(markdown, createLeftoverUncoveredLeftoverOnlyCountMarkdown(scenario));
+  assert.notEqual(markdown, createLeftoverUncoveredCountMarkdown(scenario));
+  assert.notEqual(markdown, createLeftoverUncoveredRemainingMarkdown(scenario));
+  assert.notEqual(markdown, createUncoveredLeftoverUnitCountMarkdown(scenario));
+});
+
+test("sailing carnival leftover uncovered leftover-only remaining stays distinct from leftover uncovered remaining", () => {
+  const sailing = clonePreset("sailingCarnivalLunch");
+  const leftoverOnlyRemaining = createLeftoverUncoveredLeftoverOnlyRemainingMarkdown(sailing);
+  const leftoverOnlyCount = createLeftoverUncoveredLeftoverOnlyCountMarkdown(sailing);
+  const leftoverUncoveredCount = createLeftoverUncoveredCountMarkdown(sailing);
+  const leftoverUncoveredMinimum = createLeftoverUncoveredMinimumMarkdown(sailing);
+  const leftoverUncoveredRemaining = createLeftoverUncoveredRemainingMarkdown(sailing);
+  const leftoverUncoveredMaximum = createLeftoverUncoveredMaximumMarkdown(sailing);
+  const leftoverOffer = sailing.offers.find((offer) => offer.id === computeResidualCoverage(sailing).secondary.offerId);
+  assert.equal(leftoverOffer.minimumUnits, 18);
+  assert.match(leftoverUncoveredMinimum, /leftover uncovered minimum \(organizer private\): 18\./);
+  assert.match(leftoverOnlyRemaining, /leftover uncovered leftover-only remaining \(organizer private\): 23\./);
+  assert.match(leftoverUncoveredRemaining, /leftover uncovered remaining \(organizer private\): 14\./);
+  assert.notEqual(leftoverOnlyRemaining, leftoverOnlyCount);
+  assert.notEqual(leftoverOnlyRemaining, leftoverUncoveredCount);
+  assert.notEqual(leftoverOnlyRemaining, leftoverUncoveredMinimum);
+  assert.notEqual(leftoverOnlyRemaining, leftoverUncoveredRemaining);
+  assert.notEqual(leftoverOnlyRemaining, leftoverUncoveredMaximum);
+  assert.notEqual(leftoverOnlyRemaining, createUncoveredLeftoverUnitCountMarkdown(sailing));
+  const rowing = clonePreset("rowingCarnivalLunch");
+  assert.notEqual(createLeftoverUncoveredLeftoverOnlyRemainingMarkdown(rowing), createLeftoverUncoveredRemainingMarkdown(rowing));
+  assert.notEqual(createLeftoverUncoveredLeftoverOnlyRemainingMarkdown(rowing), createLeftoverUncoveredLeftoverOnlyCountMarkdown(rowing));
+});
+
+test("the buyer room copies leftover uncovered leftover-only remaining with a textarea fallback", async () => {
+  const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
+  const app = await readFile(new URL("../src/app.js", import.meta.url), "utf8");
+  const buyerPanel = html.slice(html.indexOf('id="buyer-panel"'), html.indexOf('id="merchant-panel"'));
+  const merchantPanel = html.slice(html.indexOf('id="merchant-panel"'), html.indexOf('id="method-panel"'));
+  assert.match(buyerPanel, /id="copy-leftover-uncovered-leftover-only-remaining"/u);
+  assert.match(buyerPanel, /Copy leftover uncovered leftover-only remaining \(organizer private\)/u);
+  assert.match(buyerPanel, /Leftover uncovered leftover-only remaining copy is leftover-only buyer units after the winner/u);
+  assert.equal(merchantPanel.includes("copy-leftover-uncovered-leftover-only-remaining"), false);
+  assert.equal(merchantPanel.includes("Copy leftover uncovered leftover-only remaining"), false);
+  assert.equal(merchantPanel.includes("Leftover uncovered leftover-only remaining copy"), false);
+  assert.match(buyerPanel, /id="copy-leftover-uncovered-leftover-only-count"/u);
+  assert.match(buyerPanel, /id="copy-leftover-uncovered-count"/u);
+  assert.match(buyerPanel, /id="copy-leftover-uncovered-remaining"/u);
+  assert.match(app, /createLeftoverUncoveredLeftoverOnlyRemainingMarkdown\(/u);
+  assert.match(app, /function copyLeftoverUncoveredLeftoverOnlyRemaining\(/u);
+  assert.match(app, /function copyTextWithFallback\(/u);
+  assert.match(app, /organizer-private Markdown/u);
+  assert.match(app, /This is not a merchant export/u);
+  assert.match(app, /Count only\. This is not a merchant export/u);
+  assert.match(app, /if \(key === "F10"\) \{\s*event\.preventDefault\(\);\s*copyLeftoverUncoveredLeftoverOnlyRemaining\(\);/u);
+  assert.match(html, /aria-keyshortcuts="F10"/u);
 });
 
 test("winning remaining capacity Markdown is remaining units only", () => {
