@@ -4710,6 +4710,45 @@ test('Insert ArrowDown and ArrowLeft retain 4 Home End PageUp PageDown and Arrow
   assert.equal(forms(), 3);
 });
 
+test('Delete F2 and ArrowRight retain 4 Home End PageUp PageDown ArrowUp Insert ArrowDown and ArrowLeft', async () => {
+  const app = await workbench('file:', { clipboard: 'ok' });
+  app.click('dismiss-coach');
+  assert.match(app.markup(), /id="copy-last-unbounded-remaining"[^>]*aria-keyshortcuts="4"/);
+  assert.match(app.markup(), /id="copy-first-unbounded-remaining"[^>]*aria-keyshortcuts="PageUp"/);
+  assert.match(app.markup(), /id="hide-first-without-capacity-participant"[^>]*aria-keyshortcuts="End"/);
+  assert.match(app.markup(), /id="hide-last-at-hold-participant"[^>]*aria-keyshortcuts="ArrowUp"/);
+  assert.match(app.markup(), /id="copy-last-at-hold-remaining"[^>]*aria-keyshortcuts="Insert"/);
+  assert.match(app.markup(), /id="hide-first-at-hold-participant"[^>]*aria-keyshortcuts="ArrowLeft"/);
+  assert.match(app.markup(), /id="copy-first-at-hold-remaining"[^>]*aria-keyshortcuts="Delete"/);
+  assert.match(app.markup(), /id="hide-first-zero-share-participant"[^>]*aria-keyshortcuts="ArrowRight"/);
+  app.keydown('4');
+  assert.equal(app.copied().at(-1), 'Last unbounded remaining-to-hold: none entered.');
+  app.keydown('PageUp');
+  assert.equal(app.copied().at(-1), 'First unbounded remaining-to-hold: none entered.');
+  app.keydown('Insert');
+  assert.equal(app.copied().at(-1), 'Last at-hold remaining-to-hold: 0 txn remaining for Liquidity Partner. Remaining to hold. Not a forecast.');
+  app.keydown('Delete');
+  assert.equal(app.copied().at(-1), 'First at-hold remaining-to-hold: 0 txn remaining for Platform. Remaining to hold. Not a forecast.');
+  app.keydown('Home');
+  assert.ok(app.focused().includes('#copy-last-unbounded-remaining'));
+  app.keydown('PageDown');
+  assert.ok(app.focused().includes('#copy-first-unbounded-remaining'));
+  app.keydown('ArrowDown');
+  assert.ok(app.focused().includes('#copy-last-at-hold-remaining'));
+  app.keydown('F2');
+  assert.ok(app.focused().includes('#copy-first-at-hold-remaining'));
+  app.keydown('End');
+  assert.ok(app.focused().includes('#hide-first-without-capacity-participant'));
+  app.keydown('ArrowUp');
+  assert.ok(app.focused().includes('#hide-last-at-hold-participant'));
+  app.keydown('ArrowLeft');
+  assert.ok(app.focused().includes('#hide-first-at-hold-participant'));
+  app.keydown('ArrowRight');
+  assert.ok(app.focused().includes('#hide-first-zero-share-participant'));
+  const forms = () => app.markup().match(/class="participant-form/g)?.length ?? 0;
+  assert.equal(forms(), 3);
+});
+
 test('keyboard { jumps to Hide participants within listed capacity unless a field is focused', async () => {
   const app = await workbench();
   app.click('dismiss-coach');
