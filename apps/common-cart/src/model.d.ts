@@ -278,7 +278,7 @@ export interface ScenarioHistory {
   undo(): Scenario;
   redo(): Scenario;
 }
-export interface ScenarioWorkspace { version: 1; rooms: Scenario[]; fulfillmentFilter: "all" | "shipping" | "pickup"; hideExcludedBuyers: boolean; hideUnwinnableOffers: boolean; hideCoveredLeftoverRows: boolean; hideTertiaryLeftoverRow: boolean; hideLeftoverFillRow: boolean; hideZeroRemainingCapacityOffers: boolean; hideOffersWithRemainingCapacity: boolean; hideFullyFilledBuyers: boolean; hideBuyersWithLeftover: boolean; hideUnservedBuyers: boolean; hideLeftoverOnlyBuyers: boolean; hideWinnerAllocatedBuyers: boolean; hideBuyersFilledByLeftoverFill: boolean; hideLastBuyerFilledByLeftoverFill: boolean; hideFirstBuyerFilledByLeftoverFill: boolean; hideFirstBuyerFilledByTertiaryFill: boolean; hideLastBuyerFilledByTertiaryFill: boolean; hideLastUnservedBuyer: boolean; hideFirstUnservedBuyer: boolean; hideLastLeftoverOnlyBuyer: boolean; hideFirstLeftoverOnlyBuyer: boolean; hideLastWinnerAllocatedBuyer: boolean; }
+export interface ScenarioWorkspace { version: 1; rooms: Scenario[]; fulfillmentFilter: "all" | "shipping" | "pickup"; hideExcludedBuyers: boolean; hideUnwinnableOffers: boolean; hideCoveredLeftoverRows: boolean; hideTertiaryLeftoverRow: boolean; hideLeftoverFillRow: boolean; hideZeroRemainingCapacityOffers: boolean; hideOffersWithRemainingCapacity: boolean; hideFullyFilledBuyers: boolean; hideBuyersWithLeftover: boolean; hideUnservedBuyers: boolean; hideLeftoverOnlyBuyers: boolean; hideWinnerAllocatedBuyers: boolean; hideBuyersFilledByLeftoverFill: boolean; hideLastBuyerFilledByLeftoverFill: boolean; hideFirstBuyerFilledByLeftoverFill: boolean; hideFirstBuyerFilledByTertiaryFill: boolean; hideLastBuyerFilledByTertiaryFill: boolean; hideLastUnservedBuyer: boolean; hideFirstUnservedBuyer: boolean; hideLastLeftoverOnlyBuyer: boolean; hideFirstLeftoverOnlyBuyer: boolean; hideLastWinnerAllocatedBuyer: boolean; hideFirstWinnerAllocatedBuyer: boolean; }
 export interface ComparisonMetrics {
   requested: number;
   fulfilled: number;
@@ -349,6 +349,8 @@ export function filterBuyerIdsHidingLastLeftoverOnlyBuyer(rawScenario: unknown, 
 export function filterBuyerIdsHidingFirstLeftoverOnlyBuyer(rawScenario: unknown, hideFirstLeftoverOnlyBuyer: boolean): string[];
 /** Display-only. Matching is unchanged. Hides only the last winner-allocated buyer. Leftover-only, unserved, leftover-fill, tertiary-fill, and other winner-allocated buyers stay visible. When hideLastWinnerAllocatedBuyer is false, every buyer id is returned. */
 export function filterBuyerIdsHidingLastWinnerAllocatedBuyer(rawScenario: unknown, hideLastWinnerAllocatedBuyer: boolean): string[];
+/** Display-only. Matching is unchanged. Hides only the first winner-allocated buyer. Leftover-only, unserved, leftover-fill, tertiary-fill, and other winner-allocated buyers stay visible. When hideFirstWinnerAllocatedBuyer is false, every buyer id is returned. */
+export function filterBuyerIdsHidingFirstWinnerAllocatedBuyer(rawScenario: unknown, hideFirstWinnerAllocatedBuyer: boolean): string[];
 export interface OrganizerBuyerVariantCount {
   variant: string;
   buyerCount: number;
@@ -508,6 +510,8 @@ export function createLeftoverUncoveredRemainingMarkdown(rawScenario: unknown): 
 export function createLeftoverUncoveredMaximumMarkdown(rawScenario: unknown): string;
 /** Organizer-private one-line leftover uncovered minimum. Leftover-fill offer minimum units. Honest empty none. Not a merchant export. Distinct prefix from leftover-fill minimum, leftover uncovered remaining, leftover uncovered maximum, and uncovered leftover unit-count. */
 export function createLeftoverUncoveredMinimumMarkdown(rawScenario: unknown): string;
+/** Organizer-private one-line leftover uncovered count. Uncovered leftover buyer count. Honest empty none. Not a merchant export. Distinct prefix from leftover uncovered remaining, leftover uncovered maximum, leftover uncovered minimum, uncovered leftover unit-count, and uncovered leftover counts. */
+export function createLeftoverUncoveredCountMarkdown(rawScenario: unknown): string;
 
 export interface CartReview {
   tool: string; title: string; currency: string; columns: string[];
