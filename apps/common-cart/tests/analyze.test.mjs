@@ -193,6 +193,28 @@ test('strict CLI rejects malformed input, options, oversize and invalid UTF-8', 
   fails(['market', '--input', '-'], { ...fixture(), extra: true }, /unexpected field/);
   assert.match(run(['--help']).stdout, /organizer-private/);
 });
+test('JSON input rejects duplicate and escaped-equivalent members before any output', () => temporary(dir => {
+  const original = JSON.stringify(fixture());
+  const duplicate = original.replace('"quantity":2', '"quantity":999,"quantity":2');
+  const escaped = original.replace('"quantity":2', '"quantity":999,"\\u0071uantity":2');
+  const output = join(dir, 'never.json');
+  for (const input of [duplicate, escaped, original.replace('"currency":"AUD"', '"currency":"USD","currency":"AUD"')]) {
+    fails(['market', '--input', '-', '--output', output], input, /duplicate object member/i);
+    assert.equal(existsSync(output), false);
+  }
+  fails(['batch', '--input', '-'], original + '\n' + escaped, /Line 2:.*duplicate object member/i);
+  const other = join(dir, 'after.json'); writeFileSync(other, escaped);
+  fails(['compare', '--input', '-', '--against', other], fixture(), /duplicate object member/i);
+  const packet = JSON.stringify(ok(['packet', '--input', '-', '--tool', 'coverage']));
+  fails(['replay', '--input', '-'], packet.replace('"version":1', '"version":9,"\\u0076ersion":1'), /duplicate object member/i);
+  const workspace = '{"version":1,"rooms":[' + escaped + ']}';
+  fails(['market', '--input', '-', '--room', '1'], workspace, /duplicate object member/i);
+  const benign = fixture(); benign.title = 'Braces { [ ] } and "quantity":2, "quantity":3';
+  benign.buyers[0].label = 'Escaped \\ and "quote"';
+  benign.offers.push({ ...benign.offers[0], id: 'O2' });
+  assert.equal(ok(['market', '--input', '-'], benign).winner.totalCost, 13);
+  assert.equal(run(['market', '--input', '-', '--output', output], original).status, 0);
+}));
 test('safe IO rejects Windows device aliases and mixed-separator network paths before opening', () => {
   for (const path of ['NUL ', 'NUL .json', 'COM¹', 'LPT².txt', '\\/server/share/file.json', '/\\server/share/file.json', 'file.json:stream']) {
     fails(['market', '--input', path], fixture(), /ordinary local/);

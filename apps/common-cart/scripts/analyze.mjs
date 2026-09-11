@@ -72,8 +72,24 @@ async function readText(path) {
 }
 
 function json(text) {
-  try { return JSON.parse(text); }
+  let parsed;
+  try { parsed = JSON.parse(text); }
   catch { throw new Error('Input must contain valid JSON.'); }
+  // Syntax is already checked. Track keys per object before JSON's last-wins
+  // behavior can reach the model; decode escapes so equivalent names collide.
+  const containers = [];
+  for (const token of text.matchAll(/"(?:\\.|[^"\\])*"|[{}\[\]]/g)) {
+    const value = token[0];
+    if (value === '{' || value === '[') containers.push(value === '{' ? new Set() : null);
+    else if (value === '}' || value === ']') containers.pop();
+    else if (/^[ \t\r\n]*:/.test(text.slice(token.index + value.length))) {
+      const key = JSON.parse(value);
+      const keys = containers.at(-1);
+      if (keys.has(key)) throw new Error('Input contains a duplicate object member.');
+      keys.add(key);
+    }
+  }
+  return parsed;
 }
 
 function selectScenario(candidate, room) {
