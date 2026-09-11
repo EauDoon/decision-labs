@@ -10179,6 +10179,7 @@ test("copy last-without-floor remaining writes one-line Markdown with a clipboar
   const html = await standaloneBytes();
   assert.match(html, /id="copy-last-group-without-floor-remaining-button"/u);
   assert.match(html, /Copy last-without-floor remaining/u);
+  assert.doesNotMatch(html, /id="copy-last-group-without-floor-remaining-button"[^>]*aria-keyshortcuts/u);
   assert.match(html, /id="last-group-without-floor-remaining-fallback"/u);
   assert.match(html, /not a legal quorum/u);
   const draft = {
