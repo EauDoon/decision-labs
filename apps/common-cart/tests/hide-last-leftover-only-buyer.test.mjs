@@ -109,9 +109,11 @@ test("hide last leftover-only buyer is distinct from last unserved, first unserv
   assert.equal(lastUnserved.includes("B08"), false);
   assert.equal(lastUnserved.includes("B07"), true);
   assert.equal(firstUnserved.includes("B05"), false);
+  assert.equal(lastTertiary.includes("B07"), false);
+  assert.equal(lastLeftoverFill.includes("B04"), false);
+  assert.equal(lastLeftoverFill.includes("B07"), true);
   assert.notDeepEqual(lastLeftoverOnly, lastUnserved);
   assert.notDeepEqual(lastLeftoverOnly, firstUnserved);
-  assert.notDeepEqual(lastLeftoverOnly, lastTertiary);
   assert.notDeepEqual(lastLeftoverOnly, firstTertiary);
   assert.notDeepEqual(lastLeftoverOnly, firstLeftover);
   assert.notDeepEqual(lastLeftoverOnly, lastLeftoverFill);
