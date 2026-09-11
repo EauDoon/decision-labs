@@ -2838,6 +2838,11 @@
           (document.getElementById('copy-last-skip-target-text') || document.getElementById('skips') || document.getElementById('catalog-heading'))?.focus();
           return;
         }
+        if (event.shiftKey && event.key === 'F12') {
+          event.preventDefault();
+          (firstLabelledSkipTargetLabel() || document.getElementById('catalog-heading'))?.focus();
+          return;
+        }
         if (event.key === 'F12') {
           event.preventDefault();
           (document.getElementById('trust') || document.getElementById('catalog-heading'))?.focus();
