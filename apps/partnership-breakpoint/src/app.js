@@ -2975,7 +2975,7 @@ function handleShortcut(event) {
     target?.scrollIntoView?.({ block: 'start' });
   }
   if (event.key === 'F11' && event.shiftKey) {
-    const target = document.querySelector('#copy-first-zero-share-volume')
+    const target = document.querySelector('#copy-last-over-capacity-volume')
       ?? document.querySelector('#participant-inputs-title');
     target?.focus?.({ preventScroll: false });
     target?.scrollIntoView?.({ block: 'start' });
@@ -5833,7 +5833,7 @@ function helpDialog() {
         <li><kbd>F11</kbd> Jump to Copy last zero-share remaining-to-hold, or the Participants heading if missing</li>
         <li><kbd>F12</kbd> Jump to Hide the last participant with zero revenue share, or the Participants heading if missing</li>
         <li><kbd>Shift+F10</kbd> Copy last over-capacity volume-to-hold as Markdown</li>
-        <li><kbd>Shift+F11</kbd> Jump to Copy first zero-share volume-to-hold, or the Participants heading if missing</li>
+        <li><kbd>Shift+F11</kbd> Jump to Copy last over-capacity volume-to-hold, or the Participants heading if missing</li>
         <li><kbd>Shift+F12</kbd> Jump to Hide the last participant with zero revenue share, or the Participants heading if missing</li>
         <li><kbd>+</kbd> Jump to Copy first over-capacity participant label, or the First breakpoint or Participants heading if missing</li>
         <li><kbd>!</kbd> Jump to Copy first over-capacity remaining listed capacity, or the First breakpoint or Participants heading if missing</li>
