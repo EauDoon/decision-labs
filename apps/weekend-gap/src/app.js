@@ -1785,6 +1785,9 @@ document.querySelector("#copy-last-weekday-fx-open").addEventListener("click", a
 document.querySelector("#copy-first-weekday-fx-open").addEventListener("click", async () => {
   await copyFirstWeekdayFxOpenHourMarkdown();
 });
+document.querySelector("#copy-first-weekday-fx-closed").addEventListener("click", async () => {
+  await copyFirstWeekdayFxClosedHourMarkdown();
+});
 document.querySelector("#copy-last-open-bank").addEventListener("click", async () => {
   await copyLastOpenBankHourMarkdown();
 });
@@ -2161,6 +2164,10 @@ function copyLastWeekdayFxOpenHourMarkdown() {
 function copyFirstWeekdayFxOpenHourMarkdown() {
   const text = firstWeekdayFxOpenHourToMarkdown(scenario);
   return copyTextWithFallback(text, "#first-weekday-fx-open-copy-fallback", "First weekday-FX-open hour copied as one-line Markdown. This is a local drawing, not a live FX feed.");
+}
+function copyFirstWeekdayFxClosedHourMarkdown() {
+  const text = firstWeekdayFxClosedHourToMarkdown(scenario);
+  return copyTextWithFallback(text, "#first-weekday-fx-closed-copy-fallback", "First weekday-FX-closed hour copied as one-line Markdown. This is a local drawing, not a live FX feed.");
 }
 function jumpToFirstClosedBankCopy() {
   const control = document.querySelector("#copy-first-closed-bank");
@@ -2847,7 +2854,7 @@ document.addEventListener("keydown", (event) => {
   }
   if (event.key === "F10" && event.shiftKey) {
     event.preventDefault();
-    copyFirstWeekdayFxOpenHourMarkdown();
+    copyFirstWeekdayFxClosedHourMarkdown();
     return;
   }
   if (event.key === "F10") {
