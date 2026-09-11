@@ -422,6 +422,22 @@ Press `F12` to focus the last labelled skip target, or the catalog heading if th
 That key moves focus; it does not open a workbench. It does not copy. That key
 is distinct from `F9`, which focuses the first skip target, from `F6`, which focuses the last skip target, from `t`,
 which focuses Trust and limits, from `F2`, which focuses the skip nav, from `.`, which focuses Skip to catalog versions.
+Press `Shift+F10` to copy the labelled heading of the first skip href that has aria-labelledby from this page as one Markdown
+line. That key uses the same Copy first labelled skip target text control, including
+the visible text box when the clipboard API is unavailable. If that labelled text is
+missing, it copies an empty string. This is catalog copy, not a live product
+feed. It is distinct from `F10`, which copies the last skip-target text, from
+`F7`, which copies the first skip-target text, from `F3`, which copies the last skip-link text, and from
+`Delete`, which copies the first skip-link text.
+Press `Shift+F11` to focus the Copy first labelled skip target text control, or the skip-link row
+or catalog heading if that control is missing. That key moves focus; it does not
+open a workbench. It does not copy. That key is distinct from `F11`, which
+focuses Copy last skip target text, from `F8`, which focuses Copy first skip target text, from
+`F4`, which focuses Copy last skip text, and from `#`, which focuses Copy skip links.
+Press `Shift+F12` to focus the first labelled skip label, or the catalog heading if that label is missing.
+That key moves focus; it does not open a workbench. It does not copy. That key
+is distinct from `F9`, which focuses the first skip target, from `F12`, which focuses the last labelled skip target, from `n`,
+which focuses What's new, from `g`, which focuses the first What's new heading.
 Press `f` to focus the footer version line. That key does
 not open a workbench. Press `p` to print this catalog. That key prints this
 page in the browser. It is not a live product sheet. Press `c` to copy the catalog address
@@ -501,6 +517,8 @@ fetch a product feed or add another public path. Copy first skip target text on
 that 404 page copies the printed first skip-target text as one Markdown line. It does not
 fetch a product feed or add another public path. Copy last skip target text on
 that 404 page copies the printed last skip-target text as one Markdown line. It does not
+fetch a product feed or add another public path. Copy first labelled skip target text on
+that 404 page copies the printed first labelled skip-target text as one Markdown line. It does not
 fetch a product feed or add another public path. When the catalog is served over http,
 a control copies the loopback address; it stays hidden on a file URL.
 Copy versions copies the four workbench names and versions already printed on
@@ -616,6 +634,13 @@ box fallback. If that labelled text is missing, it copies an empty string. That 
 catalog copy, not a live product feed. It is distinct from Copy first skip target text,
 which copies the first skip-target labelled heading, from Copy last skip text, which copies
 the last skip-link text, from Copy last Trust item, which copies the last Trust and limits list item, and
+from Copy skip links, which copies every skip-link target.
+Copy first labelled skip target text copies the labelled heading of the first skip href that has aria-labelledby from this
+catalog page as one Markdown line, with the same clipboard and visible text
+box fallback. If that labelled text is missing, it copies an empty string. That copy is
+catalog copy, not a live product feed. It is distinct from Copy first skip target text,
+which copies the first skip-target labelled heading, from Copy last skip target text, which copies
+the last skip-target labelled heading, from Copy last skip text, which copies the last skip-link text, and
 from Copy skip links, which copies every skip-link target.
 Press `j` to copy catalog jobs through that same control.
 Press `q` to copy catalog jobs through that same Copy jobs control. It does not fork that Markdown.
