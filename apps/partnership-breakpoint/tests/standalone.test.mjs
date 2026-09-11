@@ -133,6 +133,9 @@ test('standalone retains 1.5.16 review tools and 1.5.17 copy controls', async ()
   assert.match(html, /id="hide-first-zero-share-participant"/);
   assert.match(html, /data-action="hide-first-zero-share-participant"/);
   assert.match(html, /id="hide-first-zero-share-participant"[^>]*aria-keyshortcuts="ArrowRight"/);
+  assert.match(html, /id="copy-first-zero-share-participant"/);
+  assert.match(html, /data-action="copy-first-zero-share-participant"/);
+  assert.match(html, /id="copy-first-zero-share-participant"[^>]*aria-keyshortcuts="F7"/);
   assert.match(html, /id="copy-last-zero-share-participant"/);
   assert.match(html, /data-action="copy-last-zero-share-participant"/);
   assert.match(html, /id="copy-last-zero-share-participant"[^>]*aria-keyshortcuts="F3"/);
@@ -167,6 +170,18 @@ test('standalone retains 1.5.16 review tools and 1.5.17 copy controls', async ()
   assert.match(html, /event\.key === 'F3'/);
   assert.match(html, /event\.key === 'F4'/);
   assert.match(html, /event\.key === 'Backspace'/);
+  assert.match(html, /event\.key === 'F7'/);
+  assert.match(html, /event\.key === 'F8'/);
+  assert.match(html, /event\.key === 'F9'/);
+  assert.notEqual(html.indexOf('F7'), html.indexOf('F3'));
+  assert.notEqual(html.indexOf('F8'), html.indexOf('F4'));
+  assert.notEqual(html.indexOf('F9'), html.indexOf('ArrowRight'));
+  const f9At = html.indexOf("event.key === 'F9'");
+  assert.notEqual(f9At, -1);
+  const f9Next = html.indexOf('if (event.key ===', f9At + 1);
+  const f9Slice = html.slice(f9At, f9Next === -1 ? f9At + 400 : f9Next);
+  assert.doesNotMatch(f9Slice, /copyLastZeroShareParticipant/);
+  assert.doesNotMatch(f9Slice, /copyFirstZeroShareParticipant/);
   assert.match(html, /if \(event\.defaultPrevented\) return;/);
   assert.doesNotMatch(html, /if \(event\.key\.length !== 1\) return;/);
   assert.match(html, /event\.key === 'u' \|\| event\.key === 'U'/);
@@ -186,6 +201,7 @@ test('standalone retains 1.5.16 review tools and 1.5.17 copy controls', async ()
   assert.match(html, /Lacrosse carnival split/);
   assert.match(html, /Water polo carnival split/);
   assert.match(html, /Rowing carnival split/);
+  assert.match(html, /Sailing carnival split/);
   assert.match(html, /hideParticipantsAtLeastHeadroom/);
   assert.match(html, /hideParticipantsWithinCapacity/);
   assert.match(html, /hideFirstBreakpointParticipant/);
