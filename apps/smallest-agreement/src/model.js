@@ -2632,8 +2632,8 @@ export function formatFirstGroupWithoutFloorLabelMarkdown(proposal, options) {
  * Uses the same without-floor list as hideFirstGroupWithoutFloor and
  * hideLastGroupWithoutFloor.
  * Honest when the count is zero or no inspected package is available.
- * Distinct prefix from first group-without-floor label copy and last
- * group-without-floor label copy.
+ * Distinct prefix from first group-without-floor label copy, last
+ * group-without-floor label copy, and groups-without-floor remaining copy.
  * A floor is a number you entered, not a legal quorum.
  */
 export function formatGroupsWithoutFloorCountMarkdown(proposal, options) {
@@ -2660,6 +2660,51 @@ export function formatGroupsWithoutFloorCountMarkdown(proposal, options) {
     empty: count === 0,
     count,
     text: `Groups without a support floor: ${count}. ${disclaimer}\n`,
+  };
+}
+
+/**
+ * One-line Markdown of remaining mixing-weight total of groups without a
+ * declared support floor (minSupport missing).
+ * Looks up each listed group's weight from proposal.groups.
+ * Uses the same without-floor list as hideFirstGroupWithoutFloor and
+ * hideLastGroupWithoutFloor.
+ * Honest when remaining is zero or no inspected package is available.
+ * Distinct prefix from groups-without-floor count copy, first
+ * group-without-floor label copy, last group-without-floor label copy, and
+ * remaining change-budget copy.
+ * A floor is a number you entered, not a legal quorum.
+ * Mixing weights are not a legal right.
+ * Do not treat labels as legal identities.
+ */
+export function formatGroupsWithoutFloorRemainingMarkdown(proposal, options) {
+  const validation = validateProposal(proposal);
+  if (!validation.valid) return { status: "invalid", errors: validation.errors };
+  const disclaimer = "A floor is a number you entered, not a legal quorum.";
+  if (!Array.isArray(options) || options.length !== proposal.clauses.length) {
+    return {
+      status: "unavailable",
+      empty: true,
+      remaining: 0,
+      text: `No inspected package is available, so there is no groups-without-floor remaining to copy. ${disclaimer}\n`,
+    };
+  }
+  const selected = proposal.clauses.map((clause, index) => clause.options.find((option) => option.id === options[index]?.id) ?? null);
+  if (selected.some((option) => !option)) {
+    return { status: "invalid", errors: ["Every selected option must belong to its clause."] };
+  }
+  const listed = groupsWithoutDeclaredSupportFloor(proposal);
+  if (listed.status !== "ok") return listed;
+  const weightsById = new Map(proposal.groups.map((group) => [group.id, group.weight]));
+  let remaining = 0;
+  for (const group of listed.groups) {
+    remaining += weightsById.get(group.id);
+  }
+  return {
+    status: "ok",
+    empty: remaining === 0,
+    remaining,
+    text: `Groups-without-floor remaining: ${remaining}. ${disclaimer}\n`,
   };
 }
 
