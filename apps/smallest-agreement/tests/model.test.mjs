@@ -52,6 +52,7 @@ import {
   formatLastGroupWithoutFloorLabelMarkdown,
   formatFirstGroupWithoutFloorLabelMarkdown,
   formatGroupsWithoutFloorCountMarkdown,
+  formatGroupsWithoutFloorRemainingMarkdown,
   formatGroupSupportMarkdown,
   remainingChangeBudget,
   formatRemainingChangeBudgetMarkdown,
@@ -3659,6 +3660,7 @@ test("groups-without-floor count Markdown is one line, honest 0 when none, and d
   assert.doesNotMatch(copied.text, /First below-floor group/u);
   assert.doesNotMatch(copied.text, /Last below-floor group/u);
   assert.doesNotMatch(copied.text, /Groups below their support floor/u);
+  assert.doesNotMatch(copied.text, /Groups-without-floor remaining/u);
   assert.doesNotMatch(copied.text, /Open/u);
   assert.doesNotMatch(copied.text, /Later open/u);
   assert.doesNotMatch(copied.text, /[\u2014\u2013]/u);
@@ -3695,6 +3697,99 @@ test("groups-without-floor count Markdown is one line, honest 0 when none, and d
   assert.doesNotMatch(missing.text, /Last group without a support floor/u);
   assert.equal(missing.text.trim().includes("\n"), false);
   assert.equal(formatGroupsWithoutFloorCountMarkdown({ title: "" }).status, "invalid");
+});
+
+test("groups-without-floor remaining Markdown is one line, honest 0 when none, and distinct from count", () => {
+  const input = proposal({
+    threshold: 50,
+    groups: [
+      { id: "open", name: "Open", weight: 4 },
+      { id: "floored", name: "Floored", weight: 3, minSupport: 40 },
+      { id: "later", name: "Later open", weight: 2 },
+    ],
+    clauses: [{ id: "one", title: "One", options: [
+      option("original", true, { open: 90, floored: 90, later: 80 }),
+      option("alt", false, { open: 20, floored: 20, later: 20 }, 1),
+      option("other", false, { open: 70, floored: 70, later: 72 }, 2),
+    ] }],
+  });
+  const before = JSON.stringify(input);
+  const originals = getOriginalOptions(input);
+  const copied = formatGroupsWithoutFloorRemainingMarkdown(input, originals);
+  assert.equal(copied.status, "ok");
+  assert.equal(copied.remaining, 6);
+  assert.equal(copied.empty, false);
+  assert.equal(copied.text.includes("\n"), true);
+  assert.equal(copied.text.trim().includes("\n"), false);
+  assert.equal(copied.text, "Groups-without-floor remaining: 6. A floor is a number you entered, not a legal quorum.\n");
+  assert.doesNotMatch(copied.text, /Groups without a support floor:/u);
+  assert.doesNotMatch(copied.text, /First group without a support floor/u);
+  assert.doesNotMatch(copied.text, /Last group without a support floor/u);
+  assert.doesNotMatch(copied.text, /Remaining change-budget/u);
+  assert.doesNotMatch(copied.text, /First at-floor group/u);
+  assert.doesNotMatch(copied.text, /Last at-floor group/u);
+  assert.doesNotMatch(copied.text, /First below-floor group/u);
+  assert.doesNotMatch(copied.text, /Last below-floor group/u);
+  assert.doesNotMatch(copied.text, /Open/u);
+  assert.doesNotMatch(copied.text, /Later open/u);
+  assert.doesNotMatch(copied.text, /[\u2014\u2013]/u);
+  assert.equal(JSON.stringify(input), before);
+  const counted = formatGroupsWithoutFloorCountMarkdown(input, originals);
+  assert.equal(counted.count, 2);
+  assert.equal(counted.text, "Groups without a support floor: 2. A floor is a number you entered, not a legal quorum.\n");
+  assert.doesNotMatch(counted.text, /Groups-without-floor remaining/u);
+  const noneInput = proposal({
+    groups: [{ id: "g", name: "G", weight: 1, minSupport: 40 }],
+    clauses: [{ id: "one", title: "One", options: [
+      option("original", true, { g: 90 }),
+      option("alt", false, { g: 80 }, 1),
+      option("other", false, { g: 70 }, 2),
+    ] }],
+  });
+  const zero = formatGroupsWithoutFloorRemainingMarkdown(noneInput, getOriginalOptions(noneInput));
+  assert.equal(zero.status, "ok");
+  assert.equal(zero.empty, true);
+  assert.equal(zero.remaining, 0);
+  assert.equal(zero.text, "Groups-without-floor remaining: 0. A floor is a number you entered, not a legal quorum.\n");
+  assert.equal(zero.text.trim().includes("\n"), false);
+  assert.doesNotMatch(zero.text, /Groups without a support floor:/u);
+  assert.doesNotMatch(zero.text, /First group without a support floor/u);
+  assert.doesNotMatch(zero.text, /Last group without a support floor/u);
+  const missing = formatGroupsWithoutFloorRemainingMarkdown(input, null);
+  assert.equal(missing.status, "unavailable");
+  assert.equal(missing.empty, true);
+  assert.equal(missing.remaining, 0);
+  assert.match(missing.text, /No inspected package is available/u);
+  assert.match(missing.text, /not a legal quorum/u);
+  assert.doesNotMatch(missing.text, /Groups without a support floor:/u);
+  assert.doesNotMatch(missing.text, /First group without a support floor/u);
+  assert.doesNotMatch(missing.text, /Last group without a support floor/u);
+  assert.equal(missing.text.trim().includes("\n"), false);
+  assert.equal(formatGroupsWithoutFloorRemainingMarkdown({ title: "" }).status, "invalid");
+  const kayaking = proposal({
+    title: "Kayaking club hours: whitewater booking, slalom bar, and spraydeck lock-up",
+    threshold: 70,
+    groups: [
+      { id: "students", name: "Students", weight: 4 },
+      { id: "neighbours", name: "Neighbours", weight: 3, veto: true },
+      { id: "pandc", name: "P&C", weight: 2 },
+    ],
+    clauses: [{ id: "whitewater-booking", title: "Whitewater booking", options: [
+      option("whitewater-booking-original", true, { students: 9, neighbours: 94, pandc: 55 }),
+      option("whitewater-booking-late", false, { students: 84, neighbours: 37, pandc: 48 }, 2),
+      option("whitewater-booking-weekend", false, { students: 69, neighbours: 44, pandc: 53 }, 4),
+    ] }],
+  });
+  const kayakCopied = formatGroupsWithoutFloorRemainingMarkdown(kayaking, getOriginalOptions(kayaking));
+  assert.equal(kayakCopied.status, "ok");
+  assert.equal(kayakCopied.remaining, 9);
+  assert.equal(kayakCopied.text, "Groups-without-floor remaining: 9. A floor is a number you entered, not a legal quorum.\n");
+  assert.doesNotMatch(kayakCopied.text, /Groups without a support floor:/u);
+  assert.doesNotMatch(kayakCopied.text, /Students/u);
+  assert.doesNotMatch(kayakCopied.text, /Neighbours/u);
+  const kayakCount = formatGroupsWithoutFloorCountMarkdown(kayaking, getOriginalOptions(kayaking));
+  assert.equal(kayakCount.count, 3);
+  assert.doesNotMatch(kayakCount.text, /Groups-without-floor remaining/u);
 });
 
 test("first veto group label Markdown escapes the group name and is not a legal right", () => {
