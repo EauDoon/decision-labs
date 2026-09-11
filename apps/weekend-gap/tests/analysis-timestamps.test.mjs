@@ -30,6 +30,8 @@ test("analysis JSON remains timestamp-free for identical inputs", () => {
   assert.equal(saturdayEarlyBank, analysisToJSON(DEFAULT_SCENARIO, PRESETS.saturdayEarlyBankOpen, 80, 70));
   const fridayEarlyBank = analysisToJSON(DEFAULT_SCENARIO, PRESETS.fridayEarlyBankOpen, 80, 70);
   assert.equal(fridayEarlyBank, analysisToJSON(DEFAULT_SCENARIO, PRESETS.fridayEarlyBankOpen, 80, 70));
+  const saturdayLateBank = analysisToJSON(DEFAULT_SCENARIO, PRESETS.saturdayLateBankOpen, 80, 70);
+  assert.equal(saturdayLateBank, analysisToJSON(DEFAULT_SCENARIO, PRESETS.saturdayLateBankOpen, 80, 70));
   const report = JSON.parse(output);
   const payoutReport = JSON.parse(payout);
   const saturdayReport = JSON.parse(saturday);
@@ -42,6 +44,7 @@ test("analysis JSON remains timestamp-free for identical inputs", () => {
   const fridayEarlyIssuerReport = JSON.parse(fridayEarlyIssuer);
   const saturdayEarlyBankReport = JSON.parse(saturdayEarlyBank);
   const fridayEarlyBankReport = JSON.parse(fridayEarlyBank);
+  const saturdayLateBankReport = JSON.parse(saturdayLateBank);
   for (const key of TIMESTAMP_KEYS) {
     assert.equal(Object.prototype.hasOwnProperty.call(report, key), false, `analysis JSON must not include ${key}`);
     assert.equal(Object.prototype.hasOwnProperty.call(payoutReport, key), false, `analysis JSON must not include ${key}`);
@@ -55,6 +58,7 @@ test("analysis JSON remains timestamp-free for identical inputs", () => {
     assert.equal(Object.prototype.hasOwnProperty.call(fridayEarlyIssuerReport, key), false, `analysis JSON must not include ${key}`);
     assert.equal(Object.prototype.hasOwnProperty.call(saturdayEarlyBankReport, key), false, `analysis JSON must not include ${key}`);
     assert.equal(Object.prototype.hasOwnProperty.call(fridayEarlyBankReport, key), false, `analysis JSON must not include ${key}`);
+    assert.equal(Object.prototype.hasOwnProperty.call(saturdayLateBankReport, key), false, `analysis JSON must not include ${key}`);
   }
   assert.doesNotMatch(output, /"timestamp"\s*:/);
   assert.doesNotMatch(output, /"createdAt"\s*:/);
@@ -102,6 +106,10 @@ test("analysis JSON remains timestamp-free for identical inputs", () => {
   assert.doesNotMatch(fridayEarlyBank, /"createdAt"\s*:/);
   assert.doesNotMatch(fridayEarlyBank, /"exportedAt"\s*:/);
   assert.doesNotMatch(fridayEarlyBank, /\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/);
+  assert.doesNotMatch(saturdayLateBank, /"timestamp"\s*:/);
+  assert.doesNotMatch(saturdayLateBank, /"createdAt"\s*:/);
+  assert.doesNotMatch(saturdayLateBank, /"exportedAt"\s*:/);
+  assert.doesNotMatch(saturdayLateBank, /\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/);
 });
 
 test("analysis JSON for Saturday early payout open still has no timestamps", () => {
@@ -278,6 +286,25 @@ test("analysis JSON for Saturday early bank open still has no timestamps", () =>
 test("analysis JSON for Friday early bank open still has no timestamps", () => {
   const output = analysisToJSON(DEFAULT_SCENARIO, PRESETS.fridayEarlyBankOpen, 75, 72);
   assert.equal(output, analysisToJSON(DEFAULT_SCENARIO, PRESETS.fridayEarlyBankOpen, 75, 72));
+  assert.doesNotMatch(output, /timestamp|createdAt|exportedAt|generatedAt|created_at|exported_at/i);
+  assert.doesNotMatch(output, /\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/);
+  const walk = (value) => {
+    if (Array.isArray(value)) {
+      value.forEach(walk);
+      return;
+    }
+    if (!value || typeof value !== "object") return;
+    for (const key of Object.keys(value)) {
+      assert.equal(TIMESTAMP_KEYS.includes(key), false, `analysis JSON must not include ${key}`);
+      walk(value[key]);
+    }
+  };
+  walk(JSON.parse(output));
+});
+
+test("analysis JSON for Saturday late bank open still has no timestamps", () => {
+  const output = analysisToJSON(DEFAULT_SCENARIO, PRESETS.saturdayLateBankOpen, 75, 72);
+  assert.equal(output, analysisToJSON(DEFAULT_SCENARIO, PRESETS.saturdayLateBankOpen, 75, 72));
   assert.doesNotMatch(output, /timestamp|createdAt|exportedAt|generatedAt|created_at|exported_at/i);
   assert.doesNotMatch(output, /\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/);
   const walk = (value) => {

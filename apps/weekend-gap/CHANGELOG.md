@@ -1,5 +1,17 @@
 # Changelog
 
+## 1.5.22 - 2026-09-11
+
+A workshop follow-up on 1.5.21. Weekend Gap remains a local-first decision aid, not a decision maker. Hatched Gantt cells are a local drawing, not a bank feed. Timing review packets from 1.5.0 and the 1.5.1-1.5.21 review UI stay in place. Analysis JSON still has no timestamps.
+
+### Added
+
+- Keyboard `Insert` copies last open FX hour through the new last-open-FX copy control, using one-line Markdown. Honest empty when none. Ignored while typing. Distinct from `4` last-open-bank copy, `PageUp` last-open-payout copy and `(` first-open-FX copy.
+- Keyboard `ArrowDown` jumps to the last-open-FX-hour copy control, or the Gantt heading if that control is missing. Does not copy. Ignored while typing. Distinct from `PageDown` last-open-payout jump and `Home` last-open-bank jump.
+- Keyboard `ArrowLeft` jumps to the hide-weekend-FX-open Gantt filter, or the Gantt heading if that control is missing. Ignored while typing. Distinct from `ArrowUp` hide-weekend-payout-open and `End` hide-weekend-bank-open.
+- Saturday late bank open (synthetic) preset: same 72-hour calendar as Normal Friday, Saturday 16:00 to 18:00 treats the bank gate as open even though Saturday is not a business day. Distinct from Saturday early bank open, Friday early bank open, and Friday early issuer open. Synthetic. Not a bank feed.
+- Filter that hides Gantt hours that are weekend and FX-open (`fxWeekday` true on a weekend hour). Display only; the model still contains 72 hours. Workspace JSON stores optional `hideWeekendFxOpenGanttHours`. Older files omit the key and show all hours. Unknown keys are rejected. Distinct from `hideWeekendPayoutOpenGanttHours`, `hideFxOpenGanttHours`, `hideWeekendGanttHours`, and `hideWeekendBankOpenGanttHours`. The selected hour stays visible if it would otherwise hide.
+
 ## 1.5.21 - 2026-09-11
 
 A workshop follow-up on 1.5.20. Weekend Gap remains a local-first decision aid, not a decision maker. Hatched Gantt cells are a local drawing, not a bank feed. Timing review packets from 1.5.0 and the 1.5.1-1.5.20 review UI stay in place. Analysis JSON still has no timestamps.

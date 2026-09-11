@@ -41,6 +41,7 @@ test("1.5.20 keeps 1 2 3 last-closed-bank controls and Friday issuer presets", a
   assert.notDeepEqual(PRESETS.saturdayEarlyBankOpen, PRESETS.saturdayEarlyIssuerOpen);
   assert.notDeepEqual(PRESETS.saturdayEarlyBankOpen, PRESETS.sundayLateBankClose);
   assert.notDeepEqual(PRESETS.saturdayEarlyBankOpen, PRESETS.earlyMondayBankOpen);
+  assert.notDeepEqual(PRESETS.saturdayEarlyBankOpen, PRESETS.saturdayLateBankOpen);
   assert.equal(DEFAULT_SCENARIO.fridayEarlyIssuerOpen, false);
   assert.equal(DEFAULT_SCENARIO.saturdayEarlyBankOpen, false);
   assert.equal(DEFAULT_SCENARIO.fridayEarlyBankOpen, false);
