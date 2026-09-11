@@ -93,6 +93,9 @@ test('standalone retains 1.5.16 review tools and 1.5.17 copy controls', async ()
   assert.match(html, /id="copy-last-over-capacity-remaining"/);
   assert.match(html, /data-action="copy-last-over-capacity-remaining"/);
   assert.match(html, /id="copy-last-over-capacity-remaining"[^>]*aria-keyshortcuts="\*"/);
+  assert.match(html, /id="copy-last-over-capacity-volume"/);
+  assert.match(html, /data-action="copy-last-over-capacity-volume"/);
+  assert.match(html, /id="copy-last-over-capacity-volume"[^>]*aria-keyshortcuts="Shift\+F10"/);
   assert.match(html, /id="copy-first-within-capacity-remaining"/);
   assert.match(html, /data-action="copy-first-within-capacity-remaining"/);
   assert.match(html, /id="copy-first-within-capacity-remaining"[^>]*aria-keyshortcuts="\$"/);
@@ -147,7 +150,7 @@ test('standalone retains 1.5.16 review tools and 1.5.17 copy controls', async ()
   assert.doesNotMatch(html, /id="copy-last-zero-share-volume"[^>]*aria-keyshortcuts="Shift\+F10"/);
   assert.match(html, /id="copy-first-zero-share-volume"/);
   assert.match(html, /data-action="copy-first-zero-share-volume"/);
-  assert.match(html, /id="copy-first-zero-share-volume"[^>]*aria-keyshortcuts="Shift\+F10"/);
+  assert.doesNotMatch(html, /id="copy-first-zero-share-volume"[^>]*aria-keyshortcuts="Shift\+F10"/);
   assert.match(html, /id="copy-first-zero-share-remaining"/);
   assert.match(html, /data-action="copy-first-zero-share-remaining"/);
   assert.match(html, /id="hide-zero-share-participants"/);
@@ -197,7 +200,8 @@ test('standalone retains 1.5.16 review tools and 1.5.17 copy controls', async ()
   const f10At = html.indexOf("event.key === 'F10' && !event.shiftKey");
   assert.ok(shiftF10At < f10At);
   const shiftF10Slice = html.slice(shiftF10At, f10At);
-  assert.match(shiftF10Slice, /copyFirstZeroShareVolume/);
+  assert.match(shiftF10Slice, /copyLastOverCapacityVolume/);
+  assert.doesNotMatch(shiftF10Slice, /copyFirstZeroShareVolume/);
   assert.doesNotMatch(shiftF10Slice, /copyLastZeroShareVolume/);
   assert.doesNotMatch(shiftF10Slice, /copyFirstZeroShareRemaining/);
   assert.doesNotMatch(shiftF10Slice, /copyLastZeroShareRemaining/);
@@ -208,7 +212,8 @@ test('standalone retains 1.5.16 review tools and 1.5.17 copy controls', async ()
   const f11At = html.indexOf("event.key === 'F11' && !event.shiftKey");
   assert.ok(shiftF11At < f11At);
   const shiftF11Slice = html.slice(shiftF11At, f11At);
-  assert.match(shiftF11Slice, /copy-first-zero-share-volume/);
+  assert.match(shiftF11Slice, /copy-last-over-capacity-volume/);
+  assert.doesNotMatch(shiftF11Slice, /copy-first-zero-share-volume/);
   assert.doesNotMatch(shiftF11Slice, /copy-last-zero-share-volume/);
   assert.doesNotMatch(shiftF11Slice, /copy-last-zero-share-remaining/);
   assert.match(html, /event\.key === 'F12' && event\.shiftKey/);
@@ -246,7 +251,8 @@ test('standalone retains 1.5.16 review tools and 1.5.17 copy controls', async ()
   assert.ok(shiftF12At < f12At);
   const shiftF12Next = html.indexOf('if (event.key ===', shiftF12At + 1);
   const shiftF12Slice = html.slice(shiftF12At, shiftF12Next === -1 ? shiftF12At + 400 : f12At);
-  assert.match(shiftF12Slice, /hide-last-zero-share-participant/);
+  assert.match(shiftF12Slice, /hide-first-over-capacity-participant/);
+  assert.doesNotMatch(shiftF12Slice, /hide-last-zero-share-participant/);
   assert.doesNotMatch(shiftF12Slice, /hide-zero-share-participants/);
   assert.doesNotMatch(shiftF12Slice, /hide-first-zero-share-participant/);
   assert.match(html, /function handleShortcut\(event\) \{\s*if \(event\.defaultPrevented\) return;/u);
@@ -274,6 +280,14 @@ test('standalone retains 1.5.16 review tools and 1.5.17 copy controls', async ()
   assert.match(html, /Kayaking carnival split/);
   assert.match(html, /Dragon boat carnival split/);
   assert.match(html, /Surf carnival split/);
+  assert.match(html, /Triathlon carnival split/);
+  const surfAt = html.indexOf('Surf carnival split');
+  const triathlonAt = html.indexOf('Triathlon carnival split');
+  assert.notEqual(surfAt, -1);
+  assert.notEqual(triathlonAt, -1);
+  assert.ok(surfAt < triathlonAt);
+  assert.match(html, /lastOverCapacityVolumeMarkdown/);
+  assert.match(html, /copyLastOverCapacityVolume/);
   assert.match(html, /hideParticipantsAtLeastHeadroom/);
   assert.match(html, /hideParticipantsWithinCapacity/);
   assert.match(html, /hideFirstBreakpointParticipant/);
