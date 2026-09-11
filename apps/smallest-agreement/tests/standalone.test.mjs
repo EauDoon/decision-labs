@@ -9969,8 +9969,8 @@ test('partial numeric edit clears the exported review even without full render',
 });
 
 test("standalone builder appImport only gained formatFirstGroupWithoutFloorLabelMarkdown", () => {
-  const builder = readFileSync(new URL("../scripts/build-standalone.mjs", import.meta.url), "utf8");
-  const app = readFileSync(new URL("../src/app.js", import.meta.url), "utf8");
+  const builder = readFileSync(new URL("../scripts/build-standalone.mjs", import.meta.url), "utf8").replaceAll("\r\n", "\n");
+  const app = readFileSync(new URL("../src/app.js", import.meta.url), "utf8").replaceAll("\r\n", "\n");
   const added = /formatLastGroupWithoutFloorLabelMarkdown,\n  formatFirstGroupWithoutFloorLabelMarkdown,/u;
   assert.match(builder, added);
   assert.match(app, added);
