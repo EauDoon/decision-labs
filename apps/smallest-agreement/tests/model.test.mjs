@@ -3475,14 +3475,15 @@ test("last group-without-floor label Markdown is one line, honest when none, and
   assert.doesNotMatch(firstAtFloor.text, /Last group without a support floor/u);
   const lastAtFloor = formatLastGroupAtFloorLabelMarkdown(input, originals);
   assert.doesNotMatch(lastAtFloor.text, /Last group without a support floor/u);
-  const none = formatLastGroupWithoutFloorLabelMarkdown(proposal({
+  const noneInput = proposal({
     groups: [{ id: "g", name: "G", weight: 1, minSupport: 40 }],
     clauses: [{ id: "one", title: "One", options: [
       option("original", true, { g: 90 }),
       option("alt", false, { g: 80 }, 1),
       option("other", false, { g: 70 }, 2),
     ] }],
-  }), originals);
+  });
+  const none = formatLastGroupWithoutFloorLabelMarkdown(noneInput, getOriginalOptions(noneInput));
   assert.equal(none.status, "ok");
   assert.equal(none.empty, true);
   assert.equal(none.text, "No group is without a support floor, so there is no last group-without-floor label to copy. A floor is a number you entered, not a legal quorum. The label is not a legal identity.\n");
