@@ -4,6 +4,7 @@ import {
   compareScenarios,
   planReserve,
   timelineToCSV, analyzeTimeline,
+  runSensitivity,
 } from '../src/model.js';
 
 const usage = `Weekend Gap offline analysis (synthetic AUD only)
@@ -11,6 +12,7 @@ const usage = `Weekend Gap offline analysis (synthetic AUD only)
   compare BASELINE CANDIDATE
   reserve SCENARIO TARGET_PERCENT DEADLINE_HOUR
   timeline SCENARIO [--format json|csv]
+  sensitivity SCENARIO FIELD
 Use - instead of a file to read stdin. JSON goes to stdout; errors to stderr.
 Scenario files may be partial raw objects or supported scenario envelopes.
 Omitted fields use model defaults; invalid or adjusted values are rejected.
@@ -80,6 +82,12 @@ function argumentsFor(args, count, formats = ['json']) {
 async function main([command, ...rest]) {
   if (command === '--help' && !rest.length) return usage;
   switch (command) {
+    case 'sensitivity': {
+      const { args: [path, field] } = argumentsFor(rest, 2);
+      const input = await scenario(path);
+      return { scenario: input, field, rows: runSensitivity(input, field),
+        note: 'Five one-factor synthetic experiments. Requested values can hit model caps; inspect effectiveValue and adjusted. This is not optimization.' };
+    }
     case 'timeline': {
       const { args: [path], format } = argumentsFor(rest, 1, ['json', 'csv']);
       const input = await scenario(path);

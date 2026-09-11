@@ -51,3 +51,13 @@ blocker counts overlap; they are not additive causal effects. Add `--format csv`
 for the existing 73-checkpoint ledger, including initial hour zero. CSV arrival
 and settlement columns refer to the previous interval; next-hour capacity is
 distinct. The last checkpoint closes hour 72; it does not extend the horizon.
+
+## Run a one-factor sensitivity
+
+`node scripts/analyze.mjs sensitivity scenario.json reserveCashAud` returns
+the existing 0.5, 0.75, 1, 1.25 and 1.5 multipliers. Supported fields are
+`reserveCashAud`, `redemptionDemandAud`, `issuerThroughputAudPerHour`,
+`fxDepthAudPerHour` and `payoutThroughputAudPerHour`. Each row contains requested
+and effective values, cap adjustment, resulting assumptions and summary. The
+input is validated strictly; deliberate experimental cap adjustments remain
+visible. Five sampled values establish neither an optimum nor a recommendation.

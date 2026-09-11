@@ -73,6 +73,18 @@ test('hourly JSON and CSV retain interval versus checkpoint semantics', () => {
   fails(['timeline', '-', '--format', 'html']);
 });
 
+test('sensitivity retains effective caps and independently checked reserve effects', () => {
+  const output = result(['sensitivity', '-', 'reserveCashAud']);
+  assert.deepEqual(output.rows.map(row => row.multiplier), [.5, .75, 1, 1.25, 1.5]);
+  for (const row of output.rows) assert.equal(row.summary.totalSettledAud, oracle({ ...fixture(), reserveCashAud: row.effectiveValue }).at(-1).settled);
+  const capped = result(['sensitivity', '-', 'reserveCashAud'], { ...fixture(), reserveCashAud: 10000 });
+  assert.equal(capped.rows.at(-1).requestedValue, 15000);
+  assert.equal(capped.rows.at(-1).effectiveValue, 10000);
+  assert.equal(capped.rows.at(-1).adjusted, true);
+  for (const field of ['redemptionDemandAud', 'issuerThroughputAudPerHour', 'fxDepthAudPerHour', 'payoutThroughputAudPerHour']) assert.equal(result(['sensitivity', '-', field]).rows.length, 5);
+  fails(['sensitivity', '-', 'bankOpenStartHour']);
+});
+
 test('CLI simulation matches a separate 1 AUD/hour ledger and reads files or stdin', () => {
   const expected = oracle(fixture()).at(-1);
   const output = result(['simulate', '-']);
