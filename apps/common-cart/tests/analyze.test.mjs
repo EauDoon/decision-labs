@@ -134,6 +134,28 @@ test('JSONL batch preserves order and atomically rejects a late invalid row', ()
   fails(['batch', '--input', '-'], Array(26).fill(JSON.stringify(first)).join('\n'), /1 to 25/);
 }));
 
+test('CSV import replaces only requested records and produces an evaluable scenario', () => temporary(dir => {
+  const csvPath = join(dir, 'records.csv');
+  writeFileSync(csvPath, 'label,category,quantity,max unit price,latest delivery days,variants,max order total\r\n"New, buyer",Coffee,2,10,4,Dark,15\r\n');
+  const buyerImport = ok(['import', '--input', '-', '--kind', 'buyers', '--csv', csvPath]);
+  assert.equal(buyerImport.buyers.length, 1);
+  assert.equal(buyerImport.buyers[0].label, 'New, buyer');
+  assert.equal(buyerImport.buyers[0].maxOrderTotal, 15);
+  assert.equal(buyerImport.offers[0].id, 'O1');
+  assert.equal(ok(['market', '--input', '-'], buyerImport).winner.totalCost, 13);
+  writeFileSync(csvPath, 'name,capacity,unit price,shipping,fulfillment,variants,minimum,delivery\nNew supplier,5,5,90,pickup,Dark,2,3\n');
+  const offerImport = ok(['import', '--input', '-', '--kind', 'offers', '--csv', csvPath]);
+  assert.equal(offerImport.buyers[0].id, 'private-id');
+  assert.equal(offerImport.offers[0].merchant, 'New supplier');
+  assert.equal(ok(['market', '--input', '-'], offerImport).winner.totalCost, 10);
+  writeFileSync(csvPath, 'not,a,valid,header\n1,2,3,4\n');
+  const output = join(dir, 'never.json');
+  fails(['import', '--input', '-', '--kind', 'buyers', '--csv', csvPath, '--output', output], fixture());
+  assert.equal(existsSync(output), false);
+  fails(['import', '--input', '-', '--kind', 'buyers', '--csv', '-'], fixture(), /Only one/);
+  fails(['import', '--input', '-', '--kind', 'wrong', '--csv', csvPath], fixture(), /requires/);
+}));
+
 test('market CLI has independent shipping, allocation, and no-winner oracles', () => {
   const result = ok(['market', '--input', '-']);
   assert.equal(result.winner.fulfilledUnits, 2);

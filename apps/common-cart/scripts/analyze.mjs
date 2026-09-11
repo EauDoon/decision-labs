@@ -8,6 +8,7 @@ import { CART_REVIEW_TOOLS, analyzeCartReview } from '../src/model.js';
 import { createCartReviewPacket, replayCartReviewPacket } from '../src/model.js';
 import { compareScenarios, compareRoomsByOfferIdentity } from '../src/model.js';
 import { validateScenario } from '../src/model.js';
+import { importBuyersFromCsv, importOffersFromCsv } from '../src/model.js';
 
 const LIMIT = 1048576;
 const help = `Common Cart offline analyst (Node 20+)
@@ -21,6 +22,7 @@ Usage: node scripts/analyze.mjs market --input scenario.json [--output result.js
        node scripts/analyze.mjs compare --input before.json --against after.json
        node scripts/analyze.mjs sweep --input scenario.json --offer O01 --field capacity --values '[10,20,30]'
        node scripts/analyze.mjs batch --input scenarios.jsonl --output results.jsonl
+       node scripts/analyze.mjs import --input scenario.json --kind buyers --csv buyers.csv --output updated.json
 Use --input - for piped UTF-8 JSON. Output defaults to stdout.
 Inputs are limited to 1 MiB. Output files must not exist.
 Results are organizer-private, synthetic planning aids, never orders.
@@ -89,12 +91,13 @@ async function main() {
     tool: { type: 'string' },
     against: { type: 'string' },
     field: { type: 'string' }, values: { type: 'string' },
+    kind: { type: 'string' }, csv: { type: 'string' },
   } });
   const names = tokens.filter(token => token.kind === 'option').map(token => token.name);
   if (new Set(names).size !== names.length) throw new Error('Duplicate options are not allowed.');
   if (values.help) { process.stdout.write(help); return; }
   const [command] = positionals;
-  const allowed = { market: [], offer: ['offer'], merchant: [], tools: [], review: ['tool'], packet: ['tool'], replay: [], compare: ['against'], sweep: ['offer', 'field', 'values'], batch: [] };
+  const allowed = { market: [], offer: ['offer'], merchant: [], tools: [], review: ['tool'], packet: ['tool'], replay: [], compare: ['against'], sweep: ['offer', 'field', 'values'], batch: [], import: ['kind', 'csv'] };
   if (positionals.length !== 1 || !Object.hasOwn(allowed, command)) throw new Error('Choose a supported command. Use --help for usage.');
   for (const name of names) if (!['input', 'output'].includes(name) && !allowed[command].includes(name)) throw new Error(`--${name} is not supported by ${command}.`);
   if (command === 'tools') {
@@ -102,7 +105,7 @@ async function main() {
     await writeResult(CART_REVIEW_TOOLS, values.output); return;
   }
   if (!values.input) throw new Error('--input is required.');
-  if (values.input === '-' && values.against === '-') throw new Error('Only one input may use stdin.');
+  if (values.input === '-' && (values.against === '-' || values.csv === '-')) throw new Error('Only one input may use stdin.');
   const inputText = await readText(values.input);
   if (command === 'batch') {
     const lines = inputText.split(/\r?\n/);
@@ -123,6 +126,11 @@ async function main() {
     result = command === 'packet' ? createCartReviewPacket(scenario, values.tool) : analyzeCartReview(scenario, values.tool);
   }
   if (command === 'replay') result = replayCartReviewPacket(scenario);
+  if (command === 'import') {
+    if (!['buyers', 'offers'].includes(values.kind) || !values.csv) throw new Error('import requires --kind buyers|offers and --csv file.');
+    const csv = await readText(values.csv);
+    result = values.kind === 'buyers' ? importBuyersFromCsv(scenario, csv) : importOffersFromCsv(scenario, csv);
+  }
   if (command === 'compare') {
     if (!values.against) throw new Error('--against is required.');
     const other = json(await readText(values.against));

@@ -98,3 +98,21 @@ and all results are prepared before writing. Invalid later rows produce no
 partial stdout or output file. Results are JSONL objects containing `line` and
 the private `market` result, in input order. Correct the reported line and rerun
 with an unused output filename. This bounded batch is not a streaming service.
+
+## Import spreadsheet records into a scenario
+
+```sh
+node scripts/analyze.mjs import --input scenario.json --kind buyers --csv buyers.csv --output updated.json
+node scripts/analyze.mjs import --input scenario.json --kind offers --csv offers.csv --output updated-offers.json
+```
+
+Uses the app's existing CSV parsers and returns a validated scenario, ready for
+`market` or browser import. This replaces the selected collection; it does not
+append or merge IDs. The other collection, title and currency stay intact.
+Buyer columns: `label,category,quantity,max unit price,latest delivery days,variants,max order total`.
+Offer columns: `name,capacity,unit price,shipping,fulfillment,variants`, optionally
+`category,minimum,delivery`. Offer imports generate IDs and default omitted
+category from the first buyer (then first offer, then Product), minimum to 1 and
+delivery to 7. CSV does not import price tiers. Use JSON for tiered offers and
+stable IDs. Quote cells containing commas. Each input has the same 1 MiB UTF-8
+limit; at most one can be stdin. Source files are preserved, including on failure.
