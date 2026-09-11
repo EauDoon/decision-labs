@@ -567,6 +567,23 @@ export const presets = Object.freeze({
       offer("O02", "Boathouse Salad Run", "Kayaking lunch pack", "Boathouse salad", 15, 15, 4, 42, 2),
       { ...offer("O03", "Hall Kayaking Pickup", "Kayaking lunch pack", "Boathouse water", 17, 20, 1, 44, 5), fulfillment: "pickup" }
     ]
+  },
+  dragonBoatCarnivalLunch: {
+    title: "Dragon boat carnival lunch",
+    currency: "AUD",
+    buyers: [
+      buyer("B01", "Dragon-boat crate", "Dragon boat lunch pack", 15, 23, 4, ["Dragon boat pie", "Drum salad"]),
+      buyer("B02", "Drummer bench", "Dragon boat lunch pack", 19, 19, 3, ["Dragon boat pie"]),
+      buyer("B03", "Stroke hamper", "Dragon boat lunch pack", 13, 21, 5, ["Drum salad", "Drum water"]),
+      buyer("B04", "Sideline cooler", "Dragon boat lunch pack", 10, 17, 2, ["Drum water"]),
+      buyer("B05", "Scoreboard trolley", "Dragon boat lunch pack", 16, 22, 4, ["Dragon boat pie", "Drum water"]),
+      buyer("B06", "Bench table", "Dragon boat lunch pack", 14, 20, 3, ["Drum salad", "Dragon boat pie"])
+    ],
+    offers: [
+      offer("O01", "Court-side Dragon Boat Delivery", "Dragon boat lunch pack", "Dragon boat pie", 17, 17, 3, 54, 3),
+      offer("O02", "Drum Salad Run", "Dragon boat lunch pack", "Drum salad", 15, 15, 4, 42, 2),
+      { ...offer("O03", "Hall Dragon Boat Pickup", "Dragon boat lunch pack", "Drum water", 17, 21, 1, 44, 5), fulfillment: "pickup" }
+    ]
   }
 });
 
@@ -2496,6 +2513,15 @@ function leftoverOnlyAllocatedMinimum(rawScenario) {
   return minimum ?? 0;
 }
 
+function leftoverOnlyAllocatedHeadroom(rawScenario) {
+  const scenario = validateScenario(rawScenario);
+  const coverage = computeResidualCoverage(scenario);
+  if (!coverage.secondary) return 0;
+  const leftoverOffer = scenario.offers.find((offer) => offer.id === coverage.secondary.offerId);
+  if (!leftoverOffer) return 0;
+  return leftoverOffer.capacity - leftoverOnlyAllocatedUnits(rawScenario);
+}
+
 /** Organizer-private one-line leftover uncovered leftover-only count. Leftover-only buyer count. Honest empty none. Not a merchant export. Distinct prefix from leftover uncovered count, leftover uncovered remaining, leftover uncovered maximum, leftover uncovered minimum, uncovered leftover unit-count, and uncovered leftover counts. */
 export function createLeftoverUncoveredLeftoverOnlyCountMarkdown(rawScenario) {
   const coverage = computeResidualCoverage(rawScenario);
@@ -2522,6 +2548,13 @@ export function createLeftoverUncoveredLeftoverOnlyMinimumMarkdown(rawScenario) 
   const coverage = computeResidualCoverage(rawScenario);
   const amount = coverage.leftoverBuyerCount > 0 ? String(leftoverOnlyAllocatedMinimum(rawScenario)) : "none";
   return `Common Cart leftover uncovered leftover-only minimum (organizer private): ${amount}. Not a merchant export.\n`;
+}
+
+/** Organizer-private one-line leftover uncovered leftover-only headroom. Leftover-fill remaining capacity after leftover-only units. Honest empty none. Not a merchant export. Distinct prefix from leftover uncovered leftover-only minimum, leftover uncovered leftover-only maximum, leftover uncovered leftover-only remaining, leftover uncovered leftover-only count, leftover uncovered remaining, leftover uncovered maximum, leftover uncovered minimum, leftover uncovered count, uncovered leftover unit-count, leftover-fill remaining, leftover-fill minimum, leftover-fill maximum, leftover unspent item headroom, and tertiary remaining even when the number matches. */
+export function createLeftoverUncoveredLeftoverOnlyHeadroomMarkdown(rawScenario) {
+  const coverage = computeResidualCoverage(rawScenario);
+  const amount = coverage.leftoverBuyerCount > 0 ? String(leftoverOnlyAllocatedHeadroom(rawScenario)) : "none";
+  return `Common Cart leftover uncovered leftover-only headroom (organizer private): ${amount}. Not a merchant export.\n`;
 }
 
 export function redactBuyerLabels(rawScenario) {
