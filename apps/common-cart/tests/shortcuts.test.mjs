@@ -1178,6 +1178,65 @@ test("keyboard handler jumps to hide last unserved buyer when not typing", async
   assert.match(app, /if \(key === "0"\) \{\s*event\.preventDefault\(\);\s*focusHideLastBuyerFilledByTertiaryFill\(\);/u);
 });
 
+test("shortcut help documents tertiary fill maximum copy", async () => {
+  const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
+  assert.match(html, /<kbd>4<\/kbd> Copy tertiary fill maximum \(organizer private\)/u);
+  assert.match(html, /id="copy-tertiary-fill-maximum"/u);
+  assert.match(html, /id="copy-tertiary-fill-maximum"[^>]*aria-keyshortcuts="4"/u);
+});
+
+test("keyboard handler copies tertiary fill maximum with 4 when not typing", async () => {
+  const app = await readFile(new URL("../src/app.js", import.meta.url), "utf8");
+  assert.match(app, /const key = event\.key\.length === 1 \? event\.key\.toLowerCase\(\) : event\.key;/u);
+  assert.match(app, /if \(key === "4"\)/u);
+  assert.match(app, /function copyTertiaryFillMaximum\(/u);
+  assert.match(app, /createTertiaryFillMaximumMarkdown\(scenario\)/u);
+  assert.match(app, /#copy-tertiary-fill-maximum/u);
+  assert.match(app, /isTypingTarget\(event\.target\)/u);
+  assert.doesNotMatch(app, /if \(key === "4"\) \{\s*event\.preventDefault\(\);\s*copyTertiaryFillRemainingCapacity/u);
+  assert.match(app, /if \(key === "1"\) \{\s*event\.preventDefault\(\);\s*copyTertiaryFillRemainingCapacity\(\);/u);
+  assert.match(app, /if \(key === "8"\) \{\s*event\.preventDefault\(\);\s*copyLeftoverFillMaximum\(\);/u);
+});
+
+test("shortcut help documents tertiary fill maximum copy jump", async () => {
+  const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
+  assert.match(html, /<kbd>Home<\/kbd> Focus the tertiary-fill maximum copy control, or leftover heading if missing/u);
+  assert.match(html, /id="copy-tertiary-fill-maximum"/u);
+  assert.match(html, /id="residual-title"/u);
+});
+
+test("keyboard handler jumps to tertiary fill maximum copy with Home when not typing", async () => {
+  const app = await readFile(new URL("../src/app.js", import.meta.url), "utf8");
+  assert.match(app, /if \(key === "Home"\)/u);
+  assert.match(app, /function focusTertiaryFillMaximumCopy\(/u);
+  assert.match(app, /#copy-tertiary-fill-maximum/u);
+  assert.match(app, /#residual-title/u);
+  assert.match(app, /isTypingTarget\(event\.target\)/u);
+  assert.match(app, /if \(event\.defaultPrevented/u);
+  assert.doesNotMatch(app, /if \(key === "Home"\) \{\s*event\.preventDefault\(\);\s*copyTertiaryFillMaximum/u);
+  assert.match(app, /if \(key === "2"\) \{\s*event\.preventDefault\(\);\s*focusTertiaryFillRemainingCopy\(\);/u);
+});
+
+test("shortcut help documents hide first unserved buyer jump", async () => {
+  const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
+  assert.match(html, /<kbd>End<\/kbd> Focus hide first unserved buyer, or the buyer list if missing/u);
+  assert.match(html, /id="hide-first-unserved-buyer"/u);
+  assert.match(html, /id="buyers-list"/u);
+});
+
+test("keyboard handler jumps to hide first unserved buyer with End when not typing", async () => {
+  const app = await readFile(new URL("../src/app.js", import.meta.url), "utf8");
+  assert.match(app, /if \(key === "End"\)/u);
+  assert.match(app, /function focusHideFirstUnservedBuyer\(/u);
+  assert.match(app, /#hide-first-unserved-buyer/u);
+  assert.match(app, /#buyers-list/u);
+  assert.match(app, /#buyer-tab/u);
+  assert.match(app, /isTypingTarget\(event\.target\)/u);
+  assert.match(app, /if \(event\.defaultPrevented/u);
+  assert.doesNotMatch(app, /if \(key === "End"\) \{\s*event\.preventDefault\(\);\s*focusHideLastUnservedBuyer/u);
+  assert.match(app, /if \(key === "3"\) \{\s*event\.preventDefault\(\);\s*focusHideLastUnservedBuyer\(\);/u);
+});
+
 test("apostrophe leftover fill unit-count copy uses the existing leftover-fill-units control", async () => {
   const app = await readFile(new URL("../src/app.js", import.meta.url), "utf8");
   const html = await readFile(new URL("../index.html", import.meta.url), "utf8");

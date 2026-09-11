@@ -124,6 +124,11 @@ export function catalogFirstOpenHref() {
   return catalogOpenHrefs()[0] ?? '';
 }
 
+export function catalogLastOpenHref() {
+  const hrefs = catalogOpenHrefs();
+  return hrefs[hrefs.length - 1] ?? '';
+}
+
 export function notFoundPage() {
   const versions = catalogVersionLine();
   const jobsList = catalogJobs().map(({ name, job }) => `<li>${escapeHtml(name)}: ${escapeHtml(job)}</li>`).join('\n      ');
@@ -134,6 +139,7 @@ export function notFoundPage() {
   const firstReview = catalogFirstReviewPath();
   const lastReview = catalogLastReviewPath();
   const firstOpen = catalogFirstOpenHref();
+  const lastOpen = catalogLastOpenHref();
   const newsHeadings = [];
   if (firstWhatsNew) newsHeadings.push(firstWhatsNew);
   if (lastWhatsNew && lastWhatsNew !== firstWhatsNew) newsHeadings.push(lastWhatsNew);
@@ -150,9 +156,14 @@ export function notFoundPage() {
       reviews.push(`<p class="review-path">${escapeHtml(lastReview)}</p>`);
     }
     const review = reviews.length ? `\n        ${reviews.join('\n        ')}` : '';
-    const open = index === 0 && firstOpen
-      ? `\n        <a class="open" href="${escapeHtml(firstOpen)}">Open workbench</a>`
-      : '';
+    const opens = [];
+    if (index === 0 && firstOpen) {
+      opens.push(`<a class="open" href="${escapeHtml(firstOpen)}">Open workbench</a>`);
+    }
+    if (index === all.length - 1 && lastOpen && !(index === 0 && firstOpen === lastOpen)) {
+      opens.push(`<a class="open" href="${escapeHtml(lastOpen)}">Open workbench</a>`);
+    }
+    const open = opens.length ? `\n        ${opens.join('\n        ')}` : '';
     return `<article class="workbench">
         <h3>${escapeHtml(heading)}</h3>${review}${open}
       </article>`;
@@ -194,10 +205,11 @@ export function notFoundPage() {
     .copy-first-workbench-tools { margin: 16px 0 0; }
     .copy-last-workbench-tools { margin: 16px 0 0; }
     .copy-first-open-tools { margin: 16px 0 0; }
+    .copy-last-open-tools { margin: 16px 0 0; }
     .copy-first-review-tools { margin: 16px 0 0; }
     .copy-last-review-tools { margin: 16px 0 0; }
     .copy-lede-tools { margin: 16px 0 0; }
-    .copy-versions, .copy-trust, .copy-how, .copy-jobs, .copy-lede, .copy-version-line, .copy-first-trust, .copy-first-how, .copy-last-how, .copy-last-job, .copy-last-whats-new, .copy-first-whats-new, .copy-first-workbench, .copy-last-workbench, .copy-first-open, .copy-first-review, .copy-last-review {
+    .copy-versions, .copy-trust, .copy-how, .copy-jobs, .copy-lede, .copy-version-line, .copy-first-trust, .copy-first-how, .copy-last-how, .copy-last-job, .copy-last-whats-new, .copy-first-whats-new, .copy-first-workbench, .copy-last-workbench, .copy-first-open, .copy-last-open, .copy-first-review, .copy-last-review {
       display: inline-flex;
       align-items: center;
       min-height: 44px;
@@ -210,8 +222,8 @@ export function notFoundPage() {
       font-weight: 650;
       cursor: pointer;
     }
-    .copy-versions-status, .copy-trust-status, .copy-how-status, .copy-jobs-status, .copy-lede-status, .copy-version-line-status, .copy-first-trust-status, .copy-first-how-status, .copy-last-how-status, .copy-last-job-status, .copy-last-whats-new-status, .copy-first-whats-new-status, .copy-first-workbench-status, .copy-last-workbench-status, .copy-first-open-status, .copy-first-review-status, .copy-last-review-status { display: inline-block; margin-left: 12px; font-size: 15px; color: #1e3a42; }
-    .copy-versions-fallback, .copy-trust-fallback, .copy-how-fallback, .copy-jobs-fallback, .copy-lede-fallback, .copy-version-line-fallback, .copy-first-trust-fallback, .copy-first-how-fallback, .copy-last-how-fallback, .copy-last-job-fallback, .copy-last-whats-new-fallback, .copy-first-whats-new-fallback, .copy-first-workbench-fallback, .copy-last-workbench-fallback, .copy-first-open-fallback, .copy-first-review-fallback, .copy-last-review-fallback {
+    .copy-versions-status, .copy-trust-status, .copy-how-status, .copy-jobs-status, .copy-lede-status, .copy-version-line-status, .copy-first-trust-status, .copy-first-how-status, .copy-last-how-status, .copy-last-job-status, .copy-last-whats-new-status, .copy-first-whats-new-status, .copy-first-workbench-status, .copy-last-workbench-status, .copy-first-open-status, .copy-last-open-status, .copy-first-review-status, .copy-last-review-status { display: inline-block; margin-left: 12px; font-size: 15px; color: #1e3a42; }
+    .copy-versions-fallback, .copy-trust-fallback, .copy-how-fallback, .copy-jobs-fallback, .copy-lede-fallback, .copy-version-line-fallback, .copy-first-trust-fallback, .copy-first-how-fallback, .copy-last-how-fallback, .copy-last-job-fallback, .copy-last-whats-new-fallback, .copy-first-whats-new-fallback, .copy-first-workbench-fallback, .copy-last-workbench-fallback, .copy-first-open-fallback, .copy-last-open-fallback, .copy-first-review-fallback, .copy-last-review-fallback {
       display: block;
       width: 100%;
       margin-top: 10px;
@@ -221,7 +233,7 @@ export function notFoundPage() {
       border: 1px solid #c3d0d3;
       border-radius: 4px;
     }
-    .copy-versions-fallback[hidden], .copy-trust-fallback[hidden], .copy-how-fallback[hidden], .copy-jobs-fallback[hidden], .copy-lede-fallback[hidden], .copy-version-line-fallback[hidden], .copy-first-trust-fallback[hidden], .copy-first-how-fallback[hidden], .copy-last-how-fallback[hidden], .copy-last-job-fallback[hidden], .copy-last-whats-new-fallback[hidden], .copy-first-whats-new-fallback[hidden], .copy-first-workbench-fallback[hidden], .copy-last-workbench-fallback[hidden], .copy-first-open-fallback[hidden], .copy-first-review-fallback[hidden], .copy-last-review-fallback[hidden] { display: none; }
+    .copy-versions-fallback[hidden], .copy-trust-fallback[hidden], .copy-how-fallback[hidden], .copy-jobs-fallback[hidden], .copy-lede-fallback[hidden], .copy-version-line-fallback[hidden], .copy-first-trust-fallback[hidden], .copy-first-how-fallback[hidden], .copy-last-how-fallback[hidden], .copy-last-job-fallback[hidden], .copy-last-whats-new-fallback[hidden], .copy-first-whats-new-fallback[hidden], .copy-first-workbench-fallback[hidden], .copy-last-workbench-fallback[hidden], .copy-first-open-fallback[hidden], .copy-last-open-fallback[hidden], .copy-first-review-fallback[hidden], .copy-last-review-fallback[hidden] { display: none; }
     .trust, .guide { margin: 28px 0 8px; padding-top: 8px; }
     .trust ul, .guide ul { margin: 12px 0 0; padding-left: 1.2rem; color: #1e3a42; }
     .trust li, .guide li { margin: 8px 0; }
@@ -299,6 +311,11 @@ export function notFoundPage() {
       <span class="copy-first-open-status" id="copy-first-open-status" role="status"></span>
     </p>
     <textarea id="copy-first-open-fallback" class="copy-first-open-fallback" hidden readonly rows="2" aria-label="First Open workbench href as Markdown"></textarea>
+    <p class="copy-last-open-tools">
+      <button type="button" class="copy-last-open" id="copy-last-open">Copy last Open href</button>
+      <span class="copy-last-open-status" id="copy-last-open-status" role="status"></span>
+    </p>
+    <textarea id="copy-last-open-fallback" class="copy-last-open-fallback" hidden readonly rows="2" aria-label="Last Open workbench href as Markdown"></textarea>
     <p class="copy-first-review-tools">
       <button type="button" class="copy-first-review" id="copy-first-review">Copy first review path</button>
       <span class="copy-first-review-status" id="copy-first-review-status" role="status"></span>
@@ -647,6 +664,42 @@ export function notFoundPage() {
             firstOpenStatus.textContent = empty
               ? 'Clipboard unavailable. Copy the empty string from the text box. First Open workbench href was missing. This is catalog copy, not a live product feed.'
               : 'Clipboard unavailable. Copy the Markdown from the text box. This is the first Open workbench href, not a live product feed.';
+          }
+        }
+      });
+      const lastOpenBtn = document.getElementById('copy-last-open');
+      const lastOpenStatus = document.getElementById('copy-last-open-status');
+      const lastOpenFallback = document.getElementById('copy-last-open-fallback');
+      const lastOpenMarkdown = () => {
+        const opens = document.querySelectorAll('#workbenches a.open');
+        const open = opens[opens.length - 1];
+        const href = open?.getAttribute?.('href')?.trim() ?? '';
+        if (!href) return '';
+        return '- ' + href;
+      };
+      lastOpenBtn?.addEventListener('click', async () => {
+        const markdown = lastOpenMarkdown();
+        const empty = markdown === '';
+        try {
+          if (!navigator.clipboard?.writeText) throw new Error('clipboard unavailable');
+          await navigator.clipboard.writeText(markdown);
+          if (lastOpenFallback) lastOpenFallback.hidden = true;
+          if (lastOpenStatus) {
+            lastOpenStatus.textContent = empty
+              ? 'Last Open workbench href was missing. Copied an empty string. This is catalog copy, not a live product feed.'
+              : 'Copied the last Open workbench href from this page as Markdown. Not a live product feed.';
+          }
+        } catch {
+          if (lastOpenFallback) {
+            lastOpenFallback.hidden = false;
+            lastOpenFallback.value = markdown;
+            lastOpenFallback.focus();
+            lastOpenFallback.select();
+          }
+          if (lastOpenStatus) {
+            lastOpenStatus.textContent = empty
+              ? 'Clipboard unavailable. Copy the empty string from the text box. Last Open workbench href was missing. This is catalog copy, not a live product feed.'
+              : 'Clipboard unavailable. Copy the Markdown from the text box. This is the last Open workbench href, not a live product feed.';
           }
         }
       });

@@ -4,7 +4,7 @@ import { request } from 'node:http';
 import { readFileSync } from 'node:fs';
 import { spawnSync } from 'node:child_process';
 import vm from 'node:vm';
-import { createLauncher, parsePort, PUBLIC_PATHS, publicFile, CONTENT_SECURITY_POLICY, notFoundPage, catalogVersionLine, catalogJobs, catalogLastWhatsNewHeading, catalogFirstWhatsNewHeading, catalogFirstWorkbenchHeading, catalogLastWorkbenchHeading, catalogLastReviewPath, catalogFirstReviewPath, catalogFirstOpenHref } from '../scripts/serve.mjs';
+import { createLauncher, parsePort, PUBLIC_PATHS, publicFile, CONTENT_SECURITY_POLICY, notFoundPage, catalogVersionLine, catalogJobs, catalogLastWhatsNewHeading, catalogFirstWhatsNewHeading, catalogFirstWorkbenchHeading, catalogLastWorkbenchHeading, catalogLastReviewPath, catalogFirstReviewPath, catalogFirstOpenHref, catalogLastOpenHref } from '../scripts/serve.mjs';
 
 test('launcher serves only workbenches and refuses hostile hosts and methods', async (t) => {
   const server = createLauncher();
@@ -204,6 +204,9 @@ test('launcher 404 body names the catalog and still returns 404', async (t) => {
   assert.match(missing.body, /id="copy-first-open"/);
   assert.match(missing.body, />Copy first Open href</);
   assert.match(missing.body, /firstOpenMarkdown/);
+  assert.match(missing.body, /id="copy-last-open"/);
+  assert.match(missing.body, />Copy last Open href</);
+  assert.match(missing.body, /lastOpenMarkdown/);
   assert.doesNotMatch(missing.body, /\bfetch\s*\(/);
   assert.doesNotMatch(missing.body, /XMLHttpRequest/);
   assert.doesNotMatch(missing.body, /Four local workbenches you can open today/);
@@ -3193,6 +3196,71 @@ test('404 copy first Open href is distinct from Copy first review path', async (
   assert.notEqual(first, review);
   assert.match(page, /id="copy-first-open"/);
   assert.match(page, /id="copy-first-review"/);
+  assert.equal(PUBLIC_PATHS.length, 6);
+});
+
+test('404 copy last Open href uses the printed href without extra public paths', () => {
+  const page = notFoundPage();
+  const href = catalogLastOpenHref();
+  assert.equal(href, 'apps/weekend-gap/standalone.html');
+  assert.equal(page.includes(href), true, '404 page should print the last Open workbench href');
+  assert.notEqual(href, catalogFirstOpenHref());
+  assert.match(page, /id="copy-last-open"/);
+  assert.match(page, />Copy last Open href</);
+  assert.match(page, /id="copy-last-open-fallback"/);
+  assert.match(page, /textarea id="copy-last-open-fallback"/);
+  assert.match(page, /lastOpenMarkdown/);
+  assert.match(page, /querySelectorAll\('#workbenches a\.open'\)/);
+  assert.match(page, /id="workbenches"/);
+  assert.match(page, /Not a live product feed/);
+  assert.match(page, /id="copy-first-open"/);
+  assert.match(page, />Copy first Open href</);
+  assert.doesNotMatch(page, /\bfetch\s*\(/);
+  assert.doesNotMatch(page, /XMLHttpRequest/);
+  assert.equal(PUBLIC_PATHS.length, 6);
+  assert.deepEqual([...PUBLIC_PATHS], [
+    '/',
+    '/index.html',
+    '/apps/partnership-breakpoint/standalone.html',
+    '/apps/common-cart/standalone.html',
+    '/apps/smallest-agreement/standalone.html',
+    '/apps/weekend-gap/standalone.html',
+  ]);
+  assert.equal(publicFile('/package.json'), null);
+});
+
+test('404 copy last Open href markdown is the last printed Open href, or empty if missing', async () => {
+  const page = notFoundPage();
+  const source = page.match(/<script>([\s\S]*?)<\/script>/)[1];
+  let copied = '';
+  let clickLast = null;
+  let opens = [
+    { getAttribute(name) { return name === 'href' ? 'apps/partnership-breakpoint/standalone.html' : null; } },
+    { getAttribute(name) { return name === 'href' ? 'apps/weekend-gap/standalone.html' : null; } },
+  ];
+  const document = {
+    getElementById(id) {
+      if (id === 'copy-last-open') return { addEventListener(name, handler) { if (name === 'click') clickLast = handler; } };
+      if (id === 'copy-last-open-status') return { textContent: '' };
+      if (id === 'copy-last-open-fallback') return { hidden: true, value: '', focus() {}, select() {} };
+      return null;
+    },
+    querySelector: () => null,
+    querySelectorAll(selector) {
+      return selector === '#workbenches a.open' ? opens : [];
+    },
+    addEventListener() {},
+  };
+  vm.runInNewContext(source, {
+    document,
+    navigator: { clipboard: { writeText: async (text) => { copied = text; } } },
+  });
+  await clickLast();
+  assert.equal(copied, '- apps/weekend-gap/standalone.html');
+  opens = [];
+  copied = 'stale';
+  await clickLast();
+  assert.equal(copied, '');
   assert.equal(PUBLIC_PATHS.length, 6);
 });
 

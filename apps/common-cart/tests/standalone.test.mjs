@@ -40,7 +40,7 @@ test("standalone GUI has no external resource dependency", async () => {
   assert.match(html, /not valid JSON/u);
 });
 
-test("standalone retains 1.4.17 leftover-fill maximum tools and 1.4.18 tertiary remaining controls", async () => {
+test("standalone retains 1.4.18 tertiary remaining tools and 1.4.19 tertiary maximum controls", async () => {
   const html = await buildStandalone();
   assert.match(html, /id="copy-leftover-fill-label"/u);
   assert.match(html, /id="copy-leftover-fill-label"[^>]*aria-keyshortcuts="\$"/u);
@@ -89,6 +89,20 @@ test("standalone retains 1.4.17 leftover-fill maximum tools and 1.4.18 tertiary 
   assert.match(html, /if \(key === "1"\) \{\s*event\.preventDefault\(\);\s*copyTertiaryFillRemainingCapacity\(\);/u);
   assert.match(html, /if \(key === "2"\) \{\s*event\.preventDefault\(\);\s*focusTertiaryFillRemainingCopy\(\);/u);
   assert.match(html, /if \(key === "3"\) \{\s*event\.preventDefault\(\);\s*focusHideLastUnservedBuyer\(\);/u);
+  assert.match(html, /id="copy-tertiary-fill-maximum"/u);
+  assert.match(html, /id="copy-tertiary-fill-maximum"[^>]*aria-keyshortcuts="4"/u);
+  assert.match(html, /id="hide-first-unserved-buyer"/u);
+  assert.match(html, /id="leftover-print-tertiary-maximum"/u);
+  assert.match(html, /Tertiary fill maximum: none/u);
+  assert.match(html, /data-preset="rugbyCarnivalLunch"/u);
+  assert.match(html, /function copyTertiaryFillMaximum\(/u);
+  assert.match(html, /function focusTertiaryFillMaximumCopy\(/u);
+  assert.match(html, /function focusHideFirstUnservedBuyer\(/u);
+  assert.match(html, /filterBuyerIdsHidingFirstUnservedBuyer\(/u);
+  assert.match(html, /hideFirstUnservedBuyer/u);
+  assert.match(html, /if \(key === "4"\) \{\s*event\.preventDefault\(\);\s*copyTertiaryFillMaximum\(\);/u);
+  assert.match(html, /if \(key === "Home"\) \{\s*event\.preventDefault\(\);\s*focusTertiaryFillMaximumCopy\(\);/u);
+  assert.match(html, /if \(key === "End"\) \{\s*event\.preventDefault\(\);\s*focusHideFirstUnservedBuyer\(\);/u);
   assert.match(html, /const key = event\.key\.length === 1 \? event\.key\.toLowerCase\(\) : event\.key;/u);
   assert.doesNotMatch(html.slice(html.indexOf('id="merchant-panel"'), html.indexOf('id="method-panel"')), /copy-leftover-fill-minimum/u);
   assert.doesNotMatch(html.slice(html.indexOf('id="merchant-panel"'), html.indexOf('id="method-panel"')), /hide-first-buyer-filled-by-tertiary-fill/u);
@@ -96,5 +110,7 @@ test("standalone retains 1.4.17 leftover-fill maximum tools and 1.4.18 tertiary 
   assert.doesNotMatch(html.slice(html.indexOf('id="merchant-panel"'), html.indexOf('id="method-panel"')), /hide-last-buyer-filled-by-tertiary-fill/u);
   assert.doesNotMatch(html.slice(html.indexOf('id="merchant-panel"'), html.indexOf('id="method-panel"')), /copy-tertiary-fill-remaining/u);
   assert.doesNotMatch(html.slice(html.indexOf('id="merchant-panel"'), html.indexOf('id="method-panel"')), /hide-last-unserved-buyer/u);
+  assert.doesNotMatch(html.slice(html.indexOf('id="merchant-panel"'), html.indexOf('id="method-panel"')), /copy-tertiary-fill-maximum/u);
+  assert.doesNotMatch(html.slice(html.indexOf('id="merchant-panel"'), html.indexOf('id="method-panel"')), /hide-first-unserved-buyer/u);
 });
 
