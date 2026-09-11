@@ -275,6 +275,11 @@ export const PRESETS = Object.freeze({
     ...DEFAULT_SCENARIO,
     name: "Monday early FX open (synthetic)",
     mondayEarlyFxOpen: true
+  }),
+  mondayLateFxOpen: Object.freeze({
+    ...DEFAULT_SCENARIO,
+    name: "Monday late FX open (synthetic)",
+    mondayLateFxOpen: true
   })
 });
 
