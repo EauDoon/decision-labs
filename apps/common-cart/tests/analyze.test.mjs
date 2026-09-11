@@ -103,6 +103,19 @@ test('comparison preserves identity and suppresses cross-currency cost compariso
   fails(['compare', '--input', '-'], fixture(), /--against/);
 }));
 
+test('bounded sensitivity sweep rematches whole orders and never mutates source', () => temporary(dir => {
+  const path = join(dir, 'scenario.json'); const original = JSON.stringify(fixture()); writeFileSync(path, original);
+  const args = ['sweep', '--input', path, '--offer', 'O1', '--field', 'capacity', '--values', '[1,2,3]'];
+  const result = ok(args);
+  assert.deepEqual(result.rows.map(row => row.fulfilledUnits), [0, 2, 2]);
+  assert.deepEqual(result.rows.map(row => row.totalCost), [null, 13, 13]);
+  assert.equal(readFileSync(path, 'utf8'), original);
+  fails([...args.slice(0, -1), '[2,1.5]'], fixture(), /integer/);
+  fails([...args.slice(0, -1), JSON.stringify(Array(26).fill(2))], fixture(), /1 to 25/);
+  fails(['sweep', '--input', '-', '--offer', 'O1', '--field', '__proto__', '--values', '[1]'], fixture(), /supported numeric/);
+  fails(['sweep', '--input', '-', '--offer', 'missing', '--field', 'capacity', '--values', '[1]'], fixture(), /existing offer/);
+}));
+
 test('market CLI has independent shipping, allocation, and no-winner oracles', () => {
   const result = ok(['market', '--input', '-']);
   assert.equal(result.winner.fulfilledUnits, 2);

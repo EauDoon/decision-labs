@@ -7,6 +7,7 @@ import { createMerchantReport, createMerchantResidualReport } from '../src/model
 import { CART_REVIEW_TOOLS, analyzeCartReview } from '../src/model.js';
 import { createCartReviewPacket, replayCartReviewPacket } from '../src/model.js';
 import { compareScenarios, compareRoomsByOfferIdentity } from '../src/model.js';
+import { validateScenario } from '../src/model.js';
 
 const LIMIT = 1048576;
 const help = `Common Cart offline analyst (Node 20+)
@@ -18,6 +19,7 @@ Usage: node scripts/analyze.mjs market --input scenario.json [--output result.js
        node scripts/analyze.mjs packet --input scenario.json --tool coverage --output packet.json
        node scripts/analyze.mjs replay --input packet.json
        node scripts/analyze.mjs compare --input before.json --against after.json
+       node scripts/analyze.mjs sweep --input scenario.json --offer O01 --field capacity --values '[10,20,30]'
 Use --input - for piped UTF-8 JSON. Output defaults to stdout.
 Inputs are limited to 1 MiB. Output files must not exist.
 Results are organizer-private, synthetic planning aids, never orders.
@@ -85,12 +87,13 @@ async function main() {
     input: { type: 'string' }, output: { type: 'string' }, help: { type: 'boolean' }, offer: { type: 'string' },
     tool: { type: 'string' },
     against: { type: 'string' },
+    field: { type: 'string' }, values: { type: 'string' },
   } });
   const names = tokens.filter(token => token.kind === 'option').map(token => token.name);
   if (new Set(names).size !== names.length) throw new Error('Duplicate options are not allowed.');
   if (values.help) { process.stdout.write(help); return; }
   const [command] = positionals;
-  const allowed = { market: [], offer: ['offer'], merchant: [], tools: [], review: ['tool'], packet: ['tool'], replay: [], compare: ['against'] };
+  const allowed = { market: [], offer: ['offer'], merchant: [], tools: [], review: ['tool'], packet: ['tool'], replay: [], compare: ['against'], sweep: ['offer', 'field', 'values'] };
   if (positionals.length !== 1 || !Object.hasOwn(allowed, command)) throw new Error('Choose a supported command. Use --help for usage.');
   for (const name of names) if (!['input', 'output'].includes(name) && !allowed[command].includes(name)) throw new Error(`--${name} is not supported by ${command}.`);
   if (command === 'tools') {
@@ -111,6 +114,22 @@ async function main() {
     if (!values.against) throw new Error('--against is required.');
     const other = json(await readText(values.against));
     result = { summary: compareScenarios(scenario, other), offers: compareRoomsByOfferIdentity(scenario, other) };
+  }
+  if (command === 'sweep') {
+    if (!['capacity', 'minimumUnits', 'unitPrice', 'shippingPerBuyer', 'deliveryDays'].includes(values.field)) throw new Error('--field must name a supported numeric offer field.');
+    const baseline = validateScenario(scenario);
+    if (!baseline.offers.some(offer => offer.id === values.offer)) throw new Error('--offer must identify an existing offer.');
+    const points = json(values.values);
+    if (!Array.isArray(points) || points.length < 1 || points.length > 25 || points.some(value => typeof value !== 'number' || !Number.isFinite(value))) throw new Error('--values must contain 1 to 25 finite JSON numbers.');
+    const candidates = points.map(value => validateScenario({ ...baseline, offers: baseline.offers.map(offer => offer.id === values.offer ? { ...offer, [values.field]: value } : offer) }));
+    result = { currency: baseline.currency, offerId: values.offer, field: values.field,
+      note: 'Independent counterfactuals with all other terms fixed; no capacity, price or merchant commitment is verified.',
+      rows: candidates.map((candidate, index) => {
+        const market = evaluateMarket(candidate);
+        const offer = market.results.find(entry => entry.offer.id === values.offer);
+        return { value: points[index], winnerOfferId: market.winner?.offer.id ?? null, fulfilledUnits: market.winner?.fulfilledUnits ?? 0, totalCost: market.winner?.totalCost ?? null,
+          offer: { qualifies: offer.qualifies, fulfilledUnits: offer.fulfilledUnits, totalCost: offer.qualifies ? offer.totalCost : null, activeTierIndex: offer.activeTierIndex } };
+      }) };
   }
   if (command === 'merchant') result = { market: createMerchantReport(scenario), residual: createMerchantResidualReport(scenario) };
   if (command === 'offer') {

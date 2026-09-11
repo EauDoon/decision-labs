@@ -72,3 +72,18 @@ merchant names are not used to infer identity. The summary identifies changed
 demand. Different currencies retain the model warning and null comparable costs;
 no exchange rates or cross-currency savings are invented. At most one source
 can be stdin. Both scenarios are validated before any output is written.
+
+## Sweep a negotiation term
+
+```sh
+node scripts/analyze.mjs sweep --input scenario.json --offer O01 --field capacity --values '[10,20,30]'
+```
+
+Provide 1 to 25 explicit finite JSON numbers for `capacity`, `minimumUnits`,
+`unitPrice`, `shippingPerBuyer` or `deliveryDays`. Each value starts from the same
+original scenario and rematches all offers, reporting the winning offer, its
+units/cost and the changed offer's outcome. Duplicate values remain in supplied
+order. Model integer, range and tier-order constraints still apply. All candidates
+must validate; an invalid point aborts the entire sweep without output. Source
+files remain unchanged. This is sensitivity exploration, not optimization or a
+claim that a merchant will accept a term.
