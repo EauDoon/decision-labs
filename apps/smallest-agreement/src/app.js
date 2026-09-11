@@ -50,6 +50,7 @@ import {
   formatLastBelowThresholdGroupLabelMarkdown,
   formatFirstBelowThresholdGroupLabelMarkdown,
   formatLastGroupAtOrAboveThresholdLabelMarkdown,
+  formatFirstGroupAtOrAboveThresholdLabelMarkdown,
   formatRecommendedChangeCostCsv,
   changedClauseIds,
   groupsBelowSupportRequirement,
@@ -926,6 +927,39 @@ const presets = {
           { id: "rink-lockup-original", original: true, label: "Leave the rink changing-room door on a shared padlock after club hours", changeCost: 0, support: { students: 22, neighbours: 38, pandc: 42 } },
           { id: "rink-lockup-steward", original: false, label: "Require a P&C steward to lock the rink changing room before 20:00", changeCost: 1, support: { students: 68, neighbours: 60, pandc: 70 } },
           { id: "rink-lockup-timer", original: false, label: "Add a timed lock on the rink changing-room door after the last session", changeCost: 4, support: { students: 58, neighbours: 56, pandc: 62 } },
+        ],
+      },
+    ],
+  },
+  "rugby-club-hours": {
+    title: "Rugby club hours: pitch booking, clubhouse bar, and changing-room lock-up",
+    threshold: 70,
+    maxChangeCost: 8,
+    groups: [
+      { id: "students", name: "Students", weight: 4 },
+      { id: "neighbours", name: "Neighbours", weight: 3, veto: true },
+      { id: "pandc", name: "P&C", weight: 2 },
+    ],
+    clauses: [
+      {
+        id: "rugby-pitch-booking", title: "Outdoor pitch booking", options: [
+          { id: "rugby-pitch-booking-original", original: true, label: "Keep weekday outdoor pitch booking from 15:45 with no posted pitch rota", changeCost: 0, support: { students: 16, neighbours: 90, pandc: 58 } },
+          { id: "rugby-pitch-booking-late", original: false, label: "Open weekday rugby at 17:30 with a posted outdoor pitch rota", changeCost: 2, support: { students: 84, neighbours: 44, pandc: 54 } },
+          { id: "rugby-pitch-booking-weekend", original: false, label: "Hold Sunday morning outdoor pitch at 09:15 with a booking card", changeCost: 4, support: { students: 70, neighbours: 50, pandc: 52 } },
+        ],
+      },
+      {
+        id: "clubhouse-bar", title: "Clubhouse bar", options: [
+          { id: "clubhouse-bar-original", original: true, label: "No posted clubhouse-bar hours", changeCost: 0, support: { students: 76, neighbours: 12, pandc: 26 } },
+          { id: "clubhouse-bar-cap", original: false, label: "Close the clubhouse bar at 19:30 and keep drinks inside the clubhouse", changeCost: 1, support: { students: 52, neighbours: 80, pandc: 62 } },
+          { id: "clubhouse-bar-cut", original: false, label: "Serve tea only after 18:30 and retire the clubhouse bar", changeCost: 5, support: { students: 34, neighbours: 86, pandc: 50 } },
+        ],
+      },
+      {
+        id: "rugby-changing-room-lockup", title: "Changing-room lock-up", options: [
+          { id: "rugby-changing-room-lockup-original", original: true, label: "Leave the outdoor changing-room door on a shared padlock after club hours", changeCost: 0, support: { students: 20, neighbours: 36, pandc: 40 } },
+          { id: "rugby-changing-room-lockup-steward", original: false, label: "Require a P&C steward to lock the outdoor changing room before 21:15", changeCost: 3, support: { students: 66, neighbours: 58, pandc: 68 } },
+          { id: "rugby-changing-room-lockup-timer", original: false, label: "Add a timed lock on the outdoor changing-room door after the last session", changeCost: 2, support: { students: 56, neighbours: 54, pandc: 60 } },
         ],
       },
     ],
