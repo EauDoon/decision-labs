@@ -5,7 +5,7 @@ import { mkdtempSync, writeFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { clonePreset } from '../src/model.js';
+import { clonePreset, parseCsv } from '../src/model.js';
 
 const cli = fileURLToPath(new URL('../scripts/analyze.mjs', import.meta.url));
 const run = (args, value) => spawnSync(process.execPath, [cli, ...args], {
@@ -54,4 +54,29 @@ test('summary rejects bad input and arguments, then recovers with valid JSON', (
   }
   assert.equal(output(run(['summary', '-'], clonePreset('balanced'))).viable, true);
   assert.match(run(['--help']).stdout, /summary INPUT/);
+});
+
+test('stress exports complete and failing compound cases without changing grid counts', () => {
+  const config = clonePreset('balanced');
+  config.participants[0].name = '=SUM(1,2)';
+  const grid = output(run(['stress', '-'], config));
+  assert.equal(grid.caseCount, 27);
+  assert.equal(grid.selectedCaseCount, 27);
+  const failed = output(run(['stress', '-', '--failed-only'], config));
+  assert.equal(failed.caseCount, grid.caseCount);
+  assert.equal(failed.passCount, grid.passCount);
+  assert.equal(failed.selectedCaseCount, grid.caseCount - grid.passCount);
+  assert.ok(failed.scenarios.every(scenario => !scenario.viable));
+  const csv = run(['stress', '-', '--csv', '--failed-only'], config);
+  assert.equal(csv.status, 0, csv.stderr);
+  const rows = parseCsv(csv.stdout.trim());
+  assert.equal(rows.length, 1 + failed.selectedCaseCount * config.participants.length);
+  assert.ok(rows.slice(1).filter(row => row[6] === config.participants[0].id).every(row => row[7].startsWith("'=")));
+  const first = grid.scenarios[0];
+  assert.equal(first.totalProfit, output(run(['summary', '-'], config)).totalProfit);
+  for (const flags of [['--typo'], ['--csv', '--csv']]) assert.match(output(run(['stress', '-', ...flags], config), 1).error, /only/);
+  config.stress = { volumeDropPct: 0, volumeGrowthPct: 0, feeDropPct: 0, variableCostRisePct: 0 };
+  const empty = output(run(['stress', '-', '--failed-only'], config));
+  assert.equal(empty.selectedCaseCount, 0);
+  assert.equal(empty.caseCount, 1);
 });

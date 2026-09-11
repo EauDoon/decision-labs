@@ -1,9 +1,10 @@
 import { readFileSync } from 'node:fs';
-import { assertValidConfiguration, calculatePartnership } from '../src/model.js';
+import { assertValidConfiguration, calculatePartnership, evaluateStressGrid, stressGridCsv } from '../src/model.js';
 
 const HELP = `Offline Partnership Breakpoint analysis (Node.js 20+)
 Usage: node scripts/analyze.mjs COMMAND INPUT [ARGUMENTS]
   summary INPUT                 Validate and calculate a saved scenario
+  stress INPUT [--csv] [--failed-only]  Inspect compound cases or export CSV
 INPUT is a JSON file or - for standard input. Output is JSON on stdout.
 Errors are JSON on stderr, exit 1. Success is exit 0.
 Results describe declared inputs, not probabilities or financial advice.
@@ -32,6 +33,18 @@ function run(command, args) {
     case 'summary':
       arity(args, 1);
       return calculatePartnership(assertValidConfiguration(readJSON(args[0])));
+    case 'stress': {
+      arity(args, 1, 3);
+      const flags = args.slice(1);
+      if (new Set(flags).size !== flags.length || flags.some(flag => !['--csv', '--failed-only'].includes(flag))) {
+        throw new Error('Stress accepts only --csv and --failed-only, once each.');
+      }
+      const config = assertValidConfiguration(readJSON(args[0]));
+      const grid = evaluateStressGrid(config);
+      const scenarios = flags.includes('--failed-only') ? grid.scenarios.filter(scenario => !scenario.viable) : grid.scenarios;
+      return flags.includes('--csv') ? stressGridCsv(config, { scenarioIds: scenarios.map(scenario => scenario.id) })
+        : { ...grid, scenarios, selectedCaseCount: scenarios.length };
+    }
     default: throw new Error('Unknown command. Run with --help for usage.');
   }
 }
