@@ -51,6 +51,7 @@ import {
   formatLastBelowSupportFloorGroupLabelMarkdown,
   formatLastGroupWithoutFloorLabelMarkdown,
   formatFirstGroupWithoutFloorLabelMarkdown,
+  formatGroupsWithoutFloorCountMarkdown,
   formatGroupSupportMarkdown,
   remainingChangeBudget,
   formatRemainingChangeBudgetMarkdown,
@@ -3476,6 +3477,7 @@ test("last group-without-floor label Markdown is one line, honest when none, and
   assert.doesNotMatch(copied.text, /First below-floor group/u);
   assert.doesNotMatch(copied.text, /Last below-floor group/u);
   assert.doesNotMatch(copied.text, /First group without a support floor/u);
+  assert.doesNotMatch(copied.text, /Groups without a support floor:/u);
   assert.doesNotMatch(copied.text, /Floored/u);
   assert.doesNotMatch(copied.text, /[\u2014\u2013]/u);
   assert.equal(JSON.stringify(input), before);
@@ -3530,6 +3532,7 @@ test("last group-without-floor label Markdown escapes the group name and is not 
   assert.doesNotMatch(copied.text, /Last at-floor group/u);
   assert.doesNotMatch(copied.text, /Last below-floor group/u);
   assert.doesNotMatch(copied.text, /First group without a support floor/u);
+  assert.doesNotMatch(copied.text, /Groups without a support floor:/u);
   assert.doesNotMatch(copied.text, /[\u2014\u2013]/u);
   assert.equal(JSON.stringify(input), before);
 });
@@ -3558,6 +3561,7 @@ test("first group-without-floor label Markdown is one line, honest when none, an
   assert.equal(copied.text.trim().includes("\n"), false);
   assert.equal(copied.text, "First group without a support floor: Open. A floor is a number you entered, not a legal quorum. The label is not a legal identity.\n");
   assert.doesNotMatch(copied.text, /Last group without a support floor/u);
+  assert.doesNotMatch(copied.text, /Groups without a support floor:/u);
   assert.doesNotMatch(copied.text, /First at-floor group/u);
   assert.doesNotMatch(copied.text, /Last at-floor group/u);
   assert.doesNotMatch(copied.text, /First below-floor group/u);
@@ -3620,8 +3624,77 @@ test("first group-without-floor label Markdown escapes the group name and is not
   assert.doesNotMatch(copied.text, /First at-floor group/u);
   assert.doesNotMatch(copied.text, /Last at-floor group/u);
   assert.doesNotMatch(copied.text, /Last below-floor group/u);
+  assert.doesNotMatch(copied.text, /Groups without a support floor:/u);
   assert.doesNotMatch(copied.text, /[\u2014\u2013]/u);
   assert.equal(JSON.stringify(input), before);
+});
+
+test("groups-without-floor count Markdown is one line, honest 0 when none, and distinct from without-floor labels", () => {
+  const input = proposal({
+    threshold: 50,
+    groups: [
+      { id: "open", name: "Open", weight: 1 },
+      { id: "floored", name: "Floored", weight: 1, minSupport: 40 },
+      { id: "later", name: "Later open", weight: 1 },
+    ],
+    clauses: [{ id: "one", title: "One", options: [
+      option("original", true, { open: 90, floored: 90, later: 80 }),
+      option("alt", false, { open: 20, floored: 20, later: 20 }, 1),
+      option("other", false, { open: 70, floored: 70, later: 72 }, 2),
+    ] }],
+  });
+  const before = JSON.stringify(input);
+  const originals = getOriginalOptions(input);
+  const copied = formatGroupsWithoutFloorCountMarkdown(input, originals);
+  assert.equal(copied.status, "ok");
+  assert.equal(copied.count, 2);
+  assert.equal(copied.empty, false);
+  assert.equal(copied.text.includes("\n"), true);
+  assert.equal(copied.text.trim().includes("\n"), false);
+  assert.equal(copied.text, "Groups without a support floor: 2. A floor is a number you entered, not a legal quorum.\n");
+  assert.doesNotMatch(copied.text, /First group without a support floor/u);
+  assert.doesNotMatch(copied.text, /Last group without a support floor/u);
+  assert.doesNotMatch(copied.text, /First at-floor group/u);
+  assert.doesNotMatch(copied.text, /Last at-floor group/u);
+  assert.doesNotMatch(copied.text, /First below-floor group/u);
+  assert.doesNotMatch(copied.text, /Last below-floor group/u);
+  assert.doesNotMatch(copied.text, /Groups below their support floor/u);
+  assert.doesNotMatch(copied.text, /Open/u);
+  assert.doesNotMatch(copied.text, /Later open/u);
+  assert.doesNotMatch(copied.text, /[\u2014\u2013]/u);
+  assert.equal(JSON.stringify(input), before);
+  const firstLabel = formatFirstGroupWithoutFloorLabelMarkdown(input, originals);
+  assert.equal(firstLabel.label, "Open");
+  assert.doesNotMatch(firstLabel.text, /Groups without a support floor:/u);
+  const lastLabel = formatLastGroupWithoutFloorLabelMarkdown(input, originals);
+  assert.equal(lastLabel.label, "Later open");
+  assert.doesNotMatch(lastLabel.text, /Groups without a support floor:/u);
+  const noneInput = proposal({
+    groups: [{ id: "g", name: "G", weight: 1, minSupport: 40 }],
+    clauses: [{ id: "one", title: "One", options: [
+      option("original", true, { g: 90 }),
+      option("alt", false, { g: 80 }, 1),
+      option("other", false, { g: 70 }, 2),
+    ] }],
+  });
+  const zero = formatGroupsWithoutFloorCountMarkdown(noneInput, getOriginalOptions(noneInput));
+  assert.equal(zero.status, "ok");
+  assert.equal(zero.empty, true);
+  assert.equal(zero.count, 0);
+  assert.equal(zero.text, "Groups without a support floor: 0. A floor is a number you entered, not a legal quorum.\n");
+  assert.equal(zero.text.trim().includes("\n"), false);
+  assert.doesNotMatch(zero.text, /First group without a support floor/u);
+  assert.doesNotMatch(zero.text, /Last group without a support floor/u);
+  const missing = formatGroupsWithoutFloorCountMarkdown(input, null);
+  assert.equal(missing.status, "unavailable");
+  assert.equal(missing.empty, true);
+  assert.equal(missing.count, 0);
+  assert.match(missing.text, /No inspected package is available/u);
+  assert.match(missing.text, /not a legal quorum/u);
+  assert.doesNotMatch(missing.text, /First group without a support floor/u);
+  assert.doesNotMatch(missing.text, /Last group without a support floor/u);
+  assert.equal(missing.text.trim().includes("\n"), false);
+  assert.equal(formatGroupsWithoutFloorCountMarkdown({ title: "" }).status, "invalid");
 });
 
 test("first veto group label Markdown escapes the group name and is not a legal right", () => {
