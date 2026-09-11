@@ -1,0 +1,33 @@
+import assert from "node:assert/strict";
+import test from "node:test";
+import { readFile } from "node:fs/promises";
+
+test("keyboard Shift+F10 is wired to copy last weekend-FX-open hour before unshifted F10", async () => {
+  const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
+  const app = await readFile(new URL("../src/app.js", import.meta.url), "utf8");
+  assert.match(html, /id="copy-last-weekend-fx-open"/);
+  assert.match(html, /<kbd>Shift\+F10<\/kbd>/u);
+  assert.match(html, /Copy last weekend-FX-open hour as Markdown/);
+  assert.match(html, /id="copy-last-weekend-fx-open"[^>]*aria-keyshortcuts="Shift\+F10"/);
+  assert.match(app, /function copyLastWeekendFxOpenHourMarkdown/);
+  assert.match(app, /lastWeekendFxOpenHourToMarkdown\(scenario\)/);
+  assert.match(app, /event\.key === "F10" && event\.shiftKey/);
+  assert.match(app, /copyLastWeekendFxOpenHourMarkdown\(\)/);
+  assert.match(app, /event\.key === "F10"/);
+  assert.match(app, /copyLastWeekdayFxClosedHourMarkdown\(\)/);
+  assert.match(app, /if \(event\.defaultPrevented\) return/);
+  assert.notEqual(app.match(/function copyLastWeekendFxOpenHourMarkdown/)?.[0], app.match(/function copyLastWeekdayFxClosedHourMarkdown/)?.[0]);
+  assert.notEqual(app.match(/function copyLastWeekendFxOpenHourMarkdown/)?.[0], app.match(/function copyLastWeekendFxClosedHourMarkdown/)?.[0]);
+  assert.notEqual(app.match(/function copyLastWeekendFxOpenHourMarkdown/)?.[0], app.match(/function copyLastClosedFxHourMarkdown/)?.[0]);
+  const handler = app.slice(app.indexOf('document.addEventListener("keydown"'));
+  const shiftF10 = handler.indexOf('event.key === "F10" && event.shiftKey');
+  const unshiftedF10 = handler.lastIndexOf('event.key === "F10"');
+  assert.ok(shiftF10 !== -1);
+  assert.ok(unshiftedF10 !== -1);
+  assert.ok(shiftF10 < unshiftedF10);
+  const shiftSlice = handler.slice(shiftF10, shiftF10 + 180);
+  assert.match(shiftSlice, /copyLastWeekendFxOpenHourMarkdown\(\)/);
+  assert.doesNotMatch(shiftSlice, /copyLastWeekdayFxClosedHourMarkdown/);
+  const unshiftedSlice = handler.slice(unshiftedF10, unshiftedF10 + 180);
+  assert.match(unshiftedSlice, /copyLastWeekdayFxClosedHourMarkdown\(\)/);
+});

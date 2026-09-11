@@ -1,5 +1,17 @@
 # Changelog
 
+## 1.5.27 - 2026-09-11
+
+A workshop follow-up on 1.5.26. Weekend Gap remains a local-first decision aid, not a decision maker. Hatched Gantt cells are a local drawing, not a bank feed. Timing review packets from 1.5.0 and the 1.5.1-1.5.26 review UI stay in place. Analysis JSON still has no timestamps.
+
+### Added
+
+- Keyboard `Shift+F10` copies last weekend-FX-open hour through the new last-weekend-FX-open copy control, using one-line Markdown. Honest empty when none. Ignored while typing. Distinct from unshifted `F10` last-weekday-FX-closed copy, `F7` last-weekend-FX-closed copy and `Delete` last-closed-FX copy. Shift is handled before unshifted `F10`.
+- Keyboard `Shift+F11` jumps to the last-weekend-FX-open-hour copy control, or the Gantt heading if that control is missing. Does not copy. Ignored while typing. Distinct from unshifted `F11` last-weekday-FX-closed jump and `F8` last-weekend-FX-closed jump.
+- Keyboard `Shift+F12` jumps to the hide-weekday-FX-open Gantt filter (`hideWeekdayFxOpenGanttHours`), or the Gantt heading if that control is missing. Ignored while typing. Distinct from unshifted `F12` hide-weekend-FX-open.
+- Sunday early FX open (synthetic) preset: same 72-hour calendar as Normal Friday, Sunday 08:00 to 10:00 treats FX as weekday-depth / open even though Sunday is not a business day. Distinct from Sunday late FX open, Saturday late FX open, Friday late FX open, Sunday early payout open, and Sunday early issuer open. Synthetic. Not an FX feed.
+- Filter that hides Gantt hours that are weekday and FX-open. Display only; the model still contains 72 hours. Workspace JSON stores optional `hideWeekdayFxOpenGanttHours`. Older files omit the key and show all hours. Unknown keys are rejected. Distinct from `hideWeekendFxOpenGanttHours`, `hideFxOpenGanttHours`, and `hideWeekdayFxClosedGanttHours`. The selected hour stays visible if it would otherwise hide.
+
 ## 1.5.26 - 2026-09-11
 
 A workshop follow-up on 1.5.25. Weekend Gap remains a local-first decision aid, not a decision maker. Hatched Gantt cells are a local drawing, not a bank feed. Timing review packets from 1.5.0 and the 1.5.1-1.5.25 review UI stay in place. Analysis JSON still has no timestamps.
