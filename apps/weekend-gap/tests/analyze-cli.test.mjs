@@ -222,3 +222,18 @@ test('all JSON inputs reject duplicate decoded keys and invalid UTF-8', () => {
   assert.equal(result(['simulate', '-'], withSyntaxInText).scenario.name, withSyntaxInText.name);
   assert.equal(result(['batch', '-'], { format: 'weekend-gap-library', version: 1, scenarios: [fixture(), fixture()] }).rows.length, 2);
 });
+
+test('local-file boundary rejects URI and Windows device or stream inputs', () => {
+  const uri = run(['simulate', 'file://scenario.json']);
+  assert.equal(uri.status, 1);
+  assert.match(uri.stderr, /local file/);
+  if (process.platform === 'win32') {
+    for (const path of ['NUL', 'con.txt', 'COM1', 'CONIN$', 'scenario.json:stream']) {
+      const rejected = run(['simulate', path]);
+      assert.equal(rejected.status, 1);
+      assert.equal(rejected.stdout, '');
+      assert.match(rejected.stderr, /local file/);
+    }
+  }
+  assert.equal(result(['simulate', '-']).summary.totalDemandAud, 72);
+});

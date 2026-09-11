@@ -21,6 +21,8 @@ are included in JSON simulation output. Unknown fields, wrong types, invalid
 values and assumptions that require normalization or clamping are rejected.
 Fix the reported input and rerun; no previous result or workspace is modified.
 Files must be regular files. Scenario inputs are bounded to 250,000 bytes.
+Network/UNC paths, URI inputs and Windows devices or alternate streams are
+rejected. Nonblocking file opens reject FIFOs without waiting for a writer.
 All inputs require valid UTF-8. Duplicate JSON object members are rejected at
 every depth, including names written with Unicode escapes, before model use.
 
