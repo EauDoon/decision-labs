@@ -20,6 +20,7 @@ Usage: node scripts/analyze.mjs market --input scenario.json [--output result.js
        node scripts/analyze.mjs replay --input packet.json
        node scripts/analyze.mjs compare --input before.json --against after.json
        node scripts/analyze.mjs sweep --input scenario.json --offer O01 --field capacity --values '[10,20,30]'
+       node scripts/analyze.mjs batch --input scenarios.jsonl --output results.jsonl
 Use --input - for piped UTF-8 JSON. Output defaults to stdout.
 Inputs are limited to 1 MiB. Output files must not exist.
 Results are organizer-private, synthetic planning aids, never orders.
@@ -70,8 +71,8 @@ function json(text) {
   catch { throw new Error('Input must contain valid JSON.'); }
 }
 
-async function writeResult(value, path) {
-  const text = JSON.stringify(value, null, 2) + '\n';
+async function writeResult(value, path, jsonl = false) {
+  const text = jsonl ? value.map(row => JSON.stringify(row)).join('\n') + '\n' : JSON.stringify(value, null, 2) + '\n';
   if (!path || path === '-') {
     await new Promise((resolve, reject) => process.stdout.write(text, error => error ? reject(error) : resolve()));
     return;
@@ -93,7 +94,7 @@ async function main() {
   if (new Set(names).size !== names.length) throw new Error('Duplicate options are not allowed.');
   if (values.help) { process.stdout.write(help); return; }
   const [command] = positionals;
-  const allowed = { market: [], offer: ['offer'], merchant: [], tools: [], review: ['tool'], packet: ['tool'], replay: [], compare: ['against'], sweep: ['offer', 'field', 'values'] };
+  const allowed = { market: [], offer: ['offer'], merchant: [], tools: [], review: ['tool'], packet: ['tool'], replay: [], compare: ['against'], sweep: ['offer', 'field', 'values'], batch: [] };
   if (positionals.length !== 1 || !Object.hasOwn(allowed, command)) throw new Error('Choose a supported command. Use --help for usage.');
   for (const name of names) if (!['input', 'output'].includes(name) && !allowed[command].includes(name)) throw new Error(`--${name} is not supported by ${command}.`);
   if (command === 'tools') {
@@ -102,7 +103,19 @@ async function main() {
   }
   if (!values.input) throw new Error('--input is required.');
   if (values.input === '-' && values.against === '-') throw new Error('Only one input may use stdin.');
-  const scenario = json(await readText(values.input));
+  const inputText = await readText(values.input);
+  if (command === 'batch') {
+    const lines = inputText.split(/\r?\n/);
+    if (lines.at(-1) === '') lines.pop();
+    if (!lines.length || lines.length > 25) throw new Error('Batch must contain 1 to 25 scenario lines.');
+    const scenarios = lines.map((line, index) => {
+      try { return validateScenario(json(line)); }
+      catch (error) { throw new Error(`Line ${index + 1}: ${error.message}`); }
+    });
+    await writeResult(scenarios.map((scenario, index) => ({ line: index + 1, market: evaluateMarket(scenario) })), values.output, true);
+    return;
+  }
+  const scenario = json(inputText);
   let result;
   if (command === 'market') result = evaluateMarket(scenario);
   if (command === 'review' || command === 'packet') {

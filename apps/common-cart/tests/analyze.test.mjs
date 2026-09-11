@@ -116,6 +116,24 @@ test('bounded sensitivity sweep rematches whole orders and never mutates source'
   fails(['sweep', '--input', '-', '--offer', 'missing', '--field', 'capacity', '--values', '[1]'], fixture(), /existing offer/);
 }));
 
+test('JSONL batch preserves order and atomically rejects a late invalid row', () => temporary(dir => {
+  const first = fixture(), second = fixture(); second.offers = [];
+  const input = [first, second].map(value => JSON.stringify(value)).join('\r\n') + '\r\n';
+  const response = run(['batch', '--input', '-'], input);
+  assert.equal(response.status, 0, response.stderr);
+  const rows = response.stdout.trim().split('\n').map(line => JSON.parse(line));
+  assert.deepEqual(rows.map(row => row.line), [1, 2]);
+  assert.equal(rows[0].market.winner.totalCost, 13);
+  assert.equal(rows[1].market.winner, null);
+  const output = join(dir, 'batch.jsonl');
+  fails(['batch', '--input', '-', '--output', output], input + '{', /Line 3/);
+  assert.equal(existsSync(output), false);
+  assert.equal(run(['batch', '--input', '-', '--output', output], input).status, 0);
+  fails(['batch', '--input', '-'], JSON.stringify(first) + '\n\n', /Line 2/);
+  fails(['batch', '--input', '-'], '', /1 to 25/);
+  fails(['batch', '--input', '-'], Array(26).fill(JSON.stringify(first)).join('\n'), /1 to 25/);
+}));
+
 test('market CLI has independent shipping, allocation, and no-winner oracles', () => {
   const result = ok(['market', '--input', '-']);
   assert.equal(result.winner.fulfilledUnits, 2);

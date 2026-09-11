@@ -87,3 +87,14 @@ order. Model integer, range and tier-order constraints still apply. All candidat
 must validate; an invalid point aborts the entire sweep without output. Source
 files remain unchanged. This is sensitivity exploration, not optimization or a
 claim that a merchant will accept a term.
+
+## Evaluate a scenario batch
+
+`node scripts/analyze.mjs batch --input scenarios.jsonl --output results.jsonl`
+reads 1 to 25 complete scenario objects, one JSON object per line. The whole
+file is capped at 1 MiB. CRLF and one final newline are accepted; blank lines
+fail with their physical line number. Every row validates before evaluation
+and all results are prepared before writing. Invalid later rows produce no
+partial stdout or output file. Results are JSONL objects containing `line` and
+the private `market` result, in input order. Correct the reported line and rerun
+with an unused output filename. This bounded batch is not a streaming service.
