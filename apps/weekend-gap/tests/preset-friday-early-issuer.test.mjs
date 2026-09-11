@@ -69,6 +69,7 @@ test("Friday early issuer open keeps the Normal Friday calendar with a Friday mo
   assert.notDeepEqual(preset, PRESETS.sundayEarlyPayoutOpen);
   assert.notDeepEqual(preset, PRESETS.saturdayEarlyBankOpen);
   assert.notDeepEqual(preset, PRESETS.fridayEarlyBankOpen);
+  assert.notDeepEqual(preset, PRESETS.saturdayLateBankOpen);
   const early = runSimulation(preset);
   const normal = runSimulation(DEFAULT_SCENARIO);
   const saturday = runSimulation(PRESETS.saturdayEarlyIssuerOpen);

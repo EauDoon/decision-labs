@@ -42,8 +42,10 @@ test("1.5.21 keeps 4 Home End last-open-bank controls and Saturday bank presets"
   assert.notDeepEqual(PRESETS.fridayEarlyBankOpen, PRESETS.saturdayEarlyIssuerOpen);
   assert.notDeepEqual(PRESETS.fridayEarlyBankOpen, PRESETS.sundayLateBankClose);
   assert.notDeepEqual(PRESETS.fridayEarlyBankOpen, PRESETS.earlyMondayBankOpen);
+  assert.notDeepEqual(PRESETS.fridayEarlyBankOpen, PRESETS.saturdayLateBankOpen);
   assert.equal(DEFAULT_SCENARIO.saturdayEarlyBankOpen, false);
   assert.equal(DEFAULT_SCENARIO.fridayEarlyBankOpen, false);
+  assert.equal(DEFAULT_SCENARIO.saturdayLateBankOpen, false);
   const handler = app.slice(app.indexOf('document.addEventListener("keydown"'));
   assert.ok(handler.indexOf('event.key === "4"') !== handler.indexOf('event.key === "PageUp"'));
   assert.ok(handler.indexOf('event.key === "Home"') !== handler.indexOf('event.key === "PageDown"'));
