@@ -201,3 +201,25 @@ test("release 1.4.23 ships water polo carnival lunch, leftover uncovered count c
   assert.doesNotMatch(html.slice(html.indexOf('id="merchant-panel"'), html.indexOf('id="method-panel"')), /hideFirstWinnerAllocatedBuyer/u);
 });
 
+test("release 1.4.24 ships rowing carnival lunch, leftover uncovered leftover-only count copy and first uncovered leftover hide", async () => {
+  const html = await readFile(new URL("../standalone.html", import.meta.url), "utf8");
+  assert.match(html, /id="copy-leftover-uncovered-leftover-only-count"/u);
+  assert.match(html, /id="copy-leftover-uncovered-leftover-only-count"[^>]*aria-keyshortcuts="F7"/u);
+  assert.match(html, /id="hide-first-uncovered-leftover-buyer"/u);
+  assert.match(html, /data-preset="rowingCarnivalLunch"/u);
+  assert.match(html, /function copyLeftoverUncoveredLeftoverOnlyCount\(/u);
+  assert.match(html, /function focusLeftoverUncoveredLeftoverOnlyCountCopy\(/u);
+  assert.match(html, /function focusHideFirstUncoveredLeftoverBuyer\(/u);
+  assert.match(html, /filterBuyerIdsHidingFirstUncoveredLeftoverBuyer\(/u);
+  assert.match(html, /hideFirstUncoveredLeftoverBuyer/u);
+  assert.match(html, /createLeftoverUncoveredLeftoverOnlyCountMarkdown\(/u);
+  assert.match(html, /if \(key === "F7"\) \{\s*event\.preventDefault\(\);\s*copyLeftoverUncoveredLeftoverOnlyCount\(\);/u);
+  assert.match(html, /if \(key === "F8"\) \{\s*event\.preventDefault\(\);\s*focusLeftoverUncoveredLeftoverOnlyCountCopy\(\);/u);
+  assert.match(html, /if \(key === "F9"\) \{\s*event\.preventDefault\(\);\s*focusHideFirstUncoveredLeftoverBuyer\(\);/u);
+  assert.match(html, /function handleShortcut\(event\) \{\s*if \(event\.defaultPrevented \|\| event\.metaKey \|\| event\.ctrlKey \|\| event\.altKey\) return;/u);
+  assert.match(html, /const key = event\.key\.length === 1 \? event\.key\.toLowerCase\(\) : event\.key;/u);
+  assert.doesNotMatch(html.slice(html.indexOf('id="merchant-panel"'), html.indexOf('id="method-panel"')), /copy-leftover-uncovered-leftover-only-count/u);
+  assert.doesNotMatch(html.slice(html.indexOf('id="merchant-panel"'), html.indexOf('id="method-panel"')), /hide-first-uncovered-leftover-buyer/u);
+  assert.doesNotMatch(html.slice(html.indexOf('id="merchant-panel"'), html.indexOf('id="method-panel"')), /hideFirstUncoveredLeftoverBuyer/u);
+});
+
