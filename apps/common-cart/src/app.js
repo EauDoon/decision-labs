@@ -31,6 +31,7 @@ import {
   filterBuyerIdsHidingLastUnservedBuyer,
   filterBuyerIdsHidingFirstUnservedBuyer,
   filterBuyerIdsHidingLastLeftoverOnlyBuyer,
+  filterBuyerIdsHidingFirstLeftoverOnlyBuyer,
   organizerBuyerVariantCounts,
   restoreRemovedBuyer,
   restoreExampleOffers,
@@ -77,6 +78,7 @@ import {
   createTertiaryFillRemainingCapacityMarkdown,
   createTertiaryFillMaximumMarkdown,
   createLeftoverUncoveredRemainingMarkdown,
+  createLeftoverUncoveredMaximumMarkdown,
   createWinningRemainingCapacityMarkdown,
   createRequestedUnitsMarkdown,
   organizerLeftoverRows,
@@ -166,6 +168,7 @@ let hideLastBuyerFilledByTertiaryFill = false;
 let hideLastUnservedBuyer = false;
 let hideFirstUnservedBuyer = false;
 let hideLastLeftoverOnlyBuyer = false;
+let hideFirstLeftoverOnlyBuyer = false;
 let lastRemovedBuyer = null;
 let saveTimer;
 renderEditor();
@@ -200,6 +203,7 @@ function loadWorkspace() {
     hideLastUnservedBuyer = workspace.hideLastUnservedBuyer;
     hideFirstUnservedBuyer = workspace.hideFirstUnservedBuyer;
     hideLastLeftoverOnlyBuyer = workspace.hideLastLeftoverOnlyBuyer;
+    hideFirstLeftoverOnlyBuyer = workspace.hideFirstLeftoverOnlyBuyer;
     return workspace.rooms;
   } catch (error) {
     workspaceReadFailed = true;
@@ -242,7 +246,7 @@ function renderWorkspace() {
 }
 
 function storeWorkspace(rooms) {
-  const clean = validateWorkspace({ version: 1, rooms, fulfillmentFilter: offerFulfillmentFilter, hideExcludedBuyers, hideUnwinnableOffers, hideCoveredLeftoverRows, hideTertiaryLeftoverRow, hideLeftoverFillRow, hideZeroRemainingCapacityOffers, hideOffersWithRemainingCapacity, hideFullyFilledBuyers, hideBuyersWithLeftover, hideUnservedBuyers, hideLeftoverOnlyBuyers, hideWinnerAllocatedBuyers, hideBuyersFilledByLeftoverFill, hideLastBuyerFilledByLeftoverFill, hideFirstBuyerFilledByLeftoverFill, hideFirstBuyerFilledByTertiaryFill, hideLastBuyerFilledByTertiaryFill, hideLastUnservedBuyer, hideFirstUnservedBuyer, hideLastLeftoverOnlyBuyer });
+  const clean = validateWorkspace({ version: 1, rooms, fulfillmentFilter: offerFulfillmentFilter, hideExcludedBuyers, hideUnwinnableOffers, hideCoveredLeftoverRows, hideTertiaryLeftoverRow, hideLeftoverFillRow, hideZeroRemainingCapacityOffers, hideOffersWithRemainingCapacity, hideFullyFilledBuyers, hideBuyersWithLeftover, hideUnservedBuyers, hideLeftoverOnlyBuyers, hideWinnerAllocatedBuyers, hideBuyersFilledByLeftoverFill, hideLastBuyerFilledByLeftoverFill, hideFirstBuyerFilledByLeftoverFill, hideFirstBuyerFilledByTertiaryFill, hideLastBuyerFilledByTertiaryFill, hideLastUnservedBuyer, hideFirstUnservedBuyer, hideLastLeftoverOnlyBuyer, hideFirstLeftoverOnlyBuyer });
   localStorage.setItem(WORKSPACE_KEY, JSON.stringify(clean));
   savedRooms = clean.rooms;
   renderWorkspace();
@@ -380,6 +384,7 @@ function bindStaticEvents() {
   document.querySelector("#copy-tertiary-fill-remaining").addEventListener("click", copyTertiaryFillRemainingCapacity);
   document.querySelector("#copy-tertiary-fill-maximum").addEventListener("click", copyTertiaryFillMaximum);
   document.querySelector("#copy-leftover-uncovered-remaining").addEventListener("click", copyLeftoverUncoveredRemaining);
+  document.querySelector("#copy-leftover-uncovered-maximum").addEventListener("click", copyLeftoverUncoveredMaximum);
   document.querySelector("#copy-uncovered-leftover").addEventListener("click", copyUncoveredLeftoverCounts);
   document.querySelector("#copy-uncovered-leftover-units").addEventListener("click", copyUncoveredLeftoverUnitCount);
   document.querySelector("#copy-leftover-headroom").addEventListener("click", copyLeftoverHeadroom);
@@ -917,6 +922,18 @@ function bindStaticEvents() {
       setStatus(messageOf(error));
     }
   });
+  document.querySelector("#hide-first-leftover-only-buyer").addEventListener("change", (event) => {
+    hideFirstLeftoverOnlyBuyer = event.target.checked;
+    persistWorkspaceDisplaySettings();
+    try {
+      applyBuyerDisplayFilters();
+      setStatus(hideFirstLeftoverOnlyBuyer
+        ? "Hiding the first leftover-only buyer. Display only. Winner-allocated, leftover-fill, tertiary-fill, unserved, and other leftover-only buyers stay visible. Saved buyers and matching stay unchanged. Merchant views still show counts only. The last hide choice is kept in this browser."
+        : "Showing the first leftover-only buyer again. Saved buyers and matching stay unchanged. The last hide choice is kept in this browser.", true);
+    } catch (error) {
+      setStatus(messageOf(error));
+    }
+  });
   document.querySelector("#hide-covered-leftover-rows").addEventListener("change", (event) => {
     hideCoveredLeftoverRows = event.target.checked;
     persistWorkspaceDisplaySettings();
@@ -1410,6 +1427,21 @@ function handleShortcut(event) {
     focusHideLastLeftoverOnlyBuyer();
     return;
   }
+  if (key === "Insert") {
+    event.preventDefault();
+    copyLeftoverUncoveredMaximum();
+    return;
+  }
+  if (key === "ArrowDown") {
+    event.preventDefault();
+    focusLeftoverUncoveredMaximumCopy();
+    return;
+  }
+  if (key === "ArrowLeft") {
+    event.preventDefault();
+    focusHideFirstLeftoverOnlyBuyer();
+    return;
+  }
 }
 
 function focusBuyersList() {
@@ -1885,10 +1917,37 @@ function focusHideLastLeftoverOnlyBuyer() {
   document.querySelector("#buyer-tab")?.focus();
 }
 
+function focusHideFirstLeftoverOnlyBuyer() {
+  const buyerTab = document.querySelector("#buyer-tab");
+  if (buyerTab) activateTab(buyerTab);
+  const hide = document.querySelector("#hide-first-leftover-only-buyer");
+  if (hide) {
+    hide.focus();
+    return;
+  }
+  const heading = document.querySelector("#buyers-list");
+  if (heading) {
+    heading.focus();
+    return;
+  }
+  document.querySelector("#buyer-tab")?.focus();
+}
+
 function focusLeftoverUncoveredRemainingCopy() {
   const buyerTab = document.querySelector("#buyer-tab");
   if (buyerTab) activateTab(buyerTab);
   const copy = document.querySelector("#copy-leftover-uncovered-remaining");
+  if (copy) {
+    copy.focus();
+    return;
+  }
+  document.querySelector("#residual-title")?.focus();
+}
+
+function focusLeftoverUncoveredMaximumCopy() {
+  const buyerTab = document.querySelector("#buyer-tab");
+  if (buyerTab) activateTab(buyerTab);
+  const copy = document.querySelector("#copy-leftover-uncovered-maximum");
   if (copy) {
     copy.focus();
     return;
@@ -2059,6 +2118,8 @@ function renderEditor() {
   if (hideFirstUnserved) hideFirstUnserved.checked = hideFirstUnservedBuyer;
   const hideLastLeftoverOnly = document.querySelector("#hide-last-leftover-only-buyer");
   if (hideLastLeftoverOnly) hideLastLeftoverOnly.checked = hideLastLeftoverOnlyBuyer;
+  const hideFirstLeftoverOnly = document.querySelector("#hide-first-leftover-only-buyer");
+  if (hideFirstLeftoverOnly) hideFirstLeftoverOnly.checked = hideFirstLeftoverOnlyBuyer;
   const restoreRemoved = document.querySelector("#restore-removed-buyer");
   if (restoreRemoved) {
     restoreRemoved.disabled = !lastRemovedBuyer || scenario.buyers.some((buyer) => buyer.id === lastRemovedBuyer.id);
@@ -2299,6 +2360,14 @@ function applyBuyerDisplayFilters() {
     try {
       const lastLeftoverOnlyHidden = new Set(filterBuyerIdsHidingLastLeftoverOnlyBuyer(scenario, true));
       visibleIds = new Set([...visibleIds].filter((id) => lastLeftoverOnlyHidden.has(id)));
+    } catch {
+      visibleIds = new Set();
+    }
+  }
+  if (hideFirstLeftoverOnlyBuyer) {
+    try {
+      const firstLeftoverOnlyHidden = new Set(filterBuyerIdsHidingFirstLeftoverOnlyBuyer(scenario, true));
+      visibleIds = new Set([...visibleIds].filter((id) => firstLeftoverOnlyHidden.has(id)));
     } catch {
       visibleIds = new Set();
     }
@@ -2975,6 +3044,16 @@ function renderLeftoverCoverageTable(rawScenario) {
     leftoverUncoveredRemainingPrint.textContent = coverage.leftoverBuyerCount > 0
       ? `Leftover uncovered remaining: ${coverage.unfilledUnits} units`
       : "Leftover uncovered remaining: none";
+  }
+  const leftoverUncoveredMaximumPrint = document.querySelector("#leftover-print-uncovered-maximum");
+  if (leftoverUncoveredMaximumPrint) {
+    const coverage = computeResidualCoverage(rawScenario);
+    const leftoverOffer = coverage.secondary
+      ? rawScenario.offers.find((offer) => offer.id === coverage.secondary.offerId)
+      : null;
+    leftoverUncoveredMaximumPrint.textContent = coverage.secondary && leftoverOffer
+      ? `Leftover uncovered maximum: ${leftoverOffer.capacity} units`
+      : "Leftover uncovered maximum: none";
   }
   const requestedPrint = document.querySelector("#leftover-print-requested");
   if (requestedPrint) {
@@ -3678,6 +3757,16 @@ function copyLeftoverUncoveredRemaining() {
       "Clipboard was blocked. Organizer-private leftover uncovered remaining Markdown is in the textarea. Count only. This is not a merchant export."
     );
   } catch (error) { setStatus(`Leftover uncovered remaining copy failed: ${messageOf(error)}`); }
+}
+
+function copyLeftoverUncoveredMaximum() {
+  try {
+    copyTextWithFallback(
+      createLeftoverUncoveredMaximumMarkdown(scenario),
+      "Leftover uncovered maximum copied as organizer-private Markdown. Count only. This is not a merchant export.",
+      "Clipboard was blocked. Organizer-private leftover uncovered maximum Markdown is in the textarea. Count only. This is not a merchant export."
+    );
+  } catch (error) { setStatus(`Leftover uncovered maximum copy failed: ${messageOf(error)}`); }
 }
 
 function copyUncoveredLeftoverCounts() {

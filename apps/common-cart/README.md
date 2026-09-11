@@ -8,7 +8,19 @@ It is a working research prototype for a simple question: can shared demand crea
 
 *Built-in synthetic coffee scenario.*
 
-## Changelog (1.4.20)
+## Changelog (1.4.21)
+
+Leftover uncovered maximum copy through Insert, leftover uncovered maximum copy jump, hide first leftover-only buyer jump, Baseball carnival lunch, hide first leftover-only buyer, leftover print leftover uncovered maximum, kept on top of 1.4.0 review packets and 1.4.1/1.4.2/1.4.3/1.4.4/1.4.5/1.4.6/1.4.7/1.4.8/1.4.9/1.4.10/1.4.11/1.4.12/1.4.13/1.4.14/1.4.15/1.4.16/1.4.17/1.4.18/1.4.19/1.4.20 tools. This remains an offline simulator. Residual coverage is leftover planning, not checkout. Merchant views, JSON, CSV, overlap Markdown, leftover print, winning merchant copy, winning fulfillment copy, and remaining-capacity copy still receive aggregates, counts, merchant labels, or fulfillment modes only. Organizer leftover copies are labeled organizer-private. Review packets stay private and unsigned.
+
+- **Keyboard leftover uncovered maximum copy.** `Insert` copies leftover-fill offer capacity through the leftover uncovered maximum copy control. Same organizer-private count-only Markdown as the leftover uncovered maximum button. Ignored while typing. Help lists it. Distinct prefix from leftover-fill maximum copy, leftover uncovered remaining, tertiary maximum, and uncovered leftover unit-count even when the number matches. Not a merchant export.
+- **Keyboard leftover uncovered maximum copy jump.** `ArrowDown` focuses the leftover uncovered maximum copy control, or the leftover heading if that control is missing. Ignored while typing. Help lists it. Does not copy. Distinct from `PageDown` leftover uncovered remaining copy jump. Keyboard still maps printable keys with `event.key.length === 1` then `toLowerCase()`.
+- **Keyboard hide first leftover-only buyer jump.** `ArrowLeft` focuses hide first leftover-only buyer, or the buyer list if that control is missing. Ignored while typing. Help lists it. Distinct from `ArrowUp` hide last leftover-only buyer. Tablists that already handle arrows keep those keys when they prevent default. `handleShortcut` returns first when `event.defaultPrevented` is true so tab `ArrowLeft` still moves tabs.
+- **Baseball carnival lunch.** A synthetic carnival lunch preset with mixed baseball pie, boards salad, and boards water variants, mixed quantities, a hall pickup leftover-fill offer whose pickup minimum is 14, and a court-side baseball delivery offer. Distinct from neighbourhood coffee, studio chairs, pantry staples, office pantry, hardware tools, garden seed, school fete catering, office fruit box, coffee price ladder, library photocopy paper, sports club match-day kit, surf club first-aid kit, theatre wardrobe kit, community choir folders, scout camp, school excursion lunch, netball canteen lunch, swimming carnival lunch, athletics carnival lunch, cricket carnival lunch, tennis carnival lunch, basketball carnival lunch, volleyball carnival lunch, soccer carnival lunch, rugby carnival lunch, and hockey carnival lunch. Soccer carnival lunch still leftover-fills with Hall Soccer Pickup at minimum 11. Rugby carnival lunch still leftover-fills with Hall Rugby Pickup at minimum 12. Hockey carnival lunch still leftover-fills with Hall Hockey Pickup at minimum 13. Not live inventory.
+- **Hide first leftover-only buyer.** Display filter hides only the first leftover-only buyer (leftover-fill or tertiary, not winner, not unserved). Winner-allocated, unserved, leftover-fill that are not first leftover-only, and other leftover-only buyers stay visible. Matching is unchanged. The last hide choice is kept in workspace JSON. Older files omit it and show every buyer. Distinct from `hideLeftoverOnlyBuyers`, `hideLastLeftoverOnlyBuyer`, `hideLastUnservedBuyer`, and `hideFirstUnservedBuyer`.
+- **Leftover print leftover uncovered maximum.** Leftover print (`body.print-leftover`) includes leftover-fill offer capacity as a merchant-safe count when leftover fill exists, or an honest empty line, if leftover uncovered remaining has a print line. Buyer identities stay out. Reuses leftover uncovered maximum wording.
+- **1.4.0 review packets kept.** Allocated coverage, sole-offer dependency, unserved reasons, same-cohort alternatives, withdrawal stress, shipping exposure, delivery slack, bounded capacity and minimum previews, and private review packet export/inspect remain.
+
+## Earlier changelog (1.4.20)
 
 Leftover uncovered remaining copy through PageUp, leftover uncovered remaining copy jump, hide last leftover-only buyer jump, Hockey carnival lunch, hide last leftover-only buyer, leftover print leftover uncovered remaining, kept on top of 1.4.0 review packets and 1.4.1/1.4.2/1.4.3/1.4.4/1.4.5/1.4.6/1.4.7/1.4.8/1.4.9/1.4.10/1.4.11/1.4.12/1.4.13/1.4.14/1.4.15/1.4.16/1.4.17/1.4.18/1.4.19 tools. This remains an offline simulator. Residual coverage is leftover planning, not checkout. Merchant views, JSON, CSV, overlap Markdown, leftover print, winning merchant copy, winning fulfillment copy, and remaining-capacity copy still receive aggregates, counts, merchant labels, or fulfillment modes only. Organizer leftover copies are labeled organizer-private. Review packets stay private and unsigned.
 
@@ -458,6 +470,11 @@ The allocator performs an exact bounded search for the greatest whole-buyer quan
 |   |-- leftover-uncovered-remaining-jump.test.mjs Leftover uncovered remaining jump
 |   |-- leftover-print-uncovered-remaining.test.mjs Leftover print leftover uncovered remaining
 |   |-- hide-last-leftover-only-buyer.test.mjs Hide last leftover-only buyer
+|   |-- baseball-carnival-lunch.test.mjs Baseball carnival lunch preset
+|   |-- leftover-uncovered-maximum-key.test.mjs Leftover uncovered maximum copy
+|   |-- leftover-uncovered-maximum-jump.test.mjs Leftover uncovered maximum jump
+|   |-- leftover-print-uncovered-maximum.test.mjs Leftover print leftover uncovered maximum
+|   |-- hide-first-leftover-only-buyer.test.mjs Hide first leftover-only buyer
 |   |-- winner-inspector-markdown.test.mjs Winner inspector Markdown
 |   |-- hide-unwinnable-offers.test.mjs Hide locked offers
 |   |-- hide-covered-leftover.test.mjs Hide covered leftover rows

@@ -52,6 +52,7 @@
  * @property {boolean} [hideFirstSpareCapacityParticipant] Optional roster display preference. Omitted files default to showing the first roster row that currently has unused listed capacity.
  * @property {boolean} [hideLastParticipantWithoutCapacity] Optional roster display preference. Omitted files default to showing the last roster row whose capacity is unbounded or omitted.
  * @property {boolean} [hideFirstParticipantWithoutCapacity] Optional roster display preference. Omitted files default to showing the first roster row whose capacity is unbounded or omitted.
+ * @property {boolean} [hideLastParticipantAtHold] Optional roster display preference. Omitted files default to showing the last roster row currently at hold (remaining-to-hold is 0).
  *
  * @typedef {object} ShockResult
  * @property {string} kind
@@ -65,7 +66,7 @@
 export const EPSILON = 1e-9;
 export const MAX_PARTICIPANTS = 24;
 export const MAX_NUMERIC_INPUT = 1_000_000_000_000_000;
-const CONFIG_KEYS = new Set(['deal', 'participants', 'stress', 'collapseAllHoldCases', 'hideHoldingParticipants', 'hideAllHoldLedger', 'hideZeroShareParticipants', 'hideParticipantsOverCapacity', 'hideParticipantsAtHold', 'hideParticipantsWithoutCapacity', 'hideParticipantsWithSpareCapacity', 'hideParticipantsAtLeastHeadroom', 'hideParticipantsWithinCapacity', 'hideFirstBreakpointParticipant', 'hideFirstOverCapacityParticipant', 'hideLastOverCapacityParticipant', 'hideLastBreakpointParticipant', 'hideLastWithinCapacityParticipant', 'hideFirstWithinCapacityParticipant', 'hideLastSpareCapacityParticipant', 'hideFirstSpareCapacityParticipant', 'hideLastParticipantWithoutCapacity', 'hideFirstParticipantWithoutCapacity']);
+const CONFIG_KEYS = new Set(['deal', 'participants', 'stress', 'collapseAllHoldCases', 'hideHoldingParticipants', 'hideAllHoldLedger', 'hideZeroShareParticipants', 'hideParticipantsOverCapacity', 'hideParticipantsAtHold', 'hideParticipantsWithoutCapacity', 'hideParticipantsWithSpareCapacity', 'hideParticipantsAtLeastHeadroom', 'hideParticipantsWithinCapacity', 'hideFirstBreakpointParticipant', 'hideFirstOverCapacityParticipant', 'hideLastOverCapacityParticipant', 'hideLastBreakpointParticipant', 'hideLastWithinCapacityParticipant', 'hideFirstWithinCapacityParticipant', 'hideLastSpareCapacityParticipant', 'hideFirstSpareCapacityParticipant', 'hideLastParticipantWithoutCapacity', 'hideFirstParticipantWithoutCapacity', 'hideLastParticipantAtHold']);
 const DEAL_KEYS = new Set(['monthlyVolume', 'feePerTransaction', 'addressableVolume', 'volumeShockPct', 'title', 'currency', 'notes']);
 const PARTICIPANT_KEYS = new Set(['id', 'name', 'revenueShare', 'variableCostPerTransaction', 'fixedMonthlyCost', 'minimumAcceptableProfit', 'capacity', 'minimumCommitment', 'riskCost']);
 const RESERVED_KEYS = new Set(['__proto__', 'constructor', 'prototype']);
@@ -322,6 +323,15 @@ export const PRESETS = Object.freeze({
       { id: 'baseball-first-aid', name: 'First-aid', revenueShare: 0.25, variableCostPerTransaction: 0.95, fixedMonthlyCost: 1070, minimumAcceptableProfit: 420, capacity: 3900, minimumCommitment: 0, riskCost: 190 },
     ],
   },
+  softballCarnivalSplit: {
+    name: 'Softball carnival split',
+    deal: { monthlyVolume: 4000, feePerTransaction: 8, addressableVolume: 5200, volumeShockPct: 0 },
+    participants: [
+      { id: 'softball-committee', name: 'Carnival committee', revenueShare: 0.37, variableCostPerTransaction: 1.62, fixedMonthlyCost: 3500, minimumAcceptableProfit: 1320, capacity: 4900, minimumCommitment: 0, riskCost: 495 },
+      { id: 'softball-diamond-hire', name: 'Diamond hire', revenueShare: 0.38, variableCostPerTransaction: 2.08, fixedMonthlyCost: 2180, minimumAcceptableProfit: 860, capacity: 6000, minimumCommitment: 310, riskCost: 320 },
+      { id: 'softball-first-aid', name: 'First-aid', revenueShare: 0.25, variableCostPerTransaction: 1.02, fixedMonthlyCost: 1110, minimumAcceptableProfit: 430, capacity: 4000, minimumCommitment: 0, riskCost: 200 },
+    ],
+  },
 });
 
 function isFiniteNumber(value) {
@@ -491,6 +501,12 @@ export function validateConfiguration(config) {
     const hideFirstWithout = own(config, 'hideFirstParticipantWithoutCapacity');
     if (hideFirstWithout !== true && hideFirstWithout !== false) {
       errors.push('Hide first participant without capacity must be a boolean.');
+    }
+  }
+  if (Object.hasOwn(config, 'hideLastParticipantAtHold')) {
+    const hideLastAtHold = own(config, 'hideLastParticipantAtHold');
+    if (hideLastAtHold !== true && hideLastAtHold !== false) {
+      errors.push('Hide last participant at hold must be a boolean.');
     }
   }
   if (Object.hasOwn(config, 'stress')) {
