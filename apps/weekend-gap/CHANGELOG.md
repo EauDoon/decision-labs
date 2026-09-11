@@ -1,5 +1,17 @@
 # Changelog
 
+## 1.5.19 - 2026-09-11
+
+A workshop follow-up on 1.5.18. Weekend Gap remains a local-first decision aid, not a decision maker. Hatched Gantt cells are a local drawing, not a bank feed. Timing review packets from 1.5.0 and the 1.5.1-1.5.18 review UI stay in place. Analysis JSON still has no timestamps.
+
+### Added
+
+- Keyboard `1` copies last closed bank hour through the new last-closed-bank copy control, using one-line Markdown. Honest empty when none. Ignored while typing. Distinct from `8` last-closed-issuer copy.
+- Keyboard `2` jumps to the last-closed-bank-hour copy control, or the Gantt heading if that control is missing. Does not copy. Ignored while typing. Distinct from `9` last-closed-issuer jump.
+- Keyboard `3` jumps to the hide-weekend-bank-closed Gantt filter, or the Gantt heading if that control is missing. Ignored while typing. Distinct from `0` hide-weekend-issuer-closed.
+- Friday early issuer open (synthetic) preset: same 72-hour calendar as Normal Friday, Friday 08:00 to 10:00 treats the issuer gate as open even when the ordinary issuer window starts later. Distinct from Saturday early issuer open, Sunday early issuer open, Sunday late issuer close, and Friday early payout open. Synthetic. Not a bank feed.
+- Filter that hides Gantt hours that are weekend and bank-closed. Display only; the model still contains 72 hours. Workspace JSON stores optional `hideWeekendBankClosedGanttHours`. Older files omit the key and show all hours. Unknown keys are rejected. Distinct from `hideWeekendIssuerClosedGanttHours`, `hideBankClosedGanttHours`, and `hideWeekendGanttHours`. The selected hour stays visible if it would otherwise hide.
+
 ## 1.5.18 - 2026-09-10
 
 A workshop follow-up on 1.5.17. Weekend Gap remains a local-first decision aid, not a decision maker. Hatched Gantt cells are a local drawing, not a bank feed. Timing review packets from 1.5.0 and the 1.5.1-1.5.17 review UI stay in place. Analysis JSON still has no timestamps.
