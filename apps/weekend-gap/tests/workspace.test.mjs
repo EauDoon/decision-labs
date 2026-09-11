@@ -373,6 +373,23 @@ test("older workspace files omit hideWeekdayFxClosedGanttHours and restore all h
  assert.deepEqual(legacy.errors,[]);
  assert.equal(workspaceFromJSON(JSON.stringify({...raw,hideWeekdayFxClosedGanttHours:true})).workspace.hideWeekdayFxClosedGanttHours,true);
 });
+test("workspace JSON persists hideWeekendFxOpenGanttHours independently of hideWeekdayFxClosedGanttHours",()=>{
+ const text=workspaceToJSON(DEFAULT_SCENARIO,DEFAULT_SCENARIO,{hideWeekendFxOpenGanttHours:true,hideWeekdayFxClosedGanttHours:true,notes:"persist weekend-FX-open filter"});
+ const result=workspaceFromJSON(text);
+ assert.deepEqual(result.errors,[]);
+ assert.equal(result.workspace.hideWeekendFxOpenGanttHours,true);
+ assert.equal(result.workspace.hideWeekdayFxClosedGanttHours,true);
+ const raw=JSON.parse(text);
+ assert.equal(raw.hideWeekendFxOpenGanttHours,true);
+ assert.equal(raw.hideWeekdayFxClosedGanttHours,true);
+ const openOnly=workspaceFromJSON(JSON.stringify({...raw,hideWeekendFxOpenGanttHours:true,hideWeekdayFxClosedGanttHours:false}));
+ assert.equal(openOnly.workspace.hideWeekendFxOpenGanttHours,true);
+ assert.equal(openOnly.workspace.hideWeekdayFxClosedGanttHours,false);
+ const closedOnly=workspaceFromJSON(JSON.stringify({...raw,hideWeekendFxOpenGanttHours:false,hideWeekdayFxClosedGanttHours:true}));
+ assert.equal(closedOnly.workspace.hideWeekendFxOpenGanttHours,false);
+ assert.equal(closedOnly.workspace.hideWeekdayFxClosedGanttHours,true);
+ assert.doesNotMatch(text,/timestamp|createdAt|exportedAt/i);
+});
 test("invalid workspace controls and format cannot replace an active workspace",()=>{
  const valid=JSON.parse(workspaceToJSON(DEFAULT_SCENARIO,DEFAULT_SCENARIO));
  for(const changed of [{version:2},{current:null},{baseline:[]},{targetPercent:-1},{deadlineHour:73},{selectedHour:1.5},{ganttHourIndex:1.5},{notes:"x".repeat(4001)},{ganttDensity:"wide"},{selectedChart:"canvas"},{ganttClosedOnly:"yes"},{ganttGateFilter:"issuer-only"},{queueBacklogOnly:"yes"},{ganttEveryGateClosed:"yes"},{hideWeekdayGanttHours:"yes"},{hideWeekendGanttHours:"yes"},{hideOpenGanttHours:"yes"},{hideClosedGanttHours:"yes"},{hideZeroQueueGanttHours:"yes"},{hideBankClosedGanttHours:"yes"},{hideIssuerClosedGanttHours:"yes"},{hidePayoutClosedGanttHours:"yes"},{hideFxClosedGanttHours:"yes"},{hidePayoutOpenGanttHours:"yes"},{hideFxOpenGanttHours:"yes"},{hideBankOpenGanttHours:"yes"},{hideIssuerOpenGanttHours:"yes"},{hideWeekendIssuerOpenGanttHours:"yes"},{hideWeekendIssuerClosedGanttHours:"yes"},{hideWeekendBankClosedGanttHours:"yes"},{hideWeekendBankOpenGanttHours:"yes"},{hideWeekendPayoutOpenGanttHours:"yes"},{hideWeekendFxOpenGanttHours:"yes"},{hideWeekendPayoutClosedGanttHours:"yes"},{hideWeekendFxClosedGanttHours:"yes"},{hideWeekdayFxClosedGanttHours:"yes"},{extraField:true},{constructor:{}}]) assert.equal(workspaceFromJSON(JSON.stringify({...valid,...changed})).workspace,null);
