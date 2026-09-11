@@ -194,6 +194,6 @@ test("the organizer hide first leftover-only buyer filter is not on the merchant
   assert.match(app, /filterBuyerIdsHidingFirstLeftoverOnlyBuyer\(/u);
   assert.match(app, /hideFirstLeftoverOnlyBuyer/u);
   assert.match(app, /persistWorkspaceDisplaySettings\(/u);
-  assert.match(html, /hide-last-leftover-only-buyer, and hide-first-leftover-only-buyer choices are kept/u);
+  assert.match(html, /hide-last-leftover-only-buyer, hide-first-leftover-only-buyer, and hide-last-winner-allocated-buyer choices are kept/u);
   assert.match(html, /Older workspace files without them still show every buyer/u);
 });
