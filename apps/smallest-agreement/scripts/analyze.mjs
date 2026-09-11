@@ -8,6 +8,11 @@ import {
   formatParticipantGroupsCsv, formatClauseOptionsCsv, formatDiscussionWorksheetCsv,
 } from '../src/model.js';
 
+process.stdout.on('error', () => {
+  process.stderr.write(JSON.stringify({ status: 'error', error: 'Cannot write output stream.' }) + '\n');
+  process.exitCode = 2;
+});
+
 const usage = `Usage: node scripts/analyze.mjs <command> <input.json|-> [arguments]
   solve
   evaluate <option IDs separated by commas, in clause order>
@@ -21,7 +26,7 @@ const usage = `Usage: node scripts/analyze.mjs <command> <input.json|-> [argumen
   export <brief|evidence|support|groups|options|worksheet>`;
 
 function localPath(path) {
-  if (!path || /^[\\/]{2}/.test(path) || path.split(/[\\/]/).some(part => /^(con|prn|aux|nul|com[0-9¹²³]|lpt[0-9¹²³])$/i.test(part.split('.')[0].trimEnd())) || /:/.test(path.replace(/^[A-Za-z]:[\\/]/, ''))) {
+  if (!path || /^[\\/]{2}/.test(path) || path.split(/[\\/]/).some(part => /^(con|conin\$|conout\$|prn|aux|nul|com[0-9¹²³]|lpt[0-9¹²³])$/i.test(part.split('.')[0].trimEnd())) || /:/.test(path.replace(/^[A-Za-z]:[\\/]/, ''))) {
     throw new TypeError('Use an ordinary local file path, not a device, stream, or network path.');
   }
   return path;
