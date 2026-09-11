@@ -1,5 +1,17 @@
 # Changelog
 
+## 1.5.21 - 2026-09-11
+
+A workshop follow-up on 1.5.20. Weekend Gap remains a local-first decision aid, not a decision maker. Hatched Gantt cells are a local drawing, not a bank feed. Timing review packets from 1.5.0 and the 1.5.1-1.5.20 review UI stay in place. Analysis JSON still has no timestamps.
+
+### Added
+
+- Keyboard `PageUp` copies last open payout hour through the new last-open-payout copy control, using one-line Markdown. Honest empty when none. Ignored while typing. Distinct from `4` last-open-bank copy, `5` last-open-issuer copy and `~` first-open-payout copy.
+- Keyboard `PageDown` jumps to the last-open-payout-hour copy control, or the Gantt heading if that control is missing. Does not copy. Ignored while typing. Distinct from `Home` last-open-bank jump.
+- Keyboard `ArrowUp` jumps to the hide-weekend-payout-open Gantt filter, or the Gantt heading if that control is missing. Ignored while typing. Distinct from `End` hide-weekend-bank-open.
+- Friday early bank open (synthetic) preset: same 72-hour calendar as Normal Friday, Friday 08:00 to 10:00 treats the bank gate as open even when the ordinary bank window starts later. Distinct from Saturday early bank open, Friday early issuer open, Saturday early issuer open, Sunday late bank close, and Early Monday bank open. Synthetic. Not a bank feed.
+- Filter that hides Gantt hours that are weekend and payout-open. Display only; the model still contains 72 hours. Workspace JSON stores optional `hideWeekendPayoutOpenGanttHours`. Older files omit the key and show all hours. Unknown keys are rejected. Distinct from `hideWeekendBankOpenGanttHours`, `hidePayoutOpenGanttHours`, `hideWeekendGanttHours`, and `hideWeekendIssuerOpenGanttHours`. The selected hour stays visible if it would otherwise hide.
+
 ## 1.5.20 - 2026-09-11
 
 A workshop follow-up on 1.5.19. Weekend Gap remains a local-first decision aid, not a decision maker. Hatched Gantt cells are a local drawing, not a bank feed. Timing review packets from 1.5.0 and the 1.5.1-1.5.19 review UI stay in place. Analysis JSON still has no timestamps.
