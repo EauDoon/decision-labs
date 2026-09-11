@@ -513,6 +513,55 @@ test("hide last tertiary-fill buyer jump stays on the organizer tertiary-fill la
   assert.doesNotMatch(app, /if \(key === "0"\) \{\s*event\.preventDefault\(\);\s*focusHideFirstBuyerFilledByTertiaryFill/u);
 });
 
+test("tertiary fill remaining copy stays on the organizer leftover control", async () => {
+  const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
+  const app = await readFile(new URL("../src/app.js", import.meta.url), "utf8");
+  const buyerPanel = html.slice(html.indexOf('id="buyer-panel"'), html.indexOf('id="merchant-panel"'));
+  const merchantPanel = html.slice(html.indexOf('id="merchant-panel"'), html.indexOf('id="method-panel"'));
+  assert.match(buyerPanel, /id="copy-tertiary-fill-remaining"/u);
+  assert.match(buyerPanel, /Copy tertiary fill remaining capacity \(organizer private\)/u);
+  assert.equal(merchantPanel.includes("copy-tertiary-fill-remaining"), false);
+  assert.equal(merchantPanel.includes("copyTertiaryFillRemainingCapacity"), false);
+  assert.match(app, /function copyTertiaryFillRemainingCapacity\(/u);
+  assert.match(app, /#copy-tertiary-fill-remaining/u);
+  assert.match(app, /function copyLeftoverFillMaximum\(/u);
+  assert.match(app, /if \(key === "1"\) \{\s*event\.preventDefault\(\);\s*copyTertiaryFillRemainingCapacity\(\);/u);
+  assert.match(html, /aria-keyshortcuts="1"/u);
+});
+
+test("tertiary fill remaining copy jump stays on the organizer tertiary remaining control", async () => {
+  const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
+  const app = await readFile(new URL("../src/app.js", import.meta.url), "utf8");
+  const buyerPanel = html.slice(html.indexOf('id="buyer-panel"'), html.indexOf('id="merchant-panel"'));
+  const merchantPanel = html.slice(html.indexOf('id="merchant-panel"'), html.indexOf('id="method-panel"'));
+  assert.match(buyerPanel, /id="copy-tertiary-fill-remaining"/u);
+  assert.match(buyerPanel, /id="residual-title"/u);
+  assert.equal(merchantPanel.includes("copy-tertiary-fill-remaining"), false);
+  assert.equal(merchantPanel.includes("focusTertiaryFillRemainingCopy"), false);
+  assert.match(app, /function focusTertiaryFillRemainingCopy\(/u);
+  assert.match(app, /#copy-tertiary-fill-remaining/u);
+  assert.match(app, /#residual-title/u);
+  assert.match(app, /if \(key === "2"\)/u);
+  assert.doesNotMatch(app, /if \(key === "2"\) \{\s*event\.preventDefault\(\);\s*copyTertiaryFillRemainingCapacity/u);
+  assert.doesNotMatch(app, /if \(key === "2"\) \{\s*event\.preventDefault\(\);\s*focusLeftoverFillMaximumCopy/u);
+});
+
+test("hide last unserved buyer jump stays on the organizer last-unserved control", async () => {
+  const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
+  const app = await readFile(new URL("../src/app.js", import.meta.url), "utf8");
+  const buyerPanel = html.slice(html.indexOf('id="buyer-panel"'), html.indexOf('id="merchant-panel"'));
+  const merchantPanel = html.slice(html.indexOf('id="merchant-panel"'), html.indexOf('id="method-panel"'));
+  assert.match(buyerPanel, /id="hide-last-unserved-buyer"/u);
+  assert.match(buyerPanel, /id="buyers-list"/u);
+  assert.equal(merchantPanel.includes("hide-last-unserved-buyer"), false);
+  assert.equal(merchantPanel.includes("focusHideLastUnservedBuyer"), false);
+  assert.match(app, /function focusHideLastUnservedBuyer\(/u);
+  assert.match(app, /#hide-last-unserved-buyer/u);
+  assert.match(app, /#buyers-list/u);
+  assert.match(app, /if \(key === "3"\)/u);
+  assert.doesNotMatch(app, /if \(key === "3"\) \{\s*event\.preventDefault\(\);\s*focusHideLastBuyerFilledByTertiaryFill/u);
+});
+
 test("leftover print jump stays on the leftover print control", async () => {
   const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
   const app = await readFile(new URL("../src/app.js", import.meta.url), "utf8");

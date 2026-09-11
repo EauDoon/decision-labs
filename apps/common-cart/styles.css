@@ -394,6 +394,7 @@ footer {
   body.print-leftover #leftover-print-fill-label,
   body.print-leftover #leftover-print-fill-minimum,
   body.print-leftover #leftover-print-fill-maximum,
+  body.print-leftover #leftover-print-tertiary-remaining,
   body.print-leftover .scoreboard .metric.feature {
     display: block !important;
   }

@@ -1,6 +1,6 @@
 {
   "name": "common-cart",
-  "version": "1.4.17",
+  "version": "1.4.18",
   "private": true,
   "type": "module",
   "description": "A local-first pooled purchase simulator that matches aggregate buyer constraints to synthetic merchant offers.",
