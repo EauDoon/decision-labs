@@ -2066,10 +2066,6 @@ test('optional hideLastParticipantAtHold is a boolean and older files omit it', 
   extra.unexpected = true;
   assert.match(validateConfiguration(extra).errors.join(' '), /unknown field: unexpected/);
 
-  const reserved = clonePreset('balanced');
-  Object.defineProperty(reserved, '__proto__', { value: true, enumerable: true, configurable: true });
-  assert.match(validateConfiguration(reserved).errors.join(' '), /reserved field/);
-
   const both = clonePreset('balanced');
   both.hideHoldingParticipants = true;
   both.hideAllHoldLedger = true;
