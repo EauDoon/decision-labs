@@ -52,6 +52,7 @@ import {
   formatLastGroupAtOrAboveThresholdLabelMarkdown,
   formatFirstGroupAtOrAboveThresholdLabelMarkdown,
   formatLastGroupAtFloorLabelMarkdown,
+  formatFirstGroupAtFloorLabelMarkdown,
   formatLastBelowSupportFloorGroupLabelMarkdown,
   formatRecommendedChangeCostCsv,
   changedClauseIds,
@@ -1028,6 +1029,39 @@ const presets = {
           { id: "lacrosse-changing-room-lockup-original", original: true, label: "Leave the lacrosse field changing-room door on a shared padlock after club hours", changeCost: 0, support: { students: 19, neighbours: 35, pandc: 39 } },
           { id: "lacrosse-changing-room-lockup-steward", original: false, label: "Require a P&C steward to lock the lacrosse field changing room before 21:30", changeCost: 3, support: { students: 65, neighbours: 57, pandc: 71 } },
           { id: "lacrosse-changing-room-lockup-timer", original: false, label: "Add a timed lock on the lacrosse field changing-room door after the last session", changeCost: 2, support: { students: 54, neighbours: 52, pandc: 63 } },
+        ],
+      },
+    ],
+  },
+  "water-polo-club-hours": {
+    title: "Water polo club hours: pool booking, clubhouse bar, and changing-room lock-up",
+    threshold: 70,
+    maxChangeCost: 8,
+    groups: [
+      { id: "students", name: "Students", weight: 4 },
+      { id: "neighbours", name: "Neighbours", weight: 3, veto: true },
+      { id: "pandc", name: "P&C", weight: 2 },
+    ],
+    clauses: [
+      {
+        id: "water-polo-pool-booking", title: "Water polo pool booking", options: [
+          { id: "water-polo-pool-booking-original", original: true, label: "Keep weekday water polo pool booking from 17:00 with no posted pool rota", changeCost: 0, support: { students: 13, neighbours: 93, pandc: 55 } },
+          { id: "water-polo-pool-booking-late", original: false, label: "Open weekday water polo at 19:15 with a posted pool rota", changeCost: 2, support: { students: 80, neighbours: 41, pandc: 52 } },
+          { id: "water-polo-pool-booking-weekend", original: false, label: "Hold Saturday evening pool at 18:30 with a booking card", changeCost: 4, support: { students: 67, neighbours: 48, pandc: 49 } },
+        ],
+      },
+      {
+        id: "water-polo-clubhouse-bar", title: "Clubhouse bar", options: [
+          { id: "water-polo-clubhouse-bar-original", original: true, label: "No posted water polo clubhouse-bar hours", changeCost: 0, support: { students: 79, neighbours: 12, pandc: 26 } },
+          { id: "water-polo-clubhouse-bar-cap", original: false, label: "Close the water polo clubhouse bar at 20:30 and keep drinks inside the clubhouse", changeCost: 1, support: { students: 49, neighbours: 83, pandc: 62 } },
+          { id: "water-polo-clubhouse-bar-cut", original: false, label: "Serve tea only after 19:15 and retire the water polo clubhouse bar", changeCost: 5, support: { students: 31, neighbours: 89, pandc: 47 } },
+        ],
+      },
+      {
+        id: "water-polo-changing-room-lockup", title: "Changing-room lock-up", options: [
+          { id: "water-polo-changing-room-lockup-original", original: true, label: "Leave the water polo pool changing-room door on a shared padlock after club hours", changeCost: 0, support: { students: 18, neighbours: 34, pandc: 38 } },
+          { id: "water-polo-changing-room-lockup-steward", original: false, label: "Require a P&C steward to lock the water polo pool changing room before 21:45", changeCost: 3, support: { students: 64, neighbours: 56, pandc: 72 } },
+          { id: "water-polo-changing-room-lockup-timer", original: false, label: "Add a timed lock on the water polo pool changing-room door after the last session", changeCost: 2, support: { students: 53, neighbours: 51, pandc: 64 } },
         ],
       },
     ],
