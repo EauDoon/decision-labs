@@ -51,6 +51,7 @@ import {
   lastClosedFxHourToMarkdown,
   lastClosedPayoutHourToMarkdown,
   lastWeekendFxClosedHourToMarkdown,
+  lastWeekdayFxClosedHourToMarkdown,
   arrivalCohortsToMarkdown,
   firstClosedGanttHour,
   firstClosedFxGanttHour,
@@ -1756,6 +1757,9 @@ document.querySelector("#copy-last-closed-payout").addEventListener("click", asy
 document.querySelector("#copy-last-weekend-fx-closed").addEventListener("click", async () => {
   await copyLastWeekendFxClosedHourMarkdown();
 });
+document.querySelector("#copy-last-weekday-fx-closed").addEventListener("click", async () => {
+  await copyLastWeekdayFxClosedHourMarkdown();
+});
 document.querySelector("#copy-last-open-bank").addEventListener("click", async () => {
   await copyLastOpenBankHourMarkdown();
 });
@@ -2117,6 +2121,10 @@ function copyLastWeekendFxClosedHourMarkdown() {
   const text = lastWeekendFxClosedHourToMarkdown(scenario);
   return copyTextWithFallback(text, "#last-weekend-fx-closed-copy-fallback", "Last weekend-FX-closed hour copied as one-line Markdown. This is a local drawing, not a live FX feed.");
 }
+function copyLastWeekdayFxClosedHourMarkdown() {
+  const text = lastWeekdayFxClosedHourToMarkdown(scenario);
+  return copyTextWithFallback(text, "#last-weekday-fx-closed-copy-fallback", "Last weekday-FX-closed hour copied as one-line Markdown. This is a local drawing, not a live FX feed.");
+}
 function jumpToFirstClosedBankCopy() {
   const control = document.querySelector("#copy-first-closed-bank");
   if (control) {
@@ -2405,6 +2413,15 @@ function jumpToLastWeekendFxClosedCopy() {
   }
   return jumpToGantt();
 }
+function jumpToLastWeekdayFxClosedCopy() {
+  const control = document.querySelector("#copy-last-weekday-fx-closed");
+  if (control) {
+    control.focus();
+    control.scrollIntoView?.({ block: "start" });
+    return true;
+  }
+  return jumpToGantt();
+}
 function jumpToHideWeekdayFxClosedFilter() {
   const control = document.querySelector("#gantt-hide-weekday-fx-closed");
   if (control) {
@@ -2580,6 +2597,7 @@ document.addEventListener("keydown", (event) => {
     return;
   }
   if (isEditableTarget(event.target)) return;
+  if (event.defaultPrevented) return;
   if (event.key === "?") {
     event.preventDefault();
     if (shortcutOverlay.hidden) openShortcutHelp();
@@ -2752,6 +2770,11 @@ document.addEventListener("keydown", (event) => {
     copyLastWeekendFxClosedHourMarkdown();
     return;
   }
+  if (event.key === "F10") {
+    event.preventDefault();
+    copyLastWeekdayFxClosedHourMarkdown();
+    return;
+  }
   if (event.key === "<") {
     event.preventDefault();
     jumpToFirstClosedBankCopy();
@@ -2837,6 +2860,11 @@ document.addEventListener("keydown", (event) => {
     jumpToLastWeekendFxClosedCopy();
     return;
   }
+  if (event.key === "F11") {
+    event.preventDefault();
+    jumpToLastWeekdayFxClosedCopy();
+    return;
+  }
   if (event.key === ">") {
     event.preventDefault();
     jumpToHideZeroQueueFilter();
@@ -2920,6 +2948,11 @@ document.addEventListener("keydown", (event) => {
   if (event.key === "F9") {
     event.preventDefault();
     jumpToHideWeekdayFxClosedFilter();
+    return;
+  }
+  if (event.key === "F12") {
+    event.preventDefault();
+    jumpToHideWeekendFxOpenFilter();
     return;
   }
   if (event.key === "n" || event.key === "N") {
