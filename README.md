@@ -195,6 +195,8 @@ The catalog also names first-skip-target-text copy, first-skip-target-text jump,
 That What's new entry is hub-only. It does not change workbench versions.
 The catalog also names last-skip-target-text copy, last-skip-target-text jump, and last-labelled-skip-target jump.
 That What's new entry is hub-only. It does not change workbench versions.
+The catalog also names first-labelled-skip-target-text copy, first-labelled-skip-target-text jump, and first-labelled-skip-label jump.
+That What's new entry is hub-only. It does not change workbench versions.
 These are
 browser tools on the case you opened, not hosted APIs. Each app also ships a `MODEL.md` (formulas and
 conventions), `CONTRIBUTING.md`, `SECURITY.md`, and its own `LICENSE`. The
