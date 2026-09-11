@@ -601,6 +601,23 @@ export const presets = Object.freeze({
       offer("O02", "Beach Salad Run", "Surf lunch pack", "Beach salad", 15, 15, 4, 42, 2),
       { ...offer("O03", "Hall Surf Pickup", "Surf lunch pack", "Beach water", 17, 22, 1, 44, 5), fulfillment: "pickup" }
     ]
+  },
+  triathlonCarnivalLunch: {
+    title: "Triathlon carnival lunch",
+    currency: "AUD",
+    buyers: [
+      buyer("B01", "Tri-rack crate", "Triathlon lunch pack", 15, 23, 4, ["Tri pie", "Beach salad"]),
+      buyer("B02", "Board-bag bench", "Triathlon lunch pack", 19, 19, 3, ["Tri pie"]),
+      buyer("B03", "Break hamper", "Triathlon lunch pack", 14, 21, 5, ["Beach salad", "Beach water"]),
+      buyer("B04", "Sideline cooler", "Triathlon lunch pack", 10, 18, 2, ["Beach water"]),
+      buyer("B05", "Scoreboard trolley", "Triathlon lunch pack", 16, 22, 4, ["Tri pie", "Beach water"]),
+      buyer("B06", "Bench table", "Triathlon lunch pack", 14, 20, 3, ["Beach salad", "Tri pie"])
+    ],
+    offers: [
+      offer("O01", "Court-side Triathlon Delivery", "Triathlon lunch pack", "Tri pie", 17, 17, 3, 54, 3),
+      offer("O02", "Beach Salad Run", "Triathlon lunch pack", "Beach salad", 15, 15, 4, 42, 2),
+      { ...offer("O03", "Hall Triathlon Pickup", "Triathlon lunch pack", "Beach water", 18, 23, 1, 46, 5), fulfillment: "pickup" }
+    ]
   }
 });
 
