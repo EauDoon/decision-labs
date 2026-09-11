@@ -153,5 +153,26 @@ test("standalone retains 1.4.18 tertiary remaining tools and 1.4.19 tertiary max
   assert.doesNotMatch(html.slice(html.indexOf('id="merchant-panel"'), html.indexOf('id="method-panel"')), /hide-first-leftover-only-buyer/u);
   assert.doesNotMatch(html.slice(html.indexOf('id="merchant-panel"'), html.indexOf('id="method-panel"')), /leftover-print-uncovered-maximum/u);
   assert.doesNotMatch(html.slice(html.indexOf('id="merchant-panel"'), html.indexOf('id="method-panel"')), /hideFirstLeftoverOnlyBuyer/u);
+  assert.match(html, /id="copy-leftover-uncovered-minimum"/u);
+  assert.match(html, /id="copy-leftover-uncovered-minimum"[^>]*aria-keyshortcuts="Delete"/u);
+  assert.match(html, /id="hide-last-winner-allocated-buyer"/u);
+  assert.match(html, /id="leftover-print-uncovered-minimum"/u);
+  assert.match(html, /Leftover uncovered minimum: none/u);
+  assert.match(html, /data-preset="softballCarnivalLunch"/u);
+  assert.match(html, /function copyLeftoverUncoveredMinimum\(/u);
+  assert.match(html, /function focusLeftoverUncoveredMinimumCopy\(/u);
+  assert.match(html, /function focusHideLastWinnerAllocatedBuyer\(/u);
+  assert.match(html, /filterBuyerIdsHidingLastWinnerAllocatedBuyer\(/u);
+  assert.match(html, /hideLastWinnerAllocatedBuyer/u);
+  assert.match(html, /createLeftoverUncoveredMinimumMarkdown\(/u);
+  assert.match(html, /if \(key === "Delete"\) \{\s*event\.preventDefault\(\);\s*copyLeftoverUncoveredMinimum\(\);/u);
+  assert.match(html, /if \(key === "F2"\) \{\s*event\.preventDefault\(\);\s*focusLeftoverUncoveredMinimumCopy\(\);/u);
+  assert.match(html, /if \(key === "ArrowRight"\) \{\s*event\.preventDefault\(\);\s*focusHideLastWinnerAllocatedBuyer\(\);/u);
+  assert.match(html, /function handleShortcut\(event\) \{\s*if \(event\.defaultPrevented \|\| event\.metaKey \|\| event\.ctrlKey \|\| event\.altKey\) return;/u);
+  assert.match(html, /const key = event\.key\.length === 1 \? event\.key\.toLowerCase\(\) : event\.key;/u);
+  assert.doesNotMatch(html.slice(html.indexOf('id="merchant-panel"'), html.indexOf('id="method-panel"')), /copy-leftover-uncovered-minimum/u);
+  assert.doesNotMatch(html.slice(html.indexOf('id="merchant-panel"'), html.indexOf('id="method-panel"')), /hide-last-winner-allocated-buyer/u);
+  assert.doesNotMatch(html.slice(html.indexOf('id="merchant-panel"'), html.indexOf('id="method-panel"')), /leftover-print-uncovered-minimum/u);
+  assert.doesNotMatch(html.slice(html.indexOf('id="merchant-panel"'), html.indexOf('id="method-panel"')), /hideLastWinnerAllocatedBuyer/u);
 });
 
