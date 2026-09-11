@@ -2670,9 +2670,9 @@ export function formatGroupsWithoutFloorCountMarkdown(proposal, options) {
  * Uses the same without-floor list as hideFirstGroupWithoutFloor and
  * hideLastGroupWithoutFloor.
  * Honest when remaining is zero or no inspected package is available.
- * Distinct prefix from groups-without-floor count copy, first
+ * Distinct prefix from last-without-floor remaining copy, first-without-floor
+ * remaining copy, first-without-floor cost copy, groups-without-floor count copy, first
  * group-without-floor label copy, last group-without-floor label copy,
- * last-without-floor remaining copy, first-without-floor remaining copy,
  * and remaining change-budget copy.
  * A floor is a number you entered, not a legal quorum.
  * Mixing weights are not a legal right.
@@ -2718,7 +2718,8 @@ export function formatGroupsWithoutFloorRemainingMarkdown(proposal, options) {
  * Honest when remaining is zero, none, or no inspected package is available.
  * Distinct prefix from aggregate groups-without-floor remaining copy, groups-without-floor
  * count copy, first group-without-floor label copy, last group-without-floor
- * label copy, first-without-floor remaining copy, and remaining change-budget copy.
+ * label copy, first-without-floor remaining copy, first-without-floor cost copy,
+ * and remaining change-budget copy.
  * A floor is a number you entered, not a legal quorum.
  * Mixing weights are not a legal right.
  * Do not treat labels as legal identities.
@@ -2769,8 +2770,8 @@ export function formatLastGroupWithoutFloorRemainingMarkdown(proposal, options) 
  * Honest when remaining is zero, none, or no inspected package is available.
  * Distinct prefix from last-without-floor remaining copy, aggregate
  * groups-without-floor remaining copy, groups-without-floor count copy, first
- * group-without-floor label copy, last group-without-floor label copy, and
- * remaining change-budget copy.
+ * group-without-floor label copy, last group-without-floor label copy,
+ * first-without-floor cost copy, and remaining change-budget copy.
  * A floor is a number you entered, not a legal quorum.
  * Mixing weights are not a legal right.
  * Do not treat labels as legal identities.
