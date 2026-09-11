@@ -54,6 +54,7 @@ import {
   formatLastGroupAtFloorLabelMarkdown,
   formatFirstGroupAtFloorLabelMarkdown,
   formatLastBelowSupportFloorGroupLabelMarkdown,
+  formatLastGroupWithoutFloorLabelMarkdown,
   formatRecommendedChangeCostCsv,
   changedClauseIds,
   groupsBelowSupportRequirement,
@@ -61,6 +62,7 @@ import {
   groupsMeetingApprovalThreshold,
   groupsBelowApprovalThreshold,
   groupsBelowDeclaredSupportFloor,
+  groupsWithoutDeclaredSupportFloor,
   overBudgetClauseIds,
   clausesWithoutCheaperRemainingOption,
   formatGroupSupportMarkdown,
@@ -1062,6 +1064,39 @@ const presets = {
           { id: "water-polo-changing-room-lockup-original", original: true, label: "Leave the water polo pool changing-room door on a shared padlock after club hours", changeCost: 0, support: { students: 18, neighbours: 34, pandc: 38 } },
           { id: "water-polo-changing-room-lockup-steward", original: false, label: "Require a P&C steward to lock the water polo pool changing room before 21:45", changeCost: 3, support: { students: 64, neighbours: 56, pandc: 72 } },
           { id: "water-polo-changing-room-lockup-timer", original: false, label: "Add a timed lock on the water polo pool changing-room door after the last session", changeCost: 2, support: { students: 53, neighbours: 51, pandc: 64 } },
+        ],
+      },
+    ],
+  },
+  "rowing-club-hours": {
+    title: "Rowing club hours: pontoon booking, clubhouse bar, and changing-room lock-up",
+    threshold: 70,
+    maxChangeCost: 8,
+    groups: [
+      { id: "students", name: "Students", weight: 4 },
+      { id: "neighbours", name: "Neighbours", weight: 3, veto: true },
+      { id: "pandc", name: "P&C", weight: 2 },
+    ],
+    clauses: [
+      {
+        id: "rowing-pontoon-booking", title: "Rowing pontoon booking", options: [
+          { id: "rowing-pontoon-booking-original", original: true, label: "Keep weekday rowing pontoon and boat-house booking from 15:30 with no posted pontoon rota", changeCost: 0, support: { students: 12, neighbours: 91, pandc: 53 } },
+          { id: "rowing-pontoon-booking-late", original: false, label: "Open weekday rowing at 17:45 with a posted boat-house rota", changeCost: 2, support: { students: 82, neighbours: 39, pandc: 50 } },
+          { id: "rowing-pontoon-booking-weekend", original: false, label: "Hold Sunday morning pontoon at 09:15 with a boat-house booking card", changeCost: 4, support: { students: 66, neighbours: 47, pandc: 51 } },
+        ],
+      },
+      {
+        id: "rowing-clubhouse-bar", title: "Clubhouse bar", options: [
+          { id: "rowing-clubhouse-bar-original", original: true, label: "No posted rowing clubhouse-bar hours", changeCost: 0, support: { students: 77, neighbours: 14, pandc: 28 } },
+          { id: "rowing-clubhouse-bar-cap", original: false, label: "Close the rowing clubhouse bar at 19:15 and keep drinks inside the clubhouse", changeCost: 1, support: { students: 47, neighbours: 85, pandc: 60 } },
+          { id: "rowing-clubhouse-bar-cut", original: false, label: "Serve tea only after 18:00 and retire the rowing clubhouse bar", changeCost: 5, support: { students: 33, neighbours: 87, pandc: 45 } },
+        ],
+      },
+      {
+        id: "rowing-changing-room-lockup", title: "Changing-room lock-up", options: [
+          { id: "rowing-changing-room-lockup-original", original: true, label: "Leave the rowing boat-house changing-room door on a shared padlock after club hours", changeCost: 0, support: { students: 16, neighbours: 36, pandc: 40 } },
+          { id: "rowing-changing-room-lockup-steward", original: false, label: "Require a P&C steward to lock the rowing boat-house changing room before 20:45", changeCost: 3, support: { students: 62, neighbours: 54, pandc: 74 } },
+          { id: "rowing-changing-room-lockup-timer", original: false, label: "Add a timed lock on the rowing boat-house changing-room door after the last session", changeCost: 2, support: { students: 51, neighbours: 49, pandc: 66 } },
         ],
       },
     ],
