@@ -1,0 +1,31 @@
+import assert from "node:assert/strict";
+import test from "node:test";
+import { readFile } from "node:fs/promises";
+
+test("keyboard Home is wired to the last-open-bank-hour copy control", async () => {
+  const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
+  const app = await readFile(new URL("../src/app.js", import.meta.url), "utf8");
+  assert.match(html, /id="copy-last-open-bank"/);
+  assert.match(html, /id="gantt-title"/);
+  assert.match(html, /<kbd>Home<\/kbd>/);
+  assert.match(html, /Jump to the last-open-bank-hour copy control/);
+  assert.match(app, /function jumpToLastOpenBankCopy/);
+  assert.match(app, /#copy-last-open-bank/);
+  assert.ok(app.includes('event.key === "Home"'));
+  assert.ok(app.includes('event.key === "2"'));
+  assert.match(app, /function jumpToLastClosedBankCopy/);
+  assert.match(app, /function jumpToGantt/);
+  assert.notEqual(app.match(/function jumpToLastOpenBankCopy/)?.[0], app.match(/function jumpToLastClosedBankCopy/)?.[0]);
+  assert.notEqual(app.match(/function jumpToLastOpenBankCopy/)?.[0], app.match(/function jumpToLastOpenIssuerCopy/)?.[0]);
+  assert.notEqual(app.match(/function jumpToLastOpenBankCopy/)?.[0], app.match(/function jumpToGantt/)?.[0]);
+  const homeFn = app.slice(app.indexOf("function jumpToLastOpenBankCopy"), app.indexOf("function jumpToHideWeekendIssuerClosedFilter"));
+  assert.match(homeFn, /jumpToGantt\(\)/);
+  assert.doesNotMatch(homeFn, /copyLastOpenBankHourMarkdown/);
+  assert.doesNotMatch(homeFn, /copyLastClosedBankHourMarkdown/);
+  assert.doesNotMatch(homeFn, /copyLastOpenIssuerHourMarkdown/);
+  const handler = app.slice(app.indexOf('document.addEventListener("keydown"'));
+  assert.ok(handler.indexOf('event.key === "Home"') !== handler.indexOf('event.key === "2"'));
+  assert.match(handler, /jumpToLastOpenBankCopy\(\)/);
+  assert.doesNotMatch(handler.slice(handler.indexOf('event.key === "Home"'), handler.indexOf('event.key === "Home"') + 180), /copyLastOpenBankHourMarkdown/);
+  assert.doesNotMatch(handler.slice(handler.indexOf('event.key === "Home"'), handler.indexOf('event.key === "Home"') + 180), /copyLastClosedBankHourMarkdown/);
+});
