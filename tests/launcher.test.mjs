@@ -3,8 +3,28 @@ import assert from 'node:assert/strict';
 import { request } from 'node:http';
 import { readFileSync } from 'node:fs';
 import { spawnSync } from 'node:child_process';
+import { fileURLToPath } from 'node:url';
 import vm from 'node:vm';
 import { createLauncher, parsePort, PUBLIC_PATHS, publicFile, CONTENT_SECURITY_POLICY, notFoundPage, catalogVersionLine, catalogJobs, catalogLastWhatsNewHeading, catalogFirstWhatsNewHeading, catalogFirstWorkbenchHeading, catalogLastWorkbenchHeading, catalogLastReviewPath, catalogFirstReviewPath, catalogFirstOpenHref, catalogLastOpenHref, catalogFirstSkipHref, catalogLastSkipHref, catalogFirstSkipText } from '../scripts/serve.mjs';
+
+test('all analyst commands reject Windows console aliases before opening input', { skip: process.platform !== 'win32' }, () => {
+  const commands = [
+    ['common-cart', ['market', '--input'], 1],
+    ['smallest-agreement', ['solve'], 2],
+    ['partnership-breakpoint', ['summary'], 1],
+    ['weekend-gap', ['simulate'], 1],
+  ];
+  for (const [app, args, exitCode] of commands) {
+    for (const alias of ['CONIN$', 'CONOUT$']) {
+      const script = fileURLToPath(new URL(`../apps/${app}/scripts/analyze.mjs`, import.meta.url));
+      const result = spawnSync(process.execPath, [script, ...args, alias], { encoding: 'utf8', timeout: 5000 });
+      assert.ifError(result.error);
+      assert.equal(result.status, exitCode, app + ': ' + result.stderr);
+      assert.equal(result.stdout, '');
+      assert.match(result.stderr, /local file|device|network/);
+    }
+  }
+});
 
 test('launcher serves only workbenches and refuses hostile hosts and methods', async (t) => {
   const server = createLauncher();

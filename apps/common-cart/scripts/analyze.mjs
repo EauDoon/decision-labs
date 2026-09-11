@@ -32,7 +32,7 @@ Results are organizer-private, synthetic planning aids, never orders.
 `;
 
 function localPath(path) {
-  if (!path || /^[\\/]{2}/.test(path) || path.split(/[\\/]/).some(part => /^(con|prn|aux|nul|com[0-9¹²³]|lpt[0-9¹²³])$/i.test(part.split('.')[0].trimEnd())) || /:/.test(path.replace(/^[A-Za-z]:[\\/]/, ''))) {
+  if (!path || /^[\\/]{2}/.test(path) || path.split(/[\\/]/).some(part => /^(con|conin\$|conout\$|prn|aux|nul|com[0-9¹²³]|lpt[0-9¹²³])$/i.test(part.split('.')[0].trimEnd())) || /:/.test(path.replace(/^[A-Za-z]:[\\/]/, ''))) {
     throw new Error('Use an ordinary local file path, not a device, stream, or network path.');
   }
   return path;
