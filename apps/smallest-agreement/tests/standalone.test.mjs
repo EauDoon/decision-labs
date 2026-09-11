@@ -2551,7 +2551,7 @@ test("sailing club hours preset loads a distinct synthetic sailing workshop", as
   assert.match(app.groups(), /Neighbours/u);
   assert.match(app.groups(), /P&amp;C/u);
   assert.match(app.firstGroupWithoutFloor(), /First group without a support floor: Students/u);
-  assert.match(app.lastGroupWithoutFloor(), /Last group without a support floor: P&C/u);
+  assert.match(app.lastGroupWithoutFloor(), /Last group without a support floor: P&amp;C/u);
   assert.doesNotMatch(app.firstGroupWithoutFloor(), /Last group without a support floor/u);
   assert.doesNotMatch(app.lastGroupWithoutFloor(), /First group without a support floor/u);
   assert.doesNotMatch(app.title(), /Rowing club hours/u);
