@@ -1956,6 +1956,9 @@ test('keyboard shortcuts open help, undo, redo, and export without stealing from
   assert.match(app.markup(), /<kbd>1<\/kbd> Copy first spare-capacity remaining listed capacity as Markdown/);
   assert.match(app.markup(), /<kbd>2<\/kbd> Jump to Copy first spare-capacity remaining listed capacity, or the results heading if missing/);
   assert.match(app.markup(), /<kbd>3<\/kbd> Jump to Hide the last participant without listed capacity, or the Participants heading if missing/);
+  assert.match(app.markup(), /<kbd>4<\/kbd> Copy last unbounded remaining-to-hold as Markdown/);
+  assert.match(app.markup(), /<kbd>Home<\/kbd> Jump to Copy last unbounded remaining-to-hold, or the Participants heading if missing/);
+  assert.match(app.markup(), /<kbd>End<\/kbd> Jump to Hide the first participant without listed capacity, or the Participants heading if missing/);
   assert.match(app.markup(), /<kbd>\+<\/kbd> Jump to Copy first over-capacity participant label, or the First breakpoint or Participants heading if missing/);
   assert.match(app.markup(), /<kbd>!<\/kbd> Jump to Copy first over-capacity remaining listed capacity, or the First breakpoint or Participants heading if missing/);
   assert.match(app.markup(), /<kbd>\|<\/kbd> Jump to Hide the first-breakpoint participant, or the Participants heading if missing/);
