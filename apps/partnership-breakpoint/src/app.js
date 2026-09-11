@@ -84,6 +84,7 @@ let firstOverCapacityLabelCopyText = '';
 let firstOverCapacityRemainingCopyText = '';
 let lastOverCapacityLabelCopyText = '';
 let lastOverCapacityRemainingCopyText = '';
+let lastOverCapacityVolumeCopyText = '';
 let firstWithinCapacityRemainingCopyText = '';
 let lastWithinCapacityRemainingCopyText = '';
 let lastSpareCapacityRemainingCopyText = '';
@@ -163,6 +164,7 @@ function checkpoint() {
   firstOverCapacityRemainingCopyText = '';
   lastOverCapacityLabelCopyText = '';
   lastOverCapacityRemainingCopyText = '';
+  lastOverCapacityVolumeCopyText = '';
   firstWithinCapacityRemainingCopyText = '';
   lastWithinCapacityRemainingCopyText = '';
   lastSpareCapacityRemainingCopyText = '';
@@ -218,6 +220,7 @@ function travelHistory(direction) {
   firstOverCapacityRemainingCopyText = '';
   lastOverCapacityLabelCopyText = '';
   lastOverCapacityRemainingCopyText = '';
+  lastOverCapacityVolumeCopyText = '';
   firstWithinCapacityRemainingCopyText = '';
   lastWithinCapacityRemainingCopyText = '';
   lastSpareCapacityRemainingCopyText = '';
@@ -1165,7 +1168,7 @@ function invalidSummary() {
 function resultsPanel(result) {
   if (!result) {
     const errors = validateConfiguration(state).errors;
-    return `<section class="results" id="results-start">${errorBox(errors)}${importedCompareSection()}${notesCopySection()}${waterfallCopySection()}${viabilityCopySection()}${utilizationCopySection()}${tornadoCopySection()}${operatingCopySection()}${splitCopySection()}${allocationCopySection()}${breakpointSnapshotCopySection()}${titleCopySection()}${breakpointLabelCopySection()}${remainingCopySection()}${volumeCopySection()}${viabilityLabelCopySection()}${overCapacityCountCopySection()}${firstOverCapacityLabelCopySection()}${firstOverCapacityRemainingCopySection()}${lastOverCapacityLabelCopySection()}${lastOverCapacityRemainingCopySection()}${firstWithinCapacityRemainingCopySection()}${lastWithinCapacityRemainingCopySection()}${lastSpareCapacityRemainingCopySection()}${firstSpareCapacityRemainingCopySection()}${lastUnboundedRemainingCopySection()}${firstUnboundedRemainingCopySection()}${lastAtHoldRemainingCopySection()}${firstAtHoldRemainingCopySection()}${lastZeroShareLabelCopySection()}${lastZeroShareRemainingCopySection()}${lastZeroShareVolumeCopySection()}${firstZeroShareRemainingCopySection()}${firstZeroShareVolumeCopySection()}${firstZeroShareLabelCopySection()}${lastBreakpointLabelCopySection()}<section class="panel"><div class="panel-heading"><h2>Model status</h2></div><div class="panel-body"><p class="notice">Calculations return once every required field is valid and shares reconcile to 1.</p></div></section>${methodAndLimits()}</section>`;
+    return `<section class="results" id="results-start">${errorBox(errors)}${importedCompareSection()}${notesCopySection()}${waterfallCopySection()}${viabilityCopySection()}${utilizationCopySection()}${tornadoCopySection()}${operatingCopySection()}${splitCopySection()}${allocationCopySection()}${breakpointSnapshotCopySection()}${titleCopySection()}${breakpointLabelCopySection()}${remainingCopySection()}${volumeCopySection()}${viabilityLabelCopySection()}${overCapacityCountCopySection()}${firstOverCapacityLabelCopySection()}${firstOverCapacityRemainingCopySection()}${lastOverCapacityLabelCopySection()}${lastOverCapacityRemainingCopySection()}${lastOverCapacityVolumeCopySection()}${firstWithinCapacityRemainingCopySection()}${lastWithinCapacityRemainingCopySection()}${lastSpareCapacityRemainingCopySection()}${firstSpareCapacityRemainingCopySection()}${lastUnboundedRemainingCopySection()}${firstUnboundedRemainingCopySection()}${lastAtHoldRemainingCopySection()}${firstAtHoldRemainingCopySection()}${lastZeroShareLabelCopySection()}${lastZeroShareRemainingCopySection()}${lastZeroShareVolumeCopySection()}${firstZeroShareRemainingCopySection()}${firstZeroShareVolumeCopySection()}${firstZeroShareLabelCopySection()}${lastBreakpointLabelCopySection()}<section class="panel"><div class="panel-heading"><h2>Model status</h2></div><div class="panel-body"><p class="notice">Calculations return once every required field is valid and shares reconcile to 1.</p></div></section>${methodAndLimits()}</section>`;
   }
   const statusClass = result.viable ? 'viable' : 'fragile';
   const status = result.viable ? 'Operating region holds' : 'A participant exits';
@@ -1199,6 +1202,7 @@ function resultsPanel(result) {
     <section class="print-only print-keep"><h2>First over-capacity remaining listed capacity</h2><p>${escapeAttribute(firstOverCapacityRemainingMarkdown(result))}</p></section>
     <section class="print-only print-keep"><h2>Last over-capacity participant</h2><p>${escapeAttribute(lastOverCapacityLabelMarkdown(result))}</p></section>
     <section class="print-only print-keep"><h2>Last over-capacity remaining listed capacity</h2><p>${escapeAttribute(lastOverCapacityRemainingMarkdown(result))}</p></section>
+    <section class="print-only print-keep"><h2>Last over-capacity volume-to-hold</h2><p>${escapeAttribute(lastOverCapacityVolumeMarkdown(result))}</p></section>
     <section class="print-only print-keep"><h2>First within-capacity remaining listed capacity</h2><p>${escapeAttribute(firstWithinCapacityRemainingMarkdown(result))}</p></section>
     <section class="print-only print-keep"><h2>Last within-capacity remaining listed capacity</h2><p>${escapeAttribute(lastWithinCapacityRemainingMarkdown(result))}</p></section>
     <section class="print-only print-keep"><h2>Last spare-capacity remaining listed capacity</h2><p>${escapeAttribute(lastSpareCapacityRemainingMarkdown(result))}</p></section>
@@ -1256,6 +1260,7 @@ function resultsPanel(result) {
     ${firstOverCapacityRemainingCopySection()}
     ${lastOverCapacityLabelCopySection()}
     ${lastOverCapacityRemainingCopySection()}
+    ${lastOverCapacityVolumeCopySection()}
     ${firstWithinCapacityRemainingCopySection()}
     ${lastWithinCapacityRemainingCopySection()}
     ${lastSpareCapacityRemainingCopySection()}
@@ -1764,6 +1769,7 @@ function attachEvents() {
     if (action === 'close-first-over-capacity-remaining-copy') { firstOverCapacityRemainingCopyText = ''; render(); return; }
     if (action === 'close-last-over-capacity-label-copy') { lastOverCapacityLabelCopyText = ''; render(); return; }
     if (action === 'close-last-over-capacity-remaining-copy') { lastOverCapacityRemainingCopyText = ''; render(); return; }
+    if (action === 'close-last-over-capacity-volume-copy') { lastOverCapacityVolumeCopyText = ''; render(); return; }
     if (action === 'close-first-within-capacity-remaining-copy') { firstWithinCapacityRemainingCopyText = ''; render(); return; }
     if (action === 'close-last-within-capacity-remaining-copy') { lastWithinCapacityRemainingCopyText = ''; render(); return; }
     if (action === 'close-last-spare-capacity-remaining-copy') { lastSpareCapacityRemainingCopyText = ''; render(); return; }
@@ -2314,6 +2320,7 @@ function attachEvents() {
     if (action === 'copy-first-over-capacity-remaining') copyFirstOverCapacityRemaining();
     if (action === 'copy-last-over-capacity-label') copyLastOverCapacityLabel();
     if (action === 'copy-last-over-capacity-remaining') copyLastOverCapacityRemaining();
+    if (action === 'copy-last-over-capacity-volume') copyLastOverCapacityVolume();
     if (action === 'copy-first-within-capacity-remaining') copyFirstWithinCapacityRemaining();
     if (action === 'copy-last-within-capacity-remaining') copyLastWithinCapacityRemaining();
     if (action === 'copy-last-spare-capacity-remaining') copyLastSpareCapacityRemaining();
@@ -3865,6 +3872,65 @@ function copyLastOverCapacityRemaining() {
     }
   }
   showLastOverCapacityRemainingCopyFallback(text, fallbackNote);
+}
+
+function lastOverCapacityVolumeMarkdown(result) {
+  if (!result) return 'Last over-capacity volume-to-hold: none entered.';
+  let participant = null;
+  for (const item of state.participants) {
+    if (participantOverListedCapacity(result, item)) participant = item;
+  }
+  if (!participant) return 'Last over-capacity volume-to-hold: none entered.';
+  const named = result.participants.find((item) => item.id === participant.id);
+  const volume = named?.exitVolume;
+  if (volume == null || !Number.isFinite(volume)) {
+    return 'Last over-capacity volume-to-hold: volume to hold is not a finite amount for ' + reportText(named?.name ?? participant.name) + '. Volume to hold. Not a forecast.';
+  }
+  return 'Last over-capacity volume-to-hold: ' + formatVolume(volume) + ' for ' + reportText(named?.name ?? participant.name) + '. Volume to hold. Not a forecast.';
+}
+
+function showLastOverCapacityVolumeCopyFallback(text, message) {
+  lastOverCapacityVolumeCopyText = text;
+  render();
+  document.querySelector('#last-over-capacity-volume-copy-text')?.focus();
+  setNotice(message);
+}
+
+function lastOverCapacityVolumeCopySection() {
+  if (!lastOverCapacityVolumeCopyText) return '';
+  return `<section class="panel" aria-labelledby="last-over-capacity-volume-copy-title"><div class="panel-heading"><h2 id="last-over-capacity-volume-copy-title">Last over-capacity volume-to-hold Markdown</h2><button type="button" data-action="close-last-over-capacity-volume-copy">Close</button></div><div class="panel-body"><p>Clipboard is unavailable in this browser. Select the Markdown below and copy it. This is volume to hold for the last roster row currently over listed capacity. It is distinct from last over-capacity remaining listed capacity copy, first over-capacity remaining listed capacity copy, last over-capacity label copy, first-zero-share volume-to-hold copy, last zero-share volume-to-hold copy, remaining-to-hold copy, and first-breakpoint volume-to-hold copy. It is organizer or planner copy, not a forecast of who will exit.</p><label class="brief-copy-label" for="last-over-capacity-volume-copy-text">Last over-capacity volume-to-hold Markdown</label><textarea id="last-over-capacity-volume-copy-text" readonly rows="4">${escapeAttribute(lastOverCapacityVolumeCopyText)}</textarea></div></section>`;
+}
+
+function copyLastOverCapacityVolume() {
+  const validation = validateConfiguration(state);
+  const result = validation.valid ? calculatePartnership(state) : null;
+  const text = lastOverCapacityVolumeMarkdown(result);
+  const clipboard = globalThis.navigator?.clipboard;
+  const copiedNote = 'Last over-capacity volume-to-hold copied as Markdown. Volume to hold. It is organizer or planner copy, not a forecast of who will exit.';
+  const fallbackNote = 'Clipboard unavailable. Copy the Markdown from the text area.';
+  if (clipboard && typeof clipboard.writeText === 'function') {
+    try {
+      const written = clipboard.writeText(text);
+      if (written && typeof written.then === 'function') {
+        written.then(() => {
+          lastOverCapacityVolumeCopyText = '';
+          render();
+          setNotice(copiedNote);
+        }).catch(() => {
+          showLastOverCapacityVolumeCopyFallback(text, fallbackNote);
+        });
+        return;
+      }
+      lastOverCapacityVolumeCopyText = '';
+      render();
+      setNotice(copiedNote);
+      return;
+    } catch {
+      showLastOverCapacityVolumeCopyFallback(text, fallbackNote);
+      return;
+    }
+  }
+  showLastOverCapacityVolumeCopyFallback(text, fallbackNote);
 }
 
 function firstWithinCapacityRemainingMarkdown(result) {
