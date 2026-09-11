@@ -2818,6 +2818,11 @@
           (document.getElementById('whats-new') || document.getElementById('catalog-heading'))?.focus();
           return;
         }
+        if (event.shiftKey && event.key === 'F10') {
+          event.preventDefault();
+          firstLabelledSkipTargetTextBtn?.click();
+          return;
+        }
         if (event.key === 'F10') {
           event.preventDefault();
           lastSkipTargetTextBtn?.click();
