@@ -146,6 +146,7 @@ test('catalog names current workbench tools without live services', () => {
   assert.match(html, /Kayaking carnival, first-zero-share remaining copy, and first-zero-share hide jump in Partnership Breakpoint 1\.5\.27/);
   assert.match(html, /Dragon boat carnival, last-zero-share volume copy, and zero-share hide jump in Partnership Breakpoint 1\.5\.28/);
   assert.match(html, /Surf carnival, first-zero-share volume copy, and last-zero-share hide jump in Partnership Breakpoint 1\.5\.29/);
+  assert.match(html, /Triathlon carnival, last-over-capacity volume copy, and first-over-capacity hide jump in Partnership Breakpoint 1\.5\.30/);
   assert.match(html, /Leftover fill and overlap counts in Common Cart 1\.3\.1/);
   assert.match(html, /Offer CSV, sort, and leftover headroom in Common Cart 1\.3\.2/);
   assert.match(html, /Offer export, variant filter, and empty-offer recovery in Common Cart 1\.3\.3/);
@@ -319,6 +320,7 @@ test('catalog names current workbench tools without live services', () => {
   assert.match(readme, /first-zero-share remaining copy shortcut, the Kayaking carnival split start/);
   assert.match(readme, /last-zero-share volume copy shortcut, the Dragon boat carnival split start/);
   assert.match(readme, /first-zero-share volume copy shortcut, the Surf carnival split start/);
+  assert.match(readme, /last-over-capacity volume copy shortcut, the Triathlon carnival split start/);
   assert.match(readme, /package pin, locks, and notes/);
   assert.match(readme, /facilitator pack, group CSV/);
   assert.match(readme, /clause CSV\s+import, veto-only filter/);
@@ -5634,6 +5636,7 @@ test('What\'s new and README name first What\'s new copy, intro jump, and skip-l
   assert.equal(headings.includes('Kayaking carnival, first-zero-share remaining copy, and first-zero-share hide jump in Partnership Breakpoint 1.5.27'), true);
   assert.equal(headings.includes('Dragon boat carnival, last-zero-share volume copy, and zero-share hide jump in Partnership Breakpoint 1.5.28'), true);
   assert.equal(headings.includes('Surf carnival, first-zero-share volume copy, and last-zero-share hide jump in Partnership Breakpoint 1.5.29'), true);
+  assert.equal(headings.includes('Triathlon carnival, last-over-capacity volume copy, and first-over-capacity hide jump in Partnership Breakpoint 1.5.30'), true);
   assert.equal(headings.includes('Swimming carnival lunch, leftover-fulfillment copy, and winner-allocated hide in Common Cart 1.4.12'), true);
   assert.equal(headings.includes('Athletics carnival lunch, leftover-delivery copy, and leftover-fill hide in Common Cart 1.4.13'), true);
   assert.equal(headings.includes('Cricket carnival lunch, leftover-pickup copy, and last leftover-fill hide in Common Cart 1.4.14'), true);
@@ -5744,6 +5747,7 @@ test('What\'s new and README name first-workbench copy, first-card jump, and fir
   assert.equal(headings.includes('Kayaking carnival, first-zero-share remaining copy, and first-zero-share hide jump in Partnership Breakpoint 1.5.27'), true);
   assert.equal(headings.includes('Dragon boat carnival, last-zero-share volume copy, and zero-share hide jump in Partnership Breakpoint 1.5.28'), true);
   assert.equal(headings.includes('Surf carnival, first-zero-share volume copy, and last-zero-share hide jump in Partnership Breakpoint 1.5.29'), true);
+  assert.equal(headings.includes('Triathlon carnival, last-over-capacity volume copy, and first-over-capacity hide jump in Partnership Breakpoint 1.5.30'), true);
   assert.equal(headings.includes('Athletics carnival lunch, leftover-delivery copy, and leftover-fill hide in Common Cart 1.4.13'), true);
   assert.equal(headings.includes('Cricket carnival lunch, leftover-pickup copy, and last leftover-fill hide in Common Cart 1.4.14'), true);
   assert.equal(headings.includes('Tennis carnival lunch, leftover-label copy, and first leftover-fill hide in Common Cart 1.4.15'), true);
