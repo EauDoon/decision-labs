@@ -1,0 +1,30 @@
+import assert from "node:assert/strict";
+import test from "node:test";
+import { readFile } from "node:fs/promises";
+
+test("keyboard F10 is wired to copy last weekday-FX-closed hour through the new control", async () => {
+  const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
+  const app = await readFile(new URL("../src/app.js", import.meta.url), "utf8");
+  assert.match(html, /id="copy-last-weekday-fx-closed"/);
+  assert.match(html, /<kbd>F10<\/kbd>/u);
+  assert.match(html, /Copy last weekday-FX-closed hour as Markdown/);
+  assert.match(html, /id="copy-last-weekday-fx-closed"[^>]*aria-keyshortcuts="F10"/);
+  assert.match(app, /function copyLastWeekdayFxClosedHourMarkdown/);
+  assert.match(app, /lastWeekdayFxClosedHourToMarkdown\(scenario\)/);
+  assert.match(app, /event\.key === "F10"/);
+  assert.match(app, /copyLastWeekdayFxClosedHourMarkdown\(\)/);
+  assert.match(app, /event\.key === "F7"/);
+  assert.match(app, /copyLastWeekendFxClosedHourMarkdown\(\)/);
+  assert.match(app, /event\.key === "Delete"/);
+  assert.match(app, /copyLastClosedFxHourMarkdown\(\)/);
+  assert.match(app, /event\.key === "F3"/);
+  assert.match(app, /copyLastClosedPayoutHourMarkdown\(\)/);
+  assert.match(app, /if \(event\.defaultPrevented\) return/);
+  assert.notEqual(app.match(/function copyLastWeekdayFxClosedHourMarkdown/)?.[0], app.match(/function copyLastWeekendFxClosedHourMarkdown/)?.[0]);
+  assert.notEqual(app.match(/function copyLastWeekdayFxClosedHourMarkdown/)?.[0], app.match(/function copyLastClosedFxHourMarkdown/)?.[0]);
+  assert.notEqual(app.match(/function copyLastWeekdayFxClosedHourMarkdown/)?.[0], app.match(/function copyLastClosedPayoutHourMarkdown/)?.[0]);
+  const handler = app.slice(app.indexOf('document.addEventListener("keydown"'));
+  assert.ok(handler.indexOf('event.key === "F10"') !== handler.indexOf('event.key === "F7"'));
+  assert.ok(handler.indexOf('event.key === "F10"') !== handler.indexOf('event.key === "Delete"'));
+  assert.ok(handler.indexOf('event.key === "F10"') !== handler.indexOf('event.key === "F3"'));
+});
