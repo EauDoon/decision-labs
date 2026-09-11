@@ -52,6 +52,7 @@ import {
   formatLastGroupAtOrAboveThresholdLabelMarkdown,
   formatFirstGroupAtOrAboveThresholdLabelMarkdown,
   formatLastGroupAtFloorLabelMarkdown,
+  formatFirstGroupAtFloorLabelMarkdown,
   formatLastBelowSupportFloorGroupLabelMarkdown,
   formatRecommendedChangeCostCsv,
   changedClauseIds,
@@ -1032,6 +1033,39 @@ const presets = {
       },
     ],
   },
+  "water-polo-club-hours": {
+    title: "Water polo club hours: pool booking, clubhouse bar, and changing-room lock-up",
+    threshold: 70,
+    maxChangeCost: 8,
+    groups: [
+      { id: "students", name: "Students", weight: 4 },
+      { id: "neighbours", name: "Neighbours", weight: 3, veto: true },
+      { id: "pandc", name: "P&C", weight: 2 },
+    ],
+    clauses: [
+      {
+        id: "water-polo-pool-booking", title: "Water polo pool booking", options: [
+          { id: "water-polo-pool-booking-original", original: true, label: "Keep weekday water polo pool booking from 17:00 with no posted pool rota", changeCost: 0, support: { students: 13, neighbours: 93, pandc: 55 } },
+          { id: "water-polo-pool-booking-late", original: false, label: "Open weekday water polo at 19:15 with a posted pool rota", changeCost: 2, support: { students: 80, neighbours: 41, pandc: 52 } },
+          { id: "water-polo-pool-booking-weekend", original: false, label: "Hold Saturday evening pool at 18:30 with a booking card", changeCost: 4, support: { students: 67, neighbours: 48, pandc: 49 } },
+        ],
+      },
+      {
+        id: "water-polo-clubhouse-bar", title: "Clubhouse bar", options: [
+          { id: "water-polo-clubhouse-bar-original", original: true, label: "No posted water polo clubhouse-bar hours", changeCost: 0, support: { students: 79, neighbours: 12, pandc: 26 } },
+          { id: "water-polo-clubhouse-bar-cap", original: false, label: "Close the water polo clubhouse bar at 20:30 and keep drinks inside the clubhouse", changeCost: 1, support: { students: 49, neighbours: 83, pandc: 62 } },
+          { id: "water-polo-clubhouse-bar-cut", original: false, label: "Serve tea only after 19:15 and retire the water polo clubhouse bar", changeCost: 5, support: { students: 31, neighbours: 89, pandc: 47 } },
+        ],
+      },
+      {
+        id: "water-polo-changing-room-lockup", title: "Changing-room lock-up", options: [
+          { id: "water-polo-changing-room-lockup-original", original: true, label: "Leave the water polo pool changing-room door on a shared padlock after club hours", changeCost: 0, support: { students: 18, neighbours: 34, pandc: 38 } },
+          { id: "water-polo-changing-room-lockup-steward", original: false, label: "Require a P&C steward to lock the water polo pool changing room before 21:45", changeCost: 3, support: { students: 64, neighbours: 56, pandc: 72 } },
+          { id: "water-polo-changing-room-lockup-timer", original: false, label: "Add a timed lock on the water polo pool changing-room door after the last session", changeCost: 2, support: { students: 53, neighbours: 51, pandc: 64 } },
+        ],
+      },
+    ],
+  },
 };
 
 let agreementReviewPacket = null;
@@ -1065,6 +1099,7 @@ let hideFirstGroupAtOrAboveThreshold = false;
 let hideLastGroupAtFloor = false;
 let hideFirstGroupAtFloor = false;
 let hideFirstGroupBelowFloor = false;
+let hideLastGroupBelowFloor = false;
 let overBudgetClausesOnly = false;
 let noCheaperRemainingClausesOnly = false;
 let printRedacted = false;
@@ -1186,6 +1221,11 @@ function renderCopyFallbacks(result) {
     const listed = formatLastGroupAtFloorLabelMarkdown(state.proposal, inspectedPackage(result ?? currentResult()));
     lastGroupAtFloorBox.value = listed.status === "ok" || listed.status === "unavailable" ? listed.text : "";
   }
+  const firstGroupAtFloorBox = $("#first-group-at-floor-fallback");
+  if (firstGroupAtFloorBox) {
+    const listed = formatFirstGroupAtFloorLabelMarkdown(state.proposal, inspectedPackage(result ?? currentResult()));
+    firstGroupAtFloorBox.value = listed.status === "ok" || listed.status === "unavailable" ? listed.text : "";
+  }
   const lastBelowFloorGroupBox = $("#last-below-floor-group-fallback");
   if (lastBelowFloorGroupBox) {
     const listed = formatLastBelowSupportFloorGroupLabelMarkdown(state.proposal, inspectedPackage(result ?? currentResult()));
@@ -1252,6 +1292,7 @@ function loadWorkspacePrefs() {
     hideLastGroupAtFloor = parsed?.hideLastGroupAtFloor === true;
     hideFirstGroupAtFloor = parsed?.hideFirstGroupAtFloor === true;
     hideFirstGroupBelowFloor = parsed?.hideFirstGroupBelowFloor === true;
+    hideLastGroupBelowFloor = parsed?.hideLastGroupBelowFloor === true;
     noCheaperRemainingClausesOnly = parsed?.noCheaperRemainingClausesOnly === true;
   } catch {
     /* storage may be unavailable or invalid */
@@ -1260,7 +1301,7 @@ function loadWorkspacePrefs() {
 
 function persistWorkspacePrefs() {
   try {
-    localStorage.setItem(WORKSPACE_KEY, JSON.stringify({ clauseDensity, vetoGroupsOnly, lockedClausesOnly, hideUnlockedClauses, hideLockedClauses, changedClausesOnly, belowFloorGroupsOnly, overBudgetClausesOnly, hideGroupsAtFloor, hideGroupsWithoutFloors, hideGroupsMeetingThreshold, hideGroupsBelowThreshold, hideVetoGroups, hideNonVetoGroups, hideFirstVetoGroup, hideLastVetoGroup, hideFirstNonVetoGroup, hideLastNonVetoGroup, hideLastGroupBelowThreshold, hideFirstGroupBelowThreshold, hideLastGroupAtOrAboveThreshold, hideFirstGroupAtOrAboveThreshold, hideLastGroupAtFloor, hideFirstGroupAtFloor, hideFirstGroupBelowFloor, noCheaperRemainingClausesOnly }));
+    localStorage.setItem(WORKSPACE_KEY, JSON.stringify({ clauseDensity, vetoGroupsOnly, lockedClausesOnly, hideUnlockedClauses, hideLockedClauses, changedClausesOnly, belowFloorGroupsOnly, overBudgetClausesOnly, hideGroupsAtFloor, hideGroupsWithoutFloors, hideGroupsMeetingThreshold, hideGroupsBelowThreshold, hideVetoGroups, hideNonVetoGroups, hideFirstVetoGroup, hideLastVetoGroup, hideFirstNonVetoGroup, hideLastNonVetoGroup, hideLastGroupBelowThreshold, hideFirstGroupBelowThreshold, hideLastGroupAtOrAboveThreshold, hideFirstGroupAtOrAboveThreshold, hideLastGroupAtFloor, hideFirstGroupAtFloor, hideFirstGroupBelowFloor, hideLastGroupBelowFloor, noCheaperRemainingClausesOnly }));
   } catch {
     /* storage may be unavailable */
   }
@@ -1481,6 +1522,7 @@ function hiddenGroupsEmptyState() {
     if (hideLastGroupAtFloor) reasons.push("are the last group currently meeting their support floor");
     if (hideFirstGroupAtFloor) reasons.push("are the first group currently meeting their support floor");
     if (hideFirstGroupBelowFloor) reasons.push("are the first group currently below their support floor");
+    if (hideLastGroupBelowFloor) reasons.push("are the last group currently below their support floor");
     if (hideGroupsWithoutFloors) reasons.push("have no support floor");
     if (reasons.length === 1 && hideGroupsBelowThreshold) {
       return "No groups remain after hiding groups whose average is below the numeric approval threshold. Hidden groups still count in the model.";
@@ -1523,6 +1565,9 @@ function hiddenGroupsEmptyState() {
     }
     if (reasons.length === 1 && hideFirstGroupBelowFloor) {
       return "No groups remain after hiding the first group whose average is currently below their support floor. Hidden groups still count in the model. A floor is a number you entered, not a legal quorum.";
+    }
+    if (reasons.length === 1 && hideLastGroupBelowFloor) {
+      return "No groups remain after hiding the last group whose average is currently below their support floor. Hidden groups still count in the model. A floor is a number you entered, not a legal quorum.";
     }
     if (reasons.length === 2 && hideVetoGroups && hideFirstVetoGroup) {
       return "No groups remain after hiding veto groups and the first veto group. Hidden groups still count in the model. A veto is a number you entered, not a legal right.";
@@ -1571,6 +1616,15 @@ function hiddenGroupsEmptyState() {
     }
     if (reasons.length === 2 && hideFirstGroupBelowThreshold && hideFirstGroupBelowFloor) {
       return "No groups remain after hiding the first group below the numeric approval threshold and the first group currently below their support floor. Hidden groups still count in the model. A floor is a number you entered, not a legal quorum.";
+    }
+    if (reasons.length === 2 && hideFirstGroupBelowFloor && hideLastGroupBelowFloor) {
+      return "No groups remain after hiding the first group currently below their support floor and the last group currently below their support floor. Hidden groups still count in the model. A floor is a number you entered, not a legal quorum.";
+    }
+    if (reasons.length === 2 && hideLastGroupBelowThreshold && hideLastGroupBelowFloor) {
+      return "No groups remain after hiding the last group below the numeric approval threshold and the last group currently below their support floor. Hidden groups still count in the model. A floor is a number you entered, not a legal quorum.";
+    }
+    if (reasons.length === 2 && hideLastGroupAtFloor && hideLastGroupBelowFloor) {
+      return "No groups remain after hiding the last group currently meeting their support floor and the last group currently below their support floor. Hidden groups still count in the model. A floor is a number you entered, not a legal quorum.";
     }
     if (reasons.length === 1) {
       return `No groups remain after hiding groups that ${reasons[0]}. Hidden groups still count in the model.`;
@@ -1673,6 +1727,10 @@ function visibleParticipantGroups() {
       const firstBelowFloor = declaredBelowFloor.status === "ok" ? declaredBelowFloor.groups[0] : null;
       if (firstBelowFloor && group.id === firstBelowFloor.id) return false;
     }
+    if (hideLastGroupBelowFloor) {
+      const lastBelowFloor = declaredBelowFloor.status === "ok" ? declaredBelowFloor.groups[declaredBelowFloor.groups.length - 1] : null;
+      if (lastBelowFloor && group.id === lastBelowFloor.id) return false;
+    }
     return true;
   });
   return { visible, belowIds };
@@ -1717,9 +1775,11 @@ function renderGroups(vetoBlocks = new Set()) {
   if (hideFirstGroupAtFloorCheckbox) hideFirstGroupAtFloorCheckbox.checked = hideFirstGroupAtFloor;
   const hideFirstGroupBelowFloorCheckbox = $("#hide-first-group-below-floor");
   if (hideFirstGroupBelowFloorCheckbox) hideFirstGroupBelowFloorCheckbox.checked = hideFirstGroupBelowFloor;
+  const hideLastGroupBelowFloorCheckbox = $("#hide-last-group-below-floor");
+  if (hideLastGroupBelowFloorCheckbox) hideLastGroupBelowFloorCheckbox.checked = hideLastGroupBelowFloor;
   const { visible, belowIds } = visibleParticipantGroups();
   const status = $("#veto-groups-status");
-  const groupFiltersOn = vetoGroupsOnly || belowFloorGroupsOnly || hideGroupsAtFloor || hideGroupsWithoutFloors || hideGroupsMeetingThreshold || hideGroupsBelowThreshold || hideVetoGroups || hideNonVetoGroups || hideFirstVetoGroup || hideLastVetoGroup || hideFirstNonVetoGroup || hideLastNonVetoGroup || hideLastGroupBelowThreshold || hideFirstGroupBelowThreshold || hideLastGroupAtOrAboveThreshold || hideFirstGroupAtOrAboveThreshold || hideLastGroupAtFloor || hideFirstGroupAtFloor || hideFirstGroupBelowFloor;
+  const groupFiltersOn = vetoGroupsOnly || belowFloorGroupsOnly || hideGroupsAtFloor || hideGroupsWithoutFloors || hideGroupsMeetingThreshold || hideGroupsBelowThreshold || hideVetoGroups || hideNonVetoGroups || hideFirstVetoGroup || hideLastVetoGroup || hideFirstNonVetoGroup || hideLastNonVetoGroup || hideLastGroupBelowThreshold || hideFirstGroupBelowThreshold || hideLastGroupAtOrAboveThreshold || hideFirstGroupAtOrAboveThreshold || hideLastGroupAtFloor || hideFirstGroupAtFloor || hideFirstGroupBelowFloor || hideLastGroupBelowFloor;
   if (!visible.length) {
     const message = hiddenGroupsEmptyState();
     if (status) status.textContent = groupFiltersOn ? message : "";
@@ -2794,6 +2854,14 @@ function setHideFirstGroupBelowFloor(next) {
   renderGroups(blockingVetoIds(currentResult()));
 }
 
+function setHideLastGroupBelowFloor(next) {
+  hideLastGroupBelowFloor = next === true;
+  const checkbox = $("#hide-last-group-below-floor");
+  if (checkbox) checkbox.checked = hideLastGroupBelowFloor;
+  persistWorkspacePrefs();
+  renderGroups(blockingVetoIds(currentResult()));
+}
+
 $("#veto-groups-only").addEventListener("change", (event) => {
   setVetoGroupsOnly(event.target.checked === true);
 });
@@ -2850,6 +2918,9 @@ $("#hide-first-group-at-floor").addEventListener("change", (event) => {
 });
 $("#hide-first-group-below-floor").addEventListener("change", (event) => {
   setHideFirstGroupBelowFloor(event.target.checked === true);
+});
+$("#hide-last-group-below-floor").addEventListener("change", (event) => {
+  setHideLastGroupBelowFloor(event.target.checked === true);
 });
 $("#near-miss-sort").addEventListener("change", (event) => {
   nearMissSort = event.target.value === "change_cost" ? "change_cost" : "approval_gap";
@@ -3208,7 +3279,7 @@ $("#export-button").addEventListener("click", () => {
   downloadText("smallest-agreement.json", JSON.stringify(canonicalProposal(state.proposal), null, 2), "application/json");
 });
 $("#export-workspace-button").addEventListener("click", () => {
-  const exported = formatWorkspaceJson(state.proposal, { clauseDensity, vetoGroupsOnly, lockedClausesOnly, hideUnlockedClauses, hideLockedClauses, changedClausesOnly, belowFloorGroupsOnly, overBudgetClausesOnly, hideGroupsAtFloor, hideGroupsWithoutFloors, hideGroupsMeetingThreshold, hideGroupsBelowThreshold, hideVetoGroups, hideNonVetoGroups, hideFirstVetoGroup, hideLastVetoGroup, hideFirstNonVetoGroup, hideLastNonVetoGroup, hideLastGroupBelowThreshold, hideFirstGroupBelowThreshold, hideLastGroupAtOrAboveThreshold, hideFirstGroupAtOrAboveThreshold, hideLastGroupAtFloor, hideFirstGroupAtFloor, hideFirstGroupBelowFloor, noCheaperRemainingClausesOnly });
+  const exported = formatWorkspaceJson(state.proposal, { clauseDensity, vetoGroupsOnly, lockedClausesOnly, hideUnlockedClauses, hideLockedClauses, changedClausesOnly, belowFloorGroupsOnly, overBudgetClausesOnly, hideGroupsAtFloor, hideGroupsWithoutFloors, hideGroupsMeetingThreshold, hideGroupsBelowThreshold, hideVetoGroups, hideNonVetoGroups, hideFirstVetoGroup, hideLastVetoGroup, hideFirstNonVetoGroup, hideLastNonVetoGroup, hideLastGroupBelowThreshold, hideFirstGroupBelowThreshold, hideLastGroupAtOrAboveThreshold, hideFirstGroupAtOrAboveThreshold, hideLastGroupAtFloor, hideFirstGroupAtFloor, hideFirstGroupBelowFloor, hideLastGroupBelowFloor, noCheaperRemainingClausesOnly });
   if (exported.status !== "ok") return notifyDraft("Fix the draft before exporting workspace JSON.");
   downloadText("smallest-agreement-workspace.json", exported.json, "application/json");
   notifyDraft("Workspace JSON downloaded with the current draft, clause card density, and display filters. The solver ignores those filters.");
@@ -3760,6 +3831,24 @@ async function copyLastGroupAtFloor() {
   }
 }
 $("#copy-last-group-at-floor-button").addEventListener("click", copyLastGroupAtFloor);
+async function copyFirstGroupAtFloor() {
+  const listed = formatFirstGroupAtFloorLabelMarkdown(state.proposal, inspectedPackage(currentResult()));
+  if (listed.status === "invalid") return notifyDraft("Fix the draft before copying the first at-floor group label.");
+  const fallback = $("#first-group-at-floor-fallback");
+  if (fallback) fallback.value = listed.text;
+  notifyDraft(listed.status === "unavailable"
+    ? "No inspected package is available. Copied an honest empty first at-floor group label. A floor is a number you entered, not a legal quorum. The label is not a legal identity."
+    : listed.empty
+    ? "No group currently meets their support floor. Copied an honest empty first at-floor group label. A floor is a number you entered, not a legal quorum. The label is not a legal identity."
+    : "First at-floor group label copied as Markdown. A floor is a number you entered, not a legal quorum. The label is not a legal identity.");
+  try {
+    await navigator.clipboard.writeText(listed.text);
+  } catch {
+    fallback?.focus?.();
+    notifyDraft("Clipboard is blocked. Copy the first at-floor group label from the Markdown box. A floor is a number you entered, not a legal quorum. The label is not a legal identity.");
+  }
+}
+$("#copy-first-group-at-floor-button").addEventListener("click", copyFirstGroupAtFloor);
 async function copyLastBelowFloorGroup() {
   const listed = formatLastBelowSupportFloorGroupLabelMarkdown(state.proposal, inspectedPackage(currentResult()));
   if (listed.status === "invalid") return notifyDraft("Fix the draft before copying the last below-floor group label.");
@@ -3852,6 +3941,7 @@ $("#import-file").addEventListener("change", async (event) => {
       hideLastGroupAtFloor = workspace.hideLastGroupAtFloor === true;
       hideFirstGroupAtFloor = workspace.hideFirstGroupAtFloor === true;
       hideFirstGroupBelowFloor = workspace.hideFirstGroupBelowFloor === true;
+      hideLastGroupBelowFloor = workspace.hideLastGroupBelowFloor === true;
       noCheaperRemainingClausesOnly = workspace.noCheaperRemainingClausesOnly === true;
       persistWorkspacePrefs();
     } else if (workspace.clauseDensity === "compact" || workspace.clauseDensity === "comfortable") {
@@ -4358,6 +4448,18 @@ function jumpToBelowFloor() {
       needsRender = true;
     }
   }
+  if (hideLastGroupBelowFloor) {
+    const inspected = inspectedPackage(currentResult());
+    const declaredBelowFloor = inspected
+      ? groupsBelowDeclaredSupportFloor(state.proposal, inspected)
+      : { status: "ok", groups: [] };
+    const lastBelowFloor = declaredBelowFloor.status === "ok" ? declaredBelowFloor.groups[declaredBelowFloor.groups.length - 1] : null;
+    if (lastBelowFloor && first.id === lastBelowFloor.id) {
+      hideLastGroupBelowFloor = false;
+      persistWorkspacePrefs();
+      needsRender = true;
+    }
+  }
   if (needsRender) renderGroups(blockingVetoIds(currentResult()));
   const target = $(`[data-field="group-name"][data-group-id="${first.id}"]`);
   if (target?.focus) {
@@ -4526,6 +4628,18 @@ function jumpToVetoGroup() {
     const firstBelowFloor = declaredBelowFloor.status === "ok" ? declaredBelowFloor.groups[0] : null;
     if (firstBelowFloor && first.id === firstBelowFloor.id) {
       hideFirstGroupBelowFloor = false;
+      persistWorkspacePrefs();
+      needsRender = true;
+    }
+  }
+  if (hideLastGroupBelowFloor) {
+    const inspected = inspectedPackage(currentResult());
+    const declaredBelowFloor = inspected
+      ? groupsBelowDeclaredSupportFloor(state.proposal, inspected)
+      : { status: "ok", groups: [] };
+    const lastBelowFloor = declaredBelowFloor.status === "ok" ? declaredBelowFloor.groups[declaredBelowFloor.groups.length - 1] : null;
+    if (lastBelowFloor && first.id === lastBelowFloor.id) {
+      hideLastGroupBelowFloor = false;
       persistWorkspacePrefs();
       needsRender = true;
     }
@@ -4868,6 +4982,15 @@ function jumpToLastGroupAtFloorCopy() {
   $("#groups-heading")?.focus?.();
 }
 
+function jumpToFirstGroupAtFloorCopy() {
+  const control = $("#copy-first-group-at-floor-button");
+  if (control?.focus) {
+    control.focus();
+    return;
+  }
+  $("#groups-heading")?.focus?.();
+}
+
 function jumpToHideFirstGroupAtFloor() {
   const control = $("#hide-first-group-at-floor");
   if (control?.focus) {
@@ -4888,6 +5011,15 @@ function jumpToLastBelowFloorGroupCopy() {
 
 function jumpToHideFirstGroupBelowFloor() {
   const control = $("#hide-first-group-below-floor");
+  if (control?.focus) {
+    control.focus();
+    return;
+  }
+  $("#groups-heading")?.focus?.();
+}
+
+function jumpToHideLastGroupBelowFloor() {
+  const control = $("#hide-last-group-below-floor");
   if (control?.focus) {
     control.focus();
     return;
@@ -5217,6 +5349,12 @@ document.addEventListener("keydown", (event) => {
   } else if (key === "ArrowLeft") {
     event.preventDefault();
     jumpToHideFirstGroupAtFloor();
+  } else if (key === "F3") {
+    event.preventDefault();
+    copyFirstGroupAtFloor();
+  } else if (key === "F4") {
+    event.preventDefault();
+    jumpToFirstGroupAtFloorCopy();
   } else if (key === "Delete") {
     event.preventDefault();
     copyLastBelowFloorGroup();
@@ -5226,6 +5364,9 @@ document.addEventListener("keydown", (event) => {
   } else if (key === "ArrowRight") {
     event.preventDefault();
     jumpToHideFirstGroupBelowFloor();
+  } else if (key === "Backspace") {
+    event.preventDefault();
+    jumpToHideLastGroupBelowFloor();
   }
 });
 

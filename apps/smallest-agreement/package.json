@@ -1,6 +1,6 @@
 {
   "name": "smallest-agreement",
-  "version": "1.5.22",
+  "version": "1.5.23",
   "private": true,
   "type": "module",
   "description": "A local deliberation workshop for finding the lowest-cost structured agreement that crosses an approval threshold.",
@@ -8,6 +8,7 @@
     "node": ">=20"
   },
   "scripts": {
+    "analyze": "node scripts/analyze.mjs",
     "start": "node scripts/dev-server.mjs",
     "launch": "node scripts/launch.mjs",
     "build:standalone": "node scripts/build-standalone.mjs",

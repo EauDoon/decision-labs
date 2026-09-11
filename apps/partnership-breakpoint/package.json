@@ -1,6 +1,6 @@
 {
   "name": "partnership-breakpoint",
-  "version": "1.5.22",
+  "version": "1.5.23",
   "private": true,
   "type": "module",
   "license": "MIT",
@@ -9,6 +9,7 @@
     "node": ">=20"
   },
   "scripts": {
+    "analyze": "node scripts/analyze.mjs",
     "build:standalone": "node scripts/build-standalone.mjs",
     "launch": "node scripts/launch.mjs",
     "start": "node scripts/dev-server.mjs",

@@ -47,7 +47,8 @@ import {
   createUncoveredLeftoverUnitCountMarkdown,
   createLeftoverUncoveredRemainingMarkdown,
   createLeftoverUncoveredMaximumMarkdown,
-  createLeftoverUncoveredMinimumMarkdown
+  createLeftoverUncoveredMinimumMarkdown,
+  createLeftoverUncoveredCountMarkdown
 } from "../src/model.js";
 
 const PRIVATE_BUYER_MARKERS = ["SECRET_LABEL", "SECRET_ID", "SECRET_STUDIO", "987654.32", "maxUnitPrice", "leftoverBuyerIds", '"selectedBuyerIds":', '"allocations":'];
@@ -729,6 +730,7 @@ test("leftover print one-pager uses merchant labels and omits private buyer rows
   assert.equal(merchantPanel.includes("leftover-print-uncovered-remaining"), false);
   assert.equal(merchantPanel.includes("leftover-print-uncovered-maximum"), false);
   assert.equal(merchantPanel.includes("leftover-print-uncovered-minimum"), false);
+  assert.equal(merchantPanel.includes("leftover-print-uncovered-count"), false);
   assert.equal(merchantPanel.includes("hide-first-buyer-filled-by-leftover-fill"), false);
   assert.equal(merchantPanel.includes("hideFirstBuyerFilledByLeftoverFill"), false);
   assert.equal(merchantPanel.includes("hide-first-buyer-filled-by-tertiary-fill"), false);
@@ -745,6 +747,8 @@ test("leftover print one-pager uses merchant labels and omits private buyer rows
   assert.equal(merchantPanel.includes("hideFirstLeftoverOnlyBuyer"), false);
   assert.equal(merchantPanel.includes("hide-last-winner-allocated-buyer"), false);
   assert.equal(merchantPanel.includes("hideLastWinnerAllocatedBuyer"), false);
+  assert.equal(merchantPanel.includes("hide-first-winner-allocated-buyer"), false);
+  assert.equal(merchantPanel.includes("hideFirstWinnerAllocatedBuyer"), false);
   assert.equal(merchantPanel.includes("copy-leftover-fill-label"), false);
   assert.equal(merchantPanel.includes("copy-leftover-fill-minimum"), false);
   assert.equal(merchantPanel.includes("copy-leftover-fill-maximum"), false);
@@ -753,6 +757,43 @@ test("leftover print one-pager uses merchant labels and omits private buyer rows
   assert.equal(merchantPanel.includes("copy-leftover-uncovered-remaining"), false);
   assert.equal(merchantPanel.includes("copy-leftover-uncovered-maximum"), false);
   assert.equal(merchantPanel.includes("copy-leftover-uncovered-minimum"), false);
+  assert.equal(merchantPanel.includes("copy-leftover-uncovered-count"), false);
+});
+
+test("merchant surfaces omit leftover uncovered count copy", async () => {
+  const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
+  const buyerPanel = html.slice(html.indexOf('id="buyer-panel"'), html.indexOf('id="merchant-panel"'));
+  const merchantPanel = html.slice(html.indexOf('id="merchant-panel"'), html.indexOf('id="method-panel"'));
+  assert.match(buyerPanel, /id="copy-leftover-uncovered-count"/u);
+  assert.match(buyerPanel, /Leftover uncovered count copy is uncovered leftover buyer count/u);
+  assert.equal(merchantPanel.includes("copy-leftover-uncovered-count"), false);
+  assert.equal(merchantPanel.includes("Copy leftover uncovered count"), false);
+  assert.equal(merchantPanel.includes("Leftover uncovered count copy"), false);
+  assert.equal(merchantPanel.includes("createLeftoverUncoveredCountMarkdown"), false);
+  const leftoverUncoveredCount = createLeftoverUncoveredCountMarkdown(secretNeighbourhood());
+  assert.match(leftoverUncoveredCount, /organizer private/);
+  assert.match(leftoverUncoveredCount, /Not a merchant export/);
+  assertOmitsPrivateBuyers(leftoverUncoveredCount, ["SECRET_TITLE"]);
+  const left = secretNeighbourhood();
+  const merchantSurfaces = [
+    JSON.stringify(createMerchantReport(left)),
+    JSON.stringify(createMerchantResidualReport(left)),
+    createWinnerAggregatesMarkdown(left),
+    createDeliveryHeatmapCsv(left),
+    createOfferCsv(left),
+    createVariantOverlapCsv(left),
+    createVariantOverlapMarkdown(left),
+    createExclusionCountsMarkdown(left, left.offers[1].id),
+    createWinningMerchantLabelMarkdown(left),
+    createWinningFulfillmentMarkdown(left),
+    createWinningRemainingCapacityMarkdown(left)
+  ];
+  for (const text of merchantSurfaces) {
+    assert.equal(String(text).includes("leftover uncovered count (organizer private)"), false);
+    assert.equal(String(text).includes("copy-leftover-uncovered-count"), false);
+    assert.equal(String(text).includes("Not a merchant export"), false);
+    assertOmitsPrivateBuyers(text, ["SECRET_TITLE"]);
+  }
 });
 
 test("merchant-facing 1.4.1 surfaces omit buyer labels, ids, budgets, and allocations", () => {
