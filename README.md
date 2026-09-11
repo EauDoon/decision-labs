@@ -199,6 +199,15 @@ The catalog also names first-labelled-skip-target-text copy, first-labelled-skip
 That What's new entry is hub-only. It does not change workbench versions.
 The catalog also names last-labelled-skip-target-text copy, last-labelled-skip-target-text jump, and last-labelled-skip-label jump.
 That What's new entry is hub-only. It does not change workbench versions.
+The catalog also names first-labelled-skip-href copy, first-labelled-skip-href jump, and first-labelled-skip-target jump.
+That What's new entry is hub-only. It does not change workbench versions.
+Copy first labelled skip href copies the href of the first skip link whose target has aria-labelledby
+already printed on this page as one Markdown line. If that href is missing, it copies an empty string.
+Copy first labelled skip href on
+that 404 page copies the same labelled skip-link href without adding a public path.
+Key `Shift+F2` copies the href of the first skip href that has aria-labelledby.
+Key `Shift+F3` focuses the Copy first labelled skip href control.
+Key `Shift+F4` focuses the first labelled skip target.
 These are
 browser tools on the case you opened, not hosted APIs. Each app also ships a `MODEL.md` (formulas and
 conventions), `CONTRIBUTING.md`, `SECURITY.md`, and its own `LICENSE`. The
@@ -456,6 +465,22 @@ Press `Shift+F9` to focus the last labelled skip label, or the catalog heading i
 That key moves focus; it does not open a workbench. It does not copy. That key
 is distinct from `F12`, which focuses the last labelled skip target, from `Shift+F12`, which focuses the first labelled skip label, from `F9`,
 which focuses the first skip target, from `t`, which focuses Trust and limits.
+Press `Shift+F2` to copy the href of the first skip link whose target has aria-labelledby from this page as one Markdown
+line. That key uses the same Copy first labelled skip href control, including
+the visible text box when the clipboard API is unavailable. If that href is
+missing, it copies an empty string. This is catalog copy, not a live product
+feed. It is distinct from `PageUp`, which copies the first skip-link href, from
+`Insert`, which copies the last skip-link href, from `Shift+F10`, which copies the first labelled skip-target text, and from
+`Shift+F7`, which copies the last labelled skip-target text.
+Press `Shift+F3` to focus the Copy first labelled skip href control, or the skip-link row
+or catalog heading if that control is missing. That key moves focus; it does not
+open a workbench. It does not copy. That key is distinct from `PageDown`, which
+focuses Copy first skip href, from `Shift+F8`, which focuses Copy last labelled skip target text, from
+`Shift+F11`, which focuses Copy first labelled skip target text, and from `#`, which focuses Copy skip links.
+Press `Shift+F4` to focus the first labelled skip target, or the catalog heading if that target is missing.
+That key moves focus; it does not open a workbench. It does not copy. That key
+is distinct from `F9`, which focuses the first skip target, from `Shift+F12`, which focuses the first labelled skip label, from `F12`,
+which focuses the last labelled skip target, from `n`, which focuses What's new.
 Press `f` to focus the footer version line. That key does
 not open a workbench. Press `p` to print this catalog. That key prints this
 page in the browser. It is not a live product sheet. Press `c` to copy the catalog address
@@ -542,6 +567,8 @@ Copy first labelled skip target text on
 that 404 page copies the printed first labelled skip-target text as one Markdown line. It does not
 fetch a product feed or add another public path. Copy last labelled skip target text on
 that 404 page copies the printed last labelled skip-target text as one Markdown line. It does not
+fetch a product feed or add another public path. Copy first labelled skip href on
+that 404 page copies the printed first labelled skip-link href as one Markdown line. It does not
 fetch a product feed or add another public path. When the catalog is served over http,
 a control copies the loopback address; it stays hidden on a file URL.
 Copy versions copies the four workbench names and versions already printed on
