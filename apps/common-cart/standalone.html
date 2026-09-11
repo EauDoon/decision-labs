@@ -560,6 +560,9 @@ footer {
         <li><kbd>F7</kbd> Copy leftover uncovered leftover-only count (organizer private)</li>
         <li><kbd>F8</kbd> Focus the leftover uncovered leftover-only count copy control, or leftover heading if missing</li>
         <li><kbd>F9</kbd> Focus hide first uncovered leftover buyer, or the buyer list if missing</li>
+        <li><kbd>F10</kbd> Copy leftover uncovered leftover-only remaining (organizer private)</li>
+        <li><kbd>F11</kbd> Focus the leftover uncovered leftover-only remaining copy control, or leftover heading if missing</li>
+        <li><kbd>F12</kbd> Focus hide last uncovered leftover buyer, or the buyer list if missing</li>
         <li><kbd>Esc</kbd> Close help or the first-run guide</li>
       </ul>
       <p class="canvas-note">Shortcuts are ignored while you type in a field, list, or dialog.</p>
@@ -630,6 +633,7 @@ footer {
           <button class="preset" data-preset="softballCarnivalLunch" type="button">Softball carnival</button>
           <button class="preset" data-preset="waterPoloCarnivalLunch" type="button">Water polo carnival</button>
           <button class="preset" data-preset="rowingCarnivalLunch" type="button">Rowing carnival</button>
+          <button class="preset" data-preset="sailingCarnivalLunch" type="button">Sailing carnival</button>
           <button class="preset" data-preset="tiers" type="button">Price ladder</button>
         </div>
       </div>
@@ -813,7 +817,11 @@ footer {
             <input id="hide-first-uncovered-leftover-buyer" type="checkbox" aria-keyshortcuts="F9">
             Hide the first uncovered leftover buyer
           </label>
-          <p id="buyer-variant-filter-note">The filter hides rows on screen. Saved buyers and matching stay unchanged. Merchant views still show counts only. The last hide-excluded, hide-fully-filled, hide-buyers-with-leftover, hide-unserved-buyers, hide-leftover-only-buyers, hide-winner-allocated-buyers, hide-buyers-filled-by-leftover-fill, hide-last-buyer-filled-by-leftover-fill, hide-first-buyer-filled-by-leftover-fill, hide-first-buyer-filled-by-tertiary-fill, hide-last-buyer-filled-by-tertiary-fill, hide-last-unserved-buyer, hide-first-unserved-buyer, hide-last-leftover-only-buyer, hide-first-leftover-only-buyer, hide-last-winner-allocated-buyer, hide-first-winner-allocated-buyer, and hide-first-uncovered-leftover-buyer choices are kept in this browser's workspace file. Older workspace files without them still show every buyer.</p>
+          <label class="checkbox-field">
+            <input id="hide-last-uncovered-leftover-buyer" type="checkbox" aria-keyshortcuts="F12">
+            Hide the last uncovered leftover buyer
+          </label>
+          <p id="buyer-variant-filter-note">The filter hides rows on screen. Saved buyers and matching stay unchanged. Merchant views still show counts only. The last hide-excluded, hide-fully-filled, hide-buyers-with-leftover, hide-unserved-buyers, hide-leftover-only-buyers, hide-winner-allocated-buyers, hide-buyers-filled-by-leftover-fill, hide-last-buyer-filled-by-leftover-fill, hide-first-buyer-filled-by-leftover-fill, hide-first-buyer-filled-by-tertiary-fill, hide-last-buyer-filled-by-tertiary-fill, hide-last-unserved-buyer, hide-first-unserved-buyer, hide-last-leftover-only-buyer, hide-first-leftover-only-buyer, hide-last-winner-allocated-buyer, hide-first-winner-allocated-buyer, hide-first-uncovered-leftover-buyer, and hide-last-uncovered-leftover-buyer choices are kept in this browser's workspace file. Older workspace files without them still show every buyer.</p>
         </div>
         <div class="table-shell print-private" id="buyers-list" tabindex="-1" role="region" aria-label="Buyer constraints list">
           <table>
@@ -1017,6 +1025,7 @@ footer {
             <button id="copy-leftover-uncovered-minimum" class="print-chrome" type="button" aria-keyshortcuts="Delete">Copy leftover uncovered minimum (organizer private)</button>
             <button id="copy-leftover-uncovered-count" class="print-chrome" type="button" aria-keyshortcuts="F3">Copy leftover uncovered count (organizer private)</button>
             <button id="copy-leftover-uncovered-leftover-only-count" class="print-chrome" type="button" aria-keyshortcuts="F7">Copy leftover uncovered leftover-only count (organizer private)</button>
+            <button id="copy-leftover-uncovered-leftover-only-remaining" class="print-chrome" type="button" aria-keyshortcuts="F10">Copy leftover uncovered leftover-only remaining (organizer private)</button>
             <button id="copy-uncovered-leftover" class="print-chrome" type="button">Copy uncovered leftover counts (organizer private)</button>
             <button id="copy-uncovered-leftover-units" class="print-chrome" type="button">Copy uncovered leftover units (organizer private)</button>
             <p class="canvas-note print-chrome">Organizer-private Markdown of leftover buyer counts and units. Clipboard copies when allowed; otherwise a textarea is shown. This is not a merchant export.</p>
@@ -1037,6 +1046,7 @@ footer {
             <p class="canvas-note print-chrome">Leftover uncovered minimum copy is leftover-fill offer minimum units as a count. Organizer-private. This is not a merchant export.</p>
             <p class="canvas-note print-chrome">Leftover uncovered count copy is uncovered leftover buyer count. Organizer-private. This is not a merchant export.</p>
             <p class="canvas-note print-chrome">Leftover uncovered leftover-only count copy is leftover-only buyer count. Organizer-private. This is not a merchant export.</p>
+            <p class="canvas-note print-chrome">Leftover uncovered leftover-only remaining copy is leftover-only buyer units after the winner. Organizer-private. This is not a merchant export.</p>
             <p class="canvas-note print-chrome">Uncovered leftover copy is counts and units only. Buyer identities stay out. This is not a merchant export.</p>
             <p class="canvas-note print-chrome">Uncovered leftover unit-count copy is count only. Organizer-private. This is not a merchant export.</p>
           </article>
@@ -1783,6 +1793,23 @@ const presets = Object.freeze({
       offer("O02", "Pontoon Salad Run", "Rowing lunch pack", "Pontoon salad", 15, 15, 4, 42, 2),
       { ...offer("O03", "Hall Rowing Pickup", "Rowing lunch pack", "Pontoon water", 17, 17, 1, 44, 5), fulfillment: "pickup" }
     ]
+  },
+  sailingCarnivalLunch: {
+    title: "Sailing carnival lunch",
+    currency: "AUD",
+    buyers: [
+      buyer("B01", "Jetty crate", "Sailing lunch pack", 15, 23, 4, ["Sailing pie", "Marina salad"]),
+      buyer("B02", "Helm bench", "Sailing lunch pack", 19, 19, 3, ["Sailing pie"]),
+      buyer("B03", "Skipper hamper", "Sailing lunch pack", 13, 21, 5, ["Marina salad", "Marina water"]),
+      buyer("B04", "Sideline cooler", "Sailing lunch pack", 10, 17, 2, ["Marina water"]),
+      buyer("B05", "Scoreboard trolley", "Sailing lunch pack", 16, 22, 4, ["Sailing pie", "Marina water"]),
+      buyer("B06", "Bench table", "Sailing lunch pack", 14, 20, 3, ["Marina salad", "Sailing pie"])
+    ],
+    offers: [
+      offer("O01", "Court-side Sailing Delivery", "Sailing lunch pack", "Sailing pie", 17, 17, 3, 54, 3),
+      offer("O02", "Marina Salad Run", "Sailing lunch pack", "Marina salad", 15, 15, 4, 42, 2),
+      { ...offer("O03", "Hall Sailing Pickup", "Sailing lunch pack", "Marina water", 17, 18, 1, 44, 5), fulfillment: "pickup" }
+    ]
   }
 });
 
@@ -1824,7 +1851,7 @@ function validateWorkspace(candidate) {
   if (!candidate || typeof candidate !== "object" || Array.isArray(candidate) || own(candidate, "version") !== 1 || !Array.isArray(own(candidate, "rooms")) || candidate.rooms.length > 12) {
     throw new ScenarioError("Workspace must contain version 1 and at most 12 saved rooms.");
   }
-  rejectUnknownFields(candidate, ["version", "rooms", "fulfillmentFilter", "hideExcludedBuyers", "hideUnwinnableOffers", "hideCoveredLeftoverRows", "hideTertiaryLeftoverRow", "hideLeftoverFillRow", "hideZeroRemainingCapacityOffers", "hideOffersWithRemainingCapacity", "hideFullyFilledBuyers", "hideBuyersWithLeftover", "hideUnservedBuyers", "hideLeftoverOnlyBuyers", "hideWinnerAllocatedBuyers", "hideBuyersFilledByLeftoverFill", "hideLastBuyerFilledByLeftoverFill", "hideFirstBuyerFilledByLeftoverFill", "hideFirstBuyerFilledByTertiaryFill", "hideLastBuyerFilledByTertiaryFill", "hideLastUnservedBuyer", "hideFirstUnservedBuyer", "hideLastLeftoverOnlyBuyer", "hideFirstLeftoverOnlyBuyer", "hideLastWinnerAllocatedBuyer", "hideFirstWinnerAllocatedBuyer", "hideFirstUncoveredLeftoverBuyer"], "Workspace");
+  rejectUnknownFields(candidate, ["version", "rooms", "fulfillmentFilter", "hideExcludedBuyers", "hideUnwinnableOffers", "hideCoveredLeftoverRows", "hideTertiaryLeftoverRow", "hideLeftoverFillRow", "hideZeroRemainingCapacityOffers", "hideOffersWithRemainingCapacity", "hideFullyFilledBuyers", "hideBuyersWithLeftover", "hideUnservedBuyers", "hideLeftoverOnlyBuyers", "hideWinnerAllocatedBuyers", "hideBuyersFilledByLeftoverFill", "hideLastBuyerFilledByLeftoverFill", "hideFirstBuyerFilledByLeftoverFill", "hideFirstBuyerFilledByTertiaryFill", "hideLastBuyerFilledByTertiaryFill", "hideLastUnservedBuyer", "hideFirstUnservedBuyer", "hideLastLeftoverOnlyBuyer", "hideFirstLeftoverOnlyBuyer", "hideLastWinnerAllocatedBuyer", "hideFirstWinnerAllocatedBuyer", "hideFirstUncoveredLeftoverBuyer", "hideLastUncoveredLeftoverBuyer"], "Workspace");
   const fulfillmentFilter = own(candidate, "fulfillmentFilter");
   let filter = "all";
   if (fulfillmentFilter !== undefined) {
@@ -2025,7 +2052,15 @@ function validateWorkspace(candidate) {
     }
     hideFirstUncoveredLeftover = hideFirstUncoveredLeftoverBuyer;
   }
-  return { version: 1, rooms: candidate.rooms.map(validateScenario), fulfillmentFilter: filter, hideExcludedBuyers: hideExcluded, hideUnwinnableOffers: hideUnwinnable, hideCoveredLeftoverRows: hideCoveredLeftover, hideTertiaryLeftoverRow: hideTertiaryLeftover, hideLeftoverFillRow: hideLeftoverFill, hideZeroRemainingCapacityOffers: hideZeroRemaining, hideOffersWithRemainingCapacity: hideRemainingCapacity, hideFullyFilledBuyers: hideFullyFilled, hideBuyersWithLeftover: hideLeftoverBuyers, hideUnservedBuyers: hideUnserved, hideLeftoverOnlyBuyers: hideLeftoverOnly, hideWinnerAllocatedBuyers: hideWinnerAllocated, hideBuyersFilledByLeftoverFill: hideLeftoverFillBuyers, hideLastBuyerFilledByLeftoverFill: hideLastLeftoverFillBuyer, hideFirstBuyerFilledByLeftoverFill: hideFirstLeftoverFillBuyer, hideFirstBuyerFilledByTertiaryFill: hideFirstTertiaryFillBuyer, hideLastBuyerFilledByTertiaryFill: hideLastTertiaryFillBuyer, hideLastUnservedBuyer: hideLastUnserved, hideFirstUnservedBuyer: hideFirstUnserved, hideLastLeftoverOnlyBuyer: hideLastLeftoverOnly, hideFirstLeftoverOnlyBuyer: hideFirstLeftoverOnly, hideLastWinnerAllocatedBuyer: hideLastWinnerAllocated, hideFirstWinnerAllocatedBuyer: hideFirstWinnerAllocated, hideFirstUncoveredLeftoverBuyer: hideFirstUncoveredLeftover };
+  const hideLastUncoveredLeftoverBuyer = own(candidate, "hideLastUncoveredLeftoverBuyer");
+  let hideLastUncoveredLeftover = false;
+  if (hideLastUncoveredLeftoverBuyer !== undefined) {
+    if (hideLastUncoveredLeftoverBuyer !== true && hideLastUncoveredLeftoverBuyer !== false) {
+      throw new ScenarioError("Hide last uncovered leftover buyer must be true or false.");
+    }
+    hideLastUncoveredLeftover = hideLastUncoveredLeftoverBuyer;
+  }
+  return { version: 1, rooms: candidate.rooms.map(validateScenario), fulfillmentFilter: filter, hideExcludedBuyers: hideExcluded, hideUnwinnableOffers: hideUnwinnable, hideCoveredLeftoverRows: hideCoveredLeftover, hideTertiaryLeftoverRow: hideTertiaryLeftover, hideLeftoverFillRow: hideLeftoverFill, hideZeroRemainingCapacityOffers: hideZeroRemaining, hideOffersWithRemainingCapacity: hideRemainingCapacity, hideFullyFilledBuyers: hideFullyFilled, hideBuyersWithLeftover: hideLeftoverBuyers, hideUnservedBuyers: hideUnserved, hideLeftoverOnlyBuyers: hideLeftoverOnly, hideWinnerAllocatedBuyers: hideWinnerAllocated, hideBuyersFilledByLeftoverFill: hideLeftoverFillBuyers, hideLastBuyerFilledByLeftoverFill: hideLastLeftoverFillBuyer, hideFirstBuyerFilledByLeftoverFill: hideFirstLeftoverFillBuyer, hideFirstBuyerFilledByTertiaryFill: hideFirstTertiaryFillBuyer, hideLastBuyerFilledByTertiaryFill: hideLastTertiaryFillBuyer, hideLastUnservedBuyer: hideLastUnserved, hideFirstUnservedBuyer: hideFirstUnserved, hideLastLeftoverOnlyBuyer: hideLastLeftoverOnly, hideFirstLeftoverOnlyBuyer: hideFirstLeftoverOnly, hideLastWinnerAllocatedBuyer: hideLastWinnerAllocated, hideFirstWinnerAllocatedBuyer: hideFirstWinnerAllocated, hideFirstUncoveredLeftoverBuyer: hideFirstUncoveredLeftover, hideLastUncoveredLeftoverBuyer: hideLastUncoveredLeftover };
 }
 
 function duplicateEntry(rawScenario, kind, id) {
@@ -2421,6 +2456,28 @@ function filterBuyerIdsHidingFirstUncoveredLeftoverBuyer(rawScenario, hideFirstU
     }
   }
   return scenario.buyers.filter((buyer) => buyer.id !== firstUncoveredLeftoverId).map((buyer) => buyer.id);
+}
+
+/** Display-only. Matching is unchanged. Hides only the last uncovered leftover buyer. Uncovered leftover buyers are leftover-after-winner buyers still unfilled after leftover fill and tertiary fill. Leftover-only, winner-allocated, leftover-fill, tertiary-fill, first uncovered leftover, and other leftover buyers stay visible. */
+function filterBuyerIdsHidingLastUncoveredLeftoverBuyer(rawScenario, hideLastUncoveredLeftoverBuyer) {
+  if (hideLastUncoveredLeftoverBuyer !== true && hideLastUncoveredLeftoverBuyer !== false) {
+    throw new ScenarioError("Hide last uncovered leftover buyer must be true or false.");
+  }
+  const scenario = validateScenario(rawScenario);
+  if (!hideLastUncoveredLeftoverBuyer) return scenario.buyers.map((buyer) => buyer.id);
+  const coverage = computeResidualCoverage(scenario);
+  const leftoverIds = new Set(coverage.leftoverBuyerIds);
+  const filled = new Set([
+    ...(coverage.secondary?.selectedBuyerIds ?? []),
+    ...(coverage.tertiary?.selectedBuyerIds ?? [])
+  ]);
+  let lastUncoveredLeftoverId = null;
+  for (const buyer of scenario.buyers) {
+    if (leftoverIds.has(buyer.id) && !filled.has(buyer.id)) {
+      lastUncoveredLeftoverId = buyer.id;
+    }
+  }
+  return scenario.buyers.filter((buyer) => buyer.id !== lastUncoveredLeftoverId).map((buyer) => buyer.id);
 }
 
 /** Display-only. Matching is unchanged. Hides only the first buyer with no winner, leftover-fill, or tertiary units. Winner-allocated, leftover-fill, tertiary-fill, and other unserved buyers stay visible. */
@@ -3637,7 +3694,7 @@ function createLeftoverUncoveredCountMarkdown(rawScenario) {
   return `Common Cart leftover uncovered count (organizer private): ${amount}. Not a merchant export.\n`;
 }
 
-function leftoverOnlyAllocatedCount(rawScenario) {
+function leftoverOnlyAllocatedIds(rawScenario) {
   const coverage = computeResidualCoverage(rawScenario);
   const market = evaluateMarket(rawScenario);
   const winnerIds = new Set(market.winner?.selectedBuyerIds ?? []);
@@ -3645,7 +3702,21 @@ function leftoverOnlyAllocatedCount(rawScenario) {
   for (const id of [...(coverage.secondary?.selectedBuyerIds ?? []), ...(coverage.tertiary?.selectedBuyerIds ?? [])]) {
     if (!winnerIds.has(id)) leftoverOnly.add(id);
   }
-  return leftoverOnly.size;
+  return leftoverOnly;
+}
+
+function leftoverOnlyAllocatedCount(rawScenario) {
+  return leftoverOnlyAllocatedIds(rawScenario).size;
+}
+
+function leftoverOnlyAllocatedUnits(rawScenario) {
+  const leftoverOnly = leftoverOnlyAllocatedIds(rawScenario);
+  const scenario = validateScenario(rawScenario);
+  let units = 0;
+  for (const buyer of scenario.buyers) {
+    if (leftoverOnly.has(buyer.id)) units += buyer.quantity;
+  }
+  return units;
 }
 
 /** Organizer-private one-line leftover uncovered leftover-only count. Leftover-only buyer count. Honest empty none. Not a merchant export. Distinct prefix from leftover uncovered count, leftover uncovered remaining, leftover uncovered maximum, leftover uncovered minimum, uncovered leftover unit-count, and uncovered leftover counts. */
@@ -3653,6 +3724,13 @@ function createLeftoverUncoveredLeftoverOnlyCountMarkdown(rawScenario) {
   const coverage = computeResidualCoverage(rawScenario);
   const amount = coverage.leftoverBuyerCount > 0 ? String(leftoverOnlyAllocatedCount(rawScenario)) : "none";
   return `Common Cart leftover uncovered leftover-only count (organizer private): ${amount}. Not a merchant export.\n`;
+}
+
+/** Organizer-private one-line leftover uncovered leftover-only remaining units. Leftover-only buyer units after the winner. Honest empty none. Not a merchant export. Distinct prefix from leftover uncovered remaining, leftover uncovered leftover-only count, leftover uncovered count, leftover uncovered maximum, leftover uncovered minimum, uncovered leftover unit-count, leftover-fill remaining, and tertiary remaining. */
+function createLeftoverUncoveredLeftoverOnlyRemainingMarkdown(rawScenario) {
+  const coverage = computeResidualCoverage(rawScenario);
+  const amount = coverage.leftoverBuyerCount > 0 ? String(leftoverOnlyAllocatedUnits(rawScenario)) : "none";
+  return `Common Cart leftover uncovered leftover-only remaining (organizer private): ${amount}. Not a merchant export.\n`;
 }
 
 function redactBuyerLabels(rawScenario) {
@@ -4595,6 +4673,7 @@ let hideFirstLeftoverOnlyBuyer = false;
 let hideLastWinnerAllocatedBuyer = false;
 let hideFirstWinnerAllocatedBuyer = false;
 let hideFirstUncoveredLeftoverBuyer = false;
+let hideLastUncoveredLeftoverBuyer = false;
 let lastRemovedBuyer = null;
 let saveTimer;
 renderEditor();
@@ -4633,6 +4712,7 @@ function loadWorkspace() {
     hideLastWinnerAllocatedBuyer = workspace.hideLastWinnerAllocatedBuyer;
     hideFirstWinnerAllocatedBuyer = workspace.hideFirstWinnerAllocatedBuyer;
     hideFirstUncoveredLeftoverBuyer = workspace.hideFirstUncoveredLeftoverBuyer;
+    hideLastUncoveredLeftoverBuyer = workspace.hideLastUncoveredLeftoverBuyer;
     return workspace.rooms;
   } catch (error) {
     workspaceReadFailed = true;
@@ -4675,7 +4755,7 @@ function renderWorkspace() {
 }
 
 function storeWorkspace(rooms) {
-  const clean = validateWorkspace({ version: 1, rooms, fulfillmentFilter: offerFulfillmentFilter, hideExcludedBuyers, hideUnwinnableOffers, hideCoveredLeftoverRows, hideTertiaryLeftoverRow, hideLeftoverFillRow, hideZeroRemainingCapacityOffers, hideOffersWithRemainingCapacity, hideFullyFilledBuyers, hideBuyersWithLeftover, hideUnservedBuyers, hideLeftoverOnlyBuyers, hideWinnerAllocatedBuyers, hideBuyersFilledByLeftoverFill, hideLastBuyerFilledByLeftoverFill, hideFirstBuyerFilledByLeftoverFill, hideFirstBuyerFilledByTertiaryFill, hideLastBuyerFilledByTertiaryFill, hideLastUnservedBuyer, hideFirstUnservedBuyer, hideLastLeftoverOnlyBuyer, hideFirstLeftoverOnlyBuyer, hideLastWinnerAllocatedBuyer, hideFirstWinnerAllocatedBuyer, hideFirstUncoveredLeftoverBuyer });
+  const clean = validateWorkspace({ version: 1, rooms, fulfillmentFilter: offerFulfillmentFilter, hideExcludedBuyers, hideUnwinnableOffers, hideCoveredLeftoverRows, hideTertiaryLeftoverRow, hideLeftoverFillRow, hideZeroRemainingCapacityOffers, hideOffersWithRemainingCapacity, hideFullyFilledBuyers, hideBuyersWithLeftover, hideUnservedBuyers, hideLeftoverOnlyBuyers, hideWinnerAllocatedBuyers, hideBuyersFilledByLeftoverFill, hideLastBuyerFilledByLeftoverFill, hideFirstBuyerFilledByLeftoverFill, hideFirstBuyerFilledByTertiaryFill, hideLastBuyerFilledByTertiaryFill, hideLastUnservedBuyer, hideFirstUnservedBuyer, hideLastLeftoverOnlyBuyer, hideFirstLeftoverOnlyBuyer, hideLastWinnerAllocatedBuyer, hideFirstWinnerAllocatedBuyer, hideFirstUncoveredLeftoverBuyer, hideLastUncoveredLeftoverBuyer });
   localStorage.setItem(WORKSPACE_KEY, JSON.stringify(clean));
   savedRooms = clean.rooms;
   renderWorkspace();
@@ -4817,6 +4897,7 @@ function bindStaticEvents() {
   document.querySelector("#copy-leftover-uncovered-minimum").addEventListener("click", copyLeftoverUncoveredMinimum);
   document.querySelector("#copy-leftover-uncovered-count").addEventListener("click", copyLeftoverUncoveredCount);
   document.querySelector("#copy-leftover-uncovered-leftover-only-count").addEventListener("click", copyLeftoverUncoveredLeftoverOnlyCount);
+  document.querySelector("#copy-leftover-uncovered-leftover-only-remaining").addEventListener("click", copyLeftoverUncoveredLeftoverOnlyRemaining);
   document.querySelector("#copy-uncovered-leftover").addEventListener("click", copyUncoveredLeftoverCounts);
   document.querySelector("#copy-uncovered-leftover-units").addEventListener("click", copyUncoveredLeftoverUnitCount);
   document.querySelector("#copy-leftover-headroom").addEventListener("click", copyLeftoverHeadroom);
@@ -5402,6 +5483,18 @@ function bindStaticEvents() {
       setStatus(messageOf(error));
     }
   });
+  document.querySelector("#hide-last-uncovered-leftover-buyer").addEventListener("change", (event) => {
+    hideLastUncoveredLeftoverBuyer = event.target.checked;
+    persistWorkspaceDisplaySettings();
+    try {
+      applyBuyerDisplayFilters();
+      setStatus(hideLastUncoveredLeftoverBuyer
+        ? "Hiding the last uncovered leftover buyer. Display only. Leftover-only, leftover-fill, tertiary-fill, winner-allocated, unserved, first uncovered leftover, and other leftover buyers stay visible. Saved buyers and matching stay unchanged. Merchant views still show counts only. The last hide choice is kept in this browser."
+        : "Showing the last uncovered leftover buyer again. Saved buyers and matching stay unchanged. The last hide choice is kept in this browser.", true);
+    } catch (error) {
+      setStatus(messageOf(error));
+    }
+  });
   document.querySelector("#hide-covered-leftover-rows").addEventListener("change", (event) => {
     hideCoveredLeftoverRows = event.target.checked;
     persistWorkspaceDisplaySettings();
@@ -5955,6 +6048,21 @@ function handleShortcut(event) {
     focusHideFirstUncoveredLeftoverBuyer();
     return;
   }
+  if (key === "F10") {
+    event.preventDefault();
+    copyLeftoverUncoveredLeftoverOnlyRemaining();
+    return;
+  }
+  if (key === "F11") {
+    event.preventDefault();
+    focusLeftoverUncoveredLeftoverOnlyRemainingCopy();
+    return;
+  }
+  if (key === "F12") {
+    event.preventDefault();
+    focusHideLastUncoveredLeftoverBuyer();
+    return;
+  }
 }
 
 function focusBuyersList() {
@@ -6494,6 +6602,22 @@ function focusHideFirstUncoveredLeftoverBuyer() {
   document.querySelector("#buyer-tab")?.focus();
 }
 
+function focusHideLastUncoveredLeftoverBuyer() {
+  const buyerTab = document.querySelector("#buyer-tab");
+  if (buyerTab) activateTab(buyerTab);
+  const hide = document.querySelector("#hide-last-uncovered-leftover-buyer");
+  if (hide) {
+    hide.focus();
+    return;
+  }
+  const heading = document.querySelector("#buyers-list");
+  if (heading) {
+    heading.focus();
+    return;
+  }
+  document.querySelector("#buyer-tab")?.focus();
+}
+
 function focusLeftoverUncoveredRemainingCopy() {
   const buyerTab = document.querySelector("#buyer-tab");
   if (buyerTab) activateTab(buyerTab);
@@ -6542,6 +6666,17 @@ function focusLeftoverUncoveredLeftoverOnlyCountCopy() {
   const buyerTab = document.querySelector("#buyer-tab");
   if (buyerTab) activateTab(buyerTab);
   const copy = document.querySelector("#copy-leftover-uncovered-leftover-only-count");
+  if (copy) {
+    copy.focus();
+    return;
+  }
+  document.querySelector("#residual-title")?.focus();
+}
+
+function focusLeftoverUncoveredLeftoverOnlyRemainingCopy() {
+  const buyerTab = document.querySelector("#buyer-tab");
+  if (buyerTab) activateTab(buyerTab);
+  const copy = document.querySelector("#copy-leftover-uncovered-leftover-only-remaining");
   if (copy) {
     copy.focus();
     return;
@@ -6720,6 +6855,8 @@ function renderEditor() {
   if (hideFirstWinnerAllocated) hideFirstWinnerAllocated.checked = hideFirstWinnerAllocatedBuyer;
   const hideFirstUncoveredLeftover = document.querySelector("#hide-first-uncovered-leftover-buyer");
   if (hideFirstUncoveredLeftover) hideFirstUncoveredLeftover.checked = hideFirstUncoveredLeftoverBuyer;
+  const hideLastUncoveredLeftover = document.querySelector("#hide-last-uncovered-leftover-buyer");
+  if (hideLastUncoveredLeftover) hideLastUncoveredLeftover.checked = hideLastUncoveredLeftoverBuyer;
   const restoreRemoved = document.querySelector("#restore-removed-buyer");
   if (restoreRemoved) {
     restoreRemoved.disabled = !lastRemovedBuyer || scenario.buyers.some((buyer) => buyer.id === lastRemovedBuyer.id);
@@ -6992,6 +7129,14 @@ function applyBuyerDisplayFilters() {
     try {
       const firstUncoveredLeftoverHidden = new Set(filterBuyerIdsHidingFirstUncoveredLeftoverBuyer(scenario, true));
       visibleIds = new Set([...visibleIds].filter((id) => firstUncoveredLeftoverHidden.has(id)));
+    } catch {
+      visibleIds = new Set();
+    }
+  }
+  if (hideLastUncoveredLeftoverBuyer) {
+    try {
+      const lastUncoveredLeftoverHidden = new Set(filterBuyerIdsHidingLastUncoveredLeftoverBuyer(scenario, true));
+      visibleIds = new Set([...visibleIds].filter((id) => lastUncoveredLeftoverHidden.has(id)));
     } catch {
       visibleIds = new Set();
     }
@@ -8438,6 +8583,16 @@ function copyLeftoverUncoveredLeftoverOnlyCount() {
       "Clipboard was blocked. Organizer-private leftover uncovered leftover-only count Markdown is in the textarea. Count only. This is not a merchant export."
     );
   } catch (error) { setStatus(`Leftover uncovered leftover-only count copy failed: ${messageOf(error)}`); }
+}
+
+function copyLeftoverUncoveredLeftoverOnlyRemaining() {
+  try {
+    copyTextWithFallback(
+      createLeftoverUncoveredLeftoverOnlyRemainingMarkdown(scenario),
+      "Leftover uncovered leftover-only remaining copied as organizer-private Markdown. Count only. This is not a merchant export.",
+      "Clipboard was blocked. Organizer-private leftover uncovered leftover-only remaining Markdown is in the textarea. Count only. This is not a merchant export."
+    );
+  } catch (error) { setStatus(`Leftover uncovered leftover-only remaining copy failed: ${messageOf(error)}`); }
 }
 
 function copyUncoveredLeftoverCounts() {
