@@ -6,6 +6,7 @@ import {
   timelineToCSV, analyzeTimeline,
   runSensitivity,
   previewWindowShift,
+  compareDemandProfiles,
 } from '../src/model.js';
 
 const usage = `Weekend Gap offline analysis (synthetic AUD only)
@@ -15,6 +16,7 @@ const usage = `Weekend Gap offline analysis (synthetic AUD only)
   timeline SCENARIO [--format json|csv]
   sensitivity SCENARIO FIELD
   shift SCENARIO GATE START_DELTA_HOURS END_DELTA_HOURS
+  profiles SCENARIO
 Use - instead of a file to read stdin. JSON goes to stdout; errors to stderr.
 Scenario files may be partial raw objects or supported scenario envelopes.
 Omitted fields use model defaults; invalid or adjusted values are rejected.
@@ -84,6 +86,12 @@ function argumentsFor(args, count, formats = ['json']) {
 async function main([command, ...rest]) {
   if (command === '--help' && !rest.length) return usage;
   switch (command) {
+    case 'profiles': {
+      const { args: [path] } = argumentsFor(rest, 1);
+      const input = await scenario(path);
+      return { scenario: input, totalDemandAud: input.redemptionDemandAud, rows: compareDemandProfiles(input),
+        note: 'The same total demand is redistributed across three synthetic arrival profiles. All other assumptions stay fixed.' };
+    }
     case 'shift': {
       const { args: [path, gate, start, end] } = argumentsFor(rest, 4);
       const input = await scenario(path);

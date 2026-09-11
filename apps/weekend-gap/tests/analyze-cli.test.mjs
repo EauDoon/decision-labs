@@ -99,6 +99,21 @@ test('window preview shows applied bounds and the independently computed settlem
   fails(['shift', '-', 'bank', '.5', '1']);
 });
 
+test('arrival-profile comparison holds demand fixed and retains no-settlement nulls', () => {
+  const output = result(['profiles', '-']);
+  assert.equal(output.totalDemandAud, 72);
+  assert.deepEqual(output.rows.map(row => row.demandProfile), ['flat', 'fridayBurst', 'mondayRush']);
+  assert.equal(output.rows[0].totalSettledAud, oracle(fixture()).at(-1).settled);
+  for (const row of output.rows) assert.ok(Math.abs(row.totalSettledAud + row.finalQueuedAud - 72) < 1e-8);
+  const empty = result(['profiles', '-'], { ...fixture(), reserveCashAud: 0 });
+  for (const row of empty.rows) {
+    assert.equal(row.totalSettledAud, 0);
+    assert.equal(row.hoursToFirstSettlement, null);
+    assert.ok(Math.abs(row.finalQueuedAud - 72) < 1e-8);
+  }
+  fails(['profiles', '-', 'extra']);
+});
+
 test('CLI simulation matches a separate 1 AUD/hour ledger and reads files or stdin', () => {
   const expected = oracle(fixture()).at(-1);
   const output = result(['simulate', '-']);

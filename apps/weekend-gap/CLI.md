@@ -70,3 +70,12 @@ bank start one hour earlier and end two hours later. Choose `issuer`, `bank` or
 valid bounds and one-hour minimum. Output keeps the original scenario, requested
 shifts, applied scenario and outcome deltas. This is an offline counterfactual;
 special calendar flags remain part of the unchanged scenario assumptions.
+
+## Compare arrival timing
+
+`node scripts/analyze.mjs profiles scenario.json` evaluates flat, Friday burst
+and Monday rush arrivals with the same total demand, reserve, gates and rates.
+The result includes the fixed demand denominator and all three outcome rows.
+These are synthetic schedules, not estimates of customer behavior. No-settlement
+timings remain null. Unlike comparing arbitrary files, this experiment isolates
+the declared demand profile rather than changing the total demand.
