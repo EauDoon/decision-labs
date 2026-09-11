@@ -85,6 +85,20 @@ test('sensitivity retains effective caps and independently checked reserve effec
   fails(['sensitivity', '-', 'bankOpenStartHour']);
 });
 
+test('window preview shows applied bounds and the independently computed settlement change', () => {
+  const output = result(['shift', '-', 'bank', '8', '-7']);
+  assert.equal(output.applied.bankOpenStartHour, 8);
+  assert.equal(output.applied.bankOpenEndHour, 17);
+  assert.equal(output.candidate.totalSettledAud, oracle({ ...fixture(), bankOpenStartHour: 8, bankOpenEndHour: 17 }).at(-1).settled);
+  assert.equal(output.scenario.bankOpenStartHour, 0);
+  const capped = result(['shift', '-', 'payout', '-10', '10']);
+  assert.equal(capped.candidate.startHour, 0);
+  assert.equal(capped.candidate.endHour, 24);
+  assert.equal(capped.deltas.totalSettledAud, 0);
+  fails(['shift', '-', 'fx', '1', '1']);
+  fails(['shift', '-', 'bank', '.5', '1']);
+});
+
 test('CLI simulation matches a separate 1 AUD/hour ledger and reads files or stdin', () => {
   const expected = oracle(fixture()).at(-1);
   const output = result(['simulate', '-']);

@@ -61,3 +61,12 @@ the existing 0.5, 0.75, 1, 1.25 and 1.5 multipliers. Supported fields are
 and effective values, cap adjustment, resulting assumptions and summary. The
 input is validated strictly; deliberate experimental cap adjustments remain
 visible. Five sampled values establish neither an optimum nor a recommendation.
+
+## Preview an operating-window change
+
+`node scripts/analyze.mjs shift scenario.json bank -1 2` moves the ordinary
+bank start one hour earlier and end two hours later. Choose `issuer`, `bank` or
+`payout` and whole-hour deltas. The existing model clamps applied windows to its
+valid bounds and one-hour minimum. Output keeps the original scenario, requested
+shifts, applied scenario and outcome deltas. This is an offline counterfactual;
+special calendar flags remain part of the unchanged scenario assumptions.

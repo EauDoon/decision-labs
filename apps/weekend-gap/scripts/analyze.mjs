@@ -5,6 +5,7 @@ import {
   planReserve,
   timelineToCSV, analyzeTimeline,
   runSensitivity,
+  previewWindowShift,
 } from '../src/model.js';
 
 const usage = `Weekend Gap offline analysis (synthetic AUD only)
@@ -13,6 +14,7 @@ const usage = `Weekend Gap offline analysis (synthetic AUD only)
   reserve SCENARIO TARGET_PERCENT DEADLINE_HOUR
   timeline SCENARIO [--format json|csv]
   sensitivity SCENARIO FIELD
+  shift SCENARIO GATE START_DELTA_HOURS END_DELTA_HOURS
 Use - instead of a file to read stdin. JSON goes to stdout; errors to stderr.
 Scenario files may be partial raw objects or supported scenario envelopes.
 Omitted fields use model defaults; invalid or adjusted values are rejected.
@@ -82,6 +84,12 @@ function argumentsFor(args, count, formats = ['json']) {
 async function main([command, ...rest]) {
   if (command === '--help' && !rest.length) return usage;
   switch (command) {
+    case 'shift': {
+      const { args: [path, gate, start, end] } = argumentsFor(rest, 4);
+      const input = await scenario(path);
+      return { scenario: input, ...previewWindowShift(input, gate, number(start), number(end)),
+        note: 'Requested shifts are clamped to valid model windows. Inspect applied assumptions. No operating schedule is changed.' };
+    }
     case 'sensitivity': {
       const { args: [path, field] } = argumentsFor(rest, 2);
       const input = await scenario(path);
