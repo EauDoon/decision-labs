@@ -32,7 +32,7 @@ async function boot(storage = new Map(), { blockedStorage = false, hash = "", re
     nodes.set(match[1], node);
   }
   for (const match of html.matchAll(/<select\b[^>]*id="([^"]+)"[^>]*>\s*<option value="([^"]*)"/g)) nodes.get(match[1]).value = match[2];
-  const presets = ["normal", "weekendRush", "marketStress", "thinFxTightWindows", "longWeekendFridayStart", "compressedFridayClose", "paydayFridayBurst", "publicHolidayMonday", "saturdayMarketBurst", "sundayStallClose", "thinSaturdayFx", "earlyMondayBankOpen", "fridayLateFxClose", "mondayLateIssuerOpen", "saturdayEarlyFxOpen", "sundayLateBankClose", "sundayLatePayoutClose", "saturdayEarlyPayoutOpen", "fridayEarlyPayoutOpen", "saturdayLatePayoutOpen", "sundayEarlyPayoutOpen", "sundayLateIssuerClose", "sundayEarlyIssuerOpen", "saturdayEarlyIssuerOpen", "fridayEarlyIssuerOpen", "saturdayEarlyBankOpen", "fridayEarlyBankOpen", "saturdayLateBankOpen", "fridayLateBankOpen", "fridayLateFxOpen", "saturdayLateFxOpen", "sundayLateFxOpen"].map(key => { const element = new Element(); element.dataset.preset = key; return element; });
+  const presets = ["normal", "weekendRush", "marketStress", "thinFxTightWindows", "longWeekendFridayStart", "compressedFridayClose", "paydayFridayBurst", "publicHolidayMonday", "saturdayMarketBurst", "sundayStallClose", "thinSaturdayFx", "earlyMondayBankOpen", "fridayLateFxClose", "mondayLateIssuerOpen", "saturdayEarlyFxOpen", "sundayLateBankClose", "sundayLatePayoutClose", "saturdayEarlyPayoutOpen", "fridayEarlyPayoutOpen", "saturdayLatePayoutOpen", "sundayEarlyPayoutOpen", "sundayLateIssuerClose", "sundayEarlyIssuerOpen", "saturdayEarlyIssuerOpen", "fridayEarlyIssuerOpen", "saturdayEarlyBankOpen", "fridayEarlyBankOpen", "saturdayLateBankOpen", "fridayLateBankOpen", "fridayLateFxOpen", "saturdayLateFxOpen", "sundayLateFxOpen", "sundayEarlyFxOpen"].map(key => { const element = new Element(); element.dataset.preset = key; return element; });
   const document = {
     documentElement: { dataset: {} }, body: new Element(),
     handlers: {},
@@ -63,6 +63,7 @@ async function boot(storage = new Map(), { blockedStorage = false, hash = "", re
     async keydown(key, target = { tagName: "BODY" }, extra = {}) {
       await document.emit("keydown", {
         key,
+        shiftKey: extra.shiftKey === true,
         target: { tagName: target.tagName, isContentEditable: Boolean(target.isContentEditable), closest() { return null; } },
         preventDefault() {},
         defaultPrevented: extra.defaultPrevented === true
@@ -688,6 +689,20 @@ test("hide-weekday-FX-closed Gantt filter persists in workspace JSON and older f
   delete raw.hideWeekdayFxClosedGanttHours;
   const legacy = await boot(new Map([["weekend-gap:workspace:v1", JSON.stringify(raw)]]));
   assert.equal(legacy.nodes.get("gantt-hide-weekday-fx-closed").checked, false);
+});
+
+test("hide-weekday-FX-open Gantt filter persists in workspace JSON and older files restore all hours", async () => {
+  const ui = await boot();
+  ui.nodes.get("gantt-hide-weekday-fx-open").checked = true;
+  await ui.nodes.get("gantt-hide-weekday-fx-open").emit("change");
+  assert.equal(JSON.parse(ui.storage.get("weekend-gap:workspace:v1")).hideWeekdayFxOpenGanttHours, true);
+  const restored = await boot(ui.storage);
+  assert.equal(restored.nodes.get("gantt-hide-weekday-fx-open").checked, true);
+  assert.match(restored.nodes.get("gantt-filter-note").textContent, /Weekday hours where the FX gate is open/);
+  const raw = JSON.parse(ui.storage.get("weekend-gap:workspace:v1"));
+  delete raw.hideWeekdayFxOpenGanttHours;
+  const legacy = await boot(new Map([["weekend-gap:workspace:v1", JSON.stringify(raw)]]));
+  assert.equal(legacy.nodes.get("gantt-hide-weekday-fx-open").checked, false);
 });
 
 test("keyboard j jumps to first settlement and ignores the key while typing", async () => {
@@ -2291,6 +2306,64 @@ test("keyboard F12 jumps to the hide-weekend-FX-open filter and does not copy", 
   await ui.keydown("ArrowLeft");
   assert.equal(ui.nodes.get("gantt-hide-weekend-fx-open").focused, true);
   assert.equal(ui.nodes.get("gantt-hide-weekday-fx-closed").focused, false);
+});
+
+test("keyboard Shift+F10 copies last weekend-FX-open hour through the new control and ignores the key while typing", async () => {
+  const ui = await boot(new Map([["weekend-gap:coach:v1", "dismissed"]]));
+  await ui.keydown("F10", { tagName: "BODY" }, { shiftKey: true });
+  assert.equal(ui.nodes.get("last-weekend-fx-open-copy-fallback").hidden, false);
+  assert.match(ui.nodes.get("last-weekend-fx-open-copy-fallback").value, /Last weekend-FX-open hour:/);
+  assert.match(ui.nodes.get("last-weekend-fx-open-copy-fallback").value, /Counts of modeled hours, not an FX calendar/);
+  assert.doesNotMatch(ui.nodes.get("last-weekend-fx-open-copy-fallback").value, /Last weekday-FX-closed hour:/);
+  assert.doesNotMatch(ui.nodes.get("last-weekend-fx-open-copy-fallback").value, /Last weekend-FX-closed hour:/);
+  assert.doesNotMatch(ui.nodes.get("last-weekend-fx-open-copy-fallback").value, /Last closed FX hour:/);
+  ui.nodes.get("last-weekend-fx-open-copy-fallback").hidden = true;
+  ui.nodes.get("last-weekend-fx-open-copy-fallback").value = "";
+  await ui.keydown("F10", { tagName: "INPUT" }, { shiftKey: true });
+  assert.equal(ui.nodes.get("last-weekend-fx-open-copy-fallback").hidden, true);
+  await ui.keydown("F10", { tagName: "TEXTAREA" }, { shiftKey: true });
+  assert.equal(ui.nodes.get("last-weekend-fx-open-copy-fallback").hidden, true);
+  await ui.keydown("F10", { tagName: "SELECT" }, { shiftKey: true });
+  assert.equal(ui.nodes.get("last-weekend-fx-open-copy-fallback").hidden, true);
+  await ui.keydown("F10");
+  assert.equal(ui.nodes.get("last-weekday-fx-closed-copy-fallback").hidden, false);
+  assert.match(ui.nodes.get("last-weekday-fx-closed-copy-fallback").value, /Last weekday-FX-closed hour:/);
+  assert.notEqual(ui.nodes.get("last-weekend-fx-open-copy-fallback").value, ui.nodes.get("last-weekday-fx-closed-copy-fallback").value);
+});
+
+test("keyboard Shift+F11 jumps to the last-weekend-FX-open copy control and does not copy", async () => {
+  const ui = await boot(new Map([["weekend-gap:coach:v1", "dismissed"]]));
+  await ui.keydown("F11", { tagName: "BODY" }, { shiftKey: true });
+  assert.equal(ui.nodes.get("copy-last-weekend-fx-open").focused, true);
+  assert.equal(ui.nodes.get("last-weekend-fx-open-copy-fallback").hidden, true);
+  ui.nodes.get("copy-last-weekend-fx-open").focused = false;
+  ui.nodes.get("gantt-title").focused = false;
+  await ui.keydown("F11", { tagName: "INPUT" }, { shiftKey: true });
+  assert.equal(ui.nodes.get("copy-last-weekend-fx-open").focused, false);
+  assert.equal(ui.nodes.get("gantt-title").focused, false);
+  await ui.keydown("F11", { tagName: "TEXTAREA" }, { shiftKey: true });
+  assert.equal(ui.nodes.get("copy-last-weekend-fx-open").focused, false);
+  await ui.keydown("F11");
+  assert.equal(ui.nodes.get("copy-last-weekday-fx-closed").focused, true);
+  assert.equal(ui.nodes.get("copy-last-weekend-fx-open").focused, false);
+  assert.equal(ui.nodes.get("last-weekend-fx-open-copy-fallback").hidden, true);
+});
+
+test("keyboard Shift+F12 jumps to the hide-weekday-FX-open filter and does not copy", async () => {
+  const ui = await boot(new Map([["weekend-gap:coach:v1", "dismissed"]]));
+  await ui.keydown("F12", { tagName: "BODY" }, { shiftKey: true });
+  assert.equal(ui.nodes.get("gantt-hide-weekday-fx-open").focused, true);
+  assert.equal(ui.nodes.get("last-weekend-fx-open-copy-fallback").hidden, true);
+  ui.nodes.get("gantt-hide-weekday-fx-open").focused = false;
+  ui.nodes.get("gantt-title").focused = false;
+  await ui.keydown("F12", { tagName: "INPUT" }, { shiftKey: true });
+  assert.equal(ui.nodes.get("gantt-hide-weekday-fx-open").focused, false);
+  assert.equal(ui.nodes.get("gantt-title").focused, false);
+  await ui.keydown("F12", { tagName: "TEXTAREA" }, { shiftKey: true });
+  assert.equal(ui.nodes.get("gantt-hide-weekday-fx-open").focused, false);
+  await ui.keydown("F12");
+  assert.equal(ui.nodes.get("gantt-hide-weekend-fx-open").focused, true);
+  assert.equal(ui.nodes.get("gantt-hide-weekday-fx-open").focused, false);
 });
 
 test("keyboard Backspace jumps to the hide-weekend-FX-closed filter and does not copy", async () => {
