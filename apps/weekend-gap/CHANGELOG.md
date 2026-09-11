@@ -1,5 +1,17 @@
 # Changelog
 
+## 1.5.20 - 2026-09-11
+
+A workshop follow-up on 1.5.19. Weekend Gap remains a local-first decision aid, not a decision maker. Hatched Gantt cells are a local drawing, not a bank feed. Timing review packets from 1.5.0 and the 1.5.1-1.5.19 review UI stay in place. Analysis JSON still has no timestamps.
+
+### Added
+
+- Keyboard `4` copies last open bank hour through the new last-open-bank copy control, using one-line Markdown. Honest empty when none. Ignored while typing. Distinct from `1` last-closed-bank copy and `5` last-open-issuer copy.
+- Keyboard `Home` jumps to the last-open-bank-hour copy control, or the Gantt heading if that control is missing. Does not copy. Ignored while typing. Distinct from `2` last-closed-bank jump.
+- Keyboard `End` jumps to the hide-weekend-bank-open Gantt filter, or the Gantt heading if that control is missing. Ignored while typing. Distinct from `3` hide-weekend-bank-closed and `0` hide-weekend-issuer-closed.
+- Saturday early bank open (synthetic) preset: same 72-hour calendar as Normal Friday, Saturday 08:00 to 10:00 treats the bank gate as open even though Saturday is not a business day. Distinct from Friday early issuer open, Saturday early issuer open, Sunday late bank close, and Early Monday bank open. Synthetic. Not a bank feed.
+- Filter that hides Gantt hours that are weekend and bank-open. Display only; the model still contains 72 hours. Workspace JSON stores optional `hideWeekendBankOpenGanttHours`. Older files omit the key and show all hours. Unknown keys are rejected. Distinct from `hideWeekendBankClosedGanttHours`, `hideWeekendIssuerOpenGanttHours`, `hideBankOpenGanttHours`, and `hideWeekendGanttHours`. The selected hour stays visible if it would otherwise hide.
+
 ## 1.5.19 - 2026-09-11
 
 A workshop follow-up on 1.5.18. Weekend Gap remains a local-first decision aid, not a decision maker. Hatched Gantt cells are a local drawing, not a bank feed. Timing review packets from 1.5.0 and the 1.5.1-1.5.18 review UI stay in place. Analysis JSON still has no timestamps.
