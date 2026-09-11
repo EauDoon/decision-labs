@@ -737,6 +737,8 @@ harness can miss. App-local commands remain available from each app folder.
 
 ## Repository layout
 
+Offline file and pipeline commands: [Common Cart](apps/common-cart/CLI.md), [Smallest Agreement](apps/smallest-agreement/ANALYST.md), [Partnership Breakpoint](apps/partnership-breakpoint/CLI.md), and [Weekend Gap](apps/weekend-gap/CLI.md).
+
 ```text
 decision-labs/
 |-- README.md                  # This file
