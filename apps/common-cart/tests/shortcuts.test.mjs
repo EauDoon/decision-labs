@@ -1421,6 +1421,67 @@ test("keyboard handler jumps to hide last winner-allocated buyer with ArrowRight
   assert.match(app, /\["ArrowLeft", "ArrowRight", "Home", "End"\]\.includes\(event\.key\)/u);
 });
 
+test("shortcut help documents leftover uncovered count copy", async () => {
+  const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
+  assert.match(html, /<kbd>F3<\/kbd> Copy leftover uncovered count \(organizer private\)/u);
+  assert.match(html, /id="copy-leftover-uncovered-count"/u);
+  assert.match(html, /id="copy-leftover-uncovered-count"[^>]*aria-keyshortcuts="F3"/u);
+});
+
+test("keyboard handler copies leftover uncovered count with F3 when not typing", async () => {
+  const app = await readFile(new URL("../src/app.js", import.meta.url), "utf8");
+  assert.match(app, /const key = event\.key\.length === 1 \? event\.key\.toLowerCase\(\) : event\.key;/u);
+  assert.match(app, /function handleShortcut\(event\) \{\s*if \(event\.defaultPrevented \|\| event\.metaKey \|\| event\.ctrlKey \|\| event\.altKey\) return;/u);
+  assert.match(app, /if \(key === "F3"\)/u);
+  assert.match(app, /function copyLeftoverUncoveredCount\(/u);
+  assert.match(app, /createLeftoverUncoveredCountMarkdown\(scenario\)/u);
+  assert.match(app, /#copy-leftover-uncovered-count/u);
+  assert.match(app, /isTypingTarget\(event\.target\)/u);
+  assert.doesNotMatch(app, /if \(key === "F3"\) \{\s*event\.preventDefault\(\);\s*copyLeftoverUncoveredMinimum/u);
+  assert.match(app, /if \(key === "Delete"\) \{\s*event\.preventDefault\(\);\s*copyLeftoverUncoveredMinimum\(\);/u);
+});
+
+test("shortcut help documents leftover uncovered count copy jump", async () => {
+  const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
+  assert.match(html, /<kbd>F4<\/kbd> Focus the leftover uncovered count copy control, or leftover heading if missing/u);
+  assert.match(html, /id="copy-leftover-uncovered-count"/u);
+  assert.match(html, /id="residual-title"/u);
+});
+
+test("keyboard handler jumps to leftover uncovered count copy with F4 when not typing", async () => {
+  const app = await readFile(new URL("../src/app.js", import.meta.url), "utf8");
+  assert.match(app, /if \(key === "F4"\) \{\s*event\.preventDefault\(\);\s*focusLeftoverUncoveredCountCopy\(\);/u);
+  assert.match(app, /function focusLeftoverUncoveredCountCopy\(/u);
+  assert.match(app, /#copy-leftover-uncovered-count/u);
+  assert.match(app, /#residual-title/u);
+  assert.match(app, /isTypingTarget\(event\.target\)/u);
+  assert.match(app, /function handleShortcut\(event\) \{\s*if \(event\.defaultPrevented \|\| event\.metaKey \|\| event\.ctrlKey \|\| event\.altKey\) return;/u);
+  assert.doesNotMatch(app, /if \(key === "F4"\) \{\s*event\.preventDefault\(\);\s*copyLeftoverUncoveredCount/u);
+  assert.match(app, /if \(key === "F2"\) \{\s*event\.preventDefault\(\);\s*focusLeftoverUncoveredMinimumCopy\(\);/u);
+});
+
+test("shortcut help documents hide first winner-allocated buyer jump", async () => {
+  const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
+  assert.match(html, /<kbd>Backspace<\/kbd> Focus hide first winner-allocated buyer, or the buyer list if missing/u);
+  assert.match(html, /id="hide-first-winner-allocated-buyer"/u);
+  assert.match(html, /id="buyers-list"/u);
+});
+
+test("keyboard handler jumps to hide first winner-allocated buyer with Backspace when not typing", async () => {
+  const app = await readFile(new URL("../src/app.js", import.meta.url), "utf8");
+  assert.match(app, /if \(key === "Backspace"\) \{\s*event\.preventDefault\(\);\s*focusHideFirstWinnerAllocatedBuyer\(\);/u);
+  assert.match(app, /function focusHideFirstWinnerAllocatedBuyer\(/u);
+  assert.match(app, /#hide-first-winner-allocated-buyer/u);
+  assert.match(app, /#buyers-list/u);
+  assert.match(app, /#buyer-tab/u);
+  assert.match(app, /isTypingTarget\(event\.target\)/u);
+  assert.match(app, /function handleShortcut\(event\) \{\s*if \(event\.defaultPrevented \|\| event\.metaKey \|\| event\.ctrlKey \|\| event\.altKey\) return;/u);
+  assert.doesNotMatch(app, /if \(key === "Backspace"\) \{\s*event\.preventDefault\(\);\s*focusHideLastWinnerAllocatedBuyer/u);
+  assert.match(app, /if \(key === "ArrowRight"\) \{\s*event\.preventDefault\(\);\s*focusHideLastWinnerAllocatedBuyer\(\);/u);
+  assert.match(app, /if \(key === "ArrowLeft"\) \{\s*event\.preventDefault\(\);\s*focusHideFirstLeftoverOnlyBuyer\(\);/u);
+  assert.match(app, /\["ArrowLeft", "ArrowRight", "Home", "End"\]\.includes\(event\.key\)/u);
+});
+
 test("apostrophe leftover fill unit-count copy uses the existing leftover-fill-units control", async () => {
   const app = await readFile(new URL("../src/app.js", import.meta.url), "utf8");
   const html = await readFile(new URL("../index.html", import.meta.url), "utf8");

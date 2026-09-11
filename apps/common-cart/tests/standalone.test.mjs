@@ -176,3 +176,28 @@ test("standalone retains 1.4.18 tertiary remaining tools and 1.4.19 tertiary max
   assert.doesNotMatch(html.slice(html.indexOf('id="merchant-panel"'), html.indexOf('id="method-panel"')), /hideLastWinnerAllocatedBuyer/u);
 });
 
+test("release 1.4.23 ships water polo carnival lunch, leftover uncovered count copy and first winner-allocated hide", async () => {
+  const html = await readFile(new URL("../standalone.html", import.meta.url), "utf8");
+  assert.match(html, /id="copy-leftover-uncovered-count"/u);
+  assert.match(html, /id="copy-leftover-uncovered-count"[^>]*aria-keyshortcuts="F3"/u);
+  assert.match(html, /id="hide-first-winner-allocated-buyer"/u);
+  assert.match(html, /id="leftover-print-uncovered-count"/u);
+  assert.match(html, /Leftover uncovered count: none/u);
+  assert.match(html, /data-preset="waterPoloCarnivalLunch"/u);
+  assert.match(html, /function copyLeftoverUncoveredCount\(/u);
+  assert.match(html, /function focusLeftoverUncoveredCountCopy\(/u);
+  assert.match(html, /function focusHideFirstWinnerAllocatedBuyer\(/u);
+  assert.match(html, /filterBuyerIdsHidingFirstWinnerAllocatedBuyer\(/u);
+  assert.match(html, /hideFirstWinnerAllocatedBuyer/u);
+  assert.match(html, /createLeftoverUncoveredCountMarkdown\(/u);
+  assert.match(html, /if \(key === "F3"\) \{\s*event\.preventDefault\(\);\s*copyLeftoverUncoveredCount\(\);/u);
+  assert.match(html, /if \(key === "F4"\) \{\s*event\.preventDefault\(\);\s*focusLeftoverUncoveredCountCopy\(\);/u);
+  assert.match(html, /if \(key === "Backspace"\) \{\s*event\.preventDefault\(\);\s*focusHideFirstWinnerAllocatedBuyer\(\);/u);
+  assert.match(html, /function handleShortcut\(event\) \{\s*if \(event\.defaultPrevented \|\| event\.metaKey \|\| event\.ctrlKey \|\| event\.altKey\) return;/u);
+  assert.match(html, /const key = event\.key\.length === 1 \? event\.key\.toLowerCase\(\) : event\.key;/u);
+  assert.doesNotMatch(html.slice(html.indexOf('id="merchant-panel"'), html.indexOf('id="method-panel"')), /copy-leftover-uncovered-count/u);
+  assert.doesNotMatch(html.slice(html.indexOf('id="merchant-panel"'), html.indexOf('id="method-panel"')), /hide-first-winner-allocated-buyer/u);
+  assert.doesNotMatch(html.slice(html.indexOf('id="merchant-panel"'), html.indexOf('id="method-panel"')), /leftover-print-uncovered-count/u);
+  assert.doesNotMatch(html.slice(html.indexOf('id="merchant-panel"'), html.indexOf('id="method-panel"')), /hideFirstWinnerAllocatedBuyer/u);
+});
+
