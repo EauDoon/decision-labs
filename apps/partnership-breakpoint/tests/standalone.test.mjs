@@ -112,6 +112,12 @@ test('standalone retains 1.5.16 review tools and 1.5.17 copy controls', async ()
   assert.match(html, /id="hide-last-spare-capacity-participant"/);
   assert.match(html, /data-action="hide-last-spare-capacity-participant"/);
   assert.match(html, /id="hide-last-spare-capacity-participant"[^>]*aria-keyshortcuts="7"/);
+  assert.match(html, /id="copy-last-spare-capacity-remaining"/);
+  assert.match(html, /data-action="copy-last-spare-capacity-remaining"/);
+  assert.match(html, /id="copy-last-spare-capacity-remaining"[^>]*aria-keyshortcuts="8"/);
+  assert.match(html, /id="hide-first-spare-capacity-participant"/);
+  assert.match(html, /data-action="hide-first-spare-capacity-participant"/);
+  assert.match(html, /id="hide-first-spare-capacity-participant"[^>]*aria-keyshortcuts="0"/);
   assert.match(html, /School concert split/);
   assert.match(html, /Sports carnival split/);
   assert.match(html, /Netball carnival/);
@@ -121,6 +127,7 @@ test('standalone retains 1.5.16 review tools and 1.5.17 copy controls', async ()
   assert.match(html, /Tennis carnival split/);
   assert.match(html, /Basketball carnival split/);
   assert.match(html, /Volleyball carnival split/);
+  assert.match(html, /Rugby carnival split/);
   assert.match(html, /hideParticipantsAtLeastHeadroom/);
   assert.match(html, /hideParticipantsWithinCapacity/);
   assert.match(html, /hideFirstBreakpointParticipant/);
@@ -130,5 +137,6 @@ test('standalone retains 1.5.16 review tools and 1.5.17 copy controls', async ()
   assert.match(html, /hideLastWithinCapacityParticipant/);
   assert.match(html, /hideFirstWithinCapacityParticipant/);
   assert.match(html, /hideLastSpareCapacityParticipant/);
+  assert.match(html, /hideFirstSpareCapacityParticipant/);
   assert.match(html, /id="hide-last-over-capacity-participant"/);
 });
