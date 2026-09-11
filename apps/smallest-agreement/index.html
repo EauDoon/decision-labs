@@ -66,6 +66,7 @@ SOFTWARE.
             <option value="basketball-club-hours">Basketball club hours</option>
             <option value="volleyball-club-hours">Volleyball club hours</option>
             <option value="soccer-club-hours">Soccer club hours</option>
+            <option value="hockey-club-hours">Hockey club hours</option>
           </select>
         </label>
         <button class="button button-secondary" type="button" id="load-preset">Load preset</button>
@@ -106,6 +107,7 @@ SOFTWARE.
         <button class="button button-secondary" type="button" id="copy-last-non-veto-group-button" aria-keyshortcuts="5">Copy last non-veto group</button>
         <button class="button button-secondary" type="button" id="copy-last-below-threshold-group-button" aria-keyshortcuts="8">Copy last below-threshold group</button>
         <button class="button button-secondary" type="button" id="copy-first-below-threshold-group-button" aria-keyshortcuts="1">Copy first below-threshold group</button>
+        <button class="button button-secondary" type="button" id="copy-last-group-at-or-above-threshold-button" aria-keyshortcuts="4">Copy last at-or-above-threshold group</button>
         <button class="button button-secondary" type="button" id="copy-change-cost-button">Copy change-cost table</button>
         <button class="button button-secondary" type="button" id="copy-veto-button">Copy veto blockers</button>
         <button class="button button-secondary" type="button" id="share-button">Share link</button>
@@ -193,7 +195,9 @@ SOFTWARE.
           <label class="hide-first-group-below-threshold-filter" for="hide-first-group-below-threshold"><input id="hide-first-group-below-threshold" type="checkbox" aria-keyshortcuts="0"> Hide first group currently below the approval threshold</label>
           <p id="hide-first-group-below-threshold-filter-note" class="field-note">Hides only the first group whose average support on the inspected package is below the numeric approval threshold. Hidden groups still count in the model. The solver is unchanged. Distinct from hideGroupsBelowThreshold, hideLastGroupBelowThreshold, and hideLastNonVetoGroup. Workspace JSON persists this optional boolean. Older files omit the key and show all groups.</p>
           <label class="hide-last-group-at-or-above-threshold-filter" for="hide-last-group-at-or-above-threshold"><input id="hide-last-group-at-or-above-threshold" type="checkbox" aria-keyshortcuts="3"> Hide last group currently at or above the approval threshold</label>
-          <p id="hide-last-group-at-or-above-threshold-filter-note" class="field-note">Hides only the last group whose average support on the inspected package is at or above the numeric approval threshold. Hidden groups still count in the model. The solver is unchanged. Distinct from hideFirstGroupBelowThreshold, hideLastGroupBelowThreshold, and hideGroupsMeetingThreshold. Workspace JSON persists this optional boolean. Older files omit the key and show all groups.</p>
+          <p id="hide-last-group-at-or-above-threshold-filter-note" class="field-note">Hides only the last group whose average support on the inspected package is at or above the numeric approval threshold. Hidden groups still count in the model. The solver is unchanged. Distinct from hideFirstGroupAtOrAboveThreshold, hideFirstGroupBelowThreshold, hideLastGroupBelowThreshold, and hideGroupsMeetingThreshold. Workspace JSON persists this optional boolean. Older files omit the key and show all groups.</p>
+          <label class="hide-first-group-at-or-above-threshold-filter" for="hide-first-group-at-or-above-threshold"><input id="hide-first-group-at-or-above-threshold" type="checkbox" aria-keyshortcuts="End"> Hide first group currently at or above the approval threshold</label>
+          <p id="hide-first-group-at-or-above-threshold-filter-note" class="field-note">Hides only the first group whose average support on the inspected package is at or above the numeric approval threshold. Hidden groups still count in the model. The solver is unchanged. Distinct from hideLastGroupAtOrAboveThreshold, hideGroupsMeetingThreshold, and hideFirstGroupBelowThreshold. Workspace JSON persists this optional boolean. Older files omit the key and show all groups.</p>
           <p id="veto-groups-status" class="visually-hidden" role="status" aria-live="polite"></p>
           <label class="groups-paste-label" for="groups-paste">Paste participant groups TSV or CSV</label>
           <textarea id="groups-paste" rows="8" spellcheck="false" aria-describedby="groups-paste-note"></textarea>
@@ -326,6 +330,9 @@ SOFTWARE.
             <label class="first-below-threshold-group-fallback-label" for="first-below-threshold-group-fallback">First below-threshold group Markdown</label>
             <textarea id="first-below-threshold-group-fallback" readonly rows="3" spellcheck="false" aria-describedby="first-below-threshold-group-fallback-note"></textarea>
             <p id="first-below-threshold-group-fallback-note" class="field-note">One line of the first group whose average support on the inspected package is below the numeric approval threshold, or an honest empty line when none. Distinct from last below-threshold group copy and first-below-floor group copy. A threshold is a number you entered, not a legal quorum. The label is not a legal identity. If the clipboard is blocked, copy from this box.</p>
+            <label class="last-group-at-or-above-threshold-fallback-label" for="last-group-at-or-above-threshold-fallback">Last at-or-above-threshold group Markdown</label>
+            <textarea id="last-group-at-or-above-threshold-fallback" readonly rows="3" spellcheck="false" aria-describedby="last-group-at-or-above-threshold-fallback-note"></textarea>
+            <p id="last-group-at-or-above-threshold-fallback-note" class="field-note">One line of the last group whose average support on the inspected package is at or above the numeric approval threshold, or an honest empty line when none. Distinct from last below-threshold group copy, first below-threshold group copy, and threshold-group count copy. A threshold is a number you entered, not a legal quorum. The label is not a legal identity. If the clipboard is blocked, copy from this box.</p>
             <label class="change-cost-csv-fallback-label" for="change-cost-csv-fallback">Change-cost CSV</label>
             <textarea id="change-cost-csv-fallback" readonly rows="8" spellcheck="false" aria-describedby="change-cost-csv-fallback-note"></textarea>
             <p id="change-cost-csv-fallback-note" class="field-note">Compact CSV of clause, original option, recommended option, and cost delta. Cells that look like spreadsheet formulas receive a leading apostrophe. If the clipboard is blocked, copy from this box.</p>
@@ -520,6 +527,9 @@ SOFTWARE.
           <li><kbd>1</kbd> Copy the first below-threshold group label as one-line Markdown</li>
           <li><kbd>2</kbd> Jump to the first below-threshold group copy control, or the groups heading</li>
           <li><kbd>3</kbd> Jump to the hide-last-group-at-or-above-threshold control, or the groups heading</li>
+          <li><kbd>4</kbd> Copy the last at-or-above-threshold group label as one-line Markdown</li>
+          <li><kbd>Home</kbd> Jump to the last at-or-above-threshold group copy control, or the groups heading</li>
+          <li><kbd>End</kbd> Jump to the hide-first-group-at-or-above-threshold control, or the groups heading</li>
           <li><kbd>Esc</kbd> Close help or the tour</li>
         </ul>
         <button class="button button-brick" type="button" id="shortcut-close">Close</button>
