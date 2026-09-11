@@ -30,6 +30,19 @@ function temporary(fn) {
   try { fn(dir); } finally { rmSync(dir, { recursive: true, force: true }); }
 }
 
+test('offer drill-down explains capacity, shipping and exclusion reasons', () => {
+  const result = ok(['offer', '--input', '-', '--offer', 'O1']);
+  assert.equal(result.evaluation.allocations[0].totalCost, 13);
+  assert.equal(result.capacity.filledUnits, 2);
+  assert.equal(result.nextTier.nextMinimum, null);
+  const scenario = fixture(); scenario.buyers[0].latestDeliveryDays = 1;
+  const blocked = ok(['offer', '--input', '-', '--offer', 'O1'], scenario);
+  assert.ok(blocked.exclusions.some(group => group.code === 'delivery' && group.count === 1));
+  fails(['offer', '--input', '-', '--offer', 'missing'], fixture());
+  fails(['offer', '--input', '-'], fixture(), /required/);
+  fails(['market', '--input', '-', '--offer', 'O1'], fixture(), /not supported/);
+});
+
 test('market CLI has independent shipping, allocation, and no-winner oracles', () => {
   const result = ok(['market', '--input', '-']);
   assert.equal(result.winner.fulfilledUnits, 2);

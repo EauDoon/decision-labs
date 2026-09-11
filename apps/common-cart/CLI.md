@@ -24,3 +24,11 @@ exclusive creation, so existing files and symlinks are never overwritten. No
 output is created until analysis succeeds. Parent directories must already exist.
 Unix output permissions request owner read/write; Windows access follows local
 ACLs. Shell redirection is controlled by your shell and can overwrite files.
+
+## Inspect one offer
+
+`node scripts/analyze.mjs offer --input scenario.json --offer O01` returns the
+offer evaluation, grouped exclusion reasons, next-tier gap and capacity bar.
+Offer IDs are exact and must exist. This organizer-private report explains whole
+orders that cannot fit, deadline/budget exclusions and unreachable price tiers.
+Options for another command are rejected rather than silently ignored.

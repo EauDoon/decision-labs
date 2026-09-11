@@ -2,11 +2,12 @@
 import { open, unlink } from 'node:fs/promises';
 import { constants } from 'node:fs';
 import { parseArgs } from 'node:util';
-import { evaluateMarket } from '../src/model.js';
+import { evaluateMarket, evaluateOffer, groupExclusionReasons, unitsToNextTier, capacityBar } from '../src/model.js';
 
 const LIMIT = 1048576;
 const help = `Common Cart offline analyst (Node 20+)
 Usage: node scripts/analyze.mjs market --input scenario.json [--output result.json]
+       node scripts/analyze.mjs offer --input scenario.json --offer O01
 Use --input - for piped UTF-8 JSON. Output defaults to stdout.
 Inputs are limited to 1 MiB. Output files must not exist.
 Results are organizer-private, synthetic planning aids, never orders.
@@ -71,16 +72,23 @@ async function writeResult(value, path) {
 
 async function main() {
   const { values, positionals, tokens } = parseArgs({ allowPositionals: true, tokens: true, options: {
-    input: { type: 'string' }, output: { type: 'string' }, help: { type: 'boolean' },
+    input: { type: 'string' }, output: { type: 'string' }, help: { type: 'boolean' }, offer: { type: 'string' },
   } });
   const names = tokens.filter(token => token.kind === 'option').map(token => token.name);
   if (new Set(names).size !== names.length) throw new Error('Duplicate options are not allowed.');
   if (values.help) { process.stdout.write(help); return; }
   const [command] = positionals;
-  if (positionals.length !== 1 || command !== 'market') throw new Error('Choose market. Use --help for usage.');
+  const allowed = { market: [], offer: ['offer'] };
+  if (positionals.length !== 1 || !Object.hasOwn(allowed, command)) throw new Error('Choose a supported command. Use --help for usage.');
+  for (const name of names) if (!['input', 'output'].includes(name) && !allowed[command].includes(name)) throw new Error(`--${name} is not supported by ${command}.`);
   if (!values.input) throw new Error('--input is required.');
   const scenario = json(await readText(values.input));
-  const result = evaluateMarket(scenario);
+  let result;
+  if (command === 'market') result = evaluateMarket(scenario);
+  if (command === 'offer') {
+    if (!values.offer) throw new Error('--offer is required.');
+    result = { evaluation: evaluateOffer(scenario, values.offer), exclusions: groupExclusionReasons(scenario, values.offer), nextTier: unitsToNextTier(scenario, values.offer), capacity: capacityBar(scenario, values.offer) };
+  }
   await writeResult(result, values.output);
 }
 
