@@ -2,28 +2,28 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { readFile } from "node:fs/promises";
 
-test("1.5.29 keeps last-weekend-FX-open jump without taking unshifted F11", async () => {
+test("keyboard Shift+F11 is wired to the first-weekday-FX-open-hour copy control before unshifted F11", async () => {
   const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
   const app = await readFile(new URL("../src/app.js", import.meta.url), "utf8");
-  assert.match(html, /id="copy-last-weekend-fx-open"/);
   assert.match(html, /id="copy-first-weekday-fx-open"/);
   assert.match(html, /id="gantt-title"/);
   assert.match(html, /<kbd>Shift\+F11<\/kbd>/);
   assert.match(html, /Jump to the first-weekday-FX-open-hour copy control/);
-  assert.match(app, /function jumpToLastWeekendFxOpenCopy/);
   assert.match(app, /function jumpToFirstWeekdayFxOpenCopy/);
-  assert.match(app, /#copy-last-weekend-fx-open/);
   assert.match(app, /#copy-first-weekday-fx-open/);
   assert.match(app, /event\.key === "F11" && event\.shiftKey/);
   assert.ok(app.includes('event.key === "F11"'));
   assert.match(app, /function jumpToLastWeekdayFxClosedCopy/);
   assert.match(app, /function jumpToGantt/);
   assert.match(app, /if \(event\.defaultPrevented\) return/);
-  assert.notEqual(app.match(/function jumpToLastWeekendFxOpenCopy/)?.[0], app.match(/function jumpToFirstWeekdayFxOpenCopy/)?.[0]);
-  assert.notEqual(app.match(/function jumpToLastWeekendFxOpenCopy/)?.[0], app.match(/function jumpToLastWeekdayFxClosedCopy/)?.[0]);
-  const weekendFn = app.slice(app.indexOf("function jumpToLastWeekendFxOpenCopy"), app.indexOf("function jumpToLastWeekdayFxOpenCopy"));
-  assert.match(weekendFn, /jumpToGantt\(\)/);
-  assert.doesNotMatch(weekendFn, /copyLastWeekendFxOpenHourMarkdown/);
+  assert.match(app, /event\.key\.length === 1 \? event\.key\.toLowerCase\(\) : event\.key/);
+  assert.notEqual(app.match(/function jumpToFirstWeekdayFxOpenCopy/)?.[0], app.match(/function jumpToLastWeekdayFxOpenCopy/)?.[0]);
+  assert.notEqual(app.match(/function jumpToFirstWeekdayFxOpenCopy/)?.[0], app.match(/function jumpToLastWeekdayFxClosedCopy/)?.[0]);
+  assert.notEqual(app.match(/function jumpToFirstWeekdayFxOpenCopy/)?.[0], app.match(/function jumpToGantt/)?.[0]);
+  const shiftFn = app.slice(app.indexOf("function jumpToFirstWeekdayFxOpenCopy"), app.indexOf("function jumpToHideWeekdayFxOpenFilter"));
+  assert.match(shiftFn, /jumpToGantt\(\)/);
+  assert.doesNotMatch(shiftFn, /copyFirstWeekdayFxOpenHourMarkdown/);
+  assert.doesNotMatch(shiftFn, /copyLastWeekdayFxOpenHourMarkdown/);
   const handler = app.slice(app.indexOf('document.addEventListener("keydown"'));
   const shiftF11 = handler.indexOf('event.key === "F11" && event.shiftKey');
   const unshiftedF11 = handler.lastIndexOf('event.key === "F11"');
@@ -32,8 +32,9 @@ test("1.5.29 keeps last-weekend-FX-open jump without taking unshifted F11", asyn
   assert.ok(shiftF11 < unshiftedF11);
   const shiftSlice = handler.slice(shiftF11, shiftF11 + 180);
   assert.match(shiftSlice, /jumpToFirstWeekdayFxOpenCopy\(\)/);
-  assert.doesNotMatch(shiftSlice, /jumpToLastWeekendFxOpenCopy/);
+  assert.doesNotMatch(shiftSlice, /jumpToLastWeekdayFxOpenCopy/);
   assert.doesNotMatch(shiftSlice, /jumpToLastWeekdayFxClosedCopy/);
+  assert.doesNotMatch(shiftSlice, /copyFirstWeekdayFxOpenHourMarkdown/);
   const unshiftedSlice = handler.slice(unshiftedF11, unshiftedF11 + 180);
   assert.match(unshiftedSlice, /jumpToLastWeekdayFxClosedCopy\(\)/);
 });

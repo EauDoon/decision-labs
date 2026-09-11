@@ -9,7 +9,7 @@ test("keyboard F9 is wired to the hide-weekday-FX-closed Gantt filter", async ()
   assert.match(html, /id="gantt-title"/);
   assert.match(html, /<kbd>F9<\/kbd>/);
   assert.match(html, /Jump to the hide-weekday-FX-closed Gantt filter/);
-  assert.match(html, /id="gantt-hide-weekday-fx-closed"[^>]*aria-keyshortcuts="F9"/);
+  assert.match(html, /id="gantt-hide-weekday-fx-closed"[^>]*aria-keyshortcuts="F9 Shift\+F12"/);
   assert.match(app, /function jumpToHideWeekdayFxClosedFilter/);
   assert.match(app, /#gantt-hide-weekday-fx-closed/);
   assert.match(app, /event\.key === "F9"/);
