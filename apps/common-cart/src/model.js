@@ -2539,6 +2539,15 @@ function leftoverOnlyAllocatedHeadroom(rawScenario) {
   return leftoverOffer.capacity - leftoverOnlyAllocatedUnits(rawScenario);
 }
 
+function leftoverOnlyAllocatedCapacity(rawScenario) {
+  const scenario = validateScenario(rawScenario);
+  const coverage = computeResidualCoverage(scenario);
+  if (!coverage.secondary) return 0;
+  const leftoverOffer = scenario.offers.find((offer) => offer.id === coverage.secondary.offerId);
+  if (!leftoverOffer) return 0;
+  return leftoverOffer.capacity;
+}
+
 /** Organizer-private one-line leftover uncovered leftover-only count. Leftover-only buyer count. Honest empty none. Not a merchant export. Distinct prefix from leftover uncovered count, leftover uncovered remaining, leftover uncovered maximum, leftover uncovered minimum, uncovered leftover unit-count, and uncovered leftover counts. */
 export function createLeftoverUncoveredLeftoverOnlyCountMarkdown(rawScenario) {
   const coverage = computeResidualCoverage(rawScenario);
@@ -2579,6 +2588,13 @@ export function createLeftoverUncoveredLeftoverOnlyAllocatedMarkdown(rawScenario
   const coverage = computeResidualCoverage(rawScenario);
   const amount = coverage.leftoverBuyerCount > 0 ? String(leftoverOnlyAllocatedUnits(rawScenario)) : "none";
   return `Common Cart leftover uncovered leftover-only allocated (organizer private): ${amount}. Not a merchant export.\n`;
+}
+
+/** Organizer-private one-line leftover uncovered leftover-only capacity. Leftover-fill offer capacity. Honest empty none. Not a merchant export. Distinct prefix from leftover uncovered leftover-only allocated, leftover uncovered leftover-only headroom, leftover uncovered leftover-only remaining, leftover uncovered leftover-only minimum, leftover uncovered leftover-only maximum, leftover uncovered leftover-only count, leftover uncovered remaining, leftover uncovered maximum, leftover uncovered minimum, leftover uncovered count, uncovered leftover unit-count, leftover-fill remaining, leftover-fill minimum, leftover-fill maximum, leftover unspent item headroom, leftover unit price, and tertiary remaining even when the number matches. */
+export function createLeftoverUncoveredLeftoverOnlyCapacityMarkdown(rawScenario) {
+  const coverage = computeResidualCoverage(rawScenario);
+  const amount = coverage.leftoverBuyerCount > 0 ? String(leftoverOnlyAllocatedCapacity(rawScenario)) : "none";
+  return `Common Cart leftover uncovered leftover-only capacity (organizer private): ${amount}. Not a merchant export.\n`;
 }
 
 export function redactBuyerLabels(rawScenario) {
