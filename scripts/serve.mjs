@@ -129,6 +129,26 @@ export function catalogLastOpenHref() {
   return hrefs[hrefs.length - 1] ?? '';
 }
 
+export function catalogSkipLinks() {
+  const html = readFileSync(new URL('index.html', root), 'utf8');
+  const start = html.indexOf('id="skips"');
+  if (start < 0) return [];
+  const header = html.indexOf('<header', start);
+  const section = header > start ? html.slice(start, header) : html.slice(start);
+  return [...section.matchAll(/<a class="skip"[^>]*href="([^"]+)"[^>]*>([^<]*)<\/a>/g)].map((match) => ({
+    href: match[1].trim(),
+    text: match[2].trim(),
+  }));
+}
+
+export function catalogSkipHrefs() {
+  return catalogSkipLinks().map((link) => link.href);
+}
+
+export function catalogFirstSkipHref() {
+  return catalogSkipHrefs()[0] ?? '';
+}
+
 export function notFoundPage() {
   const versions = catalogVersionLine();
   const jobsList = catalogJobs().map(({ name, job }) => `<li>${escapeHtml(name)}: ${escapeHtml(job)}</li>`).join('\n      ');
@@ -140,6 +160,8 @@ export function notFoundPage() {
   const lastReview = catalogLastReviewPath();
   const firstOpen = catalogFirstOpenHref();
   const lastOpen = catalogLastOpenHref();
+  const skipLinks = catalogSkipLinks();
+  const skipNav = skipLinks.map(({ href, text }) => `    <a class="skip" href="${escapeHtml(href)}">${escapeHtml(text)}</a>`).join('\n');
   const newsHeadings = [];
   if (firstWhatsNew) newsHeadings.push(firstWhatsNew);
   if (lastWhatsNew && lastWhatsNew !== firstWhatsNew) newsHeadings.push(lastWhatsNew);
@@ -206,10 +228,11 @@ export function notFoundPage() {
     .copy-last-workbench-tools { margin: 16px 0 0; }
     .copy-first-open-tools { margin: 16px 0 0; }
     .copy-last-open-tools { margin: 16px 0 0; }
+    .copy-first-skip-tools { margin: 16px 0 0; }
     .copy-first-review-tools { margin: 16px 0 0; }
     .copy-last-review-tools { margin: 16px 0 0; }
     .copy-lede-tools { margin: 16px 0 0; }
-    .copy-versions, .copy-trust, .copy-how, .copy-jobs, .copy-lede, .copy-version-line, .copy-first-trust, .copy-first-how, .copy-last-how, .copy-last-job, .copy-last-whats-new, .copy-first-whats-new, .copy-first-workbench, .copy-last-workbench, .copy-first-open, .copy-last-open, .copy-first-review, .copy-last-review {
+    .copy-versions, .copy-trust, .copy-how, .copy-jobs, .copy-lede, .copy-version-line, .copy-first-trust, .copy-first-how, .copy-last-how, .copy-last-job, .copy-last-whats-new, .copy-first-whats-new, .copy-first-workbench, .copy-last-workbench, .copy-first-open, .copy-last-open, .copy-first-skip, .copy-first-review, .copy-last-review {
       display: inline-flex;
       align-items: center;
       min-height: 44px;
@@ -222,8 +245,8 @@ export function notFoundPage() {
       font-weight: 650;
       cursor: pointer;
     }
-    .copy-versions-status, .copy-trust-status, .copy-how-status, .copy-jobs-status, .copy-lede-status, .copy-version-line-status, .copy-first-trust-status, .copy-first-how-status, .copy-last-how-status, .copy-last-job-status, .copy-last-whats-new-status, .copy-first-whats-new-status, .copy-first-workbench-status, .copy-last-workbench-status, .copy-first-open-status, .copy-last-open-status, .copy-first-review-status, .copy-last-review-status { display: inline-block; margin-left: 12px; font-size: 15px; color: #1e3a42; }
-    .copy-versions-fallback, .copy-trust-fallback, .copy-how-fallback, .copy-jobs-fallback, .copy-lede-fallback, .copy-version-line-fallback, .copy-first-trust-fallback, .copy-first-how-fallback, .copy-last-how-fallback, .copy-last-job-fallback, .copy-last-whats-new-fallback, .copy-first-whats-new-fallback, .copy-first-workbench-fallback, .copy-last-workbench-fallback, .copy-first-open-fallback, .copy-last-open-fallback, .copy-first-review-fallback, .copy-last-review-fallback {
+    .copy-versions-status, .copy-trust-status, .copy-how-status, .copy-jobs-status, .copy-lede-status, .copy-version-line-status, .copy-first-trust-status, .copy-first-how-status, .copy-last-how-status, .copy-last-job-status, .copy-last-whats-new-status, .copy-first-whats-new-status, .copy-first-workbench-status, .copy-last-workbench-status, .copy-first-open-status, .copy-last-open-status, .copy-first-skip-status, .copy-first-review-status, .copy-last-review-status { display: inline-block; margin-left: 12px; font-size: 15px; color: #1e3a42; }
+    .copy-versions-fallback, .copy-trust-fallback, .copy-how-fallback, .copy-jobs-fallback, .copy-lede-fallback, .copy-version-line-fallback, .copy-first-trust-fallback, .copy-first-how-fallback, .copy-last-how-fallback, .copy-last-job-fallback, .copy-last-whats-new-fallback, .copy-first-whats-new-fallback, .copy-first-workbench-fallback, .copy-last-workbench-fallback, .copy-first-open-fallback, .copy-last-open-fallback, .copy-first-skip-fallback, .copy-first-review-fallback, .copy-last-review-fallback {
       display: block;
       width: 100%;
       margin-top: 10px;
@@ -233,7 +256,7 @@ export function notFoundPage() {
       border: 1px solid #c3d0d3;
       border-radius: 4px;
     }
-    .copy-versions-fallback[hidden], .copy-trust-fallback[hidden], .copy-how-fallback[hidden], .copy-jobs-fallback[hidden], .copy-lede-fallback[hidden], .copy-version-line-fallback[hidden], .copy-first-trust-fallback[hidden], .copy-first-how-fallback[hidden], .copy-last-how-fallback[hidden], .copy-last-job-fallback[hidden], .copy-last-whats-new-fallback[hidden], .copy-first-whats-new-fallback[hidden], .copy-first-workbench-fallback[hidden], .copy-last-workbench-fallback[hidden], .copy-first-open-fallback[hidden], .copy-last-open-fallback[hidden], .copy-first-review-fallback[hidden], .copy-last-review-fallback[hidden] { display: none; }
+    .copy-versions-fallback[hidden], .copy-trust-fallback[hidden], .copy-how-fallback[hidden], .copy-jobs-fallback[hidden], .copy-lede-fallback[hidden], .copy-version-line-fallback[hidden], .copy-first-trust-fallback[hidden], .copy-first-how-fallback[hidden], .copy-last-how-fallback[hidden], .copy-last-job-fallback[hidden], .copy-last-whats-new-fallback[hidden], .copy-first-whats-new-fallback[hidden], .copy-first-workbench-fallback[hidden], .copy-last-workbench-fallback[hidden], .copy-first-open-fallback[hidden], .copy-last-open-fallback[hidden], .copy-first-skip-fallback[hidden], .copy-first-review-fallback[hidden], .copy-last-review-fallback[hidden] { display: none; }
     .trust, .guide { margin: 28px 0 8px; padding-top: 8px; }
     .trust ul, .guide ul { margin: 12px 0 0; padding-left: 1.2rem; color: #1e3a42; }
     .trust li, .guide li { margin: 8px 0; }
@@ -243,6 +266,9 @@ export function notFoundPage() {
   </style>
 </head>
 <body>
+  <nav class="skips" id="skips" aria-label="Skip">
+${skipNav}
+  </nav>
   <main>
     <p class="eyebrow">Decision Labs</p>
     <h1>This path is not in the catalog</h1>
@@ -316,6 +342,11 @@ export function notFoundPage() {
       <span class="copy-last-open-status" id="copy-last-open-status" role="status"></span>
     </p>
     <textarea id="copy-last-open-fallback" class="copy-last-open-fallback" hidden readonly rows="2" aria-label="Last Open workbench href as Markdown"></textarea>
+    <p class="copy-first-skip-tools">
+      <button type="button" class="copy-first-skip" id="copy-first-skip">Copy first skip href</button>
+      <span class="copy-first-skip-status" id="copy-first-skip-status" role="status"></span>
+    </p>
+    <textarea id="copy-first-skip-fallback" class="copy-first-skip-fallback" hidden readonly rows="2" aria-label="First skip-link href as Markdown"></textarea>
     <p class="copy-first-review-tools">
       <button type="button" class="copy-first-review" id="copy-first-review">Copy first review path</button>
       <span class="copy-first-review-status" id="copy-first-review-status" role="status"></span>
@@ -700,6 +731,41 @@ export function notFoundPage() {
             lastOpenStatus.textContent = empty
               ? 'Clipboard unavailable. Copy the empty string from the text box. Last Open workbench href was missing. This is catalog copy, not a live product feed.'
               : 'Clipboard unavailable. Copy the Markdown from the text box. This is the last Open workbench href, not a live product feed.';
+          }
+        }
+      });
+      const firstSkipBtn = document.getElementById('copy-first-skip');
+      const firstSkipStatus = document.getElementById('copy-first-skip-status');
+      const firstSkipFallback = document.getElementById('copy-first-skip-fallback');
+      const firstSkipMarkdown = () => {
+        const skip = document.querySelector('#skips a.skip');
+        const href = skip?.getAttribute?.('href')?.trim() ?? '';
+        if (!href) return '';
+        return '- ' + href;
+      };
+      firstSkipBtn?.addEventListener('click', async () => {
+        const markdown = firstSkipMarkdown();
+        const empty = markdown === '';
+        try {
+          if (!navigator.clipboard?.writeText) throw new Error('clipboard unavailable');
+          await navigator.clipboard.writeText(markdown);
+          if (firstSkipFallback) firstSkipFallback.hidden = true;
+          if (firstSkipStatus) {
+            firstSkipStatus.textContent = empty
+              ? 'First skip-link href was missing. Copied an empty string. This is catalog copy, not a live product feed.'
+              : 'Copied the first skip-link href from this page as Markdown. Not a live product feed.';
+          }
+        } catch {
+          if (firstSkipFallback) {
+            firstSkipFallback.hidden = false;
+            firstSkipFallback.value = markdown;
+            firstSkipFallback.focus();
+            firstSkipFallback.select();
+          }
+          if (firstSkipStatus) {
+            firstSkipStatus.textContent = empty
+              ? 'Clipboard unavailable. Copy the empty string from the text box. First skip-link href was missing. This is catalog copy, not a live product feed.'
+              : 'Clipboard unavailable. Copy the Markdown from the text box. This is the first skip-link href, not a live product feed.';
           }
         }
       });

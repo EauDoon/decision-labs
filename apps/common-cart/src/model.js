@@ -431,6 +431,23 @@ export const presets = Object.freeze({
       offer("O02", "Tryline Salad Run", "Rugby lunch pack", "Tryline salad", 14, 14, 4, 40, 2),
       { ...offer("O03", "Hall Rugby Pickup", "Rugby lunch pack", "Tryline water", 12, 12, 1, 42, 5), fulfillment: "pickup" }
     ]
+  },
+  hockeyCarnivalLunch: {
+    title: "Hockey carnival lunch",
+    currency: "AUD",
+    buyers: [
+      buyer("B01", "Boards crate", "Hockey lunch pack", 15, 23, 4, ["Hockey pie", "Boards salad"]),
+      buyer("B02", "Goal bench", "Hockey lunch pack", 19, 19, 3, ["Hockey pie"]),
+      buyer("B03", "Umpire hamper", "Hockey lunch pack", 13, 21, 5, ["Boards salad", "Boards water"]),
+      buyer("B04", "Sideline cooler", "Hockey lunch pack", 10, 17, 2, ["Boards water"]),
+      buyer("B05", "Scoreboard trolley", "Hockey lunch pack", 16, 22, 4, ["Hockey pie", "Boards water"]),
+      buyer("B06", "Bench table", "Hockey lunch pack", 14, 20, 3, ["Boards salad", "Hockey pie"])
+    ],
+    offers: [
+      offer("O01", "Court-side Hockey Delivery", "Hockey lunch pack", "Hockey pie", 17, 17, 3, 54, 3),
+      offer("O02", "Boards Salad Run", "Hockey lunch pack", "Boards salad", 15, 15, 4, 42, 2),
+      { ...offer("O03", "Hall Hockey Pickup", "Hockey lunch pack", "Boards water", 13, 13, 1, 44, 5), fulfillment: "pickup" }
+    ]
   }
 });
 
@@ -472,7 +489,7 @@ export function validateWorkspace(candidate) {
   if (!candidate || typeof candidate !== "object" || Array.isArray(candidate) || own(candidate, "version") !== 1 || !Array.isArray(own(candidate, "rooms")) || candidate.rooms.length > 12) {
     throw new ScenarioError("Workspace must contain version 1 and at most 12 saved rooms.");
   }
-  rejectUnknownFields(candidate, ["version", "rooms", "fulfillmentFilter", "hideExcludedBuyers", "hideUnwinnableOffers", "hideCoveredLeftoverRows", "hideTertiaryLeftoverRow", "hideLeftoverFillRow", "hideZeroRemainingCapacityOffers", "hideOffersWithRemainingCapacity", "hideFullyFilledBuyers", "hideBuyersWithLeftover", "hideUnservedBuyers", "hideLeftoverOnlyBuyers", "hideWinnerAllocatedBuyers", "hideBuyersFilledByLeftoverFill", "hideLastBuyerFilledByLeftoverFill", "hideFirstBuyerFilledByLeftoverFill", "hideFirstBuyerFilledByTertiaryFill", "hideLastBuyerFilledByTertiaryFill", "hideLastUnservedBuyer", "hideFirstUnservedBuyer"], "Workspace");
+  rejectUnknownFields(candidate, ["version", "rooms", "fulfillmentFilter", "hideExcludedBuyers", "hideUnwinnableOffers", "hideCoveredLeftoverRows", "hideTertiaryLeftoverRow", "hideLeftoverFillRow", "hideZeroRemainingCapacityOffers", "hideOffersWithRemainingCapacity", "hideFullyFilledBuyers", "hideBuyersWithLeftover", "hideUnservedBuyers", "hideLeftoverOnlyBuyers", "hideWinnerAllocatedBuyers", "hideBuyersFilledByLeftoverFill", "hideLastBuyerFilledByLeftoverFill", "hideFirstBuyerFilledByLeftoverFill", "hideFirstBuyerFilledByTertiaryFill", "hideLastBuyerFilledByTertiaryFill", "hideLastUnservedBuyer", "hideFirstUnservedBuyer", "hideLastLeftoverOnlyBuyer"], "Workspace");
   const fulfillmentFilter = own(candidate, "fulfillmentFilter");
   let filter = "all";
   if (fulfillmentFilter !== undefined) {
@@ -633,7 +650,15 @@ export function validateWorkspace(candidate) {
     }
     hideFirstUnserved = hideFirstUnservedBuyer;
   }
-  return { version: 1, rooms: candidate.rooms.map(validateScenario), fulfillmentFilter: filter, hideExcludedBuyers: hideExcluded, hideUnwinnableOffers: hideUnwinnable, hideCoveredLeftoverRows: hideCoveredLeftover, hideTertiaryLeftoverRow: hideTertiaryLeftover, hideLeftoverFillRow: hideLeftoverFill, hideZeroRemainingCapacityOffers: hideZeroRemaining, hideOffersWithRemainingCapacity: hideRemainingCapacity, hideFullyFilledBuyers: hideFullyFilled, hideBuyersWithLeftover: hideLeftoverBuyers, hideUnservedBuyers: hideUnserved, hideLeftoverOnlyBuyers: hideLeftoverOnly, hideWinnerAllocatedBuyers: hideWinnerAllocated, hideBuyersFilledByLeftoverFill: hideLeftoverFillBuyers, hideLastBuyerFilledByLeftoverFill: hideLastLeftoverFillBuyer, hideFirstBuyerFilledByLeftoverFill: hideFirstLeftoverFillBuyer, hideFirstBuyerFilledByTertiaryFill: hideFirstTertiaryFillBuyer, hideLastBuyerFilledByTertiaryFill: hideLastTertiaryFillBuyer, hideLastUnservedBuyer: hideLastUnserved, hideFirstUnservedBuyer: hideFirstUnserved };
+  const hideLastLeftoverOnlyBuyer = own(candidate, "hideLastLeftoverOnlyBuyer");
+  let hideLastLeftoverOnly = false;
+  if (hideLastLeftoverOnlyBuyer !== undefined) {
+    if (hideLastLeftoverOnlyBuyer !== true && hideLastLeftoverOnlyBuyer !== false) {
+      throw new ScenarioError("Hide last leftover-only buyer must be true or false.");
+    }
+    hideLastLeftoverOnly = hideLastLeftoverOnlyBuyer;
+  }
+  return { version: 1, rooms: candidate.rooms.map(validateScenario), fulfillmentFilter: filter, hideExcludedBuyers: hideExcluded, hideUnwinnableOffers: hideUnwinnable, hideCoveredLeftoverRows: hideCoveredLeftover, hideTertiaryLeftoverRow: hideTertiaryLeftover, hideLeftoverFillRow: hideLeftoverFill, hideZeroRemainingCapacityOffers: hideZeroRemaining, hideOffersWithRemainingCapacity: hideRemainingCapacity, hideFullyFilledBuyers: hideFullyFilled, hideBuyersWithLeftover: hideLeftoverBuyers, hideUnservedBuyers: hideUnserved, hideLeftoverOnlyBuyers: hideLeftoverOnly, hideWinnerAllocatedBuyers: hideWinnerAllocated, hideBuyersFilledByLeftoverFill: hideLeftoverFillBuyers, hideLastBuyerFilledByLeftoverFill: hideLastLeftoverFillBuyer, hideFirstBuyerFilledByLeftoverFill: hideFirstLeftoverFillBuyer, hideFirstBuyerFilledByTertiaryFill: hideFirstTertiaryFillBuyer, hideLastBuyerFilledByTertiaryFill: hideLastTertiaryFillBuyer, hideLastUnservedBuyer: hideLastUnserved, hideFirstUnservedBuyer: hideFirstUnserved, hideLastLeftoverOnlyBuyer: hideLastLeftoverOnly };
 }
 
 export function duplicateEntry(rawScenario, kind, id) {
@@ -928,6 +953,26 @@ export function filterBuyerIdsHidingFirstBuyerFilledByTertiaryFill(rawScenario, 
     if (firstId && buyer.id === firstId) return false;
     return true;
   }).map((buyer) => buyer.id);
+}
+
+/** Display-only. Matching is unchanged. Hides only the last leftover-only buyer. Winner-allocated, unserved, leftover-fill, tertiary-fill, and other leftover-only buyers stay visible. Unserved buyers are not leftover-only. */
+export function filterBuyerIdsHidingLastLeftoverOnlyBuyer(rawScenario, hideLastLeftoverOnlyBuyer) {
+  if (hideLastLeftoverOnlyBuyer !== true && hideLastLeftoverOnlyBuyer !== false) {
+    throw new ScenarioError("Hide last leftover-only buyer must be true or false.");
+  }
+  const scenario = validateScenario(rawScenario);
+  if (!hideLastLeftoverOnlyBuyer) return scenario.buyers.map((buyer) => buyer.id);
+  const market = evaluateMarket(scenario);
+  const coverage = computeResidualCoverage(scenario);
+  const winnerIds = new Set(market.winner?.selectedBuyerIds ?? []);
+  const leftoverFillIds = new Set(coverage.secondary?.selectedBuyerIds ?? []);
+  const tertiaryIds = new Set(coverage.tertiary?.selectedBuyerIds ?? []);
+  let lastLeftoverOnlyId = null;
+  for (const buyer of scenario.buyers) {
+    const leftoverOnly = !winnerIds.has(buyer.id) && (leftoverFillIds.has(buyer.id) || tertiaryIds.has(buyer.id));
+    if (leftoverOnly) lastLeftoverOnlyId = buyer.id;
+  }
+  return scenario.buyers.filter((buyer) => buyer.id !== lastLeftoverOnlyId).map((buyer) => buyer.id);
 }
 
 /** Display-only. Matching is unchanged. Hides only the first buyer with no winner, leftover-fill, or tertiary units. Winner-allocated, leftover-fill, tertiary-fill, and other unserved buyers stay visible. */
@@ -2104,6 +2149,13 @@ export function createUncoveredLeftoverUnitCountMarkdown(rawScenario) {
   const coverage = computeResidualCoverage(rawScenario);
   const amount = coverage.leftoverBuyerCount > 0 ? String(coverage.unfilledUnits) : "none";
   return `Common Cart uncovered leftover units (organizer private): ${amount}. Not a merchant export.\n`;
+}
+
+/** Organizer-private one-line leftover uncovered remaining units. Count only. Honest empty none. Not a merchant export. Distinct from leftover-fill remaining and tertiary remaining. */
+export function createLeftoverUncoveredRemainingMarkdown(rawScenario) {
+  const coverage = computeResidualCoverage(rawScenario);
+  const amount = coverage.leftoverBuyerCount > 0 ? String(coverage.unfilledUnits) : "none";
+  return `Common Cart leftover uncovered remaining (organizer private): ${amount}. Not a merchant export.\n`;
 }
 
 export function redactBuyerLabels(rawScenario) {
