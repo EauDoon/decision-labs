@@ -132,5 +132,26 @@ test("standalone retains 1.4.18 tertiary remaining tools and 1.4.19 tertiary max
   assert.doesNotMatch(html.slice(html.indexOf('id="merchant-panel"'), html.indexOf('id="method-panel"')), /hide-last-leftover-only-buyer/u);
   assert.doesNotMatch(html.slice(html.indexOf('id="merchant-panel"'), html.indexOf('id="method-panel"')), /leftover-print-uncovered-remaining/u);
   assert.doesNotMatch(html.slice(html.indexOf('id="merchant-panel"'), html.indexOf('id="method-panel"')), /hideLastLeftoverOnlyBuyer/u);
+  assert.match(html, /id="copy-leftover-uncovered-maximum"/u);
+  assert.match(html, /id="copy-leftover-uncovered-maximum"[^>]*aria-keyshortcuts="Insert"/u);
+  assert.match(html, /id="hide-first-leftover-only-buyer"/u);
+  assert.match(html, /id="leftover-print-uncovered-maximum"/u);
+  assert.match(html, /Leftover uncovered maximum: none/u);
+  assert.match(html, /data-preset="baseballCarnivalLunch"/u);
+  assert.match(html, /function copyLeftoverUncoveredMaximum\(/u);
+  assert.match(html, /function focusLeftoverUncoveredMaximumCopy\(/u);
+  assert.match(html, /function focusHideFirstLeftoverOnlyBuyer\(/u);
+  assert.match(html, /filterBuyerIdsHidingFirstLeftoverOnlyBuyer\(/u);
+  assert.match(html, /hideFirstLeftoverOnlyBuyer/u);
+  assert.match(html, /createLeftoverUncoveredMaximumMarkdown\(/u);
+  assert.match(html, /if \(key === "Insert"\) \{\s*event\.preventDefault\(\);\s*copyLeftoverUncoveredMaximum\(\);/u);
+  assert.match(html, /if \(key === "ArrowDown"\) \{\s*event\.preventDefault\(\);\s*focusLeftoverUncoveredMaximumCopy\(\);/u);
+  assert.match(html, /if \(key === "ArrowLeft"\) \{\s*event\.preventDefault\(\);\s*focusHideFirstLeftoverOnlyBuyer\(\);/u);
+  assert.match(html, /function handleShortcut\(event\) \{\s*if \(event\.defaultPrevented \|\| event\.metaKey \|\| event\.ctrlKey \|\| event\.altKey\) return;/u);
+  assert.match(html, /const key = event\.key\.length === 1 \? event\.key\.toLowerCase\(\) : event\.key;/u);
+  assert.doesNotMatch(html.slice(html.indexOf('id="merchant-panel"'), html.indexOf('id="method-panel"')), /copy-leftover-uncovered-maximum/u);
+  assert.doesNotMatch(html.slice(html.indexOf('id="merchant-panel"'), html.indexOf('id="method-panel"')), /hide-first-leftover-only-buyer/u);
+  assert.doesNotMatch(html.slice(html.indexOf('id="merchant-panel"'), html.indexOf('id="method-panel"')), /leftover-print-uncovered-maximum/u);
+  assert.doesNotMatch(html.slice(html.indexOf('id="merchant-panel"'), html.indexOf('id="method-panel"')), /hideFirstLeftoverOnlyBuyer/u);
 });
 
