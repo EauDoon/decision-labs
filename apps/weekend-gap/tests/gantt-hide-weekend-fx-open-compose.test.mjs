@@ -56,4 +56,5 @@ test("weekend-FX-open hide composes with FX-open, weekend and weekend-payout-ope
   assert.equal(runSimulation(PRESETS.saturdayEarlyPayoutOpen).timeline.length, SIMULATION_HOURS + 1);
   assert.equal(runSimulation(PRESETS.fridayLateFxOpen).timeline.length, SIMULATION_HOURS + 1);
   assert.equal(runSimulation(PRESETS.saturdayLateFxOpen).timeline.length, SIMULATION_HOURS + 1);
+  assert.equal(runSimulation(PRESETS.sundayLateFxOpen).timeline.length, SIMULATION_HOURS + 1);
 });
