@@ -5636,6 +5636,15 @@ function jumpToFirstGroupWithoutFloorCostCopy() {
   $("#groups-heading")?.focus?.();
 }
 
+function jumpToLastGroupWithoutFloorCostCopy() {
+  const control = $("#copy-last-group-without-floor-cost-button");
+  if (control?.focus) {
+    control.focus();
+    return;
+  }
+  $("#groups-heading")?.focus?.();
+}
+
 function jumpToPrintPack() {
   const control = $("#print-button");
   if (control?.focus) {
@@ -5981,7 +5990,7 @@ document.addEventListener("keydown", (event) => {
     copyLastGroupWithoutFloorCost();
   } else if (event.shiftKey && key === "F8") {
     event.preventDefault();
-    jumpToFirstGroupWithoutFloorCostCopy();
+    jumpToLastGroupWithoutFloorCostCopy();
   } else if (event.shiftKey && key === "F9") {
     event.preventDefault();
     jumpToHideFirstGroupWithoutFloor();
