@@ -4,7 +4,7 @@ import { request } from 'node:http';
 import { readFileSync } from 'node:fs';
 import { spawnSync } from 'node:child_process';
 import vm from 'node:vm';
-import { createLauncher, parsePort, PUBLIC_PATHS, publicFile, CONTENT_SECURITY_POLICY, notFoundPage, catalogVersionLine, catalogJobs, catalogLastWhatsNewHeading, catalogFirstWhatsNewHeading, catalogFirstWorkbenchHeading, catalogLastWorkbenchHeading, catalogLastReviewPath, catalogFirstReviewPath, catalogFirstOpenHref, catalogLastOpenHref, catalogFirstSkipHref, catalogLastSkipHref, catalogFirstSkipText } from '../scripts/serve.mjs';
+import { createLauncher, parsePort, PUBLIC_PATHS, publicFile, CONTENT_SECURITY_POLICY, notFoundPage, catalogVersionLine, catalogJobs, catalogLastWhatsNewHeading, catalogFirstWhatsNewHeading, catalogFirstWorkbenchHeading, catalogLastWorkbenchHeading, catalogLastReviewPath, catalogFirstReviewPath, catalogFirstOpenHref, catalogLastOpenHref, catalogFirstSkipHref, catalogLastSkipHref, catalogFirstSkipText, catalogLastSkipText } from '../scripts/serve.mjs';
 
 test('launcher serves only workbenches and refuses hostile hosts and methods', async (t) => {
   const server = createLauncher();
@@ -3452,6 +3452,73 @@ test('404 copy first skip text markdown is the first printed skip text, or empty
   skip = null;
   copied = 'stale';
   await clickFirst();
+  assert.equal(copied, '');
+  assert.equal(PUBLIC_PATHS.length, 6);
+});
+
+test('404 copy last skip text uses the printed text without extra public paths', () => {
+  const page = notFoundPage();
+  const text = catalogLastSkipText();
+  assert.equal(text, 'Skip to catalog versions');
+  assert.equal(page.includes(text), true, '404 page should print the last skip-link text');
+  assert.notEqual(text, catalogLastSkipHref());
+  assert.notEqual(text, catalogFirstSkipText());
+  assert.match(page, /id="copy-last-skip-text"/);
+  assert.match(page, />Copy last skip text</);
+  assert.match(page, /id="copy-last-skip-text-fallback"/);
+  assert.match(page, /textarea id="copy-last-skip-text-fallback"/);
+  assert.match(page, /lastSkipTextMarkdown/);
+  assert.match(page, /querySelectorAll\('#skips a\.skip'\)/);
+  assert.match(page, /id="skips"/);
+  assert.match(page, /Not a live product feed/);
+  assert.match(page, /id="copy-first-skip-text"/);
+  assert.match(page, />Copy first skip text</);
+  assert.doesNotMatch(page, /\bfetch\s*\(/);
+  assert.doesNotMatch(page, /XMLHttpRequest/);
+  assert.equal(PUBLIC_PATHS.length, 6);
+  assert.deepEqual([...PUBLIC_PATHS], [
+    '/',
+    '/index.html',
+    '/apps/partnership-breakpoint/standalone.html',
+    '/apps/common-cart/standalone.html',
+    '/apps/smallest-agreement/standalone.html',
+    '/apps/weekend-gap/standalone.html',
+  ]);
+  assert.equal(publicFile('/package.json'), null);
+});
+
+test('404 copy last skip text markdown is the last printed skip text, or empty if missing', async () => {
+  const page = notFoundPage();
+  const source = page.match(/<script>([\s\S]*?)<\/script>/)[1];
+  let copied = '';
+  let clickLast = null;
+  let skips = [
+    { textContent: "Skip to what's new" },
+    { textContent: 'Skip to catalog versions' },
+  ];
+  const document = {
+    getElementById(id) {
+      if (id === 'copy-last-skip-text') return { addEventListener(name, handler) { if (name === 'click') clickLast = handler; } };
+      if (id === 'copy-last-skip-text-status') return { textContent: '' };
+      if (id === 'copy-last-skip-text-fallback') return { hidden: true, value: '', focus() {}, select() {} };
+      return null;
+    },
+    querySelector: () => null,
+    querySelectorAll(selector) {
+      return selector === '#skips a.skip' ? skips : [];
+    },
+    addEventListener() {},
+  };
+  vm.runInNewContext(source, {
+    document,
+    navigator: { clipboard: { writeText: async (text) => { copied = text; } } },
+  });
+  await clickLast();
+  assert.equal(copied, '- Skip to catalog versions');
+  assert.doesNotMatch(copied, /#version-line/);
+  skips = [];
+  copied = 'stale';
+  await clickLast();
   assert.equal(copied, '');
   assert.equal(PUBLIC_PATHS.length, 6);
 });
