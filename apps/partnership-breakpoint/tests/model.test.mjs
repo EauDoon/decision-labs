@@ -497,7 +497,7 @@ test('podcast host and network preset is a distinct two-party starting point', (
   assert.equal(podcast.participants[0].capacity, null);
   assert.notEqual(podcast.participants[0].variableCostPerTransaction, podcast.participants[1].variableCostPerTransaction);
   assert.notEqual(podcast.participants[0].fixedMonthlyCost, podcast.participants[1].fixedMonthlyCost);
-  const others = ['balanced', 'thinMargin', 'growthAtCost', 'creatorTakeRate', 'threePartyJv', 'twoPartyStudio', 'fourPartyMarketplace', 'licensorDistributor', 'talentAgentPlatform', 'threePartyJointVenture', 'communityHallSplit', 'festivalStallSplit', 'popupCinemaSplit', 'communityRadioSplit', 'schoolConcertSplit', 'sportsCarnivalSplit', 'netballCarnivalSplit', 'swimmingCarnivalSplit', 'athleticsCarnivalSplit', 'cricketCarnivalSplit', 'tennisCarnivalSplit', 'basketballCarnivalSplit', 'volleyballCarnivalSplit', 'rugbyCarnivalSplit'];
+  const others = ['balanced', 'thinMargin', 'growthAtCost', 'creatorTakeRate', 'threePartyJv', 'twoPartyStudio', 'fourPartyMarketplace', 'licensorDistributor', 'talentAgentPlatform', 'threePartyJointVenture', 'communityHallSplit', 'festivalStallSplit', 'popupCinemaSplit', 'communityRadioSplit', 'schoolConcertSplit', 'sportsCarnivalSplit', 'netballCarnivalSplit', 'swimmingCarnivalSplit', 'athleticsCarnivalSplit', 'cricketCarnivalSplit', 'tennisCarnivalSplit', 'basketballCarnivalSplit', 'volleyballCarnivalSplit', 'rugbyCarnivalSplit', 'hockeyCarnivalSplit'];
   for (const key of others) {
     const other = clonePreset(key);
     assert.notEqual(podcast.participants.map((item) => item.id).join(','), other.participants.map((item) => item.id).join(','), key);
@@ -522,7 +522,7 @@ test('community hall split preset is a distinct venue promoter sound starting po
   assert.notEqual(hall.participants[1].variableCostPerTransaction, hall.participants[2].variableCostPerTransaction);
   assert.notEqual(hall.participants[0].fixedMonthlyCost, hall.participants[1].fixedMonthlyCost);
   assert.notEqual(hall.participants[1].fixedMonthlyCost, hall.participants[2].fixedMonthlyCost);
-  const others = ['balanced', 'thinMargin', 'growthAtCost', 'creatorTakeRate', 'threePartyJv', 'twoPartyStudio', 'fourPartyMarketplace', 'licensorDistributor', 'talentAgentPlatform', 'threePartyJointVenture', 'podcastHostNetwork', 'festivalStallSplit', 'popupCinemaSplit', 'communityRadioSplit', 'schoolConcertSplit', 'sportsCarnivalSplit', 'netballCarnivalSplit', 'swimmingCarnivalSplit', 'athleticsCarnivalSplit', 'cricketCarnivalSplit', 'tennisCarnivalSplit', 'basketballCarnivalSplit', 'volleyballCarnivalSplit', 'rugbyCarnivalSplit'];
+  const others = ['balanced', 'thinMargin', 'growthAtCost', 'creatorTakeRate', 'threePartyJv', 'twoPartyStudio', 'fourPartyMarketplace', 'licensorDistributor', 'talentAgentPlatform', 'threePartyJointVenture', 'podcastHostNetwork', 'festivalStallSplit', 'popupCinemaSplit', 'communityRadioSplit', 'schoolConcertSplit', 'sportsCarnivalSplit', 'netballCarnivalSplit', 'swimmingCarnivalSplit', 'athleticsCarnivalSplit', 'cricketCarnivalSplit', 'tennisCarnivalSplit', 'basketballCarnivalSplit', 'volleyballCarnivalSplit', 'rugbyCarnivalSplit', 'hockeyCarnivalSplit'];
   for (const key of others) {
     const other = clonePreset(key);
     assert.notEqual(hall.participants.map((item) => item.id).join(','), other.participants.map((item) => item.id).join(','), key);
@@ -548,7 +548,7 @@ test('festival stall split preset is a distinct stallholder site ticket starting
   assert.notEqual(stall.participants[1].variableCostPerTransaction, stall.participants[2].variableCostPerTransaction);
   assert.notEqual(stall.participants[0].fixedMonthlyCost, stall.participants[1].fixedMonthlyCost);
   assert.notEqual(stall.participants[1].fixedMonthlyCost, stall.participants[2].fixedMonthlyCost);
-  const others = ['balanced', 'thinMargin', 'growthAtCost', 'creatorTakeRate', 'threePartyJv', 'twoPartyStudio', 'fourPartyMarketplace', 'licensorDistributor', 'talentAgentPlatform', 'threePartyJointVenture', 'podcastHostNetwork', 'communityHallSplit', 'popupCinemaSplit', 'communityRadioSplit', 'schoolConcertSplit', 'sportsCarnivalSplit', 'netballCarnivalSplit', 'swimmingCarnivalSplit', 'athleticsCarnivalSplit', 'cricketCarnivalSplit', 'tennisCarnivalSplit', 'basketballCarnivalSplit', 'volleyballCarnivalSplit', 'rugbyCarnivalSplit'];
+  const others = ['balanced', 'thinMargin', 'growthAtCost', 'creatorTakeRate', 'threePartyJv', 'twoPartyStudio', 'fourPartyMarketplace', 'licensorDistributor', 'talentAgentPlatform', 'threePartyJointVenture', 'podcastHostNetwork', 'communityHallSplit', 'popupCinemaSplit', 'communityRadioSplit', 'schoolConcertSplit', 'sportsCarnivalSplit', 'netballCarnivalSplit', 'swimmingCarnivalSplit', 'athleticsCarnivalSplit', 'cricketCarnivalSplit', 'tennisCarnivalSplit', 'basketballCarnivalSplit', 'volleyballCarnivalSplit', 'rugbyCarnivalSplit', 'hockeyCarnivalSplit'];
   for (const key of others) {
     const other = clonePreset(key);
     assert.notEqual(stall.participants.map((item) => item.id).join(','), other.participants.map((item) => item.id).join(','), key);
@@ -574,7 +574,7 @@ test('pop-up cinema split preset is a distinct venue projectionist ticket starti
   assert.notEqual(cinema.participants[1].variableCostPerTransaction, cinema.participants[2].variableCostPerTransaction);
   assert.notEqual(cinema.participants[0].fixedMonthlyCost, cinema.participants[1].fixedMonthlyCost);
   assert.notEqual(cinema.participants[1].fixedMonthlyCost, cinema.participants[2].fixedMonthlyCost);
-  const others = ['balanced', 'thinMargin', 'growthAtCost', 'creatorTakeRate', 'threePartyJv', 'twoPartyStudio', 'fourPartyMarketplace', 'licensorDistributor', 'talentAgentPlatform', 'threePartyJointVenture', 'podcastHostNetwork', 'communityHallSplit', 'festivalStallSplit', 'communityRadioSplit', 'schoolConcertSplit', 'sportsCarnivalSplit', 'netballCarnivalSplit', 'swimmingCarnivalSplit', 'athleticsCarnivalSplit', 'cricketCarnivalSplit', 'tennisCarnivalSplit', 'basketballCarnivalSplit', 'volleyballCarnivalSplit', 'rugbyCarnivalSplit'];
+  const others = ['balanced', 'thinMargin', 'growthAtCost', 'creatorTakeRate', 'threePartyJv', 'twoPartyStudio', 'fourPartyMarketplace', 'licensorDistributor', 'talentAgentPlatform', 'threePartyJointVenture', 'podcastHostNetwork', 'communityHallSplit', 'festivalStallSplit', 'communityRadioSplit', 'schoolConcertSplit', 'sportsCarnivalSplit', 'netballCarnivalSplit', 'swimmingCarnivalSplit', 'athleticsCarnivalSplit', 'cricketCarnivalSplit', 'tennisCarnivalSplit', 'basketballCarnivalSplit', 'volleyballCarnivalSplit', 'rugbyCarnivalSplit', 'hockeyCarnivalSplit'];
   for (const key of others) {
     const other = clonePreset(key);
     assert.notEqual(cinema.participants.map((item) => item.id).join(','), other.participants.map((item) => item.id).join(','), key);
@@ -600,7 +600,7 @@ test('community radio split preset is a distinct presenter station underwriter s
   assert.notEqual(radio.participants[1].variableCostPerTransaction, radio.participants[2].variableCostPerTransaction);
   assert.notEqual(radio.participants[0].fixedMonthlyCost, radio.participants[1].fixedMonthlyCost);
   assert.notEqual(radio.participants[1].fixedMonthlyCost, radio.participants[2].fixedMonthlyCost);
-  const others = ['balanced', 'thinMargin', 'growthAtCost', 'creatorTakeRate', 'threePartyJv', 'twoPartyStudio', 'fourPartyMarketplace', 'licensorDistributor', 'talentAgentPlatform', 'threePartyJointVenture', 'podcastHostNetwork', 'communityHallSplit', 'festivalStallSplit', 'popupCinemaSplit', 'schoolConcertSplit', 'sportsCarnivalSplit', 'netballCarnivalSplit', 'swimmingCarnivalSplit', 'athleticsCarnivalSplit', 'cricketCarnivalSplit', 'tennisCarnivalSplit', 'basketballCarnivalSplit', 'volleyballCarnivalSplit', 'rugbyCarnivalSplit'];
+  const others = ['balanced', 'thinMargin', 'growthAtCost', 'creatorTakeRate', 'threePartyJv', 'twoPartyStudio', 'fourPartyMarketplace', 'licensorDistributor', 'talentAgentPlatform', 'threePartyJointVenture', 'podcastHostNetwork', 'communityHallSplit', 'festivalStallSplit', 'popupCinemaSplit', 'schoolConcertSplit', 'sportsCarnivalSplit', 'netballCarnivalSplit', 'swimmingCarnivalSplit', 'athleticsCarnivalSplit', 'cricketCarnivalSplit', 'tennisCarnivalSplit', 'basketballCarnivalSplit', 'volleyballCarnivalSplit', 'rugbyCarnivalSplit', 'hockeyCarnivalSplit'];
   for (const key of others) {
     const other = clonePreset(key);
     assert.notEqual(radio.participants.map((item) => item.id).join(','), other.participants.map((item) => item.id).join(','), key);
@@ -626,7 +626,7 @@ test('school concert split preset is a distinct venue PTA ticketing starting poi
   assert.notEqual(concert.participants[1].variableCostPerTransaction, concert.participants[2].variableCostPerTransaction);
   assert.notEqual(concert.participants[0].fixedMonthlyCost, concert.participants[1].fixedMonthlyCost);
   assert.notEqual(concert.participants[1].fixedMonthlyCost, concert.participants[2].fixedMonthlyCost);
-  const others = ['balanced', 'thinMargin', 'growthAtCost', 'creatorTakeRate', 'threePartyJv', 'twoPartyStudio', 'fourPartyMarketplace', 'licensorDistributor', 'talentAgentPlatform', 'threePartyJointVenture', 'podcastHostNetwork', 'communityHallSplit', 'festivalStallSplit', 'popupCinemaSplit', 'communityRadioSplit', 'sportsCarnivalSplit', 'netballCarnivalSplit', 'swimmingCarnivalSplit', 'athleticsCarnivalSplit', 'cricketCarnivalSplit', 'tennisCarnivalSplit', 'basketballCarnivalSplit', 'volleyballCarnivalSplit', 'rugbyCarnivalSplit'];
+  const others = ['balanced', 'thinMargin', 'growthAtCost', 'creatorTakeRate', 'threePartyJv', 'twoPartyStudio', 'fourPartyMarketplace', 'licensorDistributor', 'talentAgentPlatform', 'threePartyJointVenture', 'podcastHostNetwork', 'communityHallSplit', 'festivalStallSplit', 'popupCinemaSplit', 'communityRadioSplit', 'sportsCarnivalSplit', 'netballCarnivalSplit', 'swimmingCarnivalSplit', 'athleticsCarnivalSplit', 'cricketCarnivalSplit', 'tennisCarnivalSplit', 'basketballCarnivalSplit', 'volleyballCarnivalSplit', 'rugbyCarnivalSplit', 'hockeyCarnivalSplit'];
   for (const key of others) {
     const other = clonePreset(key);
     assert.notEqual(concert.participants.map((item) => item.id).join(','), other.participants.map((item) => item.id).join(','), key);
@@ -652,7 +652,7 @@ test('sports carnival split preset is a distinct carnival ride ticket starting p
   assert.notEqual(carnival.participants[1].variableCostPerTransaction, carnival.participants[2].variableCostPerTransaction);
   assert.notEqual(carnival.participants[0].fixedMonthlyCost, carnival.participants[1].fixedMonthlyCost);
   assert.notEqual(carnival.participants[1].fixedMonthlyCost, carnival.participants[2].fixedMonthlyCost);
-  const others = ['balanced', 'thinMargin', 'growthAtCost', 'creatorTakeRate', 'threePartyJv', 'twoPartyStudio', 'fourPartyMarketplace', 'licensorDistributor', 'talentAgentPlatform', 'threePartyJointVenture', 'podcastHostNetwork', 'communityHallSplit', 'festivalStallSplit', 'popupCinemaSplit', 'communityRadioSplit', 'schoolConcertSplit', 'netballCarnivalSplit', 'swimmingCarnivalSplit', 'athleticsCarnivalSplit', 'cricketCarnivalSplit', 'tennisCarnivalSplit', 'basketballCarnivalSplit', 'volleyballCarnivalSplit', 'rugbyCarnivalSplit'];
+  const others = ['balanced', 'thinMargin', 'growthAtCost', 'creatorTakeRate', 'threePartyJv', 'twoPartyStudio', 'fourPartyMarketplace', 'licensorDistributor', 'talentAgentPlatform', 'threePartyJointVenture', 'podcastHostNetwork', 'communityHallSplit', 'festivalStallSplit', 'popupCinemaSplit', 'communityRadioSplit', 'schoolConcertSplit', 'netballCarnivalSplit', 'swimmingCarnivalSplit', 'athleticsCarnivalSplit', 'cricketCarnivalSplit', 'tennisCarnivalSplit', 'basketballCarnivalSplit', 'volleyballCarnivalSplit', 'rugbyCarnivalSplit', 'hockeyCarnivalSplit'];
   for (const key of others) {
     const other = clonePreset(key);
     assert.notEqual(carnival.participants.map((item) => item.id).join(','), other.participants.map((item) => item.id).join(','), key);
@@ -678,7 +678,7 @@ test('netball carnival split preset is a distinct committee canteen first-aid st
   assert.notEqual(netball.participants[1].variableCostPerTransaction, netball.participants[2].variableCostPerTransaction);
   assert.notEqual(netball.participants[0].fixedMonthlyCost, netball.participants[1].fixedMonthlyCost);
   assert.notEqual(netball.participants[1].fixedMonthlyCost, netball.participants[2].fixedMonthlyCost);
-  const others = ['balanced', 'thinMargin', 'growthAtCost', 'creatorTakeRate', 'threePartyJv', 'twoPartyStudio', 'fourPartyMarketplace', 'licensorDistributor', 'talentAgentPlatform', 'threePartyJointVenture', 'podcastHostNetwork', 'communityHallSplit', 'festivalStallSplit', 'popupCinemaSplit', 'communityRadioSplit', 'schoolConcertSplit', 'sportsCarnivalSplit', 'swimmingCarnivalSplit', 'athleticsCarnivalSplit', 'cricketCarnivalSplit', 'tennisCarnivalSplit', 'basketballCarnivalSplit', 'volleyballCarnivalSplit', 'rugbyCarnivalSplit'];
+  const others = ['balanced', 'thinMargin', 'growthAtCost', 'creatorTakeRate', 'threePartyJv', 'twoPartyStudio', 'fourPartyMarketplace', 'licensorDistributor', 'talentAgentPlatform', 'threePartyJointVenture', 'podcastHostNetwork', 'communityHallSplit', 'festivalStallSplit', 'popupCinemaSplit', 'communityRadioSplit', 'schoolConcertSplit', 'sportsCarnivalSplit', 'swimmingCarnivalSplit', 'athleticsCarnivalSplit', 'cricketCarnivalSplit', 'tennisCarnivalSplit', 'basketballCarnivalSplit', 'volleyballCarnivalSplit', 'rugbyCarnivalSplit', 'hockeyCarnivalSplit'];
   for (const key of others) {
     const other = clonePreset(key);
     assert.notEqual(netball.participants.map((item) => item.id).join(','), other.participants.map((item) => item.id).join(','), key);
@@ -705,7 +705,7 @@ test('swimming carnival split preset is a distinct committee pool-operations can
   assert.notEqual(swimming.participants[1].variableCostPerTransaction, swimming.participants[2].variableCostPerTransaction);
   assert.notEqual(swimming.participants[0].fixedMonthlyCost, swimming.participants[1].fixedMonthlyCost);
   assert.notEqual(swimming.participants[1].fixedMonthlyCost, swimming.participants[2].fixedMonthlyCost);
-  const others = ['balanced', 'thinMargin', 'growthAtCost', 'creatorTakeRate', 'threePartyJv', 'twoPartyStudio', 'fourPartyMarketplace', 'licensorDistributor', 'talentAgentPlatform', 'threePartyJointVenture', 'podcastHostNetwork', 'communityHallSplit', 'festivalStallSplit', 'popupCinemaSplit', 'communityRadioSplit', 'schoolConcertSplit', 'sportsCarnivalSplit', 'netballCarnivalSplit', 'athleticsCarnivalSplit', 'cricketCarnivalSplit', 'tennisCarnivalSplit', 'basketballCarnivalSplit', 'volleyballCarnivalSplit', 'rugbyCarnivalSplit'];
+  const others = ['balanced', 'thinMargin', 'growthAtCost', 'creatorTakeRate', 'threePartyJv', 'twoPartyStudio', 'fourPartyMarketplace', 'licensorDistributor', 'talentAgentPlatform', 'threePartyJointVenture', 'podcastHostNetwork', 'communityHallSplit', 'festivalStallSplit', 'popupCinemaSplit', 'communityRadioSplit', 'schoolConcertSplit', 'sportsCarnivalSplit', 'netballCarnivalSplit', 'athleticsCarnivalSplit', 'cricketCarnivalSplit', 'tennisCarnivalSplit', 'basketballCarnivalSplit', 'volleyballCarnivalSplit', 'rugbyCarnivalSplit', 'hockeyCarnivalSplit'];
   for (const key of others) {
     const other = clonePreset(key);
     assert.notEqual(swimming.participants.map((item) => item.id).join(','), other.participants.map((item) => item.id).join(','), key);
@@ -732,7 +732,7 @@ test('athletics carnival split preset is a distinct committee track-hire first-a
   assert.notEqual(athletics.participants[1].variableCostPerTransaction, athletics.participants[2].variableCostPerTransaction);
   assert.notEqual(athletics.participants[0].fixedMonthlyCost, athletics.participants[1].fixedMonthlyCost);
   assert.notEqual(athletics.participants[1].fixedMonthlyCost, athletics.participants[2].fixedMonthlyCost);
-  const others = ['balanced', 'thinMargin', 'growthAtCost', 'creatorTakeRate', 'threePartyJv', 'twoPartyStudio', 'fourPartyMarketplace', 'licensorDistributor', 'talentAgentPlatform', 'threePartyJointVenture', 'podcastHostNetwork', 'communityHallSplit', 'festivalStallSplit', 'popupCinemaSplit', 'communityRadioSplit', 'schoolConcertSplit', 'sportsCarnivalSplit', 'netballCarnivalSplit', 'swimmingCarnivalSplit', 'cricketCarnivalSplit', 'tennisCarnivalSplit', 'basketballCarnivalSplit', 'volleyballCarnivalSplit', 'rugbyCarnivalSplit'];
+  const others = ['balanced', 'thinMargin', 'growthAtCost', 'creatorTakeRate', 'threePartyJv', 'twoPartyStudio', 'fourPartyMarketplace', 'licensorDistributor', 'talentAgentPlatform', 'threePartyJointVenture', 'podcastHostNetwork', 'communityHallSplit', 'festivalStallSplit', 'popupCinemaSplit', 'communityRadioSplit', 'schoolConcertSplit', 'sportsCarnivalSplit', 'netballCarnivalSplit', 'swimmingCarnivalSplit', 'cricketCarnivalSplit', 'tennisCarnivalSplit', 'basketballCarnivalSplit', 'volleyballCarnivalSplit', 'rugbyCarnivalSplit', 'hockeyCarnivalSplit'];
   for (const key of others) {
     const other = clonePreset(key);
     assert.notEqual(athletics.participants.map((item) => item.id).join(','), other.participants.map((item) => item.id).join(','), key);
@@ -759,7 +759,7 @@ test('cricket carnival split preset is a distinct committee pitch-hire first-aid
   assert.notEqual(cricket.participants[1].variableCostPerTransaction, cricket.participants[2].variableCostPerTransaction);
   assert.notEqual(cricket.participants[0].fixedMonthlyCost, cricket.participants[1].fixedMonthlyCost);
   assert.notEqual(cricket.participants[1].fixedMonthlyCost, cricket.participants[2].fixedMonthlyCost);
-  const others = ['balanced', 'thinMargin', 'growthAtCost', 'creatorTakeRate', 'threePartyJv', 'twoPartyStudio', 'fourPartyMarketplace', 'licensorDistributor', 'talentAgentPlatform', 'threePartyJointVenture', 'podcastHostNetwork', 'communityHallSplit', 'festivalStallSplit', 'popupCinemaSplit', 'communityRadioSplit', 'schoolConcertSplit', 'sportsCarnivalSplit', 'netballCarnivalSplit', 'swimmingCarnivalSplit', 'athleticsCarnivalSplit', 'tennisCarnivalSplit', 'basketballCarnivalSplit', 'volleyballCarnivalSplit', 'rugbyCarnivalSplit'];
+  const others = ['balanced', 'thinMargin', 'growthAtCost', 'creatorTakeRate', 'threePartyJv', 'twoPartyStudio', 'fourPartyMarketplace', 'licensorDistributor', 'talentAgentPlatform', 'threePartyJointVenture', 'podcastHostNetwork', 'communityHallSplit', 'festivalStallSplit', 'popupCinemaSplit', 'communityRadioSplit', 'schoolConcertSplit', 'sportsCarnivalSplit', 'netballCarnivalSplit', 'swimmingCarnivalSplit', 'athleticsCarnivalSplit', 'tennisCarnivalSplit', 'basketballCarnivalSplit', 'volleyballCarnivalSplit', 'rugbyCarnivalSplit', 'hockeyCarnivalSplit'];
   for (const key of others) {
     const other = clonePreset(key);
     assert.notEqual(cricket.participants.map((item) => item.id).join(','), other.participants.map((item) => item.id).join(','), key);
@@ -786,7 +786,7 @@ test('tennis carnival split preset is a distinct committee court-hire first-aid 
   assert.notEqual(tennis.participants[1].variableCostPerTransaction, tennis.participants[2].variableCostPerTransaction);
   assert.notEqual(tennis.participants[0].fixedMonthlyCost, tennis.participants[1].fixedMonthlyCost);
   assert.notEqual(tennis.participants[1].fixedMonthlyCost, tennis.participants[2].fixedMonthlyCost);
-  const others = ['balanced', 'thinMargin', 'growthAtCost', 'creatorTakeRate', 'threePartyJv', 'twoPartyStudio', 'fourPartyMarketplace', 'licensorDistributor', 'talentAgentPlatform', 'threePartyJointVenture', 'podcastHostNetwork', 'communityHallSplit', 'festivalStallSplit', 'popupCinemaSplit', 'communityRadioSplit', 'schoolConcertSplit', 'sportsCarnivalSplit', 'netballCarnivalSplit', 'swimmingCarnivalSplit', 'athleticsCarnivalSplit', 'cricketCarnivalSplit', 'basketballCarnivalSplit', 'volleyballCarnivalSplit', 'rugbyCarnivalSplit'];
+  const others = ['balanced', 'thinMargin', 'growthAtCost', 'creatorTakeRate', 'threePartyJv', 'twoPartyStudio', 'fourPartyMarketplace', 'licensorDistributor', 'talentAgentPlatform', 'threePartyJointVenture', 'podcastHostNetwork', 'communityHallSplit', 'festivalStallSplit', 'popupCinemaSplit', 'communityRadioSplit', 'schoolConcertSplit', 'sportsCarnivalSplit', 'netballCarnivalSplit', 'swimmingCarnivalSplit', 'athleticsCarnivalSplit', 'cricketCarnivalSplit', 'basketballCarnivalSplit', 'volleyballCarnivalSplit', 'rugbyCarnivalSplit', 'hockeyCarnivalSplit'];
   for (const key of others) {
     const other = clonePreset(key);
     assert.notEqual(tennis.participants.map((item) => item.id).join(','), other.participants.map((item) => item.id).join(','), key);
@@ -813,7 +813,7 @@ test('basketball carnival split preset is a distinct committee stadium-hire firs
   assert.notEqual(basketball.participants[1].variableCostPerTransaction, basketball.participants[2].variableCostPerTransaction);
   assert.notEqual(basketball.participants[0].fixedMonthlyCost, basketball.participants[1].fixedMonthlyCost);
   assert.notEqual(basketball.participants[1].fixedMonthlyCost, basketball.participants[2].fixedMonthlyCost);
-  const others = ['balanced', 'thinMargin', 'growthAtCost', 'creatorTakeRate', 'threePartyJv', 'twoPartyStudio', 'fourPartyMarketplace', 'licensorDistributor', 'talentAgentPlatform', 'threePartyJointVenture', 'podcastHostNetwork', 'communityHallSplit', 'festivalStallSplit', 'popupCinemaSplit', 'communityRadioSplit', 'schoolConcertSplit', 'sportsCarnivalSplit', 'netballCarnivalSplit', 'swimmingCarnivalSplit', 'athleticsCarnivalSplit', 'cricketCarnivalSplit', 'tennisCarnivalSplit', 'volleyballCarnivalSplit', 'rugbyCarnivalSplit'];
+  const others = ['balanced', 'thinMargin', 'growthAtCost', 'creatorTakeRate', 'threePartyJv', 'twoPartyStudio', 'fourPartyMarketplace', 'licensorDistributor', 'talentAgentPlatform', 'threePartyJointVenture', 'podcastHostNetwork', 'communityHallSplit', 'festivalStallSplit', 'popupCinemaSplit', 'communityRadioSplit', 'schoolConcertSplit', 'sportsCarnivalSplit', 'netballCarnivalSplit', 'swimmingCarnivalSplit', 'athleticsCarnivalSplit', 'cricketCarnivalSplit', 'tennisCarnivalSplit', 'volleyballCarnivalSplit', 'rugbyCarnivalSplit', 'hockeyCarnivalSplit'];
   for (const key of others) {
     const other = clonePreset(key);
     assert.notEqual(basketball.participants.map((item) => item.id).join(','), other.participants.map((item) => item.id).join(','), key);
@@ -840,7 +840,7 @@ test('volleyball carnival split preset is a distinct committee court-hire first-
   assert.notEqual(volleyball.participants[1].variableCostPerTransaction, volleyball.participants[2].variableCostPerTransaction);
   assert.notEqual(volleyball.participants[0].fixedMonthlyCost, volleyball.participants[1].fixedMonthlyCost);
   assert.notEqual(volleyball.participants[1].fixedMonthlyCost, volleyball.participants[2].fixedMonthlyCost);
-  const others = ['balanced', 'thinMargin', 'growthAtCost', 'creatorTakeRate', 'threePartyJv', 'twoPartyStudio', 'fourPartyMarketplace', 'licensorDistributor', 'talentAgentPlatform', 'threePartyJointVenture', 'podcastHostNetwork', 'communityHallSplit', 'festivalStallSplit', 'popupCinemaSplit', 'communityRadioSplit', 'schoolConcertSplit', 'sportsCarnivalSplit', 'netballCarnivalSplit', 'swimmingCarnivalSplit', 'athleticsCarnivalSplit', 'cricketCarnivalSplit', 'tennisCarnivalSplit', 'basketballCarnivalSplit', 'rugbyCarnivalSplit'];
+  const others = ['balanced', 'thinMargin', 'growthAtCost', 'creatorTakeRate', 'threePartyJv', 'twoPartyStudio', 'fourPartyMarketplace', 'licensorDistributor', 'talentAgentPlatform', 'threePartyJointVenture', 'podcastHostNetwork', 'communityHallSplit', 'festivalStallSplit', 'popupCinemaSplit', 'communityRadioSplit', 'schoolConcertSplit', 'sportsCarnivalSplit', 'netballCarnivalSplit', 'swimmingCarnivalSplit', 'athleticsCarnivalSplit', 'cricketCarnivalSplit', 'tennisCarnivalSplit', 'basketballCarnivalSplit', 'rugbyCarnivalSplit', 'hockeyCarnivalSplit'];
   for (const key of others) {
     const other = clonePreset(key);
     assert.notEqual(volleyball.participants.map((item) => item.id).join(','), other.participants.map((item) => item.id).join(','), key);
@@ -895,7 +895,7 @@ test('rugby carnival split preset is a distinct committee ground-hire first-aid 
   assert.notEqual(rugby.participants[1].variableCostPerTransaction, rugby.participants[2].variableCostPerTransaction);
   assert.notEqual(rugby.participants[0].fixedMonthlyCost, rugby.participants[1].fixedMonthlyCost);
   assert.notEqual(rugby.participants[1].fixedMonthlyCost, rugby.participants[2].fixedMonthlyCost);
-  const others = ['balanced', 'thinMargin', 'growthAtCost', 'creatorTakeRate', 'threePartyJv', 'twoPartyStudio', 'fourPartyMarketplace', 'licensorDistributor', 'talentAgentPlatform', 'threePartyJointVenture', 'podcastHostNetwork', 'communityHallSplit', 'festivalStallSplit', 'popupCinemaSplit', 'communityRadioSplit', 'schoolConcertSplit', 'sportsCarnivalSplit', 'netballCarnivalSplit', 'swimmingCarnivalSplit', 'athleticsCarnivalSplit', 'cricketCarnivalSplit', 'tennisCarnivalSplit', 'basketballCarnivalSplit', 'volleyballCarnivalSplit'];
+  const others = ['balanced', 'thinMargin', 'growthAtCost', 'creatorTakeRate', 'threePartyJv', 'twoPartyStudio', 'fourPartyMarketplace', 'licensorDistributor', 'talentAgentPlatform', 'threePartyJointVenture', 'podcastHostNetwork', 'communityHallSplit', 'festivalStallSplit', 'popupCinemaSplit', 'communityRadioSplit', 'schoolConcertSplit', 'sportsCarnivalSplit', 'netballCarnivalSplit', 'swimmingCarnivalSplit', 'athleticsCarnivalSplit', 'cricketCarnivalSplit', 'tennisCarnivalSplit', 'basketballCarnivalSplit', 'volleyballCarnivalSplit', 'hockeyCarnivalSplit'];
   for (const key of others) {
     const other = clonePreset(key);
     assert.notEqual(rugby.participants.map((item) => item.id).join(','), other.participants.map((item) => item.id).join(','), key);
@@ -934,6 +934,72 @@ test('rugby carnival remaining listed capacity is distinct from volleyball and b
   const basketballRemaining = basketball.participants.map((item) => item.capacity - calculatePartnership(basketball).effectiveVolume);
   assert.notEqual(JSON.stringify(remaining), JSON.stringify(volleyballRemaining));
   assert.notEqual(JSON.stringify(remaining), JSON.stringify(basketballRemaining));
+  assert.notEqual(result.effectiveVolume, calculatePartnership(volleyball).effectiveVolume);
+  assert.notEqual(result.effectiveVolume, calculatePartnership(basketball).effectiveVolume);
+});
+
+test('hockey carnival split preset is a distinct committee ice-hire first-aid starting point', () => {
+  const hockey = clonePreset('hockeyCarnivalSplit');
+  assert.equal(PRESETS.hockeyCarnivalSplit.name, 'Hockey carnival split');
+  assert.equal(hockey.participants.length, 3);
+  assert.deepEqual(hockey.participants.map((item) => item.id), ['hockey-committee', 'hockey-ice-hire', 'hockey-first-aid']);
+  assert.deepEqual(hockey.participants.map((item) => item.name), ['Carnival committee', 'Ice hire', 'First-aid']);
+  assert.deepEqual(hockey.participants.map((item) => item.revenueShare), [0.37, 0.38, 0.25]);
+  assert.equal(hockey.deal.monthlyVolume, 3700);
+  assert.equal(hockey.deal.feePerTransaction, 8.5);
+  assert.equal(hockey.deal.addressableVolume, 4900);
+  assert.notEqual(hockey.participants[0].variableCostPerTransaction, hockey.participants[1].variableCostPerTransaction);
+  assert.notEqual(hockey.participants[1].variableCostPerTransaction, hockey.participants[2].variableCostPerTransaction);
+  assert.notEqual(hockey.participants[0].fixedMonthlyCost, hockey.participants[1].fixedMonthlyCost);
+  assert.notEqual(hockey.participants[1].fixedMonthlyCost, hockey.participants[2].fixedMonthlyCost);
+  const others = ['balanced', 'thinMargin', 'growthAtCost', 'creatorTakeRate', 'threePartyJv', 'twoPartyStudio', 'fourPartyMarketplace', 'licensorDistributor', 'talentAgentPlatform', 'threePartyJointVenture', 'podcastHostNetwork', 'communityHallSplit', 'festivalStallSplit', 'popupCinemaSplit', 'communityRadioSplit', 'schoolConcertSplit', 'sportsCarnivalSplit', 'netballCarnivalSplit', 'swimmingCarnivalSplit', 'athleticsCarnivalSplit', 'cricketCarnivalSplit', 'tennisCarnivalSplit', 'basketballCarnivalSplit', 'volleyballCarnivalSplit', 'rugbyCarnivalSplit'];
+  for (const key of others) {
+    const other = clonePreset(key);
+    assert.notEqual(hockey.participants.map((item) => item.id).join(','), other.participants.map((item) => item.id).join(','), key);
+    assert.notEqual(JSON.stringify(hockey.deal), JSON.stringify(other.deal), key);
+    assert.notEqual(JSON.stringify(hockey.participants.map((item) => item.variableCostPerTransaction)), JSON.stringify(other.participants.map((item) => item.variableCostPerTransaction)), key);
+    assert.notEqual(JSON.stringify(hockey.participants.map((item) => item.fixedMonthlyCost)), JSON.stringify(other.participants.map((item) => item.fixedMonthlyCost)), key);
+  }
+  const rugby = clonePreset('rugbyCarnivalSplit');
+  const volleyball = clonePreset('volleyballCarnivalSplit');
+  const basketball = clonePreset('basketballCarnivalSplit');
+  assert.notEqual(JSON.stringify(hockey.deal), JSON.stringify(rugby.deal));
+  assert.notEqual(JSON.stringify(hockey.deal), JSON.stringify(volleyball.deal));
+  assert.notEqual(JSON.stringify(hockey.deal), JSON.stringify(basketball.deal));
+  assert.notEqual(hockey.participants.map((item) => item.id).join(','), rugby.participants.map((item) => item.id).join(','));
+  assert.notEqual(hockey.participants.map((item) => item.id).join(','), volleyball.participants.map((item) => item.id).join(','));
+  assert.notEqual(hockey.participants.map((item) => item.id).join(','), basketball.participants.map((item) => item.id).join(','));
+  const result = calculatePartnership(hockey);
+  assert.equal(result.viable, true);
+  assert.ok(result.participants.every((item) => item.viable));
+  assert.equal(new Set(result.participants.map((item) => item.id)).size, 3);
+});
+
+test('hockey carnival remaining listed capacity is distinct from rugby volleyball and basketball', () => {
+  const hockey = clonePreset('hockeyCarnivalSplit');
+  const result = calculatePartnership(hockey);
+  assert.equal(result.effectiveVolume, 3700);
+  const remaining = hockey.participants.map((item) => item.capacity - result.effectiveVolume);
+  assert.deepEqual(remaining, [800, 1900, 0]);
+  const lastWithin = [...hockey.participants].reverse().find((item) => item.capacity - result.effectiveVolume >= -1e-9);
+  assert.equal(lastWithin.id, 'hockey-first-aid');
+  assert.equal(remaining[2], 0);
+  const lastSpare = [...hockey.participants].reverse().find((item) => item.capacity - result.effectiveVolume > 1e-9);
+  assert.equal(lastSpare.id, 'hockey-ice-hire');
+  assert.ok(remaining[1] > 0);
+  const firstSpare = hockey.participants.find((item) => item.capacity - result.effectiveVolume > 1e-9);
+  assert.equal(firstSpare.id, 'hockey-committee');
+  assert.notEqual(lastSpare.id, lastWithin.id);
+  const rugby = clonePreset('rugbyCarnivalSplit');
+  const volleyball = clonePreset('volleyballCarnivalSplit');
+  const basketball = clonePreset('basketballCarnivalSplit');
+  const rugbyRemaining = rugby.participants.map((item) => item.capacity - calculatePartnership(rugby).effectiveVolume);
+  const volleyballRemaining = volleyball.participants.map((item) => item.capacity - calculatePartnership(volleyball).effectiveVolume);
+  const basketballRemaining = basketball.participants.map((item) => item.capacity - calculatePartnership(basketball).effectiveVolume);
+  assert.notEqual(JSON.stringify(remaining), JSON.stringify(rugbyRemaining));
+  assert.notEqual(JSON.stringify(remaining), JSON.stringify(volleyballRemaining));
+  assert.notEqual(JSON.stringify(remaining), JSON.stringify(basketballRemaining));
+  assert.notEqual(result.effectiveVolume, calculatePartnership(rugby).effectiveVolume);
   assert.notEqual(result.effectiveVolume, calculatePartnership(volleyball).effectiveVolume);
   assert.notEqual(result.effectiveVolume, calculatePartnership(basketball).effectiveVolume);
 });
@@ -1705,9 +1771,68 @@ test('optional hideFirstSpareCapacityParticipant is a boolean and older files om
   both.hideFirstWithinCapacityParticipant = true;
   both.hideLastSpareCapacityParticipant = true;
   both.hideFirstSpareCapacityParticipant = true;
+  both.hideLastParticipantWithoutCapacity = true;
   assert.equal(validateConfiguration(both).valid, true);
   const calculated = calculatePartnership(both);
   assert.equal(calculated.viable, true);
+});
+
+test('optional hideLastParticipantWithoutCapacity is a boolean and older files omit it', () => {
+  const omitted = clonePreset('balanced');
+  assert.equal(Object.hasOwn(omitted, 'hideLastParticipantWithoutCapacity'), false);
+  assert.equal(validateConfiguration(omitted).valid, true);
+
+  const hidden = clonePreset('balanced');
+  hidden.hideLastParticipantWithoutCapacity = true;
+  assert.equal(validateConfiguration(hidden).valid, true);
+
+  const shown = clonePreset('balanced');
+  shown.hideLastParticipantWithoutCapacity = false;
+  assert.equal(validateConfiguration(shown).valid, true);
+
+  for (const value of ['true', 1, 0, null, 'yes', {}]) {
+    const config = clonePreset('balanced');
+    config.hideLastParticipantWithoutCapacity = value;
+    const validation = validateConfiguration(config);
+    assert.equal(validation.valid, false, String(value));
+    assert.match(validation.errors.join(' '), /boolean/);
+  }
+
+  const extra = clonePreset('balanced');
+  extra.hideLastParticipantWithoutCapacity = true;
+  extra.unexpected = true;
+  assert.match(validateConfiguration(extra).errors.join(' '), /unknown field: unexpected/);
+
+  const both = clonePreset('balanced');
+  both.hideHoldingParticipants = true;
+  both.hideAllHoldLedger = true;
+  both.hideZeroShareParticipants = true;
+  both.hideParticipantsOverCapacity = true;
+  both.hideParticipantsAtHold = true;
+  both.hideParticipantsWithoutCapacity = true;
+  both.hideParticipantsWithSpareCapacity = true;
+  both.hideParticipantsAtLeastHeadroom = true;
+  both.hideParticipantsWithinCapacity = true;
+  both.hideFirstBreakpointParticipant = true;
+  both.hideFirstOverCapacityParticipant = true;
+  both.hideLastOverCapacityParticipant = true;
+  both.hideLastBreakpointParticipant = true;
+  both.hideLastWithinCapacityParticipant = true;
+  both.hideFirstWithinCapacityParticipant = true;
+  both.hideLastSpareCapacityParticipant = true;
+  both.hideFirstSpareCapacityParticipant = true;
+  both.hideLastParticipantWithoutCapacity = true;
+  assert.equal(validateConfiguration(both).valid, true);
+  const calculated = calculatePartnership(both);
+  assert.equal(calculated.viable, true);
+
+  const talent = clonePreset('talentAgentPlatform');
+  assert.equal(talent.participants[0].capacity, null);
+  assert.notEqual(talent.participants[1].capacity, null);
+  assert.notEqual(talent.participants[2].capacity, null);
+  talent.hideLastParticipantWithoutCapacity = true;
+  assert.equal(validateConfiguration(talent).valid, true);
+  assert.equal(Object.hasOwn(talent, 'hideParticipantsWithoutCapacity'), false);
 });
 
 test('optional collapseAllHoldCases is a boolean and older files omit it', () => {
