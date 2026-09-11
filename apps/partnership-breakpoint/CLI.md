@@ -2,6 +2,10 @@
 
 Run commands from this app directory with Node.js 20 or later. No installation, browser, network, or account is required. The CLI reads exported scenario JSON and writes results to standard output. It never modifies input files. Use shell redirection to save results to a **different** path, since redirecting to an input path can truncate it before the command starts.
 
+File inputs must use ordinary local paths. UNC/network paths, Windows device aliases and alternate data streams are rejected before opening. Opened descriptors must identify regular files; directories, devices and FIFOs are rejected. Nonblocking open is used where supported so a FIFO cannot wait for a writer. A dash remains the explicit route for bounded piped input. Mapped drives and filesystem links are governed by your operating system; the CLI does not certify the storage behind an ordinary path.
+
+If the receiving process closes stdout or an output write fails, the CLI exits 1 and writes a JSON error to stderr without a runtime stack. Output may be incomplete in that case; rerun after repairing the destination.
+
 ```sh
 npm run analyze -- summary scenario.json
 node scripts/analyze.mjs summary scenario.json

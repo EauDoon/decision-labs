@@ -1,9 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { spawnSync } from 'node:child_process';
+import { spawn, spawnSync } from 'node:child_process';
 import { mkdtempSync, writeFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { clonePreset, parseCsv, calculatePartnership, PARTNERSHIP_REVIEW_TOOLS } from '../src/model.js';
 
@@ -296,4 +296,48 @@ test('JSON boundary rejects duplicate decoded keys and invalid UTF-8 before anal
   const batch = run(['batch', invalidPath, validPath]);
   assert.equal(batch.status, 1);
   assert.equal(JSON.parse(batch.stdout).analyzedCount, 1);
+});
+
+test('local file boundary rejects devices and preserves batch recovery', (t) => {
+  const [valid] = files(t, [clonePreset('balanced')]);
+  for (const path of ['NUL', 'nul.txt', 'NUL .txt', 'CONIN$', 'CONOUT$', './com1.json', 'lpt¹.txt',
+    '//synthetic-server/share/case.json', '\\\\synthetic-server\\share\\case.json', '\\\\.\\pipe\\synthetic-pipe',
+    '\\\\?\\C:\\case.json', 'case.json:stream', 'C:case.json']) {
+    const rejected = run(['summary', path]);
+    assert.equal(rejected.stdout, '');
+    assert.match(output(rejected, 1).error, /ordinary local file path/);
+  }
+  assert.match(output(run(['summary', dirname(valid)]), 1).error, /regular file|Cannot read input/);
+  assert.match(output(run(['roster', valid, 'NUL']), 1).error, /ordinary local file path/);
+  const batch = run(['batch', 'NUL', valid]);
+  assert.equal(batch.status, 1);
+  assert.equal(JSON.parse(batch.stdout).analyzedCount, 1);
+  assert.equal(output(run(['summary', valid])).viable, true);
+});
+
+test('POSIX special files reject without waiting for a FIFO writer', { skip: process.platform === 'win32' }, (t) => {
+  const [valid] = files(t, [clonePreset('balanced')]);
+  const fifo = join(dirname(valid), 'input.fifo');
+  const created = spawnSync('mkfifo', [fifo], { encoding: 'utf8', timeout: 5000 });
+  assert.equal(created.status, 0, created.stderr);
+  for (const path of [fifo, '/dev/zero']) {
+    assert.match(output(run(['summary', path]), 1).error, /regular file/);
+  }
+  assert.equal(output(run(['summary', valid])).viable, true);
+});
+
+test('closed stdout returns a safe JSON error without a runtime stack', { timeout: 10000 }, async (t) => {
+  const child = spawn(process.execPath, [cli, 'summary', '-'], { stdio: ['pipe', 'pipe', 'pipe'] });
+  t.after(() => child.kill());
+  let stderr = '';
+  child.stderr.setEncoding('utf8');
+  child.stderr.on('data', chunk => { stderr += chunk; });
+  child.stdout.destroy();
+  const code = await new Promise((resolve, reject) => {
+    child.once('error', reject);
+    child.once('close', resolve);
+    child.stdin.end(JSON.stringify(clonePreset('balanced')));
+  });
+  assert.equal(code, 1);
+  assert.deepEqual(JSON.parse(stderr), { error: 'Cannot write output. Check the receiving process.' });
 });

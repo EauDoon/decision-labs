@@ -1,4 +1,4 @@
-import { openSync, readSync, closeSync } from 'node:fs';
+import { constants, openSync, readSync, closeSync, fstatSync } from 'node:fs';
 import { assertValidConfiguration, calculatePartnership, evaluateStressGrid, stressGridCsv } from '../src/model.js';
 import { solveFeeForAllHold, solveMinimumShareToHold, solveMinimumVolumeToHold } from '../src/model.js';
 import { compareImportedCase, compareThreeSnapshots } from '../src/model.js';
@@ -29,19 +29,31 @@ Results describe declared inputs, not probabilities or financial advice.
 Nonfinite calculated numbers are serialized as null, never as zero.
 `;
 
+function localPath(path) {
+  if (!path || /^[\\/]{2}/.test(path) || path.split(/[\\/]/).some(part => /^(con(?:in\$|out\$)?|prn|aux|nul|com[0-9¹²³]|lpt[0-9¹²³])$/i.test(part.split('.')[0].trimEnd())) || /:/.test(path.replace(/^[A-Za-z]:[\\/]/, ''))) {
+    throw new Error('Use an ordinary local file path, not a device, stream, or network path.');
+  }
+  return path;
+}
+
 function readText(path) {
+  if (path !== '-') localPath(path);
   const limit = 1048576;
   const buffer = Buffer.alloc(limit + 1);
   let descriptor, length = 0;
   try {
-    descriptor = path === '-' ? 0 : openSync(path, 'r');
+    descriptor = path === '-' ? 0 : openSync(path, constants.O_RDONLY | (constants.O_NONBLOCK ?? 0));
+    if (path !== '-' && !fstatSync(descriptor).isFile()) throw new Error('Input must be a regular file.');
     while (length <= limit) {
       const count = readSync(descriptor, buffer, length, buffer.length - length, null);
       if (count === 0) break;
       length += count;
     }
   }
-  catch { throw new Error('Cannot read input. Check the file path and permissions.'); }
+  catch (error) {
+    if (error.code) throw new Error('Cannot read input. Check the file path and permissions.');
+    throw error;
+  }
   finally { if (descriptor !== undefined && descriptor !== 0) closeSync(descriptor); }
   if (length > limit) throw new Error('Input exceeds 1 MiB. Supply one bounded scenario, packet, or roster.');
   try { return new TextDecoder('utf-8', { fatal: true }).decode(buffer.subarray(0, length)); }
@@ -170,6 +182,11 @@ function run(command, args) {
     default: throw new Error('Unknown command. Run with --help for usage.');
   }
 }
+
+process.stdout.on('error', () => {
+  process.stderr.write(`${JSON.stringify({ error: 'Cannot write output. Check the receiving process.' })}\n`);
+  process.exitCode = 1;
+});
 
 try {
   const [command, ...args] = process.argv.slice(2);
