@@ -93,6 +93,7 @@ let firstUnboundedRemainingCopyText = '';
 let lastAtHoldRemainingCopyText = '';
 let firstAtHoldRemainingCopyText = '';
 let lastZeroShareLabelCopyText = '';
+let lastZeroShareRemainingCopyText = '';
 let firstZeroShareLabelCopyText = '';
 let lastBreakpointLabelCopyText = '';
 let rosterPasteText = '';
@@ -168,6 +169,7 @@ function checkpoint() {
   lastAtHoldRemainingCopyText = '';
   firstAtHoldRemainingCopyText = '';
   lastZeroShareLabelCopyText = '';
+  lastZeroShareRemainingCopyText = '';
   firstZeroShareLabelCopyText = '';
   lastBreakpointLabelCopyText = '';
   importSequence += 1;
@@ -219,6 +221,7 @@ function travelHistory(direction) {
   lastAtHoldRemainingCopyText = '';
   firstAtHoldRemainingCopyText = '';
   lastZeroShareLabelCopyText = '';
+  lastZeroShareRemainingCopyText = '';
   firstZeroShareLabelCopyText = '';
   lastBreakpointLabelCopyText = '';
   importSequence += 1;
@@ -1073,7 +1076,7 @@ function inputPanel(result) {
           <p class="notice">${zeroShareFilterNote}</p>
           <div class="button-row"><button type="button" id="hide-first-zero-share-participant" data-action="hide-first-zero-share-participant" aria-keyshortcuts="ArrowRight" aria-pressed="${hideFirstZeroShareParticipant}">Hide the first participant with zero revenue share</button><button type="button" data-action="show-first-zero-share-participant" ${hideFirstZeroShareParticipant ? '' : 'disabled'}>Show the first participant with zero revenue share</button><button type="button" id="copy-first-zero-share-participant" data-action="copy-first-zero-share-participant" aria-keyshortcuts="F7">Copy first zero-share participant label</button></div>
           <p class="notice">${firstZeroShareFilterNote}</p>
-          <div class="button-row"><button type="button" id="hide-last-zero-share-participant" data-action="hide-last-zero-share-participant" aria-keyshortcuts="Backspace" aria-pressed="${hideLastZeroShareParticipant}">Hide the last participant with zero revenue share</button><button type="button" data-action="show-last-zero-share-participant" ${hideLastZeroShareParticipant ? '' : 'disabled'}>Show the last participant with zero revenue share</button><button type="button" id="copy-last-zero-share-participant" data-action="copy-last-zero-share-participant" aria-keyshortcuts="F3">Copy last zero-share participant label</button></div>
+          <div class="button-row"><button type="button" id="hide-last-zero-share-participant" data-action="hide-last-zero-share-participant" aria-keyshortcuts="Backspace" aria-pressed="${hideLastZeroShareParticipant}">Hide the last participant with zero revenue share</button><button type="button" data-action="show-last-zero-share-participant" ${hideLastZeroShareParticipant ? '' : 'disabled'}>Show the last participant with zero revenue share</button><button type="button" id="copy-last-zero-share-participant" data-action="copy-last-zero-share-participant" aria-keyshortcuts="F3">Copy last zero-share participant label</button><button type="button" id="copy-last-zero-share-remaining" data-action="copy-last-zero-share-remaining" aria-keyshortcuts="F10">Copy last zero-share remaining-to-hold</button></div>
           <p class="notice">${lastZeroShareFilterNote}</p>
           <div class="button-row"><button type="button" data-action="hide-over-capacity-participants" aria-pressed="${hideParticipantsOverCapacity}" ${result ? '' : 'disabled title="Resolve invalid inputs before filtering the roster"'}>Hide participants whose volume is above listed capacity</button><button type="button" data-action="show-over-capacity-participants" ${hideParticipantsOverCapacity ? '' : 'disabled'}>Show over-capacity participants</button><button type="button" id="copy-over-capacity-count" data-action="copy-over-capacity-count" aria-keyshortcuts='"'>Copy over-capacity participant count</button><button type="button" id="copy-first-over-capacity-label" data-action="copy-first-over-capacity-label" aria-keyshortcuts="}">Copy first over-capacity participant label</button><button type="button" id="copy-first-over-capacity-remaining" data-action="copy-first-over-capacity-remaining" aria-keyshortcuts="~">Copy first over-capacity remaining listed capacity</button><button type="button" id="copy-last-over-capacity-label" data-action="copy-last-over-capacity-label" aria-keyshortcuts="(">Copy last over-capacity participant label</button><button type="button" id="copy-last-over-capacity-remaining" data-action="copy-last-over-capacity-remaining" aria-keyshortcuts="*">Copy last over-capacity remaining listed capacity</button></div>
           <p class="notice">${overCapacityFilterNote}</p>
@@ -1153,7 +1156,7 @@ function invalidSummary() {
 function resultsPanel(result) {
   if (!result) {
     const errors = validateConfiguration(state).errors;
-    return `<section class="results" id="results-start">${errorBox(errors)}${importedCompareSection()}${notesCopySection()}${waterfallCopySection()}${viabilityCopySection()}${utilizationCopySection()}${tornadoCopySection()}${operatingCopySection()}${splitCopySection()}${allocationCopySection()}${breakpointSnapshotCopySection()}${titleCopySection()}${breakpointLabelCopySection()}${remainingCopySection()}${volumeCopySection()}${viabilityLabelCopySection()}${overCapacityCountCopySection()}${firstOverCapacityLabelCopySection()}${firstOverCapacityRemainingCopySection()}${lastOverCapacityLabelCopySection()}${lastOverCapacityRemainingCopySection()}${firstWithinCapacityRemainingCopySection()}${lastWithinCapacityRemainingCopySection()}${lastSpareCapacityRemainingCopySection()}${firstSpareCapacityRemainingCopySection()}${lastUnboundedRemainingCopySection()}${firstUnboundedRemainingCopySection()}${lastAtHoldRemainingCopySection()}${firstAtHoldRemainingCopySection()}${lastZeroShareLabelCopySection()}${firstZeroShareLabelCopySection()}${lastBreakpointLabelCopySection()}<section class="panel"><div class="panel-heading"><h2>Model status</h2></div><div class="panel-body"><p class="notice">Calculations return once every required field is valid and shares reconcile to 1.</p></div></section>${methodAndLimits()}</section>`;
+    return `<section class="results" id="results-start">${errorBox(errors)}${importedCompareSection()}${notesCopySection()}${waterfallCopySection()}${viabilityCopySection()}${utilizationCopySection()}${tornadoCopySection()}${operatingCopySection()}${splitCopySection()}${allocationCopySection()}${breakpointSnapshotCopySection()}${titleCopySection()}${breakpointLabelCopySection()}${remainingCopySection()}${volumeCopySection()}${viabilityLabelCopySection()}${overCapacityCountCopySection()}${firstOverCapacityLabelCopySection()}${firstOverCapacityRemainingCopySection()}${lastOverCapacityLabelCopySection()}${lastOverCapacityRemainingCopySection()}${firstWithinCapacityRemainingCopySection()}${lastWithinCapacityRemainingCopySection()}${lastSpareCapacityRemainingCopySection()}${firstSpareCapacityRemainingCopySection()}${lastUnboundedRemainingCopySection()}${firstUnboundedRemainingCopySection()}${lastAtHoldRemainingCopySection()}${firstAtHoldRemainingCopySection()}${lastZeroShareLabelCopySection()}${lastZeroShareRemainingCopySection()}${firstZeroShareLabelCopySection()}${lastBreakpointLabelCopySection()}<section class="panel"><div class="panel-heading"><h2>Model status</h2></div><div class="panel-body"><p class="notice">Calculations return once every required field is valid and shares reconcile to 1.</p></div></section>${methodAndLimits()}</section>`;
   }
   const statusClass = result.viable ? 'viable' : 'fragile';
   const status = result.viable ? 'Operating region holds' : 'A participant exits';
@@ -1196,6 +1199,7 @@ function resultsPanel(result) {
     <section class="print-only print-keep"><h2>Last at-hold remaining-to-hold</h2><p>${escapeAttribute(lastAtHoldRemainingMarkdown(result))}</p></section>
     <section class="print-only print-keep"><h2>First at-hold remaining-to-hold</h2><p>${escapeAttribute(firstAtHoldRemainingMarkdown(result))}</p></section>
     <section class="print-only print-keep"><h2>Last zero-share participant</h2><p>${escapeAttribute(lastZeroShareLabelMarkdown(result))}</p></section>
+    <section class="print-only print-keep"><h2>Last zero-share remaining-to-hold</h2><p>${escapeAttribute(lastZeroShareRemainingMarkdown(result))}</p></section>
     <section class="print-only print-keep"><h2>First zero-share participant</h2><p>${escapeAttribute(firstZeroShareLabelMarkdown(result))}</p></section>
     <section class="print-only print-keep"><h2>Allocation balance</h2><p>${escapeAttribute(shareBalanceText())}</p></section>
     <section class="print-only print-keep"><h2>Deal notes</h2>${state.deal.notes ? `<p>${escapeAttribute(state.deal.notes)}</p>` : '<p>No deal notes were entered.</p>'}</section>
@@ -1249,6 +1253,7 @@ function resultsPanel(result) {
     ${lastAtHoldRemainingCopySection()}
     ${firstAtHoldRemainingCopySection()}
     ${lastZeroShareLabelCopySection()}
+    ${lastZeroShareRemainingCopySection()}
     ${firstZeroShareLabelCopySection()}
     ${lastBreakpointLabelCopySection()}
     ${comparisonSection(result)}
@@ -1753,6 +1758,7 @@ function attachEvents() {
     if (action === 'close-last-at-hold-remaining-copy') { lastAtHoldRemainingCopyText = ''; render(); return; }
     if (action === 'close-first-at-hold-remaining-copy') { firstAtHoldRemainingCopyText = ''; render(); return; }
     if (action === 'close-last-zero-share-label-copy') { lastZeroShareLabelCopyText = ''; render(); return; }
+    if (action === 'close-last-zero-share-remaining-copy') { lastZeroShareRemainingCopyText = ''; render(); return; }
     if (action === 'close-first-zero-share-label-copy') { firstZeroShareLabelCopyText = ''; render(); return; }
     if (action === 'close-last-breakpoint-label-copy') { lastBreakpointLabelCopyText = ''; render(); return; }
     if (action === 'solve-fee-hold') { previewFeeHold(); return; }
@@ -2299,6 +2305,7 @@ function attachEvents() {
     if (action === 'copy-last-at-hold-remaining') copyLastAtHoldRemaining();
     if (action === 'copy-first-at-hold-remaining') copyFirstAtHoldRemaining();
     if (action === 'copy-last-zero-share-participant') copyLastZeroShareParticipant();
+    if (action === 'copy-last-zero-share-remaining') copyLastZeroShareRemaining();
     if (action === 'copy-first-zero-share-participant') copyFirstZeroShareParticipant();
     if (action === 'copy-last-breakpoint-label') copyLastBreakpointLabel();
     if (action === 'copy-share-hold') copyShareHoldPreview();
@@ -2565,7 +2572,8 @@ function drawSensitivityChart(grid) {
   grid.fees.forEach((fee, index) => context.fillText(formatNumber(fee, 3), margin.left - 6, margin.top + (index + .5) * cellHeight + 4));
 }
 
-window.addEventListener('keydown', (event) => {
+function handleShortcut(event) {
+  if (event.defaultPrevented || event.metaKey || event.ctrlKey || event.altKey) return;
   if ((coachVisible || helpOpen) && event.key === 'Tab') {
     trapDialogTab(event);
     return;
@@ -2577,8 +2585,8 @@ window.addEventListener('keydown', (event) => {
   }
   const tag = event.target?.tagName;
   if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || event.target?.isContentEditable) return;
-  if (event.defaultPrevented) return;
-  if (event.key === '?' || (event.key === '/' && event.shiftKey)) {
+  const key = event.key.length === 1 ? event.key.toLowerCase() : event.key;
+  if (key === '?' || (key === '/' && event.shiftKey)) {
     if (coachVisible) return;
     if (helpOpen) closeHelp();
     else {
@@ -2589,16 +2597,16 @@ window.addEventListener('keydown', (event) => {
     }
     return;
   }
-  if (event.key === 'u' || event.key === 'U') { travelHistory('undo'); return; }
-  if (event.key === 'r' || event.key === 'R') { travelHistory('redo'); return; }
-  if (event.key === 'e' || event.key === 'E') exportFile();
-  if (event.key === 'g' || event.key === 'G') {
+  if (key === 'u') { travelHistory('undo'); return; }
+  if (key === 'r') { travelHistory('redo'); return; }
+  if (key === 'e') exportFile();
+  if (key === 'g') {
     const jump = document.querySelector('#results-jump');
     const start = jump ?? document.querySelector('#results-start');
     start?.focus?.({ preventScroll: false });
     start?.scrollIntoView?.({ block: 'start' });
   }
-  if (event.key === 'n' || event.key === 'N') {
+  if (key === 'n') {
     const add = document.querySelector('#add-participant');
     if (add) {
       add.focus?.({ preventScroll: false });
@@ -2613,75 +2621,75 @@ window.addEventListener('keydown', (event) => {
       refresh('Participant added. Set shares to reconcile to 1.');
     }
   }
-  if (event.key === 's' || event.key === 'S') {
+  if (key === 's') {
     const target = document.querySelector('#share-hold-title') ?? document.querySelector('#share-hold-jump');
     target?.focus?.({ preventScroll: false });
     target?.scrollIntoView?.({ block: 'start' });
   }
-  if (event.key === 'c' || event.key === 'C') {
+  if (key === 'c') {
     const target = document.querySelector('#imported-compare-title')
       ?? document.querySelector('#comparison-title')
       ?? document.querySelector('#three-compare-title');
     target?.focus?.({ preventScroll: false });
     target?.scrollIntoView?.({ block: 'start' });
   }
-  if (event.key === 'p' || event.key === 'P') printOnePager();
-  if (event.key === 'f' || event.key === 'F') {
+  if (key === 'p') printOnePager();
+  if (key === 'f') {
     const target = document.querySelector('#first-breakpoint-title');
     target?.focus?.({ preventScroll: false });
     target?.scrollIntoView?.({ block: 'start' });
   }
-  if (event.key === 'w' || event.key === 'W') {
+  if (key === 'w') {
     const target = document.querySelector('#waterfall-title');
     target?.focus?.({ preventScroll: false });
     target?.scrollIntoView?.({ block: 'start' });
   }
-  if (event.key === 'l' || event.key === 'L') {
+  if (key === 'l') {
     const target = document.querySelector('#participant-ledger-title');
     target?.focus?.({ preventScroll: false });
     target?.scrollIntoView?.({ block: 'start' });
   }
-  if (event.key === 'b' || event.key === 'B') {
+  if (key === 'b') {
     const target = document.querySelector('#viability-heading');
     target?.focus?.({ preventScroll: false });
     target?.scrollIntoView?.({ block: 'start' });
   }
-  if (event.key === 't' || event.key === 'T') {
+  if (key === 't') {
     const target = document.querySelector('#tornado-title');
     target?.focus?.({ preventScroll: false });
     target?.scrollIntoView?.({ block: 'start' });
   }
-  if (event.key === 'd' || event.key === 'D') {
+  if (key === 'd') {
     const target = document.querySelector('#deal-inputs-title');
     target?.focus?.({ preventScroll: false });
     target?.scrollIntoView?.({ block: 'start' });
   }
-  if (event.key === 'k' || event.key === 'K') {
+  if (key === 'k') {
     const target = document.querySelector('#compound-title') ?? document.querySelector('#inspect-cases-title');
     target?.focus?.({ preventScroll: false });
     target?.scrollIntoView?.({ block: 'start' });
   }
-  if (event.key === 'h' || event.key === 'H') {
+  if (key === 'h') {
     const target = document.querySelector('#least-headroom-participant') ?? document.querySelector('#participant-inputs-title');
     target?.focus?.({ preventScroll: false });
     target?.scrollIntoView?.({ block: 'start' });
   }
-  if (event.key === 'a' || event.key === 'A') {
+  if (key === 'a') {
     const add = document.querySelector('#add-participant');
     add?.focus?.({ preventScroll: false });
     add?.scrollIntoView?.({ block: 'start' });
   }
-  if (event.key === 'm' || event.key === 'M') {
+  if (key === 'm') {
     const notes = document.querySelector('#field-deal-notes');
     notes?.focus?.({ preventScroll: false });
     notes?.scrollIntoView?.({ block: 'start' });
   }
-  if (event.key === 'v' || event.key === 'V') {
+  if (key === 'v') {
     const target = document.querySelector('#viability-card') ?? document.querySelector('#viability-heading');
     target?.focus?.({ preventScroll: false });
     target?.scrollIntoView?.({ block: 'start' });
   }
-  if (event.key === 'i' || event.key === 'I') {
+  if (key === 'i') {
     const target = document.querySelector('#inspect-cases-title')
       ?? document.querySelector('#imported-compare-title')
       ?? document.querySelector('#comparison-title')
@@ -2689,24 +2697,24 @@ window.addEventListener('keydown', (event) => {
     target?.focus?.({ preventScroll: false });
     target?.scrollIntoView?.({ block: 'start' });
   }
-  if (event.key === 'o' || event.key === 'O') {
+  if (key === 'o') {
     const target = document.querySelector('#operating-region-title');
     target?.focus?.({ preventScroll: false });
     target?.scrollIntoView?.({ block: 'start' });
   }
-  if (event.key === 'j' || event.key === 'J') copyCapacityUtilization();
-  if (event.key === 'q' || event.key === 'Q') {
+  if (key === 'j') copyCapacityUtilization();
+  if (key === 'q') {
     const target = document.querySelector('#equal-split') ?? document.querySelector('#normalize-shares');
     target?.focus?.({ preventScroll: false });
     target?.scrollIntoView?.({ block: 'start' });
   }
-  if (event.key === 'x' || event.key === 'X') {
+  if (key === 'x') {
     const target = document.querySelector('#over-capacity-participant') ?? document.querySelector('#participant-inputs-title');
     target?.focus?.({ preventScroll: false });
     target?.scrollIntoView?.({ block: 'start' });
   }
-  if (event.key === 'y' || event.key === 'Y') copyDealNotesLine();
-  if (event.key === 'z' || event.key === 'Z') {
+  if (key === 'y') copyDealNotesLine();
+  if (key === 'z') {
     const target = document.querySelector('#copy-deal-title') ?? document.querySelector('#deal-inputs-title');
     target?.focus?.({ preventScroll: false });
     target?.scrollIntoView?.({ block: 'start' });
@@ -2730,6 +2738,7 @@ window.addEventListener('keydown', (event) => {
   if (event.key === 'Delete') copyFirstAtHoldRemaining();
   if (event.key === 'F3') copyLastZeroShareParticipant();
   if (event.key === 'F7') copyFirstZeroShareParticipant();
+  if (event.key === 'F10') copyLastZeroShareRemaining();
   if (event.key === '.') {
     const target = document.querySelector('#copy-first-breakpoint-label') ?? document.querySelector('#first-breakpoint-title');
     target?.focus?.({ preventScroll: false });
@@ -2935,6 +2944,18 @@ window.addEventListener('keydown', (event) => {
     target?.focus?.({ preventScroll: false });
     target?.scrollIntoView?.({ block: 'start' });
   }
+  if (event.key === 'F11') {
+    const target = document.querySelector('#copy-last-zero-share-remaining')
+      ?? document.querySelector('#participant-inputs-title');
+    target?.focus?.({ preventScroll: false });
+    target?.scrollIntoView?.({ block: 'start' });
+  }
+  if (event.key === 'F12') {
+    const target = document.querySelector('#hide-last-zero-share-participant')
+      ?? document.querySelector('#participant-inputs-title');
+    target?.focus?.({ preventScroll: false });
+    target?.scrollIntoView?.({ block: 'start' });
+  }
   if (event.key === '%') {
     const target = document.querySelector('#hide-last-breakpoint-participant')
       ?? document.querySelector('#participant-inputs-title');
@@ -2953,12 +2974,14 @@ window.addEventListener('keydown', (event) => {
     target?.focus?.({ preventScroll: false });
     target?.scrollIntoView?.({ block: 'start' });
   }
-  if (event.key === '/' && !event.shiftKey) {
+  if (key === '/' && !event.shiftKey) {
     const target = document.querySelector('#copy-deal-title') ?? document.querySelector('#deal-inputs-title');
     target?.focus?.({ preventScroll: false });
     target?.scrollIntoView?.({ block: 'start' });
   }
-});
+}
+
+window.addEventListener('keydown', handleShortcut);
 
 window.addEventListener('resize', () => {
   if (validateConfiguration(state).valid) drawSensitivityChart(sensitivityGrid());
@@ -4320,6 +4343,64 @@ function copyLastZeroShareParticipant() {
   showLastZeroShareLabelCopyFallback(text, fallbackNote);
 }
 
+function lastZeroShareRemainingMarkdown(result) {
+  let participant = null;
+  for (const item of state.participants) {
+    if (participantHasZeroShare(item)) participant = item;
+  }
+  if (!participant) return 'Last zero-share remaining-to-hold: none entered.';
+  const named = result?.participants.find((item) => item.id === participant.id);
+  const remaining = remainingToHoldAmount(result, participant);
+  if (remaining == null || !Number.isFinite(remaining)) {
+    return 'Last zero-share remaining-to-hold: remaining to hold is not a finite amount for ' + reportText(named?.name ?? participant.name) + '. Remaining to hold. Not a forecast.';
+  }
+  return 'Last zero-share remaining-to-hold: ' + formatVolume(remaining) + ' remaining for ' + reportText(named?.name ?? participant.name) + '. Remaining to hold. Not a forecast.';
+}
+
+function showLastZeroShareRemainingCopyFallback(text, message) {
+  lastZeroShareRemainingCopyText = text;
+  render();
+  document.querySelector('#last-zero-share-remaining-copy-text')?.focus();
+  setNotice(message);
+}
+
+function lastZeroShareRemainingCopySection() {
+  if (!lastZeroShareRemainingCopyText) return '';
+  return `<section class="panel" aria-labelledby="last-zero-share-remaining-copy-title"><div class="panel-heading"><h2 id="last-zero-share-remaining-copy-title">Last zero-share remaining-to-hold Markdown</h2><button type="button" data-action="close-last-zero-share-remaining-copy">Close</button></div><div class="panel-body"><p>Clipboard is unavailable in this browser. Select the Markdown below and copy it. This is remaining to hold for the last roster row with zero revenue share. It is distinct from first zero-share participant label copy, last zero-share participant label copy, first at-hold remaining-to-hold copy, and last unbounded remaining-to-hold copy. It is organizer or planner copy, not a forecast of who will exit.</p><label class="brief-copy-label" for="last-zero-share-remaining-copy-text">Last zero-share remaining-to-hold Markdown</label><textarea id="last-zero-share-remaining-copy-text" readonly rows="4">${escapeAttribute(lastZeroShareRemainingCopyText)}</textarea></div></section>`;
+}
+
+function copyLastZeroShareRemaining() {
+  const validation = validateConfiguration(state);
+  const result = validation.valid ? calculatePartnership(state) : null;
+  const text = lastZeroShareRemainingMarkdown(result);
+  const clipboard = globalThis.navigator?.clipboard;
+  const copiedNote = 'Last zero-share remaining-to-hold copied as Markdown. Remaining to hold. It is organizer or planner copy, not a forecast of who will exit.';
+  const fallbackNote = 'Clipboard unavailable. Copy the Markdown from the text area.';
+  if (clipboard && typeof clipboard.writeText === 'function') {
+    try {
+      const written = clipboard.writeText(text);
+      if (written && typeof written.then === 'function') {
+        written.then(() => {
+          lastZeroShareRemainingCopyText = '';
+          render();
+          setNotice(copiedNote);
+        }).catch(() => {
+          showLastZeroShareRemainingCopyFallback(text, fallbackNote);
+        });
+        return;
+      }
+      lastZeroShareRemainingCopyText = '';
+      render();
+      setNotice(copiedNote);
+      return;
+    } catch {
+      showLastZeroShareRemainingCopyFallback(text, fallbackNote);
+      return;
+    }
+  }
+  showLastZeroShareRemainingCopyFallback(text, fallbackNote);
+}
+
 function firstZeroShareLabelMarkdown(result) {
   const participant = state.participants.find((item) => participantHasZeroShare(item));
   if (!participant) return 'First zero-share participant: none entered.';
@@ -5479,6 +5560,9 @@ function helpDialog() {
         <li><kbd>F7</kbd> Copy first zero-share participant label as Markdown</li>
         <li><kbd>F8</kbd> Jump to Copy first zero-share participant label, or the Participants heading if missing</li>
         <li><kbd>F9</kbd> Jump to Hide the first participant with zero revenue share, or the Participants heading if missing</li>
+        <li><kbd>F10</kbd> Copy last zero-share remaining-to-hold as Markdown</li>
+        <li><kbd>F11</kbd> Jump to Copy last zero-share remaining-to-hold, or the Participants heading if missing</li>
+        <li><kbd>F12</kbd> Jump to Hide the last participant with zero revenue share, or the Participants heading if missing</li>
         <li><kbd>+</kbd> Jump to Copy first over-capacity participant label, or the First breakpoint or Participants heading if missing</li>
         <li><kbd>!</kbd> Jump to Copy first over-capacity remaining listed capacity, or the First breakpoint or Participants heading if missing</li>
         <li><kbd>|</kbd> Jump to Hide the first-breakpoint participant, or the Participants heading if missing</li>
