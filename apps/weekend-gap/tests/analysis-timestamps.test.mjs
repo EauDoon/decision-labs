@@ -44,6 +44,8 @@ test("analysis JSON remains timestamp-free for identical inputs", () => {
   assert.equal(sundayEarlyFx, analysisToJSON(DEFAULT_SCENARIO, PRESETS.sundayEarlyFxOpen, 80, 70));
   const mondayEarlyFx = analysisToJSON(DEFAULT_SCENARIO, PRESETS.mondayEarlyFxOpen, 80, 70);
   assert.equal(mondayEarlyFx, analysisToJSON(DEFAULT_SCENARIO, PRESETS.mondayEarlyFxOpen, 80, 70));
+  const mondayLateFx = analysisToJSON(DEFAULT_SCENARIO, PRESETS.mondayLateFxOpen, 80, 70);
+  assert.equal(mondayLateFx, analysisToJSON(DEFAULT_SCENARIO, PRESETS.mondayLateFxOpen, 80, 70));
   const report = JSON.parse(output);
   const payoutReport = JSON.parse(payout);
   const saturdayReport = JSON.parse(saturday);
@@ -63,6 +65,7 @@ test("analysis JSON remains timestamp-free for identical inputs", () => {
   const sundayLateFxReport = JSON.parse(sundayLateFx);
   const sundayEarlyFxReport = JSON.parse(sundayEarlyFx);
   const mondayEarlyFxReport = JSON.parse(mondayEarlyFx);
+  const mondayLateFxReport = JSON.parse(mondayLateFx);
   for (const key of TIMESTAMP_KEYS) {
     assert.equal(Object.prototype.hasOwnProperty.call(report, key), false, `analysis JSON must not include ${key}`);
     assert.equal(Object.prototype.hasOwnProperty.call(payoutReport, key), false, `analysis JSON must not include ${key}`);
@@ -83,6 +86,7 @@ test("analysis JSON remains timestamp-free for identical inputs", () => {
     assert.equal(Object.prototype.hasOwnProperty.call(sundayLateFxReport, key), false, `analysis JSON must not include ${key}`);
     assert.equal(Object.prototype.hasOwnProperty.call(sundayEarlyFxReport, key), false, `analysis JSON must not include ${key}`);
     assert.equal(Object.prototype.hasOwnProperty.call(mondayEarlyFxReport, key), false, `analysis JSON must not include ${key}`);
+    assert.equal(Object.prototype.hasOwnProperty.call(mondayLateFxReport, key), false, `analysis JSON must not include ${key}`);
   }
   assert.doesNotMatch(output, /"timestamp"\s*:/);
   assert.doesNotMatch(output, /"createdAt"\s*:/);
@@ -158,6 +162,10 @@ test("analysis JSON remains timestamp-free for identical inputs", () => {
   assert.doesNotMatch(mondayEarlyFx, /"createdAt"\s*:/);
   assert.doesNotMatch(mondayEarlyFx, /"exportedAt"\s*:/);
   assert.doesNotMatch(mondayEarlyFx, /\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/);
+  assert.doesNotMatch(mondayLateFx, /"timestamp"\s*:/);
+  assert.doesNotMatch(mondayLateFx, /"createdAt"\s*:/);
+  assert.doesNotMatch(mondayLateFx, /"exportedAt"\s*:/);
+  assert.doesNotMatch(mondayLateFx, /\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/);
 });
 
 test("analysis JSON for Saturday early payout open still has no timestamps", () => {
@@ -467,6 +475,25 @@ test("analysis JSON for Sunday early FX open still has no timestamps", () => {
 test("analysis JSON for Monday early FX open still has no timestamps", () => {
   const output = analysisToJSON(DEFAULT_SCENARIO, PRESETS.mondayEarlyFxOpen, 75, 72);
   assert.equal(output, analysisToJSON(DEFAULT_SCENARIO, PRESETS.mondayEarlyFxOpen, 75, 72));
+  assert.doesNotMatch(output, /timestamp|createdAt|exportedAt|generatedAt|created_at|exported_at/i);
+  assert.doesNotMatch(output, /\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/);
+  const walk = (value) => {
+    if (Array.isArray(value)) {
+      value.forEach(walk);
+      return;
+    }
+    if (!value || typeof value !== "object") return;
+    for (const key of Object.keys(value)) {
+      assert.equal(TIMESTAMP_KEYS.includes(key), false, `analysis JSON must not include ${key}`);
+      walk(value[key]);
+    }
+  };
+  walk(JSON.parse(output));
+});
+
+test("analysis JSON for Monday late FX open still has no timestamps", () => {
+  const output = analysisToJSON(DEFAULT_SCENARIO, PRESETS.mondayLateFxOpen, 75, 72);
+  assert.equal(output, analysisToJSON(DEFAULT_SCENARIO, PRESETS.mondayLateFxOpen, 75, 72));
   assert.doesNotMatch(output, /timestamp|createdAt|exportedAt|generatedAt|created_at|exported_at/i);
   assert.doesNotMatch(output, /\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/);
   const walk = (value) => {
