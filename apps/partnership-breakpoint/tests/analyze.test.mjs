@@ -9,7 +9,7 @@ import { clonePreset, parseCsv, calculatePartnership, PARTNERSHIP_REVIEW_TOOLS }
 
 const cli = fileURLToPath(new URL('../scripts/analyze.mjs', import.meta.url));
 const run = (args, value) => spawnSync(process.execPath, [cli, ...args], {
-  input: typeof value === 'string' ? value : JSON.stringify(value), encoding: 'utf8', timeout: 10000,
+  input: typeof value === 'string' || Buffer.isBuffer(value) ? value : JSON.stringify(value), encoding: 'utf8', timeout: 10000,
 });
 const output = (result, status = 0) => {
   assert.equal(result.status, status, result.stderr);
@@ -270,4 +270,30 @@ test('batch preserves partial results, distinguishes input errors from hold gate
   const bounded = run(['batch', oversized, good]);
   assert.equal(bounded.status, 1);
   assert.equal(JSON.parse(bounded.stdout).analyzedCount, 1);
+});
+
+test('JSON boundary rejects duplicate decoded keys and invalid UTF-8 before analysis or replay', (t) => {
+  const config = clonePreset('balanced');
+  const text = JSON.stringify(config);
+  const duplicate = text.replace('"monthlyVolume":', '"monthlyVolume":1,"monthlyVolume":');
+  const escaped = text.replace('"monthlyVolume":', '"monthlyVolume":1,"monthly\\u0056olume":');
+  const nested = text.replace('"revenueShare":', '"revenueShare":0,"revenueShare":');
+  for (const value of [duplicate, escaped, nested]) {
+    const result = run(['summary', '-'], value);
+    assert.equal(result.stdout, '');
+    assert.match(output(result, 1).error, /Duplicate JSON object member/);
+  }
+  const packet = output(run(['review', '-', 'zero'], config));
+  const tampered = JSON.stringify(packet).replace('"version":1', '"version":2,"version":1');
+  assert.match(output(run(['replay', '-'], tampered), 1).error, /Duplicate JSON object member/);
+  config.deal.notes = 'Quoted "keys": { } [ ] and escapes \\ stay text.';
+  assert.equal(output(run(['summary', '-'], config)).totalProfit, calculatePartnership(config).totalProfit);
+  const [invalidPath, validPath] = files(t, ['', config]);
+  const invalidBytes = Buffer.concat([Buffer.from(text.slice(0, -1) + ',"dealTitle":"'), Buffer.from([0xff]), Buffer.from('"}')]);
+  writeFileSync(invalidPath, invalidBytes);
+  assert.match(output(run(['summary', invalidPath]), 1).error, /UTF-8/);
+  assert.match(output(run(['summary', '-'], invalidBytes), 1).error, /UTF-8/);
+  const batch = run(['batch', invalidPath, validPath]);
+  assert.equal(batch.status, 1);
+  assert.equal(JSON.parse(batch.stdout).analyzedCount, 1);
 });

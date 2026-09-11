@@ -44,11 +44,38 @@ function readText(path) {
   catch { throw new Error('Cannot read input. Check the file path and permissions.'); }
   finally { if (descriptor !== undefined && descriptor !== 0) closeSync(descriptor); }
   if (length > limit) throw new Error('Input exceeds 1 MiB. Supply one bounded scenario, packet, or roster.');
-  return buffer.subarray(0, length).toString('utf8').replace(/^\uFEFF/, '');
+  try { return new TextDecoder('utf-8', { fatal: true }).decode(buffer.subarray(0, length)); }
+  catch { throw new Error('Input must contain valid UTF-8 text.'); }
 }
 
 function readJSON(path) {
-  try { return JSON.parse(readText(path)); }
+  try {
+    const text = readText(path);
+    const value = JSON.parse(text);
+    // Syntax is already valid. Walk object scopes and quoted tokens only;
+    // decoded keys catch equivalent escapes without reimplementing JSON grammar.
+    const objects = [];
+    for (let i = 0; i < text.length; i += 1) {
+      if (text[i] === '{') objects.push(new Set());
+      else if (text[i] === '}') objects.pop();
+      else if (text[i] === '"') {
+        const start = i;
+        while (++i < text.length) {
+          if (text[i] === '\\') i += 1;
+          else if (text[i] === '"') break;
+        }
+        let next = i + 1;
+        while (next < text.length && /\s/.test(text[next])) next += 1;
+        if (text[next] === ':') {
+          const key = JSON.parse(text.slice(start, i + 1));
+          const keys = objects.at(-1);
+          if (keys.has(key)) throw new Error('Duplicate JSON object member. Remove repeated keys before analysis.');
+          keys.add(key);
+        }
+      }
+    }
+    return value;
+  }
   catch (error) {
     if (error instanceof SyntaxError) throw new Error('Invalid JSON. Supply a saved scenario as UTF-8 JSON.');
     throw error;
