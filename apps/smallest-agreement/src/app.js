@@ -1203,6 +1203,39 @@ const presets = {
       },
     ],
   },
+  "dragon-boat-club-hours": {
+    title: "Dragon boat club hours: dragon-boat staging booking, drum bar, and paddle-box lock-up",
+    threshold: 70,
+    maxChangeCost: 8,
+    groups: [
+      { id: "students", name: "Students", weight: 5 },
+      { id: "neighbours", name: "Neighbours", weight: 4, veto: true },
+      { id: "pandc", name: "P&C", weight: 7 },
+    ],
+    clauses: [
+      {
+        id: "dragon-boat-staging-booking", title: "Dragon-boat staging booking", options: [
+          { id: "dragon-boat-staging-booking-original", original: true, label: "Keep weekday dragon-boat staging from 13:10 with no posted drum-seat rota", changeCost: 0, support: { students: 8, neighbours: 90, pandc: 57 } },
+          { id: "dragon-boat-staging-booking-late", original: false, label: "Open weekday dragon-boat staging at 18:20 with a posted drum-seat rota", changeCost: 2, support: { students: 86, neighbours: 34, pandc: 46 } },
+          { id: "dragon-boat-staging-booking-weekend", original: false, label: "Hold Saturday morning dragon-boat staging at 08:20 with a drum-seat booking card", changeCost: 4, support: { students: 71, neighbours: 42, pandc: 54 } },
+        ],
+      },
+      {
+        id: "dragon-boat-drum-bar", title: "Drum bar hours", options: [
+          { id: "dragon-boat-drum-bar-original", original: true, label: "No posted dragon-boat drum-bar hours", changeCost: 0, support: { students: 73, neighbours: 18, pandc: 27 } },
+          { id: "dragon-boat-drum-bar-cap", original: false, label: "Close the dragon-boat drum bar at 20:10 and keep drinks inside the drum hut", changeCost: 1, support: { students: 46, neighbours: 78, pandc: 59 } },
+          { id: "dragon-boat-drum-bar-cut", original: false, label: "Serve tea only after 16:20 and retire the dragon-boat drum bar", changeCost: 5, support: { students: 28, neighbours: 89, pandc: 41 } },
+        ],
+      },
+      {
+        id: "dragon-boat-paddle-box-lockup", title: "Paddle-box lock-up", options: [
+          { id: "dragon-boat-paddle-box-lockup-original", original: true, label: "Leave the paddle-box door on a shared padlock after club hours", changeCost: 0, support: { students: 13, neighbours: 33, pandc: 39 } },
+          { id: "dragon-boat-paddle-box-lockup-steward", original: false, label: "Require a P&C steward to lock the paddle-box before 21:05", changeCost: 3, support: { students: 58, neighbours: 53, pandc: 76 } },
+          { id: "dragon-boat-paddle-box-lockup-timer", original: false, label: "Add a timed lock on the paddle-box after the last dragon-boat session", changeCost: 2, support: { students: 47, neighbours: 51, pandc: 68 } },
+        ],
+      },
+    ],
+  },
 };
 
 let agreementReviewPacket = null;
