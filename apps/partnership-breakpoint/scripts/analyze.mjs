@@ -1,4 +1,4 @@
-import { readFileSync } from 'node:fs';
+import { openSync, readSync, closeSync } from 'node:fs';
 import { assertValidConfiguration, calculatePartnership, evaluateStressGrid, stressGridCsv } from '../src/model.js';
 import { solveFeeForAllHold, solveMinimumShareToHold, solveMinimumVolumeToHold } from '../src/model.js';
 import { compareImportedCase, compareThreeSnapshots } from '../src/model.js';
@@ -20,16 +20,31 @@ Usage: node scripts/analyze.mjs COMMAND INPUT [ARGUMENTS]
   proposal INPUT                Export a rechecked fixed-share scenario
   roster INPUT [ROSTER_FILE]     Export CSV, or replace roster from CSV/TSV
   redact INPUT                  Remove labels and remap IDs in a portable scenario
+  batch [--require-hold] INPUT...  Analyze all inputs; optional current-hold gate
 Review tools: ${PARTNERSHIP_REVIEW_TOOLS.map(tool => tool.id).join(', ')}
-INPUT is a JSON file or - for standard input. Output is JSON on stdout.
+INPUT is a JSON file or - for standard input. Output is JSON or requested CSV.
 Errors are JSON on stderr, exit 1. Success is exit 0.
+Batch includes per-input errors on stdout (exit 1), or unmet hold gates (exit 2).
 Results describe declared inputs, not probabilities or financial advice.
 Nonfinite calculated numbers are serialized as null, never as zero.
 `;
 
 function readText(path) {
-  try { return readFileSync(path === '-' ? 0 : path, 'utf8').replace(/^\uFEFF/, ''); }
+  const limit = 1048576;
+  const buffer = Buffer.alloc(limit + 1);
+  let descriptor, length = 0;
+  try {
+    descriptor = path === '-' ? 0 : openSync(path, 'r');
+    while (length <= limit) {
+      const count = readSync(descriptor, buffer, length, buffer.length - length, null);
+      if (count === 0) break;
+      length += count;
+    }
+  }
   catch { throw new Error('Cannot read input. Check the file path and permissions.'); }
+  finally { if (descriptor !== undefined && descriptor !== 0) closeSync(descriptor); }
+  if (length > limit) throw new Error('Input exceeds 1 MiB. Supply one bounded scenario, packet, or roster.');
+  return buffer.subarray(0, length).toString('utf8').replace(/^\uFEFF/, '');
 }
 
 function readJSON(path) {
@@ -43,6 +58,8 @@ function readJSON(path) {
 function arity(args, minimum, maximum = minimum) {
   if (args.length < minimum || args.length > maximum) throw new Error('Wrong arguments. Run with --help for usage.');
 }
+
+const errorMessage = error => error.errors?.join(' ') ?? error.message;
 
 function run(command, args) {
   switch (command) {
@@ -104,6 +121,25 @@ function run(command, args) {
       config.participants.forEach((participant, index) => { participant.id = `participant-${index + 1}`; });
       return assertValidConfiguration(config);
     }
+    case 'batch': {
+      const requireHold = args[0] === '--require-hold';
+      const inputs = requireHold ? args.slice(1) : args;
+      if (!inputs.length || inputs.some(path => path.startsWith('--'))) throw new Error('Batch requires input files after the optional --require-hold flag.');
+      if (inputs.filter(path => path === '-').length > 1) throw new Error('Standard input can supply only one batch scenario.');
+      const results = inputs.map((path, index) => {
+        try {
+          const result = calculatePartnership(readJSON(path));
+          return { inputIndex: index + 1, status: 'analyzed', viable: result.viable,
+            effectiveVolume: result.effectiveVolume, totalRevenue: result.totalRevenue,
+            totalProfit: result.totalProfit, firstBreakpoint: result.firstBreakpoint };
+        } catch (error) { return { inputIndex: index + 1, status: 'invalid', error: errorMessage(error) }; }
+      });
+      const invalidCount = results.filter(result => result.status === 'invalid').length;
+      const holdingCount = results.filter(result => result.viable === true).length;
+      process.exitCode = invalidCount ? 1 : requireHold && holdingCount !== inputs.length ? 2 : 0;
+      return { inputCount: inputs.length, analyzedCount: inputs.length - invalidCount, invalidCount, holdingCount,
+        requireHold, gatePassed: requireHold ? invalidCount === 0 && holdingCount === inputs.length : null, results };
+    }
     default: throw new Error('Unknown command. Run with --help for usage.');
   }
 }
@@ -113,9 +149,9 @@ try {
   if (command === '--help' && args.length === 0) process.stdout.write(HELP);
   else {
     const result = run(command, args);
-    process.stdout.write(`${typeof result === 'string' ? result : JSON.stringify(result, null, 2)}\n`);
+    process.stdout.write(typeof result === 'string' ? result : `${JSON.stringify(result, null, 2)}\n`);
   }
 } catch (error) {
-  process.stderr.write(`${JSON.stringify({ error: error.errors?.join(' ') ?? error.message })}\n`);
+  process.stderr.write(`${JSON.stringify({ error: errorMessage(error) })}\n`);
   process.exitCode = 1;
 }

@@ -86,3 +86,16 @@ node scripts/analyze.mjs review redacted-scenario.json slack > redacted-review.j
 ```
 
 Redaction removes the title and notes, replaces names with Participant 1 through N, and replaces custom IDs with `participant-1` through `participant-N`. The model's redaction helper also omits display preferences. Economics, currency and stress settings remain. This is label removal, not anonymization: amounts or circumstances may still identify a deal, so review the output before sharing. Generate any review packets or CSV from the redacted scenario, since existing artifacts are not rewritten. Remapped IDs prevent reliable alignment with the original roster by ID; roster position is preserved. No file is uploaded or changed.
+
+## Batch checks for repeatable reviews
+
+```sh
+node scripts/analyze.mjs batch first.json second.json
+node scripts/analyze.mjs batch --require-hold first.json second.json
+```
+
+Batch calculates each scenario independently and returns compact economics, viability and first breakpoint in argument order. `inputIndex` is one-based and identifies the argument without copying local filesystem paths into the report. Monetary totals are per scenario, never summed across files or currencies. Input files are read separately, not as an atomic filesystem snapshot.
+
+Unlike single-input commands, batch input failures are included alongside successful results on stdout. `invalidCount`, `analyzedCount` and `holdingCount` make completeness explicit. Any invalid input exits 1; otherwise `--require-hold` exits 2 if any current scenario fails, and 0 if all hold. Without that flag, valid nonholding scenarios exit 0 and `gatePassed` is null. Argument errors still use stderr with no report. At most one input may be stdin. The flag must precede inputs; prefix filenames beginning with `--` with `./`.
+
+The hold gate checks current declared conditions only, not compound stress, future viability or commercial acceptance. Inspect `stress` separately for tested adverse cases. Fix invalid files and rerun the same command to recover; one bad input does not suppress the remaining analyses. All commands read at most 1 MiB plus one detection byte per input and reject oversized inputs before parsing. Roster import retains its stricter model limit. JSON parsing uses Node's standard last-key-wins semantics for duplicate object keys; replay verifies the parsed scenario against its exact saved input snapshot.

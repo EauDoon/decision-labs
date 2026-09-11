@@ -69,6 +69,7 @@ test('stress exports complete and failing compound cases without changing grid c
   assert.ok(failed.scenarios.every(scenario => !scenario.viable));
   const csv = run(['stress', '-', '--csv', '--failed-only'], config);
   assert.equal(csv.status, 0, csv.stderr);
+  assert.ok(csv.stdout.endsWith('\r\n') && !csv.stdout.endsWith('\r\n\n'));
   const rows = parseCsv(csv.stdout.trim());
   assert.equal(rows.length, 1 + failed.selectedCaseCount * config.participants.length);
   assert.ok(rows.slice(1).filter(row => row[6] === config.participants[0].id).every(row => row[7].startsWith("'=")));
@@ -236,4 +237,37 @@ test('redact removes free text and custom IDs while preserving scenario economic
   assert.deepEqual(output(run(['summary', path])), before);
   const packet = output(run(['review', '-', 'slack'], redacted));
   assert.doesNotMatch(JSON.stringify(packet), /sensitive/i);
+});
+
+test('batch preserves partial results, distinguishes input errors from hold gates, and recovers', (t) => {
+  const config = clonePreset('balanced');
+  const failing = structuredClone(config);
+  failing.deal.feePerTransaction = 0;
+  const [good, bad, broken] = files(t, [config, failing, '{']);
+  const ungated = output(run(['batch', good, bad]));
+  assert.equal(ungated.analyzedCount, 2);
+  assert.equal(ungated.holdingCount, 1);
+  assert.equal(ungated.gatePassed, null);
+  const gated = output(run(['batch', '--require-hold', good, bad]), 2);
+  assert.equal(gated.gatePassed, false);
+  assert.deepEqual(gated.results.map(result => result.inputIndex), [1, 2]);
+  const partial = run(['batch', '--require-hold', good, broken, bad]);
+  assert.equal(partial.status, 1);
+  assert.equal(partial.stderr, '');
+  const report = JSON.parse(partial.stdout);
+  assert.equal(report.invalidCount, 1);
+  assert.equal(report.analyzedCount, 2);
+  assert.equal(report.results[1].status, 'invalid');
+  assert.match(report.results[1].error, /Invalid JSON/);
+  assert.equal(report.results[2].totalRevenue, 0);
+  assert.equal(output(run(['batch', '--require-hold', good, '-'], config)).gatePassed, true);
+  for (const args of [['batch'], ['batch', '--typo', good], ['batch', '-', '-']]) {
+    assert.equal(run(args, config).status, 1);
+    assert.equal(run(args, config).stdout, '');
+  }
+  const [oversized] = files(t, [' '.repeat(1048577)]);
+  assert.match(output(run(['summary', oversized]), 1).error, /exceeds 1 MiB/);
+  const bounded = run(['batch', oversized, good]);
+  assert.equal(bounded.status, 1);
+  assert.equal(JSON.parse(bounded.stdout).analyzedCount, 1);
 });
