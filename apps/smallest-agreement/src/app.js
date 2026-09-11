@@ -1469,6 +1469,11 @@ function renderCopyFallbacks(result) {
     const listed = formatFirstGroupWithoutFloorRemainingMarkdown(state.proposal, inspectedPackage(result ?? currentResult()));
     firstGroupWithoutFloorRemainingBox.value = listed.status === "ok" || listed.status === "unavailable" ? listed.text : "";
   }
+  const firstGroupWithoutFloorCostBox = $("#first-group-without-floor-cost-fallback");
+  if (firstGroupWithoutFloorCostBox) {
+    const listed = formatFirstGroupWithoutFloorCostMarkdown(state.proposal, inspectedPackage(result ?? currentResult()));
+    firstGroupWithoutFloorCostBox.value = listed.status === "ok" || listed.status === "unavailable" ? listed.text : "";
+  }
   const costBox = $("#change-cost-csv-fallback");
   if (costBox) {
     const exported = formatRecommendedChangeCostCsv(state.proposal, result ?? currentResult());
@@ -2331,6 +2336,7 @@ function renderResults(result, vetoBlocks = blockingVetoIds(result)) {
   $("#copy-groups-without-floor-remaining-button").disabled = result.status === "invalid";
   $("#copy-last-group-without-floor-remaining-button").disabled = result.status === "invalid";
   $("#copy-first-group-without-floor-remaining-button").disabled = result.status === "invalid";
+  $("#copy-first-group-without-floor-cost-button").disabled = result.status === "invalid";
   $("#copy-change-cost-button").disabled = result.status === "invalid" || !result.agreement;
   $("#copy-veto-button").disabled = result.status === "invalid" || result.status === "too_large";
   $("#share-button").disabled = result.status === "invalid";
@@ -4275,6 +4281,24 @@ async function copyFirstGroupWithoutFloorRemaining() {
   }
 }
 $("#copy-first-group-without-floor-remaining-button").addEventListener("click", copyFirstGroupWithoutFloorRemaining);
+async function copyFirstGroupWithoutFloorCost() {
+  const listed = formatFirstGroupWithoutFloorCostMarkdown(state.proposal, inspectedPackage(currentResult()));
+  if (listed.status === "invalid") return notifyDraft("Fix the draft before copying the first-without-floor cost.");
+  const fallback = $("#first-group-without-floor-cost-fallback");
+  if (fallback) fallback.value = listed.text;
+  notifyDraft(listed.status === "unavailable"
+    ? "No inspected package is available. Copied an honest empty first-without-floor cost. A floor is a number you entered, not a legal quorum."
+    : listed.empty
+    ? "No group is without a support floor. Copied an honest zero. A floor is a number you entered, not a legal quorum."
+    : "First-without-floor cost copied as Markdown. A floor is a number you entered, not a legal quorum.");
+  try {
+    await navigator.clipboard.writeText(listed.text);
+  } catch {
+    fallback?.focus?.();
+    notifyDraft("Clipboard is blocked. Copy the first-without-floor cost from the Markdown box. A floor is a number you entered, not a legal quorum.");
+  }
+}
+$("#copy-first-group-without-floor-cost-button").addEventListener("click", copyFirstGroupWithoutFloorCost);
 $("#copy-change-cost-button").addEventListener("click", async () => {
   const exported = formatRecommendedChangeCostCsv(state.proposal, currentResult());
   if (exported.status === "invalid") return notifyDraft("Fix the draft before copying the change-cost table.");
