@@ -56,6 +56,7 @@ import {
   formatLastBelowSupportFloorGroupLabelMarkdown,
   formatLastGroupWithoutFloorLabelMarkdown,
   formatFirstGroupWithoutFloorLabelMarkdown,
+  formatGroupsWithoutFloorCountMarkdown,
   formatRecommendedChangeCostCsv,
   changedClauseIds,
   groupsBelowSupportRequirement,
@@ -1135,6 +1136,39 @@ const presets = {
       },
     ],
   },
+  "canoeing-club-hours": {
+    title: "Canoeing club hours: canoe-shed booking, clubhouse bar, and changing-room lock-up",
+    threshold: 70,
+    maxChangeCost: 8,
+    groups: [
+      { id: "students", name: "Students", weight: 4 },
+      { id: "neighbours", name: "Neighbours", weight: 3, veto: true },
+      { id: "pandc", name: "P&C", weight: 2 },
+    ],
+    clauses: [
+      {
+        id: "canoe-shed-booking", title: "Canoe shed booking", options: [
+          { id: "canoe-shed-booking-original", original: true, label: "Keep weekday canoe shed and paddle-pontoon booking from 15:15 with no posted canoe-shed rota", changeCost: 0, support: { students: 10, neighbours: 92, pandc: 56 } },
+          { id: "canoe-shed-booking-late", original: false, label: "Open weekday canoeing at 17:00 with a posted paddle-pontoon rota", changeCost: 2, support: { students: 81, neighbours: 40, pandc: 51 } },
+          { id: "canoe-shed-booking-weekend", original: false, label: "Hold Saturday afternoon paddle pontoon at 13:30 with a canoe-shed booking card", changeCost: 4, support: { students: 68, neighbours: 45, pandc: 50 } },
+        ],
+      },
+      {
+        id: "canoeing-clubhouse-bar", title: "Clubhouse bar", options: [
+          { id: "canoeing-clubhouse-bar-original", original: true, label: "No posted canoeing clubhouse-bar hours", changeCost: 0, support: { students: 78, neighbours: 13, pandc: 29 } },
+          { id: "canoeing-clubhouse-bar-cap", original: false, label: "Close the canoeing clubhouse bar at 19:45 and keep drinks inside the clubhouse", changeCost: 1, support: { students: 45, neighbours: 82, pandc: 61 } },
+          { id: "canoeing-clubhouse-bar-cut", original: false, label: "Serve tea only after 17:45 and retire the canoeing clubhouse bar", changeCost: 5, support: { students: 32, neighbours: 88, pandc: 46 } },
+        ],
+      },
+      {
+        id: "canoeing-changing-room-lockup", title: "Changing-room lock-up", options: [
+          { id: "canoeing-changing-room-lockup-original", original: true, label: "Leave the canoe-shed changing-room door on a shared padlock after club hours", changeCost: 0, support: { students: 15, neighbours: 35, pandc: 41 } },
+          { id: "canoeing-changing-room-lockup-steward", original: false, label: "Require a P&C steward to lock the canoe-shed changing room before 20:30", changeCost: 3, support: { students: 63, neighbours: 55, pandc: 71 } },
+          { id: "canoeing-changing-room-lockup-timer", original: false, label: "Add a timed lock on the canoe-shed changing-room door after the last session", changeCost: 2, support: { students: 52, neighbours: 47, pandc: 63 } },
+        ],
+      },
+    ],
+  },
 };
 
 let agreementReviewPacket = null;
@@ -1311,6 +1345,11 @@ function renderCopyFallbacks(result) {
   if (firstGroupWithoutFloorBox) {
     const listed = formatFirstGroupWithoutFloorLabelMarkdown(state.proposal, inspectedPackage(result ?? currentResult()));
     firstGroupWithoutFloorBox.value = listed.status === "ok" || listed.status === "unavailable" ? listed.text : "";
+  }
+  const groupsWithoutFloorCountBox = $("#groups-without-floor-count-fallback");
+  if (groupsWithoutFloorCountBox) {
+    const listed = formatGroupsWithoutFloorCountMarkdown(state.proposal, inspectedPackage(result ?? currentResult()));
+    groupsWithoutFloorCountBox.value = listed.status === "ok" || listed.status === "unavailable" ? listed.text : "";
   }
   const costBox = $("#change-cost-csv-fallback");
   if (costBox) {
@@ -2170,6 +2209,7 @@ function renderResults(result, vetoBlocks = blockingVetoIds(result)) {
   $("#copy-first-below-threshold-group-button").disabled = result.status === "invalid";
   $("#copy-last-group-at-or-above-threshold-button").disabled = result.status === "invalid";
   $("#copy-first-group-at-or-above-threshold-button").disabled = result.status === "invalid";
+  $("#copy-groups-without-floor-count-button").disabled = result.status === "invalid";
   $("#copy-change-cost-button").disabled = result.status === "invalid" || !result.agreement;
   $("#copy-veto-button").disabled = result.status === "invalid" || result.status === "too_large";
   $("#share-button").disabled = result.status === "invalid";
@@ -4042,6 +4082,24 @@ async function copyFirstGroupWithoutFloor() {
   }
 }
 $("#copy-first-group-without-floor-button").addEventListener("click", copyFirstGroupWithoutFloor);
+async function copyGroupsWithoutFloorCount() {
+  const listed = formatGroupsWithoutFloorCountMarkdown(state.proposal, inspectedPackage(currentResult()));
+  if (listed.status === "invalid") return notifyDraft("Fix the draft before copying the groups-without-floor count.");
+  const fallback = $("#groups-without-floor-count-fallback");
+  if (fallback) fallback.value = listed.text;
+  notifyDraft(listed.status === "unavailable"
+    ? "No inspected package is available. Copied an honest empty groups-without-floor count. A floor is a number you entered, not a legal quorum."
+    : listed.empty
+    ? "No groups are without a support floor. Copied an honest zero. A floor is a number you entered, not a legal quorum."
+    : "Groups-without-floor count copied as Markdown. A floor is a number you entered, not a legal quorum.");
+  try {
+    await navigator.clipboard.writeText(listed.text);
+  } catch {
+    fallback?.focus?.();
+    notifyDraft("Clipboard is blocked. Copy the groups-without-floor count from the Markdown box. A floor is a number you entered, not a legal quorum.");
+  }
+}
+$("#copy-groups-without-floor-count-button").addEventListener("click", copyGroupsWithoutFloorCount);
 $("#copy-change-cost-button").addEventListener("click", async () => {
   const exported = formatRecommendedChangeCostCsv(state.proposal, currentResult());
   if (exported.status === "invalid") return notifyDraft("Fix the draft before copying the change-cost table.");
@@ -5276,6 +5334,15 @@ function jumpToHideFirstGroupWithoutFloor() {
   $("#groups-heading")?.focus?.();
 }
 
+function jumpToGroupsWithoutFloorCountCopy() {
+  const control = $("#copy-groups-without-floor-count-button");
+  if (control?.focus) {
+    control.focus();
+    return;
+  }
+  $("#groups-heading")?.focus?.();
+}
+
 function jumpToPrintPack() {
   const control = $("#print-button");
   if (control?.focus) {
@@ -5625,6 +5692,15 @@ document.addEventListener("keydown", (event) => {
   } else if (key === "F9") {
     event.preventDefault();
     jumpToHideLastGroupWithoutFloor();
+  } else if (event.shiftKey && key === "F10") {
+    event.preventDefault();
+    copyGroupsWithoutFloorCount();
+  } else if (event.shiftKey && key === "F11") {
+    event.preventDefault();
+    jumpToGroupsWithoutFloorCountCopy();
+  } else if (event.shiftKey && key === "F12") {
+    event.preventDefault();
+    jumpToHideFirstGroupWithoutFloor();
   } else if (key === "F10") {
     event.preventDefault();
     copyFirstGroupWithoutFloor();
