@@ -82,6 +82,7 @@ let viabilityLabelCopyText = '';
 let overCapacityCountCopyText = '';
 let firstOverCapacityLabelCopyText = '';
 let firstOverCapacityRemainingCopyText = '';
+let firstOverCapacityVolumeCopyText = '';
 let lastOverCapacityLabelCopyText = '';
 let lastOverCapacityRemainingCopyText = '';
 let lastOverCapacityVolumeCopyText = '';
@@ -162,6 +163,7 @@ function checkpoint() {
   overCapacityCountCopyText = '';
   firstOverCapacityLabelCopyText = '';
   firstOverCapacityRemainingCopyText = '';
+  firstOverCapacityVolumeCopyText = '';
   lastOverCapacityLabelCopyText = '';
   lastOverCapacityRemainingCopyText = '';
   lastOverCapacityVolumeCopyText = '';
@@ -218,6 +220,7 @@ function travelHistory(direction) {
   overCapacityCountCopyText = '';
   firstOverCapacityLabelCopyText = '';
   firstOverCapacityRemainingCopyText = '';
+  firstOverCapacityVolumeCopyText = '';
   lastOverCapacityLabelCopyText = '';
   lastOverCapacityRemainingCopyText = '';
   lastOverCapacityVolumeCopyText = '';
@@ -3931,6 +3934,62 @@ function copyLastOverCapacityVolume() {
     }
   }
   showLastOverCapacityVolumeCopyFallback(text, fallbackNote);
+}
+
+function firstOverCapacityVolumeMarkdown(result) {
+  if (!result) return 'First over-capacity volume-to-hold: none entered.';
+  const participant = state.participants.find((item) => participantOverListedCapacity(result, item));
+  if (!participant) return 'First over-capacity volume-to-hold: none entered.';
+  const named = result.participants.find((item) => item.id === participant.id);
+  const volume = named?.exitVolume;
+  if (volume == null || !Number.isFinite(volume)) {
+    return 'First over-capacity volume-to-hold: volume to hold is not a finite amount for ' + reportText(named?.name ?? participant.name) + '. Volume to hold. Not a forecast.';
+  }
+  return 'First over-capacity volume-to-hold: ' + formatVolume(volume) + ' for ' + reportText(named?.name ?? participant.name) + '. Volume to hold. Not a forecast.';
+}
+
+function showFirstOverCapacityVolumeCopyFallback(text, message) {
+  firstOverCapacityVolumeCopyText = text;
+  render();
+  document.querySelector('#first-over-capacity-volume-copy-text')?.focus();
+  setNotice(message);
+}
+
+function firstOverCapacityVolumeCopySection() {
+  if (!firstOverCapacityVolumeCopyText) return '';
+  return `<section class="panel" aria-labelledby="first-over-capacity-volume-copy-title"><div class="panel-heading"><h2 id="first-over-capacity-volume-copy-title">First over-capacity volume-to-hold Markdown</h2><button type="button" data-action="close-first-over-capacity-volume-copy">Close</button></div><div class="panel-body"><p>Clipboard is unavailable in this browser. Select the Markdown below and copy it. This is volume to hold for the first roster row currently over listed capacity. It is distinct from last over-capacity volume-to-hold copy, last over-capacity remaining listed capacity copy, first over-capacity remaining listed capacity copy, last over-capacity label copy, first-zero-share volume-to-hold copy, last zero-share volume-to-hold copy, remaining-to-hold copy, and first-breakpoint volume-to-hold copy. It is organizer or planner copy, not a forecast of who will exit.</p><label class="brief-copy-label" for="first-over-capacity-volume-copy-text">First over-capacity volume-to-hold Markdown</label><textarea id="first-over-capacity-volume-copy-text" readonly rows="4">${escapeAttribute(firstOverCapacityVolumeCopyText)}</textarea></div></section>`;
+}
+
+function copyFirstOverCapacityVolume() {
+  const validation = validateConfiguration(state);
+  const result = validation.valid ? calculatePartnership(state) : null;
+  const text = firstOverCapacityVolumeMarkdown(result);
+  const clipboard = globalThis.navigator?.clipboard;
+  const copiedNote = 'First over-capacity volume-to-hold copied as Markdown. Volume to hold. It is organizer or planner copy, not a forecast of who will exit.';
+  const fallbackNote = 'Clipboard unavailable. Copy the Markdown from the text area.';
+  if (clipboard && typeof clipboard.writeText === 'function') {
+    try {
+      const written = clipboard.writeText(text);
+      if (written && typeof written.then === 'function') {
+        written.then(() => {
+          firstOverCapacityVolumeCopyText = '';
+          render();
+          setNotice(copiedNote);
+        }).catch(() => {
+          showFirstOverCapacityVolumeCopyFallback(text, fallbackNote);
+        });
+        return;
+      }
+      firstOverCapacityVolumeCopyText = '';
+      render();
+      setNotice(copiedNote);
+      return;
+    } catch {
+      showFirstOverCapacityVolumeCopyFallback(text, fallbackNote);
+      return;
+    }
+  }
+  showFirstOverCapacityVolumeCopyFallback(text, fallbackNote);
 }
 
 function firstWithinCapacityRemainingMarkdown(result) {
