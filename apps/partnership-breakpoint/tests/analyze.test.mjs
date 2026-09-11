@@ -147,3 +147,22 @@ test('review creates every supported packet and replay detects tampered evidence
   assert.match(output(run(['review', '-', 'unknown'], config), 1).error, /Unknown partnership review/);
   assert.match(output(run(['replay', '-'], config), 1).error, /Unsupported/);
 });
+
+test('case extraction reproduces selected stress economics without a second shock', (t) => {
+  const config = clonePreset('balanced');
+  config.deal.volumeShockPct = 12;
+  const [path] = files(t, [config]);
+  const original = output(run(['summary', path]));
+  const grid = output(run(['stress', path]));
+  const selected = grid.scenarios.find(scenario => scenario.volumeChangePct < 0 && scenario.feeDropPct > 0 && scenario.variableCostRisePct > 0);
+  const candidate = output(run(['case', path, selected.id]));
+  assert.equal(candidate.deal.volumeShockPct, 0);
+  assert.equal(candidate.deal.monthlyVolume, selected.volume);
+  assert.equal(candidate.deal.feePerTransaction, selected.fee);
+  const replayed = output(run(['summary', '-'], candidate));
+  assert.equal(replayed.effectiveVolume, selected.volume);
+  assert.equal(replayed.totalProfit, selected.totalProfit);
+  assert.equal(replayed.viable, selected.viable);
+  assert.deepEqual(output(run(['summary', path])), original);
+  assert.match(output(run(['case', path, 'case-999']), 1).error, /current compound case/);
+});

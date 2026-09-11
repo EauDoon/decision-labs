@@ -49,3 +49,13 @@ node scripts/analyze.mjs replay interval-review.json
 ```
 
 `review` emits the browser-compatible version 1 review packet: validated scenario, exact input snapshot and derived table. `--help` lists the model's available review IDs. `replay` recomputes the packet and rejects changed inputs, fields or result cells with exit 1. A successful replay returns the verified packet. This checks internal reproducibility, not authorship or real-world truth; a consistently regenerated replacement packet can still contain different assumptions. The model's packet-size limit remains in force.
+
+## Inspect one stress case as a baseline
+
+```sh
+node scripts/analyze.mjs stress scenario.json
+node scripts/analyze.mjs case scenario.json case-14 > stressed-scenario.json
+node scripts/analyze.mjs summary stressed-scenario.json
+```
+
+Choose an ID from this scenario's current stress output. Extraction writes importable scenario inputs with that case's effective volume, fee and variable costs. The baseline volume shock is reset to zero so it is not applied twice. Saved stress settings remain, so a later `stress` command tests additional shocks around this new baseline. Unknown case IDs fail without output. The original file is unchanged.
