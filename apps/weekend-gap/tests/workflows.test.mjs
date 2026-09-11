@@ -32,7 +32,7 @@ async function boot(storage = new Map(), { blockedStorage = false, hash = "", re
     nodes.set(match[1], node);
   }
   for (const match of html.matchAll(/<select\b[^>]*id="([^"]+)"[^>]*>\s*<option value="([^"]*)"/g)) nodes.get(match[1]).value = match[2];
-  const presets = ["normal", "weekendRush", "marketStress", "thinFxTightWindows", "longWeekendFridayStart", "compressedFridayClose", "paydayFridayBurst", "publicHolidayMonday", "saturdayMarketBurst", "sundayStallClose", "thinSaturdayFx", "earlyMondayBankOpen", "fridayLateFxClose", "mondayLateIssuerOpen", "saturdayEarlyFxOpen", "sundayLateBankClose", "sundayLatePayoutClose", "saturdayEarlyPayoutOpen", "fridayEarlyPayoutOpen", "saturdayLatePayoutOpen", "sundayEarlyPayoutOpen", "sundayLateIssuerClose", "sundayEarlyIssuerOpen", "saturdayEarlyIssuerOpen", "fridayEarlyIssuerOpen", "saturdayEarlyBankOpen", "fridayEarlyBankOpen", "saturdayLateBankOpen", "fridayLateBankOpen", "fridayLateFxOpen", "saturdayLateFxOpen"].map(key => { const element = new Element(); element.dataset.preset = key; return element; });
+  const presets = ["normal", "weekendRush", "marketStress", "thinFxTightWindows", "longWeekendFridayStart", "compressedFridayClose", "paydayFridayBurst", "publicHolidayMonday", "saturdayMarketBurst", "sundayStallClose", "thinSaturdayFx", "earlyMondayBankOpen", "fridayLateFxClose", "mondayLateIssuerOpen", "saturdayEarlyFxOpen", "sundayLateBankClose", "sundayLatePayoutClose", "saturdayEarlyPayoutOpen", "fridayEarlyPayoutOpen", "saturdayLatePayoutOpen", "sundayEarlyPayoutOpen", "sundayLateIssuerClose", "sundayEarlyIssuerOpen", "saturdayEarlyIssuerOpen", "fridayEarlyIssuerOpen", "saturdayEarlyBankOpen", "fridayEarlyBankOpen", "saturdayLateBankOpen", "fridayLateBankOpen", "fridayLateFxOpen", "saturdayLateFxOpen", "sundayLateFxOpen"].map(key => { const element = new Element(); element.dataset.preset = key; return element; });
   const document = {
     documentElement: { dataset: {} }, body: new Element(),
     handlers: {},
@@ -60,11 +60,12 @@ async function boot(storage = new Map(), { blockedStorage = false, hash = "", re
     presets,
     storage,
     async edit(id, value, type = "input") { const node = nodes.get(id); node.value = String(value); await node.emit(type); },
-    async keydown(key, target = { tagName: "BODY" }) {
+    async keydown(key, target = { tagName: "BODY" }, extra = {}) {
       await document.emit("keydown", {
         key,
         target: { tagName: target.tagName, isContentEditable: Boolean(target.isContentEditable), closest() { return null; } },
-        preventDefault() {}
+        preventDefault() {},
+        defaultPrevented: extra.defaultPrevented === true
       });
     }
   };
@@ -2220,6 +2221,78 @@ test("keyboard F9 jumps to the hide-weekday-FX-closed filter and does not copy",
   assert.equal(ui.nodes.get("gantt-hide-weekday-fx-closed").focused, false);
 });
 
+test("keyboard F10 copies last weekday-FX-closed hour through the new control and ignores the key while typing", async () => {
+  const ui = await boot(new Map([["weekend-gap:coach:v1", "dismissed"]]));
+  await ui.keydown("F10");
+  assert.equal(ui.nodes.get("last-weekday-fx-closed-copy-fallback").hidden, false);
+  assert.match(ui.nodes.get("last-weekday-fx-closed-copy-fallback").value, /Last weekday-FX-closed hour:/);
+  assert.match(ui.nodes.get("last-weekday-fx-closed-copy-fallback").value, /Counts of modeled hours, not an FX calendar/);
+  assert.doesNotMatch(ui.nodes.get("last-weekday-fx-closed-copy-fallback").value, /Last weekend-FX-closed hour:/);
+  assert.doesNotMatch(ui.nodes.get("last-weekday-fx-closed-copy-fallback").value, /Last closed FX hour:/);
+  assert.doesNotMatch(ui.nodes.get("last-weekday-fx-closed-copy-fallback").value, /Last closed payout hour:/);
+  ui.nodes.get("last-weekday-fx-closed-copy-fallback").hidden = true;
+  ui.nodes.get("last-weekday-fx-closed-copy-fallback").value = "";
+  await ui.keydown("F10", { tagName: "INPUT" });
+  assert.equal(ui.nodes.get("last-weekday-fx-closed-copy-fallback").hidden, true);
+  await ui.keydown("F10", { tagName: "TEXTAREA" });
+  assert.equal(ui.nodes.get("last-weekday-fx-closed-copy-fallback").hidden, true);
+  await ui.keydown("F10", { tagName: "SELECT" });
+  assert.equal(ui.nodes.get("last-weekday-fx-closed-copy-fallback").hidden, true);
+  await ui.keydown("F10", { tagName: "BODY" }, { defaultPrevented: true });
+  assert.equal(ui.nodes.get("last-weekday-fx-closed-copy-fallback").hidden, true);
+  await ui.keydown("F7");
+  assert.equal(ui.nodes.get("last-weekend-fx-closed-copy-fallback").hidden, false);
+  assert.match(ui.nodes.get("last-weekend-fx-closed-copy-fallback").value, /Last weekend-FX-closed hour:/);
+  assert.notEqual(ui.nodes.get("last-weekday-fx-closed-copy-fallback").value, ui.nodes.get("last-weekend-fx-closed-copy-fallback").value);
+});
+
+test("keyboard F11 jumps to the last-weekday-FX-closed copy control and does not copy", async () => {
+  const ui = await boot(new Map([["weekend-gap:coach:v1", "dismissed"]]));
+  await ui.keydown("F11");
+  assert.equal(ui.nodes.get("copy-last-weekday-fx-closed").focused, true);
+  assert.equal(ui.nodes.get("last-weekday-fx-closed-copy-fallback").hidden, true);
+  ui.nodes.get("copy-last-weekday-fx-closed").focused = false;
+  ui.nodes.get("gantt-title").focused = false;
+  await ui.keydown("F11", { tagName: "INPUT" });
+  assert.equal(ui.nodes.get("copy-last-weekday-fx-closed").focused, false);
+  assert.equal(ui.nodes.get("gantt-title").focused, false);
+  await ui.keydown("F11", { tagName: "TEXTAREA" });
+  assert.equal(ui.nodes.get("copy-last-weekday-fx-closed").focused, false);
+  await ui.keydown("F11", { tagName: "SELECT" });
+  assert.equal(ui.nodes.get("copy-last-weekday-fx-closed").focused, false);
+  await ui.keydown("F11", { tagName: "BODY" }, { defaultPrevented: true });
+  assert.equal(ui.nodes.get("copy-last-weekday-fx-closed").focused, false);
+  await ui.keydown("F8");
+  assert.equal(ui.nodes.get("copy-last-weekend-fx-closed").focused, true);
+  assert.equal(ui.nodes.get("copy-last-weekday-fx-closed").focused, false);
+  assert.equal(ui.nodes.get("last-weekday-fx-closed-copy-fallback").hidden, true);
+});
+
+test("keyboard F12 jumps to the hide-weekend-FX-open filter and does not copy", async () => {
+  const ui = await boot(new Map([["weekend-gap:coach:v1", "dismissed"]]));
+  await ui.keydown("F12");
+  assert.equal(ui.nodes.get("gantt-hide-weekend-fx-open").focused, true);
+  assert.equal(ui.nodes.get("last-weekday-fx-closed-copy-fallback").hidden, true);
+  ui.nodes.get("gantt-hide-weekend-fx-open").focused = false;
+  ui.nodes.get("gantt-title").focused = false;
+  await ui.keydown("F12", { tagName: "INPUT" });
+  assert.equal(ui.nodes.get("gantt-hide-weekend-fx-open").focused, false);
+  assert.equal(ui.nodes.get("gantt-title").focused, false);
+  await ui.keydown("F12", { tagName: "TEXTAREA" });
+  assert.equal(ui.nodes.get("gantt-hide-weekend-fx-open").focused, false);
+  await ui.keydown("F12", { tagName: "SELECT" });
+  assert.equal(ui.nodes.get("gantt-hide-weekend-fx-open").focused, false);
+  await ui.keydown("F12", { tagName: "BODY" }, { defaultPrevented: true });
+  assert.equal(ui.nodes.get("gantt-hide-weekend-fx-open").focused, false);
+  await ui.keydown("F9");
+  assert.equal(ui.nodes.get("gantt-hide-weekday-fx-closed").focused, true);
+  assert.equal(ui.nodes.get("gantt-hide-weekend-fx-open").focused, false);
+  ui.nodes.get("gantt-hide-weekday-fx-closed").focused = false;
+  await ui.keydown("ArrowLeft");
+  assert.equal(ui.nodes.get("gantt-hide-weekend-fx-open").focused, true);
+  assert.equal(ui.nodes.get("gantt-hide-weekday-fx-closed").focused, false);
+});
+
 test("keyboard Backspace jumps to the hide-weekend-FX-closed filter and does not copy", async () => {
   const ui = await boot(new Map([["weekend-gap:coach:v1", "dismissed"]]));
   await ui.keydown("Backspace");
@@ -2254,6 +2327,23 @@ test("copy last weekend-FX-closed hour uses one-line Markdown distinct from last
   assert.notEqual(ui.nodes.get("last-weekend-fx-closed-copy-fallback").value, ui.nodes.get("last-closed-fx-copy-fallback").value);
   await ui.nodes.get("copy-last-closed-payout").click();
   assert.notEqual(ui.nodes.get("last-weekend-fx-closed-copy-fallback").value, ui.nodes.get("last-closed-payout-copy-fallback").value);
+});
+
+test("copy last weekday-FX-closed hour uses one-line Markdown distinct from last-weekend-FX-closed, last-closed-FX and last-closed-payout", async () => {
+  const ui = await boot(new Map([["weekend-gap:coach:v1", "dismissed"]]));
+  await ui.nodes.get("copy-last-weekday-fx-closed").click();
+  assert.equal(ui.nodes.get("last-weekday-fx-closed-copy-fallback").hidden, false);
+  assert.match(ui.nodes.get("last-weekday-fx-closed-copy-fallback").value, /Last weekday-FX-closed hour:/);
+  assert.match(ui.nodes.get("last-weekday-fx-closed-copy-fallback").value, /Counts of modeled hours, not an FX calendar/);
+  assert.doesNotMatch(ui.nodes.get("last-weekday-fx-closed-copy-fallback").value, /Last weekend-FX-closed hour:/);
+  assert.doesNotMatch(ui.nodes.get("last-weekday-fx-closed-copy-fallback").value, /Last closed FX hour:/);
+  assert.doesNotMatch(ui.nodes.get("last-weekday-fx-closed-copy-fallback").value, /Last closed payout hour:/);
+  await ui.nodes.get("copy-last-weekend-fx-closed").click();
+  assert.notEqual(ui.nodes.get("last-weekday-fx-closed-copy-fallback").value, ui.nodes.get("last-weekend-fx-closed-copy-fallback").value);
+  await ui.nodes.get("copy-last-closed-fx").click();
+  assert.notEqual(ui.nodes.get("last-weekday-fx-closed-copy-fallback").value, ui.nodes.get("last-closed-fx-copy-fallback").value);
+  await ui.nodes.get("copy-last-closed-payout").click();
+  assert.notEqual(ui.nodes.get("last-weekday-fx-closed-copy-fallback").value, ui.nodes.get("last-closed-payout-copy-fallback").value);
 });
 
 test("copy last closed payout hour uses one-line Markdown distinct from last-closed-FX, last-open-payout and first-closed-payout", async () => {

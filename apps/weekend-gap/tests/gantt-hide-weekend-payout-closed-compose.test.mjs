@@ -48,4 +48,5 @@ test("weekend-payout-closed hide composes with payout-closed, weekend and weeken
   assert.equal(runSimulation(PRESETS.fridayLateBankOpen).timeline.length, SIMULATION_HOURS + 1);
   assert.equal(runSimulation(PRESETS.fridayLateFxOpen).timeline.length, SIMULATION_HOURS + 1);
   assert.equal(runSimulation(PRESETS.saturdayLateFxOpen).timeline.length, SIMULATION_HOURS + 1);
+  assert.equal(runSimulation(PRESETS.sundayLateFxOpen).timeline.length, SIMULATION_HOURS + 1);
 });

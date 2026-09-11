@@ -1,5 +1,16 @@
 # Changelog
 
+## 1.5.26 - 2026-09-11
+
+A workshop follow-up on 1.5.25. Weekend Gap remains a local-first decision aid, not a decision maker. Hatched Gantt cells are a local drawing, not a bank feed. Timing review packets from 1.5.0 and the 1.5.1-1.5.25 review UI stay in place. Analysis JSON still has no timestamps.
+
+### Added
+
+- Keyboard `F10` copies last weekday-FX-closed hour through the new last-weekday-FX-closed copy control, using one-line Markdown. Honest empty when none. Ignored while typing. Distinct from `F7` last-weekend-FX-closed copy, `Delete` last-closed-FX copy and `F3` last-closed-payout copy.
+- Keyboard `F11` jumps to the last-weekday-FX-closed-hour copy control, or the Gantt heading if that control is missing. Does not copy. Ignored while typing. Distinct from `F8` last-weekend-FX-closed jump and `F2` last-closed-FX jump.
+- Keyboard `F12` jumps to the existing hide-weekend-FX-open Gantt filter (`hideWeekendFxOpenGanttHours`), or the Gantt heading if that control is missing. Ignored while typing. Distinct from `F9` hide-weekday-FX-closed.
+- Sunday late FX open (synthetic) preset: same 72-hour calendar as Normal Friday, Sunday 16:00 to 18:00 treats FX as weekday-depth / open even though Sunday is not a business day. Distinct from Saturday late FX open, Friday late FX open, Saturday late bank open, Saturday late payout open, Sunday late issuer close, Sunday late payout close, and Sunday late bank close. Synthetic. Not an FX feed.
+
 ## 1.5.25 - 2026-09-11
 
 A workshop follow-up on 1.5.24. Weekend Gap remains a local-first decision aid, not a decision maker. Hatched Gantt cells are a local drawing, not a bank feed. Timing review packets from 1.5.0 and the 1.5.1-1.5.24 review UI stay in place. Analysis JSON still has no timestamps.

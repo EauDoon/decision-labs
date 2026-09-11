@@ -49,4 +49,5 @@ test("weekend-FX-closed hide composes with FX-closed, weekend and weekend-FX-ope
   assert.equal(runSimulation(PRESETS.fridayLateBankOpen).timeline.length, SIMULATION_HOURS + 1);
   assert.equal(runSimulation(PRESETS.fridayLateFxOpen).timeline.length, SIMULATION_HOURS + 1);
   assert.equal(runSimulation(PRESETS.saturdayLateFxOpen).timeline.length, SIMULATION_HOURS + 1);
+  assert.equal(runSimulation(PRESETS.sundayLateFxOpen).timeline.length, SIMULATION_HOURS + 1);
 });

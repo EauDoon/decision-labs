@@ -1,0 +1,36 @@
+import assert from "node:assert/strict";
+import test from "node:test";
+import { readFile } from "node:fs/promises";
+
+test("keyboard F11 is wired to the last-weekday-FX-closed-hour copy control", async () => {
+  const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
+  const app = await readFile(new URL("../src/app.js", import.meta.url), "utf8");
+  assert.match(html, /id="copy-last-weekday-fx-closed"/);
+  assert.match(html, /id="gantt-title"/);
+  assert.match(html, /<kbd>F11<\/kbd>/);
+  assert.match(html, /Jump to the last-weekday-FX-closed-hour copy control/);
+  assert.match(app, /function jumpToLastWeekdayFxClosedCopy/);
+  assert.match(app, /#copy-last-weekday-fx-closed/);
+  assert.ok(app.includes('event.key === "F11"'));
+  assert.ok(app.includes('event.key === "F8"'));
+  assert.ok(app.includes('event.key === "F2"'));
+  assert.match(app, /function jumpToLastWeekendFxClosedCopy/);
+  assert.match(app, /function jumpToLastClosedFxCopy/);
+  assert.match(app, /function jumpToGantt/);
+  assert.match(app, /if \(event\.defaultPrevented\) return/);
+  assert.notEqual(app.match(/function jumpToLastWeekdayFxClosedCopy/)?.[0], app.match(/function jumpToLastWeekendFxClosedCopy/)?.[0]);
+  assert.notEqual(app.match(/function jumpToLastWeekdayFxClosedCopy/)?.[0], app.match(/function jumpToLastClosedFxCopy/)?.[0]);
+  assert.notEqual(app.match(/function jumpToLastWeekdayFxClosedCopy/)?.[0], app.match(/function jumpToHideWeekdayFxClosedFilter/)?.[0]);
+  assert.notEqual(app.match(/function jumpToLastWeekdayFxClosedCopy/)?.[0], app.match(/function jumpToGantt/)?.[0]);
+  const f11Fn = app.slice(app.indexOf("function jumpToLastWeekdayFxClosedCopy"), app.indexOf("function jumpToHideWeekdayFxClosedFilter"));
+  assert.match(f11Fn, /jumpToGantt\(\)/);
+  assert.doesNotMatch(f11Fn, /copyLastWeekdayFxClosedHourMarkdown/);
+  assert.doesNotMatch(f11Fn, /copyLastWeekendFxClosedHourMarkdown/);
+  assert.doesNotMatch(f11Fn, /copyLastClosedFxHourMarkdown/);
+  const handler = app.slice(app.indexOf('document.addEventListener("keydown"'));
+  assert.ok(handler.indexOf('event.key === "F11"') !== handler.indexOf('event.key === "F8"'));
+  assert.ok(handler.indexOf('event.key === "F11"') !== handler.indexOf('event.key === "F2"'));
+  assert.match(handler, /jumpToLastWeekdayFxClosedCopy\(\)/);
+  assert.doesNotMatch(handler.slice(handler.indexOf('event.key === "F11"'), handler.indexOf('event.key === "F11"') + 180), /copyLastWeekdayFxClosedHourMarkdown/);
+  assert.doesNotMatch(handler.slice(handler.indexOf('event.key === "F11"'), handler.indexOf('event.key === "F11"') + 180), /copyLastWeekendFxClosedHourMarkdown/);
+});
