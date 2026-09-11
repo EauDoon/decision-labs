@@ -2,14 +2,16 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { readFile } from "node:fs/promises";
 
-test("keyboard Shift+F12 is wired to the hide-weekend-FX-closed Gantt filter before unshifted F12", async () => {
+test("1.5.29 keeps hide-weekend-FX-closed jump distinct from Shift+F12 weekday-FX-closed hide", async () => {
   const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
   const app = await readFile(new URL("../src/app.js", import.meta.url), "utf8");
   assert.match(html, /id="gantt-hide-weekend-fx-closed"/);
+  assert.match(html, /id="gantt-hide-weekday-fx-closed"/);
   assert.match(html, /id="gantt-title"/);
   assert.match(html, /<kbd>Shift\+F12<\/kbd>/);
-  assert.match(html, /Jump to the hide-weekend-FX-closed Gantt filter/);
-  assert.match(html, /id="gantt-hide-weekend-fx-closed"[^>]*aria-keyshortcuts="Backspace Shift\+F12"/);
+  assert.match(html, /Jump to the hide-weekday-FX-closed Gantt filter/);
+  assert.match(html, /id="gantt-hide-weekend-fx-closed"[^>]*aria-keyshortcuts="Backspace"/);
+  assert.match(html, /id="gantt-hide-weekday-fx-closed"[^>]*aria-keyshortcuts="F9 Shift\+F12"/);
   assert.match(html, /id="gantt-hide-weekend-fx-open"[^>]*aria-keyshortcuts="ArrowLeft F12"/);
   assert.match(app, /function jumpToHideWeekendFxClosedFilter/);
   assert.match(app, /#gantt-hide-weekend-fx-closed/);
@@ -17,11 +19,10 @@ test("keyboard Shift+F12 is wired to the hide-weekend-FX-closed Gantt filter bef
   assert.match(app, /event\.key === "F12"/);
   assert.match(app, /event\.key === "Backspace"/);
   assert.match(app, /function jumpToHideWeekendFxOpenFilter/);
-  assert.match(app, /function jumpToHideWeekdayFxOpenFilter/);
+  assert.match(app, /function jumpToHideWeekdayFxClosedFilter/);
   assert.match(app, /function jumpToGantt/);
   assert.match(app, /if \(event\.defaultPrevented\) return/);
-  assert.match(app, /event\.key\.length === 1 \? event\.key\.toLowerCase\(\) : event\.key/);
-  assert.notEqual(app.match(/function jumpToHideWeekendFxClosedFilter/)?.[0], app.match(/function jumpToHideWeekdayFxOpenFilter/)?.[0]);
+  assert.notEqual(app.match(/function jumpToHideWeekendFxClosedFilter/)?.[0], app.match(/function jumpToHideWeekdayFxClosedFilter/)?.[0]);
   assert.notEqual(app.match(/function jumpToHideWeekendFxClosedFilter/)?.[0], app.match(/function jumpToHideWeekendFxOpenFilter/)?.[0]);
   assert.notEqual(app.match(/function jumpToHideWeekendFxClosedFilter/)?.[0], app.match(/function jumpToGantt/)?.[0]);
   const handler = app.slice(app.indexOf('document.addEventListener("keydown"'));
@@ -31,11 +32,11 @@ test("keyboard Shift+F12 is wired to the hide-weekend-FX-closed Gantt filter bef
   assert.ok(unshiftedF12 !== -1);
   assert.ok(shiftF12 < unshiftedF12);
   const shiftSlice = handler.slice(shiftF12, shiftF12 + 180);
-  assert.match(shiftSlice, /jumpToHideWeekendFxClosedFilter\(\)/);
-  assert.doesNotMatch(shiftSlice, /jumpToHideWeekdayFxOpenFilter/);
+  assert.match(shiftSlice, /jumpToHideWeekdayFxClosedFilter\(\)/);
+  assert.doesNotMatch(shiftSlice, /jumpToHideWeekendFxClosedFilter/);
   assert.doesNotMatch(shiftSlice, /jumpToHideWeekendFxOpenFilter/);
   const unshiftedSlice = handler.slice(unshiftedF12, unshiftedF12 + 180);
   assert.match(unshiftedSlice, /jumpToHideWeekendFxOpenFilter\(\)/);
   assert.doesNotMatch(unshiftedSlice, /jumpToHideWeekendFxClosedFilter/);
-  assert.doesNotMatch(unshiftedSlice, /jumpToHideWeekdayFxOpenFilter/);
+  assert.doesNotMatch(unshiftedSlice, /jumpToHideWeekdayFxClosedFilter/);
 });

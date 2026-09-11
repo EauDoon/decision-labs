@@ -3,7 +3,7 @@ import test from "node:test";
 import { readFile } from "node:fs/promises";
 import { DEFAULT_SCENARIO, PRESETS } from "../src/model.js";
 
-test("1.5.28 keeps F10 F11 F12 last-weekday-FX-closed controls, last-weekend-FX-open copy, and F7 F8 F9", async () => {
+test("1.5.29 keeps F10 F11 F12 last-weekday-FX-closed controls, last-weekend-FX-open copy, and F7 F8 F9", async () => {
   const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
   const app = await readFile(new URL("../src/app.js", import.meta.url), "utf8");
   assert.match(html, /id="copy-last-weekday-fx-closed"[^>]*aria-keyshortcuts="F10"/);
@@ -12,11 +12,13 @@ test("1.5.28 keeps F10 F11 F12 last-weekday-FX-closed controls, last-weekend-FX-
   assert.match(html, /<kbd>F12<\/kbd>/);
   assert.match(html, /id="gantt-hide-weekend-fx-open"[^>]*aria-keyshortcuts="ArrowLeft F12"/);
   assert.match(html, /id="copy-last-weekend-fx-closed"[^>]*aria-keyshortcuts="F7"/);
-  assert.match(html, /id="gantt-hide-weekday-fx-closed"[^>]*aria-keyshortcuts="F9"/);
+  assert.match(html, /id="gantt-hide-weekday-fx-closed"[^>]*aria-keyshortcuts="F9 Shift\+F12"/);
   assert.match(html, /id="copy-last-weekend-fx-open"/);
+  assert.match(html, /id="copy-last-weekday-fx-open"/);
   assert.match(html, /data-preset="sundayLateFxOpen"/);
   assert.match(html, /data-preset="sundayEarlyFxOpen"/);
   assert.match(html, /data-preset="mondayEarlyFxOpen"/);
+  assert.match(html, /data-preset="mondayLateFxOpen"/);
   assert.match(app, /event\.key === "F10"/);
   assert.match(app, /copyLastWeekdayFxClosedHourMarkdown\(\)/);
   assert.match(app, /event\.key === "F11"/);
@@ -26,13 +28,17 @@ test("1.5.28 keeps F10 F11 F12 last-weekday-FX-closed controls, last-weekend-FX-
   assert.match(app, /event\.key === "F7"/);
   assert.match(app, /copyLastWeekendFxClosedHourMarkdown\(\)/);
   assert.match(app, /function copyLastWeekendFxOpenHourMarkdown/);
+  assert.match(app, /function copyLastWeekdayFxOpenHourMarkdown/);
   assert.match(app, /if \(event\.defaultPrevented\) return/);
   assert.equal(PRESETS.sundayLateFxOpen.sundayLateFxOpen, true);
   assert.equal(PRESETS.sundayEarlyFxOpen.sundayEarlyFxOpen, true);
   assert.equal(PRESETS.mondayEarlyFxOpen.mondayEarlyFxOpen, true);
+  assert.equal(PRESETS.mondayLateFxOpen.mondayLateFxOpen, true);
+  assert.equal(PRESETS.mondayLateFxOpen.mondayEarlyFxOpen, false);
   assert.equal(PRESETS.mondayEarlyFxOpen.sundayEarlyFxOpen, false);
   assert.equal(DEFAULT_SCENARIO.sundayEarlyFxOpen, false);
   assert.equal(DEFAULT_SCENARIO.mondayEarlyFxOpen, false);
+  assert.equal(DEFAULT_SCENARIO.mondayLateFxOpen, false);
   const handler = app.slice(app.indexOf('document.addEventListener("keydown"'));
   const unshiftedF12 = handler.lastIndexOf('event.key === "F12"');
   const f12Slice = handler.slice(unshiftedF12, unshiftedF12 + 180);

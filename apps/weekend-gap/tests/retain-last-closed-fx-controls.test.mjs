@@ -14,7 +14,7 @@ test("1.5.24 keeps Delete F2 ArrowRight last-closed-FX controls and Insert Arrow
   assert.match(html, /id="copy-last-open-fx"[^>]*aria-keyshortcuts="Insert"/);
   assert.match(html, /id="gantt-hide-weekend-fx-open"[^>]*aria-keyshortcuts="ArrowLeft F12"/);
   assert.match(html, /id="copy-last-closed-payout"[^>]*aria-keyshortcuts="F3"/);
-  assert.match(html, /id="gantt-hide-weekend-fx-closed"[^>]*aria-keyshortcuts="Backspace Shift\+F12"/);
+  assert.match(html, /id="gantt-hide-weekend-fx-closed"[^>]*aria-keyshortcuts="Backspace"/);
   assert.match(html, /data-preset="fridayLateBankOpen"/);
   assert.match(html, /data-preset="fridayLateFxOpen"/);
   assert.match(app, /event\.key === "Delete"/);
