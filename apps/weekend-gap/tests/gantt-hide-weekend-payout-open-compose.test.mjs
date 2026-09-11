@@ -52,6 +52,7 @@ test("weekend-payout-open hide composes with payout-open, weekend and weekend-ba
   assert.equal(runSimulation(PRESETS.saturdayEarlyBankOpen).timeline.length, SIMULATION_HOURS + 1);
   assert.equal(runSimulation(PRESETS.fridayEarlyBankOpen).timeline.length, SIMULATION_HOURS + 1);
   assert.equal(runSimulation(PRESETS.saturdayLateBankOpen).timeline.length, SIMULATION_HOURS + 1);
+  assert.equal(runSimulation(PRESETS.fridayLateBankOpen).timeline.length, SIMULATION_HOURS + 1);
   assert.equal(runSimulation(PRESETS.saturdayEarlyIssuerOpen).timeline.length, SIMULATION_HOURS + 1);
   assert.equal(runSimulation(PRESETS.fridayEarlyIssuerOpen).timeline.length, SIMULATION_HOURS + 1);
 });

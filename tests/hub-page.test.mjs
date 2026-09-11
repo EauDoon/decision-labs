@@ -210,6 +210,7 @@ test('catalog names current workbench tools without live services', () => {
   assert.match(html, /Saturday early bank open, last-open-bank copy, and weekend-bank-open hide in Weekend Gap 1\.5\.20/);
   assert.match(html, /Friday early bank open, last-open-payout copy, and weekend-payout-open hide in Weekend Gap 1\.5\.21/);
   assert.match(html, /Saturday late bank open, last-open-FX copy, and weekend-FX-open hide in Weekend Gap 1\.5\.22/);
+  assert.match(html, /Friday late bank open, last-closed-FX copy, and weekend-payout-closed hide in Weekend Gap 1\.5\.23/);
   assert.match(html, /do not call a live partnership, merchant, vote, or bank/);
   assert.match(html, /Catalog cards list each workbench version next to its job/);
   assert.match(html, /not checkout, inventory, or a second live order/);
@@ -326,6 +327,7 @@ test('catalog names current workbench tools without live services', () => {
   assert.match(readme, /last-open-bank copy shortcut, Saturday early bank open/);
   assert.match(readme, /last-open-payout copy shortcut, Friday early bank open/);
   assert.match(readme, /last-open-FX copy shortcut, Saturday late bank open/);
+  assert.match(readme, /last-closed-FX copy shortcut, Friday late bank open/);
   assert.match(readme, /how-it-works jump, version-line copy, and skip-link focus/);
   assert.match(readme, /skip-link copy, last-card focus, and 404 Copy jobs/);
   assert.match(readme, /trust-item jump, first-job copy, and 404 Copy version line/);
@@ -5526,7 +5528,7 @@ test('What\'s new and README name first What\'s new copy, intro jump, and skip-l
   assert.equal(headings.includes('Last-skip copy, last-skip jump, and last-skip-link jump'), true);
   assert.equal(headings.includes('First-skip copy, first-skip jump, and first-skip-link jump'), true);
   assert.equal(headings.includes('Last-open copy, last-open jump, and last-open-link jump'), true);
-  assert.equal(headings[headings.length - 1], 'Saturday late bank open, last-open-FX copy, and weekend-FX-open hide in Weekend Gap 1.5.22');
+  assert.equal(headings[headings.length - 1], 'Friday late bank open, last-closed-FX copy, and weekend-payout-closed hide in Weekend Gap 1.5.23');
   assert.equal(headings.includes('Saturday early payout, closed-FX copy, and FX-closed hide in Weekend Gap 1.5.12'), true);
   assert.equal(headings.includes('Friday early payout, open-payout copy, and payout-open hide in Weekend Gap 1.5.13'), true);
   assert.equal(headings.includes('Saturday late payout, open-FX copy, and FX-open hide in Weekend Gap 1.5.14'), true);
@@ -5538,6 +5540,7 @@ test('What\'s new and README name first What\'s new copy, intro jump, and skip-l
   assert.equal(headings.includes('Saturday early bank open, last-open-bank copy, and weekend-bank-open hide in Weekend Gap 1.5.20'), true);
   assert.equal(headings.includes('Friday early bank open, last-open-payout copy, and weekend-payout-open hide in Weekend Gap 1.5.21'), true);
   assert.equal(headings.includes('Saturday late bank open, last-open-FX copy, and weekend-FX-open hide in Weekend Gap 1.5.22'), true);
+  assert.equal(headings.includes('Friday late bank open, last-closed-FX copy, and weekend-payout-closed hide in Weekend Gap 1.5.23'), true);
   assert.equal(headings.includes("Last What's new copy, last-news jump, and first-news jump"), true);
   assert.equal(headings.includes('Last-job copy, last-job jump, and first-job jump'), true);
   assert.equal(headings.includes('Swimming carnival, over-capacity label copy, and first-over-capacity hide in Partnership Breakpoint 1.5.12'), true);
@@ -5608,7 +5611,7 @@ test('What\'s new and README name first-workbench copy, first-card jump, and fir
   assert.equal(headings.includes('Last-review copy, last-review jump, and last-path jump'), true);
   assert.equal(headings.includes('Last-workbench copy, last-card jump, and last-trust jump'), true);
   assert.equal(headings.includes('First-workbench copy, first-card jump, and first-trust jump'), true);
-  assert.equal(headings[headings.length - 1], 'Saturday late bank open, last-open-FX copy, and weekend-FX-open hide in Weekend Gap 1.5.22');
+  assert.equal(headings[headings.length - 1], 'Friday late bank open, last-closed-FX copy, and weekend-payout-closed hide in Weekend Gap 1.5.23');
   assert.equal(headings.includes("First What's new copy, intro jump, and skip-link jump"), true);
   assert.equal(headings.includes("Last What's new copy, last-news jump, and first-news jump"), true);
   assert.equal(headings.includes('Last-job copy, last-job jump, and first-job jump'), true);
@@ -5623,6 +5626,7 @@ test('What\'s new and README name first-workbench copy, first-card jump, and fir
   assert.equal(headings.includes('Saturday early bank open, last-open-bank copy, and weekend-bank-open hide in Weekend Gap 1.5.20'), true);
   assert.equal(headings.includes('Friday early bank open, last-open-payout copy, and weekend-payout-open hide in Weekend Gap 1.5.21'), true);
   assert.equal(headings.includes('Saturday late bank open, last-open-FX copy, and weekend-FX-open hide in Weekend Gap 1.5.22'), true);
+  assert.equal(headings.includes('Friday late bank open, last-closed-FX copy, and weekend-payout-closed hide in Weekend Gap 1.5.23'), true);
   assert.equal(headings.includes('Athletics carnival, remaining-capacity copy, and last-over-capacity hide in Partnership Breakpoint 1.5.13'), true);
   assert.equal(headings.includes('Cricket carnival, last-over-capacity copy, and last-breakpoint hide in Partnership Breakpoint 1.5.14'), true);
   assert.equal(headings.includes('Tennis carnival, last-over-capacity remaining copy, and last-within-capacity hide in Partnership Breakpoint 1.5.15'), true);
@@ -5688,7 +5692,7 @@ test('What\'s new and README name last-workbench copy, last-card jump, and last-
   assert.equal(headings.includes('Last-review copy, last-review jump, and last-path jump'), true);
   assert.equal(headings.includes('Last-workbench copy, last-card jump, and last-trust jump'), true);
   assert.equal(headings.includes('First-workbench copy, first-card jump, and first-trust jump'), true);
-  assert.equal(headings[headings.length - 1], 'Saturday late bank open, last-open-FX copy, and weekend-FX-open hide in Weekend Gap 1.5.22');
+  assert.equal(headings[headings.length - 1], 'Friday late bank open, last-closed-FX copy, and weekend-payout-closed hide in Weekend Gap 1.5.23');
   assert.equal(headings.includes("First What's new copy, intro jump, and skip-link jump"), true);
   assert.equal(headings.includes("Last What's new copy, last-news jump, and first-news jump"), true);
   assert.equal(headings.includes('Last-job copy, last-job jump, and first-job jump'), true);
@@ -5701,6 +5705,7 @@ test('What\'s new and README name last-workbench copy, last-card jump, and last-
   assert.equal(headings.includes('Saturday early bank open, last-open-bank copy, and weekend-bank-open hide in Weekend Gap 1.5.20'), true);
   assert.equal(headings.includes('Friday early bank open, last-open-payout copy, and weekend-payout-open hide in Weekend Gap 1.5.21'), true);
   assert.equal(headings.includes('Saturday late bank open, last-open-FX copy, and weekend-FX-open hide in Weekend Gap 1.5.22'), true);
+  assert.equal(headings.includes('Friday late bank open, last-closed-FX copy, and weekend-payout-closed hide in Weekend Gap 1.5.23'), true);
   assert.match(html, /Copy last workbench heading through dollar as Markdown/);
   assert.match(html, /jump to that control with keyboard caret/);
   assert.match(html, /jump to Copy last Trust item with keyboard backtick/);
@@ -8076,7 +8081,7 @@ test('What\'s new and README name first-open copy, first-open jump, and first-op
   assert.equal(headings.includes('First-open copy, first-open jump, and first-open-link jump'), true);
   assert.equal(headings.includes('Last-review copy, last-review jump, and last-path jump'), true);
   assert.equal(headings.includes('Last-workbench copy, last-card jump, and last-trust jump'), true);
-  assert.equal(headings[headings.length - 1], 'Saturday late bank open, last-open-FX copy, and weekend-FX-open hide in Weekend Gap 1.5.22');
+  assert.equal(headings[headings.length - 1], 'Friday late bank open, last-closed-FX copy, and weekend-payout-closed hide in Weekend Gap 1.5.23');
   assert.equal(headings.includes("First What's new copy, intro jump, and skip-link jump"), true);
   assert.equal(headings.includes("Last What's new copy, last-news jump, and first-news jump"), true);
   assert.equal(headings.includes('Last-job copy, last-job jump, and first-job jump'), true);
@@ -8089,6 +8094,7 @@ test('What\'s new and README name first-open copy, first-open jump, and first-op
   assert.equal(headings.includes('Saturday early bank open, last-open-bank copy, and weekend-bank-open hide in Weekend Gap 1.5.20'), true);
   assert.equal(headings.includes('Friday early bank open, last-open-payout copy, and weekend-payout-open hide in Weekend Gap 1.5.21'), true);
   assert.equal(headings.includes('Saturday late bank open, last-open-FX copy, and weekend-FX-open hide in Weekend Gap 1.5.22'), true);
+  assert.equal(headings.includes('Friday late bank open, last-closed-FX copy, and weekend-payout-closed hide in Weekend Gap 1.5.23'), true);
   assert.match(html, /Copy first Open href through 0 as Markdown/);
   assert.match(html, /jump to that control with keyboard backslash/);
   assert.match(html, /jump to the first Open workbench link with keyboard s/);
@@ -8120,7 +8126,7 @@ test('What\'s new and README name first-review copy, first-review jump, and firs
   assert.equal(headings.includes('First-open copy, first-open jump, and first-open-link jump'), true);
   assert.equal(headings.includes('Last-review copy, last-review jump, and last-path jump'), true);
   assert.equal(headings.includes('Last-workbench copy, last-card jump, and last-trust jump'), true);
-  assert.equal(headings[headings.length - 1], 'Saturday late bank open, last-open-FX copy, and weekend-FX-open hide in Weekend Gap 1.5.22');
+  assert.equal(headings[headings.length - 1], 'Friday late bank open, last-closed-FX copy, and weekend-payout-closed hide in Weekend Gap 1.5.23');
   assert.equal(headings.includes("First What's new copy, intro jump, and skip-link jump"), true);
   assert.equal(headings.includes("Last What's new copy, last-news jump, and first-news jump"), true);
   assert.equal(headings.includes('Last-job copy, last-job jump, and first-job jump'), true);
@@ -8133,6 +8139,7 @@ test('What\'s new and README name first-review copy, first-review jump, and firs
   assert.equal(headings.includes('Saturday early bank open, last-open-bank copy, and weekend-bank-open hide in Weekend Gap 1.5.20'), true);
   assert.equal(headings.includes('Friday early bank open, last-open-payout copy, and weekend-payout-open hide in Weekend Gap 1.5.21'), true);
   assert.equal(headings.includes('Saturday late bank open, last-open-FX copy, and weekend-FX-open hide in Weekend Gap 1.5.22'), true);
+  assert.equal(headings.includes('Friday late bank open, last-closed-FX copy, and weekend-payout-closed hide in Weekend Gap 1.5.23'), true);
   assert.match(html, /Copy first review path through 7 as Markdown/);
   assert.match(html, /jump to that control with keyboard 8/);
   assert.match(html, /jump to the first review path with keyboard 9/);
@@ -8164,7 +8171,7 @@ test('What\'s new and README name last-review copy, last-review jump, and last-p
   assert.equal(headings.includes('First-open copy, first-open jump, and first-open-link jump'), true);
   assert.equal(headings.includes('Last-review copy, last-review jump, and last-path jump'), true);
   assert.equal(headings.includes('Last-workbench copy, last-card jump, and last-trust jump'), true);
-  assert.equal(headings[headings.length - 1], 'Saturday late bank open, last-open-FX copy, and weekend-FX-open hide in Weekend Gap 1.5.22');
+  assert.equal(headings[headings.length - 1], 'Friday late bank open, last-closed-FX copy, and weekend-payout-closed hide in Weekend Gap 1.5.23');
   assert.equal(headings.includes("First What's new copy, intro jump, and skip-link jump"), true);
   assert.equal(headings.includes("Last What's new copy, last-news jump, and first-news jump"), true);
   assert.equal(headings.includes('Last-job copy, last-job jump, and first-job jump'), true);
@@ -8177,6 +8184,7 @@ test('What\'s new and README name last-review copy, last-review jump, and last-p
   assert.equal(headings.includes('Saturday early bank open, last-open-bank copy, and weekend-bank-open hide in Weekend Gap 1.5.20'), true);
   assert.equal(headings.includes('Friday early bank open, last-open-payout copy, and weekend-payout-open hide in Weekend Gap 1.5.21'), true);
   assert.equal(headings.includes('Saturday late bank open, last-open-FX copy, and weekend-FX-open hide in Weekend Gap 1.5.22'), true);
+  assert.equal(headings.includes('Friday late bank open, last-closed-FX copy, and weekend-payout-closed hide in Weekend Gap 1.5.23'), true);
   assert.match(html, /Copy last review path through open-brace as Markdown/);
   assert.match(html, /jump to that control with keyboard 5/);
   assert.match(html, /jump to the last review path with keyboard 6/);
@@ -9663,7 +9671,7 @@ test('What\'s new and README name last-open copy, last-open jump, and last-open-
   assert.equal(headings.includes('First-open copy, first-open jump, and first-open-link jump'), true);
   assert.equal(headings.includes('First-review copy, first-review jump, and first-path jump'), true);
   assert.equal(headings.includes('Last-review copy, last-review jump, and last-path jump'), true);
-  assert.equal(headings[headings.length - 1], 'Saturday late bank open, last-open-FX copy, and weekend-FX-open hide in Weekend Gap 1.5.22');
+  assert.equal(headings[headings.length - 1], 'Friday late bank open, last-closed-FX copy, and weekend-payout-closed hide in Weekend Gap 1.5.23');
   assert.match(html, /Copy last Open href through Home as Markdown/);
   assert.match(html, /jump to that control with keyboard End/);
   assert.match(html, /jump to the last Open workbench link with keyboard right bracket/);
@@ -10085,7 +10093,7 @@ test('What\'s new and README name first-skip copy, first-skip jump, and first-sk
   assert.equal(headings.includes('First-skip copy, first-skip jump, and first-skip-link jump'), true);
   assert.equal(headings.includes('Last-open copy, last-open jump, and last-open-link jump'), true);
   assert.equal(headings.includes('First-open copy, first-open jump, and first-open-link jump'), true);
-  assert.equal(headings[headings.length - 1], 'Saturday late bank open, last-open-FX copy, and weekend-FX-open hide in Weekend Gap 1.5.22');
+  assert.equal(headings[headings.length - 1], 'Friday late bank open, last-closed-FX copy, and weekend-payout-closed hide in Weekend Gap 1.5.23');
   assert.match(html, /Copy first skip href through PageUp as Markdown/);
   assert.match(html, /jump to that control with keyboard PageDown/);
   assert.match(html, /jump to the first skip link with keyboard ArrowRight/);
@@ -10284,7 +10292,7 @@ test('What\'s new and README name last-skip copy, last-skip jump, and last-skip-
   assert.equal(headings.includes('First-skip copy, first-skip jump, and first-skip-link jump'), true);
   assert.equal(headings.includes('Last-open copy, last-open jump, and last-open-link jump'), true);
   assert.equal(headings.includes('First-open copy, first-open jump, and first-open-link jump'), true);
-  assert.equal(headings[headings.length - 1], 'Saturday late bank open, last-open-FX copy, and weekend-FX-open hide in Weekend Gap 1.5.22');
+  assert.equal(headings[headings.length - 1], 'Friday late bank open, last-closed-FX copy, and weekend-payout-closed hide in Weekend Gap 1.5.23');
   assert.match(html, /Copy last skip href through Insert as Markdown/);
   assert.match(html, /jump to that control with keyboard ArrowDown/);
   assert.match(html, /jump to the last skip link with keyboard ArrowLeft/);
@@ -10496,7 +10504,7 @@ test('What\'s new and README name first-skip-text copy, first-skip-text jump, an
   assert.equal(headings.includes('First-skip copy, first-skip jump, and first-skip-link jump'), true);
   assert.equal(headings.includes('Last-open copy, last-open jump, and last-open-link jump'), true);
   assert.equal(headings.includes('First-open copy, first-open jump, and first-open-link jump'), true);
-  assert.equal(headings[headings.length - 1], 'Saturday late bank open, last-open-FX copy, and weekend-FX-open hide in Weekend Gap 1.5.22');
+  assert.equal(headings[headings.length - 1], 'Friday late bank open, last-closed-FX copy, and weekend-payout-closed hide in Weekend Gap 1.5.23');
   assert.match(html, /Copy first skip text through Delete as Markdown/);
   assert.match(html, /jump to that control with keyboard ArrowUp/);
   assert.match(html, /jump to the skip nav with keyboard F2/);
@@ -10710,7 +10718,7 @@ test('What\'s new and README name last-skip-text copy, last-skip-text jump, and 
   assert.equal(headings.includes('First-skip copy, first-skip jump, and first-skip-link jump'), true);
   assert.equal(headings.includes('Last-open copy, last-open jump, and last-open-link jump'), true);
   assert.equal(headings.includes('First-open copy, first-open jump, and first-open-link jump'), true);
-  assert.equal(headings[headings.length - 1], 'Saturday late bank open, last-open-FX copy, and weekend-FX-open hide in Weekend Gap 1.5.22');
+  assert.equal(headings[headings.length - 1], 'Friday late bank open, last-closed-FX copy, and weekend-payout-closed hide in Weekend Gap 1.5.23');
   assert.match(html, /Copy last skip text through F3 as Markdown/);
   assert.match(html, /jump to that control with keyboard F4/);
   assert.match(html, /jump to the last skip target with keyboard F6/);
