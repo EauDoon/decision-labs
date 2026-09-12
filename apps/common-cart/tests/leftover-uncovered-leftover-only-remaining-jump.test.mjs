@@ -53,15 +53,15 @@ test("F12 hide last uncovered leftover buyer jump stays organizer-only", async (
   assert.match(app, /\["ArrowLeft", "ArrowRight", "Home", "End"\]\.includes\(event\.key\)/u);
 });
 
-test("first leftover-only hide stays on ArrowLeft without Shift+F9", async () => {
+test("last leftover-only hide stays on ArrowUp without Shift+F9", async () => {
   const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
   const app = await readFile(new URL("../src/app.js", import.meta.url), "utf8");
   const buyerPanel = html.slice(html.indexOf('id="buyer-panel"'), html.indexOf('id="merchant-panel"'));
   const merchantPanel = html.slice(html.indexOf('id="merchant-panel"'), html.indexOf('id="method-panel"'));
-  assert.match(buyerPanel, /id="hide-first-leftover-only-buyer"/u);
-  assert.match(html, /<kbd>ArrowLeft<\/kbd> Focus hide first leftover-only buyer, or the buyer list if missing/u);
-  assert.equal(merchantPanel.includes("hide-first-leftover-only-buyer"), false);
-  assert.match(app, /if \(key === "ArrowLeft"\) \{\s*event\.preventDefault\(\);\s*focusHideFirstLeftoverOnlyBuyer\(\);/u);
-  assert.doesNotMatch(app, /if \(event\.shiftKey && key === "F9"\) \{\s*event\.preventDefault\(\);\s*focusHideFirstLeftoverOnlyBuyer/u);
-  assert.match(app, /if \(event\.shiftKey && key === "F9"\) \{\s*event\.preventDefault\(\);\s*focusHideLastLeftoverOnlyBuyer\(\);/u);
+  assert.match(buyerPanel, /id="hide-last-leftover-only-buyer"/u);
+  assert.match(html, /<kbd>ArrowUp<\/kbd> Focus hide last leftover-only buyer, or the buyer list if missing/u);
+  assert.equal(merchantPanel.includes("hide-last-leftover-only-buyer"), false);
+  assert.match(app, /if \(key === "ArrowUp"\) \{\s*event\.preventDefault\(\);\s*focusHideLastLeftoverOnlyBuyer\(\);/u);
+  assert.doesNotMatch(app, /if \(event\.shiftKey && key === "F9"\) \{\s*event\.preventDefault\(\);\s*focusHideLastLeftoverOnlyBuyer/u);
+  assert.match(app, /if \(event\.shiftKey && key === "F9"\) \{\s*event\.preventDefault\(\);\s*focusHideFirstLeftoverOnlyBuyer\(\);/u);
 });
