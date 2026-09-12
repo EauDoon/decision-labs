@@ -557,9 +557,9 @@ footer {
         <li><kbd>F3</kbd> Copy leftover uncovered count (organizer private)</li>
         <li><kbd>F4</kbd> Focus the leftover uncovered count copy control, or leftover heading if missing</li>
         <li><kbd>Backspace</kbd> Focus hide first winner-allocated buyer, or the buyer list if missing</li>
-        <li><kbd>Shift+F7</kbd> Copy leftover uncovered leftover-only unit price (organizer private)</li>
-        <li><kbd>Shift+F8</kbd> Focus the leftover uncovered leftover-only unit price copy control, or leftover heading if missing</li>
-        <li><kbd>Shift+F9</kbd> Focus hide first leftover-only buyer, or the buyer list if missing</li>
+        <li><kbd>Shift+F7</kbd> Copy leftover uncovered leftover-only minimum (organizer private)</li>
+        <li><kbd>Shift+F8</kbd> Focus the leftover uncovered leftover-only minimum copy control, or leftover heading if missing</li>
+        <li><kbd>Shift+F9</kbd> Focus hide last leftover-only buyer, or the buyer list if missing</li>
         <li><kbd>F7</kbd> Copy leftover uncovered leftover-only count (organizer private)</li>
         <li><kbd>F8</kbd> Focus the leftover uncovered leftover-only count copy control, or leftover heading if missing</li>
         <li><kbd>F9</kbd> Focus hide first uncovered leftover buyer, or the buyer list if missing</li>
@@ -646,6 +646,7 @@ footer {
           <button class="preset" data-preset="surfCarnivalLunch" type="button">Surf carnival</button>
           <button class="preset" data-preset="triathlonCarnivalLunch" type="button">Triathlon carnival</button>
           <button class="preset" data-preset="cyclingCarnivalLunch" type="button">Cycling carnival</button>
+          <button class="preset" data-preset="mountainBikeCarnivalLunch" type="button">Mountain bike carnival</button>
           <button class="preset" data-preset="tiers" type="button">Price ladder</button>
         </div>
       </div>
@@ -1039,11 +1040,11 @@ footer {
             <button id="copy-leftover-uncovered-leftover-only-count" class="print-chrome" type="button" aria-keyshortcuts="F7">Copy leftover uncovered leftover-only count (organizer private)</button>
             <button id="copy-leftover-uncovered-leftover-only-remaining" class="print-chrome" type="button" aria-keyshortcuts="F10">Copy leftover uncovered leftover-only remaining (organizer private)</button>
             <button id="copy-leftover-uncovered-leftover-only-maximum" class="print-chrome" type="button" aria-keyshortcuts="Shift+F10">Copy leftover uncovered leftover-only maximum (organizer private)</button>
-            <button id="copy-leftover-uncovered-leftover-only-minimum" class="print-chrome" type="button">Copy leftover uncovered leftover-only minimum (organizer private)</button>
+            <button id="copy-leftover-uncovered-leftover-only-minimum" class="print-chrome" type="button" aria-keyshortcuts="Shift+F7">Copy leftover uncovered leftover-only minimum (organizer private)</button>
             <button id="copy-leftover-uncovered-leftover-only-headroom" class="print-chrome" type="button">Copy leftover uncovered leftover-only headroom (organizer private)</button>
             <button id="copy-leftover-uncovered-leftover-only-allocated" class="print-chrome" type="button">Copy leftover uncovered leftover-only allocated (organizer private)</button>
             <button id="copy-leftover-uncovered-leftover-only-capacity" class="print-chrome" type="button">Copy leftover uncovered leftover-only capacity (organizer private)</button>
-            <button id="copy-leftover-uncovered-leftover-only-unit-price" class="print-chrome" type="button" aria-keyshortcuts="Shift+F7">Copy leftover uncovered leftover-only unit price (organizer private)</button>
+            <button id="copy-leftover-uncovered-leftover-only-unit-price" class="print-chrome" type="button">Copy leftover uncovered leftover-only unit price (organizer private)</button>
             <button id="copy-uncovered-leftover" class="print-chrome" type="button">Copy uncovered leftover counts (organizer private)</button>
             <button id="copy-uncovered-leftover-units" class="print-chrome" type="button">Copy uncovered leftover units (organizer private)</button>
             <p class="canvas-note print-chrome">Organizer-private Markdown of leftover buyer counts and units. Clipboard copies when allowed; otherwise a textarea is shown. This is not a merchant export.</p>
@@ -1935,6 +1936,23 @@ const presets = Object.freeze({
       offer("O01", "Court-side Cycling Delivery", "Cycling lunch pack", "Cycle pie", 17, 17, 3, 54, 3),
       offer("O02", "Velodrome Salad Run", "Cycling lunch pack", "Velodrome salad", 15, 15, 4, 42, 2),
       { ...offer("O03", "Hall Cycling Pickup", "Cycling lunch pack", "Velodrome water", 19, 24, 1, 48, 5), fulfillment: "pickup" }
+    ]
+  },
+  mountainBikeCarnivalLunch: {
+    title: "Mountain bike carnival lunch",
+    currency: "AUD",
+    buyers: [
+      buyer("B01", "Trail-rack crate", "Mountain bike lunch pack", 15, 23, 4, ["Trail pie", "Trail salad"]),
+      buyer("B02", "Board-bag bench", "Mountain bike lunch pack", 19, 19, 3, ["Trail pie"]),
+      buyer("B03", "Break hamper", "Mountain bike lunch pack", 15, 21, 5, ["Trail salad", "Trail water"]),
+      buyer("B04", "Sideline cooler", "Mountain bike lunch pack", 11, 20, 2, ["Trail water"]),
+      buyer("B05", "Scoreboard trolley", "Mountain bike lunch pack", 16, 22, 4, ["Trail pie", "Trail water"]),
+      buyer("B06", "Bench table", "Mountain bike lunch pack", 14, 20, 3, ["Trail salad", "Trail pie"])
+    ],
+    offers: [
+      offer("O01", "Court-side Mountain Bike Delivery", "Mountain bike lunch pack", "Trail pie", 17, 17, 3, 54, 3),
+      offer("O02", "Trail Salad Run", "Mountain bike lunch pack", "Trail salad", 15, 15, 4, 42, 2),
+      { ...offer("O03", "Hall Mountain Bike Pickup", "Mountain bike lunch pack", "Trail water", 20, 25, 1, 50, 5), fulfillment: "pickup" }
     ]
   }
 });
@@ -6256,17 +6274,17 @@ function handleShortcut(event) {
   }
   if (event.shiftKey && key === "F7") {
     event.preventDefault();
-    copyLeftoverUncoveredLeftoverOnlyUnitPrice();
+    copyLeftoverUncoveredLeftoverOnlyMinimum();
     return;
   }
   if (event.shiftKey && key === "F8") {
     event.preventDefault();
-    focusLeftoverUncoveredLeftoverOnlyUnitPriceCopy();
+    focusLeftoverUncoveredLeftoverOnlyMinimumCopy();
     return;
   }
   if (event.shiftKey && key === "F9") {
     event.preventDefault();
-    focusHideFirstLeftoverOnlyBuyer();
+    focusHideLastLeftoverOnlyBuyer();
     return;
   }
   if (key === "F7") {
