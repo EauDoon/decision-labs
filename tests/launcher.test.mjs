@@ -4787,6 +4787,7 @@ test('404 copy first unlabelled skip href uses the href without extra public pat
   assert.notEqual(page.match(/id="copy-first-unlabelled-skip-href"/)?.[0], page.match(/id="copy-first-labelled-skip-href"/)?.[0]);
   assert.notEqual(page.match(/id="copy-first-unlabelled-skip-href"/)?.[0], page.match(/id="copy-first-skip"/)?.[0]);
   assert.equal(page.indexOf('id="copy-last-unlabelled-skip-text"') < page.indexOf('id="copy-first-unlabelled-skip-href"'), true);
+  assert.equal(page.indexOf('id="copy-first-unlabelled-skip-href"') < page.indexOf('id="copy-last-unlabelled-skip-href"'), true);
   assert.doesNotMatch(page, /\bfetch\s*\(/);
   assert.doesNotMatch(page, /XMLHttpRequest/);
   assert.equal(PUBLIC_PATHS.length, 6);
