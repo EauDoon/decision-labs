@@ -274,16 +274,16 @@ ${skipNav}
       wireCopy('copy-lede', () => {
         const heading = document.querySelector('h1');
         const lede = document.querySelector('.lede');
-        return [heading && heading.textContent.trim(), lede && lede.textContent.trim()].filter(Boolean).join('\n');
+        return [heading && heading.textContent.trim(), lede && lede.textContent.trim()].filter(Boolean).join('\\n');
       }, 'Copied the catalog heading and lede as Markdown. Not a live product feed.');
       wireCopy('copy-versions', () => {
         const line = document.querySelector('.version-line')?.textContent ?? '';
         const listed = line.replace(/^\\s*Current catalog:\\s*/i, '').replace(/\\.\\s*$/, '');
-        return listed.split(',').map((part) => part.trim()).filter(Boolean).map((part) => '- ' + part).join('\n');
+        return listed.split(',').map((part) => part.trim()).filter(Boolean).map((part) => '- ' + part).join('\\n');
       }, 'Copied names and versions from this catalog list as Markdown. Not a live product version.');
-      wireCopy('copy-jobs', () => [...document.querySelectorAll('#catalog-jobs li')].map((item) => '- ' + item.textContent.trim()).filter((line) => line !== '- ').join('\n'), 'Copied names and jobs from this catalog list as Markdown. Not a live product feed.');
-      wireCopy('copy-how', () => [...document.querySelectorAll('#how-it-works ul li')].map((item) => '- ' + item.textContent.trim()).join('\n'), 'Copied the printed How it works heading and list as Markdown. Not a live policy feed.');
-      wireCopy('copy-trust', () => [...document.querySelectorAll('#trust ul li')].map((item) => '- ' + item.textContent.trim()).join('\n'), 'Copied the printed Trust and limits heading and list as Markdown. Not a live policy feed.');
+      wireCopy('copy-jobs', () => [...document.querySelectorAll('#catalog-jobs li')].map((item) => '- ' + item.textContent.trim()).filter((line) => line !== '- ').join('\\n'), 'Copied names and jobs from this catalog list as Markdown. Not a live product feed.');
+      wireCopy('copy-how', () => [...document.querySelectorAll('#how-it-works ul li')].map((item) => '- ' + item.textContent.trim()).join('\\n'), 'Copied the printed How it works heading and list as Markdown. Not a live policy feed.');
+      wireCopy('copy-trust', () => [...document.querySelectorAll('#trust ul li')].map((item) => '- ' + item.textContent.trim()).join('\\n'), 'Copied the printed Trust and limits heading and list as Markdown. Not a live policy feed.');
     })();
   </script>
 </body>
