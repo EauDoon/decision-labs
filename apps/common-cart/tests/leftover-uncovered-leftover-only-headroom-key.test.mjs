@@ -11,10 +11,10 @@ test("leftover uncovered leftover-only headroom copy stays on its control withou
   assert.match(app, /createLeftoverUncoveredLeftoverOnlyHeadroomMarkdown\(scenario\)/u);
   assert.match(html, /id="copy-leftover-uncovered-leftover-only-headroom"/u);
   assert.doesNotMatch(html, /id="copy-leftover-uncovered-leftover-only-headroom"[^>]*aria-keyshortcuts="Shift\+F7"/u);
-  assert.match(html, /id="copy-leftover-uncovered-leftover-only-allocated"[^>]*aria-keyshortcuts="Shift\+F7"/u);
-  assert.match(html, /<kbd>Shift\+F7<\/kbd> Copy leftover uncovered leftover-only allocated \(organizer private\)/u);
+  assert.match(html, /id="copy-leftover-uncovered-leftover-only-remaining"[^>]*aria-keyshortcuts="Shift\+F7 F10"/u);
+  assert.match(html, /<kbd>Shift\+F7<\/kbd> Copy leftover uncovered leftover-only remaining \(organizer private\)/u);
   assert.match(app, /if \(key === "F7"\) \{\s*event\.preventDefault\(\);\s*copyLeftoverUncoveredLeftoverOnlyCount\(\);/u);
-  assert.match(app, /if \(event\.shiftKey && key === "F7"\) \{\s*event\.preventDefault\(\);\s*copyLeftoverUncoveredLeftoverOnlyAllocated\(\);/u);
+  assert.match(app, /if \(event\.shiftKey && key === "F7"\) \{\s*event\.preventDefault\(\);\s*copyLeftoverUncoveredLeftoverOnlyRemaining\(\);/u);
   assert.doesNotMatch(app, /if \(event\.shiftKey && key === "F7"\) \{\s*event\.preventDefault\(\);\s*copyLeftoverUncoveredLeftoverOnlyHeadroom/u);
   assert.doesNotMatch(app, /if \(key === "F7"\) \{\s*event\.preventDefault\(\);\s*copyLeftoverUncoveredLeftoverOnlyHeadroom/u);
   assert.match(app, /isTypingTarget\(event\.target\)/u);
