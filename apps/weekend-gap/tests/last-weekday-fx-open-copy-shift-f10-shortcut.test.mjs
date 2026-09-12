@@ -2,13 +2,14 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { readFile } from "node:fs/promises";
 
-test("keyboard Shift+F10 is wired to copy last weekday-FX-open hour before unshifted F10", async () => {
+test("1.5.37 keeps last-weekday-FX-open copy control without taking Shift+F10", async () => {
   const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
   const app = await readFile(new URL("../src/app.js", import.meta.url), "utf8");
   assert.match(html, /id="copy-last-weekday-fx-open"/);
   assert.match(html, /<kbd>Shift\+F10<\/kbd>/u);
-  assert.match(html, /Copy last weekday-FX-open hour as Markdown/);
-  assert.match(html, /id="copy-last-weekday-fx-open"[^>]*aria-keyshortcuts="Shift\+F10"/);
+  assert.match(html, /Copy first weekday-FX-open hour as Markdown/);
+  assert.match(html, /Copy last weekday-FX-open hour/);
+  assert.match(html, /id="copy-first-weekday-fx-open"[^>]*aria-keyshortcuts="Shift\+F10"/);
   assert.match(html, /id="last-weekday-fx-open-copy-fallback"/);
   assert.match(html, /id="copy-last-weekend-fx-closed"[^>]*aria-keyshortcuts="F7"/);
   assert.doesNotMatch(html, /id="copy-first-weekend-fx-closed"[^>]*aria-keyshortcuts="Shift\+F10"/);
@@ -32,7 +33,8 @@ test("keyboard Shift+F10 is wired to copy last weekday-FX-open hour before unshi
   assert.ok(unshiftedF10 !== -1);
   assert.ok(shiftF10 < unshiftedF10);
   const shiftSlice = handler.slice(shiftF10, shiftF10 + 180);
-  assert.match(shiftSlice, /copyLastWeekdayFxOpenHourMarkdown\(\)/);
+  assert.match(shiftSlice, /copyFirstWeekdayFxOpenHourMarkdown\(\)/);
+  assert.doesNotMatch(shiftSlice, /copyLastWeekdayFxOpenHourMarkdown/);
   assert.doesNotMatch(shiftSlice, /copyFirstWeekendFxClosedHourMarkdown/);
   assert.doesNotMatch(shiftSlice, /copyFirstWeekendFxOpenHourMarkdown/);
   assert.doesNotMatch(shiftSlice, /copyLastWeekendFxOpenHourMarkdown/);
