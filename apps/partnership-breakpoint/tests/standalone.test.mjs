@@ -261,10 +261,13 @@ test('standalone retains 1.5.16 review tools and 1.5.17 copy controls', async ()
   assert.notEqual(html.indexOf('F10'), html.indexOf('F7'));
   assert.notEqual(html.indexOf('F11'), html.indexOf('F8'));
   assert.notEqual(html.indexOf('F12'), html.indexOf('F9'));
-  assert.notEqual(html.indexOf('Shift+F10'), html.indexOf('F10'));
   assert.notEqual(html.indexOf('Shift+F7'), html.indexOf('F7'));
   assert.notEqual(html.indexOf('Shift+F8'), html.indexOf('F8'));
   assert.notEqual(html.indexOf('Shift+F9'), html.indexOf('F9'));
+  assert.notEqual(html.indexOf('Shift+F10'), html.indexOf('F10'));
+  assert.match(html, /<kbd>Shift\+F7<\/kbd> Copy first over-capacity remaining listed capacity as Markdown/);
+  assert.match(html, /<kbd>Shift\+F8<\/kbd> Jump to Copy first over-capacity remaining listed capacity, or the Participants heading if missing/);
+  assert.match(html, /<kbd>Shift\+F9<\/kbd> Jump to Hide the last over-capacity participant, or the Participants heading if missing/);
   const f9At = html.indexOf("event.key === 'F9'");
   assert.notEqual(f9At, -1);
   const f9Next = html.indexOf('if (event.key ===', f9At + 1);
@@ -345,6 +348,8 @@ test('standalone retains 1.5.16 review tools and 1.5.17 copy controls', async ()
   assert.match(html, /copyFirstOverCapacityVolume/);
   assert.match(html, /lastOverCapacityRemainingMarkdown/);
   assert.match(html, /copyLastOverCapacityRemaining/);
+  assert.match(html, /firstOverCapacityRemainingMarkdown/);
+  assert.match(html, /copyFirstOverCapacityRemaining/);
   assert.match(html, /hideParticipantsAtLeastHeadroom/);
   assert.match(html, /hideParticipantsWithinCapacity/);
   assert.match(html, /hideFirstBreakpointParticipant/);
