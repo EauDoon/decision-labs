@@ -2971,7 +2971,7 @@ function handleShortcut(event) {
     target?.scrollIntoView?.({ block: 'start' });
   }
   if (event.key === 'F8' && event.shiftKey) {
-    const target = document.querySelector('#copy-first-over-capacity-volume')
+    const target = document.querySelector('#copy-last-over-capacity-remaining')
       ?? document.querySelector('#participant-inputs-title');
     target?.focus?.({ preventScroll: false });
     target?.scrollIntoView?.({ block: 'start' });
