@@ -86,7 +86,8 @@ test('standalone retains 1.5.16 review tools and 1.5.17 copy controls', async ()
   assert.match(html, /id="hide-first-over-capacity-participant"/);
   assert.match(html, /id="hide-first-over-capacity-participant"[^>]*aria-keyshortcuts="@"/);
   assert.match(html, /id="copy-first-over-capacity-remaining"/);
-  assert.match(html, /id="copy-first-over-capacity-remaining"[^>]*aria-keyshortcuts="~ Shift\+F7"/);
+  assert.match(html, /id="copy-first-over-capacity-remaining"[^>]*aria-keyshortcuts="~"/);
+  assert.doesNotMatch(html, /id="copy-first-over-capacity-remaining"[^>]*aria-keyshortcuts="Shift\+F7"/);
   assert.match(html, /id="copy-last-over-capacity-label"/);
   assert.match(html, /data-action="copy-last-over-capacity-label"/);
   assert.match(html, /id="copy-last-over-capacity-label"[^>]*aria-keyshortcuts="\("/);
@@ -98,6 +99,7 @@ test('standalone retains 1.5.16 review tools and 1.5.17 copy controls', async ()
   assert.doesNotMatch(html, /id="copy-last-over-capacity-volume"[^>]*aria-keyshortcuts="Shift\+F10"/);
   assert.match(html, /id="copy-first-over-capacity-volume"/);
   assert.match(html, /data-action="copy-first-over-capacity-volume"/);
+  assert.match(html, /id="copy-first-over-capacity-volume"[^>]*aria-keyshortcuts="Shift\+F7"/);
   assert.doesNotMatch(html, /id="copy-first-over-capacity-volume"[^>]*aria-keyshortcuts="Shift\+F10"/);
   assert.match(html, /id="copy-first-within-capacity-remaining"/);
   assert.match(html, /data-action="copy-first-within-capacity-remaining"/);
@@ -200,7 +202,8 @@ test('standalone retains 1.5.16 review tools and 1.5.17 copy controls', async ()
   const f7At = html.indexOf("event.key === 'F7' && !event.shiftKey");
   assert.ok(shiftF7At < f7At);
   const shiftF7Slice = html.slice(shiftF7At, f7At);
-  assert.match(shiftF7Slice, /copyFirstOverCapacityRemaining/);
+  assert.match(shiftF7Slice, /copyFirstOverCapacityVolume/);
+  assert.doesNotMatch(shiftF7Slice, /copyFirstOverCapacityRemaining/);
   assert.doesNotMatch(shiftF7Slice, /copyFirstZeroShareParticipant/);
   assert.doesNotMatch(shiftF7Slice, /copyLastOverCapacityRemaining/);
   assert.match(html, /event\.key === 'F8' && event\.shiftKey/);
@@ -265,7 +268,7 @@ test('standalone retains 1.5.16 review tools and 1.5.17 copy controls', async ()
   assert.notEqual(html.indexOf('Shift+F8'), html.indexOf('F8'));
   assert.notEqual(html.indexOf('Shift+F9'), html.indexOf('F9'));
   assert.notEqual(html.indexOf('Shift+F10'), html.indexOf('F10'));
-  assert.match(html, /<kbd>Shift\+F7<\/kbd> Copy first over-capacity remaining listed capacity as Markdown/);
+  assert.match(html, /<kbd>Shift\+F7<\/kbd> Copy first over-capacity volume-to-hold as Markdown/);
   assert.match(html, /<kbd>Shift\+F8<\/kbd> Jump to Copy first over-capacity remaining listed capacity, or the Participants heading if missing/);
   assert.match(html, /<kbd>Shift\+F9<\/kbd> Jump to Hide the last over-capacity participant, or the Participants heading if missing/);
   const f9At = html.indexOf("event.key === 'F9'");

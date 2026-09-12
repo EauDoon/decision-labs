@@ -4125,7 +4125,8 @@ test('keyboard tilde copies first over-capacity remaining listed capacity throug
   const fallback = await workbench();
   fallback.click('dismiss-coach');
   assert.match(fallback.markup(), /id="copy-first-over-capacity-remaining"/);
-  assert.match(fallback.markup(), /id="copy-first-over-capacity-remaining"[^>]*aria-keyshortcuts="~ Shift\+F7"/);
+  assert.match(fallback.markup(), /id="copy-first-over-capacity-remaining"[^>]*aria-keyshortcuts="~"/);
+  assert.doesNotMatch(fallback.markup(), /id="copy-first-over-capacity-remaining"[^>]*aria-keyshortcuts="Shift\+F7"/);
   assert.doesNotMatch(fallback.markup(), /id="copy-first-over-capacity-remaining"[^>]*aria-keyshortcuts="Shift\+F10"/);
   fallback.keydown('~');
   assert.equal(fallback.downloads().length, 0);
@@ -6074,29 +6075,32 @@ test('keyboard F10 copies last zero-share remaining-to-hold through the new cont
   assert.doesNotMatch(JSON.stringify(canoeing.saved()), /\bapi\b/i);
 });
 
-test('keyboard Shift+F7 copies first over-capacity remaining listed capacity through the dedicated control', async () => {
+test('keyboard Shift+F7 copies first over-capacity volume-to-hold through the dedicated control', async () => {
   const fallback = await workbench();
   fallback.click('dismiss-coach');
-  assert.match(fallback.markup(), /id="copy-first-over-capacity-remaining"/);
-  assert.match(fallback.markup(), /data-action="copy-first-over-capacity-remaining"/);
-  assert.match(fallback.markup(), /id="copy-first-over-capacity-remaining"[^>]*aria-keyshortcuts="~ Shift\+F7"/);
+  assert.match(fallback.markup(), /id="copy-first-over-capacity-volume"/);
+  assert.match(fallback.markup(), /data-action="copy-first-over-capacity-volume"/);
+  assert.match(fallback.markup(), /id="copy-first-over-capacity-volume"[^>]*aria-keyshortcuts="Shift\+F7"/);
+  assert.doesNotMatch(fallback.markup(), /id="copy-first-over-capacity-volume"[^>]*aria-keyshortcuts="Shift\+F10"/);
+  assert.match(fallback.markup(), /id="copy-first-over-capacity-remaining"[^>]*aria-keyshortcuts="~"/);
+  assert.doesNotMatch(fallback.markup(), /id="copy-first-over-capacity-remaining"[^>]*aria-keyshortcuts="Shift\+F7"/);
   assert.doesNotMatch(fallback.markup(), /id="copy-first-over-capacity-remaining"[^>]*aria-keyshortcuts="Shift\+F10"/);
   assert.match(fallback.markup(), /id="copy-last-over-capacity-remaining"[^>]*aria-keyshortcuts="\* Shift\+F10"/);
   assert.match(fallback.markup(), /id="copy-first-zero-share-participant"[^>]*aria-keyshortcuts="F7"/);
   assert.doesNotMatch(fallback.markup(), /id="copy-first-zero-share-participant"[^>]*aria-keyshortcuts="Shift\+F7"/);
   fallback.keydown('F7', { shiftKey: true });
   assert.equal(fallback.downloads().length, 0);
-  assert.match(fallback.markup(), /id="first-over-capacity-remaining-copy-text"/);
-  assert.match(fallback.markup(), /First over-capacity remaining listed capacity: none entered\./);
-  assert.match(fallback.markup(), /id="first-over-capacity-remaining-copy-title">First over-capacity remaining listed capacity Markdown/);
+  assert.match(fallback.markup(), /id="first-over-capacity-volume-copy-text"/);
+  assert.match(fallback.markup(), /First over-capacity volume-to-hold: none entered\./);
+  assert.match(fallback.markup(), /id="first-over-capacity-volume-copy-title">First over-capacity volume-to-hold Markdown/);
   assert.doesNotMatch(fallback.markup(), /id="last-over-capacity-remaining-copy-text"/);
-  assert.doesNotMatch(fallback.markup(), /id="first-over-capacity-volume-copy-text"/);
+  assert.doesNotMatch(fallback.markup(), /id="first-over-capacity-remaining-copy-text"/);
   assert.doesNotMatch(fallback.markup(), /id="last-over-capacity-volume-copy-text"/);
   assert.doesNotMatch(fallback.markup(), /id="first-zero-share-label-copy-text"/);
   assert.doesNotMatch(fallback.markup(), /id="last-zero-share-remaining-copy-text"/);
   assert.match(fallback.notice(), /Copy the Markdown from the text area/);
-  fallback.click('close-first-over-capacity-remaining-copy');
-  assert.doesNotMatch(fallback.markup(), /id="first-over-capacity-remaining-copy-text"/);
+  fallback.click('close-first-over-capacity-volume-copy');
+  assert.doesNotMatch(fallback.markup(), /id="first-over-capacity-volume-copy-text"/);
   const before = fallback.markup();
   fallback.keydown('F7', { shiftKey: true, tagName: 'INPUT' });
   assert.equal(fallback.markup(), before);
@@ -6106,16 +6110,16 @@ test('keyboard Shift+F7 copies first over-capacity remaining listed capacity thr
   assert.equal(fallback.markup(), before);
   fallback.edit('deal.monthlyVolume', '');
   fallback.keydown('F7', { shiftKey: true });
-  assert.match(fallback.markup(), /id="first-over-capacity-remaining-copy-text"/);
-  assert.match(fallback.markup(), />First over-capacity remaining listed capacity: none entered\.</);
+  assert.match(fallback.markup(), /id="first-over-capacity-volume-copy-text"/);
+  assert.match(fallback.markup(), />First over-capacity volume-to-hold: none entered\.</);
 
   const withClipboard = await workbench('file:', { clipboard: 'ok' });
   withClipboard.keydown('F7', { shiftKey: true });
   assert.equal(withClipboard.copied().length, 1);
   assert.equal(withClipboard.copied()[0].split('\n').length, 1);
-  assert.equal(withClipboard.copied()[0], 'First over-capacity remaining listed capacity: none entered.');
+  assert.equal(withClipboard.copied()[0], 'First over-capacity volume-to-hold: none entered.');
   assert.doesNotMatch(withClipboard.copied()[0], /Last over-capacity remaining listed capacity/);
-  assert.doesNotMatch(withClipboard.copied()[0], /First over-capacity volume-to-hold/);
+  assert.doesNotMatch(withClipboard.copied()[0], /First over-capacity remaining listed capacity/);
   assert.doesNotMatch(withClipboard.copied()[0], /Last over-capacity volume-to-hold/);
   assert.doesNotMatch(withClipboard.copied()[0], /First zero-share participant/);
   assert.doesNotMatch(withClipboard.copied()[0], /Last zero-share remaining-to-hold/);
@@ -6138,22 +6142,24 @@ test('keyboard Shift+F7 copies first over-capacity remaining listed capacity thr
 
   const denied = await workbench('file:', { clipboard: 'fail' });
   denied.keydown('F7', { shiftKey: true });
-  assert.match(denied.markup(), /id="first-over-capacity-remaining-copy-text"/);
+  assert.match(denied.markup(), /id="first-over-capacity-volume-copy-text"/);
   assert.match(denied.notice(), /Clipboard unavailable/);
 
   const over = await workbench('file:', { clipboard: 'ok' });
   over.edit('deal.monthlyVolume', '116000');
   over.keydown('F7', { shiftKey: true });
-  assert.equal(over.copied().at(-1), 'First over-capacity remaining listed capacity: 1,000 txn over for Liquidity Partner. How far over listed capacity. Not a forecast.');
+  assert.equal(over.copied().at(-1), 'First over-capacity volume-to-hold: 90,000 txn for Liquidity Partner. Volume to hold. Not a forecast.');
   over.keydown('F10', { shiftKey: true });
   assert.equal(over.copied().at(-1), 'Last over-capacity remaining listed capacity: 1,000 txn over for Liquidity Partner. How far over listed capacity. Not a forecast.');
   over.keydown('F7');
   assert.equal(over.copied().at(-1), 'First zero-share participant: none entered.');
+  over.keydown('~');
+  assert.equal(over.copied().at(-1), 'First over-capacity remaining listed capacity: 1,000 txn over for Liquidity Partner. How far over listed capacity. Not a forecast.');
 
   const lastOfTwo = await workbench('file:', { clipboard: 'ok' });
   lastOfTwo.edit('deal.monthlyVolume', '121000');
   lastOfTwo.keydown('F7', { shiftKey: true });
-  assert.equal(lastOfTwo.copied().at(-1), 'First over-capacity remaining listed capacity: 1,000 txn over for Distributor. How far over listed capacity. Not a forecast.');
+  assert.equal(lastOfTwo.copied().at(-1), 'First over-capacity volume-to-hold: 73,333 txn for Distributor. Volume to hold. Not a forecast.');
   lastOfTwo.keydown('F10', { shiftKey: true });
   assert.equal(lastOfTwo.copied().at(-1), 'Last over-capacity remaining listed capacity: 6,000 txn over for Liquidity Partner. How far over listed capacity. Not a forecast.');
 
@@ -6161,7 +6167,7 @@ test('keyboard Shift+F7 copies first over-capacity remaining listed capacity thr
   mountain.click('preset', { preset: 'mountainBikeCarnivalSplit' });
   mountain.edit('deal.monthlyVolume', '6100');
   mountain.keydown('F7', { shiftKey: true });
-  assert.equal(mountain.copied().at(-1), 'First over-capacity remaining listed capacity: 100 txn over for Carnival committee. How far over listed capacity. Not a forecast.');
+  assert.equal(mountain.copied().at(-1), 'First over-capacity volume-to-hold: 5,089 txn for Carnival committee. Volume to hold. Not a forecast.');
   mountain.keydown('F10', { shiftKey: true });
   assert.equal(mountain.copied().at(-1), 'Last over-capacity remaining listed capacity: 1,000 txn over for First-aid. How far over listed capacity. Not a forecast.');
   mountain.keydown('~');
@@ -6175,7 +6181,7 @@ test('keyboard Shift+F7 copies first over-capacity remaining listed capacity thr
   bmx.click('preset', { preset: 'bmxCarnivalSplit' });
   bmx.edit('deal.monthlyVolume', '6200');
   bmx.keydown('F7', { shiftKey: true });
-  assert.equal(bmx.copied().at(-1), 'First over-capacity remaining listed capacity: 100 txn over for Carnival committee. How far over listed capacity. Not a forecast.');
+  assert.equal(bmx.copied().at(-1), 'First over-capacity volume-to-hold: 5,155 txn for Carnival committee. Volume to hold. Not a forecast.');
   bmx.keydown('F10', { shiftKey: true });
   assert.equal(bmx.copied().at(-1), 'Last over-capacity remaining listed capacity: 1,000 txn over for First-aid. How far over listed capacity. Not a forecast.');
   bmx.keydown('~');
@@ -6186,6 +6192,22 @@ test('keyboard Shift+F7 copies first over-capacity remaining listed capacity thr
   assert.doesNotMatch(JSON.stringify(bmx.saved()), /hosted/i);
   assert.doesNotMatch(JSON.stringify(bmx.saved()), /\bapi\b/i);
   assert.doesNotMatch(JSON.stringify(bmx.saved()), /forecast/i);
+
+  const cycloCross = await workbench('file:', { clipboard: 'ok' });
+  cycloCross.click('preset', { preset: 'cycloCrossCarnivalSplit' });
+  cycloCross.edit('deal.monthlyVolume', '6300');
+  cycloCross.keydown('F7', { shiftKey: true });
+  assert.equal(cycloCross.copied().at(-1), 'First over-capacity volume-to-hold: 5,222 txn for Carnival committee. Volume to hold. Not a forecast.');
+  cycloCross.keydown('F10', { shiftKey: true });
+  assert.equal(cycloCross.copied().at(-1), 'Last over-capacity remaining listed capacity: 1,000 txn over for First-aid. How far over listed capacity. Not a forecast.');
+  cycloCross.keydown('~');
+  assert.equal(cycloCross.copied().at(-1), 'First over-capacity remaining listed capacity: 100 txn over for Carnival committee. How far over listed capacity. Not a forecast.');
+  cycloCross.keydown('F7');
+  assert.equal(cycloCross.copied().at(-1), 'First zero-share participant: none entered.');
+  assert.doesNotMatch(JSON.stringify(cycloCross.saved()), /live roster/i);
+  assert.doesNotMatch(JSON.stringify(cycloCross.saved()), /hosted/i);
+  assert.doesNotMatch(JSON.stringify(cycloCross.saved()), /\bapi\b/i);
+  assert.doesNotMatch(JSON.stringify(cycloCross.saved()), /forecast/i);
 });
 
 test('keyboard Shift+F10 copies last over-capacity remaining listed capacity through the dedicated control', async () => {
@@ -6196,11 +6218,13 @@ test('keyboard Shift+F10 copies last over-capacity remaining listed capacity thr
   assert.match(fallback.markup(), /id="copy-last-over-capacity-remaining"[^>]*aria-keyshortcuts="\* Shift\+F10"/);
   assert.match(fallback.markup(), /id="copy-first-over-capacity-volume"/);
   assert.match(fallback.markup(), /data-action="copy-first-over-capacity-volume"/);
+  assert.match(fallback.markup(), /id="copy-first-over-capacity-volume"[^>]*aria-keyshortcuts="Shift\+F7"/);
   assert.doesNotMatch(fallback.markup(), /id="copy-first-over-capacity-volume"[^>]*aria-keyshortcuts="Shift\+F10"/);
   assert.match(fallback.markup(), /id="copy-last-over-capacity-volume"/);
   assert.doesNotMatch(fallback.markup(), /id="copy-last-over-capacity-volume"[^>]*aria-keyshortcuts="Shift\+F10"/);
   assert.match(fallback.markup(), /id="copy-first-over-capacity-remaining"/);
-  assert.match(fallback.markup(), /id="copy-first-over-capacity-remaining"[^>]*aria-keyshortcuts="~ Shift\+F7"/);
+  assert.match(fallback.markup(), /id="copy-first-over-capacity-remaining"[^>]*aria-keyshortcuts="~"/);
+  assert.doesNotMatch(fallback.markup(), /id="copy-first-over-capacity-remaining"[^>]*aria-keyshortcuts="Shift\+F7"/);
   assert.doesNotMatch(fallback.markup(), /id="copy-first-over-capacity-remaining"[^>]*aria-keyshortcuts="Shift\+F10"/);
   assert.match(fallback.markup(), /id="copy-first-zero-share-volume"/);
   assert.match(fallback.markup(), /data-action="copy-first-zero-share-volume"/);
@@ -6500,7 +6524,7 @@ test('keyboard Shift+F8 jumps to Copy first over-capacity remaining listed capac
   const app = await workbench();
   app.click('dismiss-coach');
   assert.match(app.markup(), /id="copy-first-over-capacity-remaining"/);
-  assert.match(app.markup(), /id="copy-first-over-capacity-remaining"[^>]*aria-keyshortcuts="~ Shift\+F7"/);
+  assert.match(app.markup(), /id="copy-first-over-capacity-remaining"[^>]*aria-keyshortcuts="~"/);
   assert.match(app.markup(), /id="copy-first-zero-share-participant"[^>]*aria-keyshortcuts="F7"/);
   assert.match(app.markup(), /id="copy-last-over-capacity-remaining"[^>]*aria-keyshortcuts="\* Shift\+F10"/);
   assert.match(app.markup(), /id="participant-inputs-title" tabindex="-1"/);
@@ -6729,10 +6753,12 @@ test('Delete F2 and ArrowRight retain 4 Home End PageUp PageDown ArrowUp Insert 
   assert.match(app.markup(), /id="copy-last-zero-share-participant"[^>]*aria-keyshortcuts="F3"/);
   assert.match(app.markup(), /id="hide-last-zero-share-participant"[^>]*aria-keyshortcuts="Backspace"/);
   assert.match(app.markup(), /id="copy-first-zero-share-participant"[^>]*aria-keyshortcuts="F7"/);
-  assert.match(app.markup(), /id="copy-first-over-capacity-remaining"[^>]*aria-keyshortcuts="~ Shift\+F7"/);
+  assert.match(app.markup(), /id="copy-first-over-capacity-remaining"[^>]*aria-keyshortcuts="~"/);
+  assert.doesNotMatch(app.markup(), /id="copy-first-over-capacity-remaining"[^>]*aria-keyshortcuts="Shift\+F7"/);
   assert.doesNotMatch(app.markup(), /id="copy-first-over-capacity-remaining"[^>]*aria-keyshortcuts="Shift\+F10"/);
   assert.match(app.markup(), /id="copy-last-zero-share-remaining"[^>]*aria-keyshortcuts="F10"/);
   assert.match(app.markup(), /id="copy-last-over-capacity-remaining"[^>]*aria-keyshortcuts="\* Shift\+F10"/);
+  assert.match(app.markup(), /id="copy-first-over-capacity-volume"[^>]*aria-keyshortcuts="Shift\+F7"/);
   assert.doesNotMatch(app.markup(), /id="copy-first-over-capacity-volume"[^>]*aria-keyshortcuts="Shift\+F10"/);
   assert.match(app.markup(), /id="copy-last-over-capacity-volume"/);
   assert.doesNotMatch(app.markup(), /id="copy-last-over-capacity-volume"[^>]*aria-keyshortcuts="Shift\+F10"/);
@@ -6757,7 +6783,7 @@ test('Delete F2 and ArrowRight retain 4 Home End PageUp PageDown ArrowUp Insert 
   app.keydown('F7');
   assert.equal(app.copied().at(-1), 'First zero-share participant: none entered.');
   app.keydown('F7', { shiftKey: true });
-  assert.equal(app.copied().at(-1), 'First over-capacity remaining listed capacity: none entered.');
+  assert.equal(app.copied().at(-1), 'First over-capacity volume-to-hold: none entered.');
   app.keydown('F10');
   assert.equal(app.copied().at(-1), 'Last zero-share remaining-to-hold: none entered.');
   app.keydown('F10', { shiftKey: true });
@@ -7581,7 +7607,7 @@ test('copy first over-capacity remaining listed capacity is one Markdown line wi
   fallback.click('dismiss-coach');
   assert.match(fallback.markup(), /id="copy-first-over-capacity-remaining"/);
   assert.match(fallback.markup(), /data-action="copy-first-over-capacity-remaining"/);
-  assert.match(fallback.markup(), /id="copy-first-over-capacity-remaining"[^>]*aria-keyshortcuts="~ Shift\+F7"/);
+  assert.match(fallback.markup(), /id="copy-first-over-capacity-remaining"[^>]*aria-keyshortcuts="~"/);
   assert.match(fallback.markup(), /id="copy-last-over-capacity-remaining"[^>]*aria-keyshortcuts="\* Shift\+F10"/);
   fallback.click('copy-first-over-capacity-remaining');
   assert.equal(fallback.downloads().length, 0);
@@ -7880,6 +7906,7 @@ test('copy first over-capacity volume-to-hold is one Markdown line with an hones
   fallback.click('dismiss-coach');
   assert.match(fallback.markup(), /id="copy-first-over-capacity-volume"/);
   assert.match(fallback.markup(), /data-action="copy-first-over-capacity-volume"/);
+  assert.match(fallback.markup(), /id="copy-first-over-capacity-volume"[^>]*aria-keyshortcuts="Shift\+F7"/);
   assert.doesNotMatch(fallback.markup(), /id="copy-first-over-capacity-volume"[^>]*aria-keyshortcuts="Shift\+F10"/);
   assert.doesNotMatch(fallback.markup(), /id="copy-last-over-capacity-volume"[^>]*aria-keyshortcuts="Shift\+F10"/);
   assert.doesNotMatch(fallback.markup(), /id="copy-first-zero-share-volume"[^>]*aria-keyshortcuts="Shift\+F10"/);
