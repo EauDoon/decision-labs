@@ -358,7 +358,7 @@ test("release 1.4.33 ships bmx carnival lunch, leftover uncovered leftover-only 
 test("release 1.4.34 ships cyclo-cross carnival lunch, leftover uncovered leftover-only allocated copy and last leftover-only hide jump", async () => {
   const html = await readFile(new URL("../standalone.html", import.meta.url), "utf8");
   assert.match(html, /id="copy-leftover-uncovered-leftover-only-allocated"/u);
-  assert.match(html, /id="copy-leftover-uncovered-leftover-only-allocated"[^>]*aria-keyshortcuts="Shift\+F7"/u);
+  assert.doesNotMatch(html, /id="copy-leftover-uncovered-leftover-only-allocated"[^>]*aria-keyshortcuts="Shift\+F7"/u);
   assert.match(html, /id="copy-leftover-uncovered-leftover-only-headroom"/u);
   assert.doesNotMatch(html, /id="copy-leftover-uncovered-leftover-only-headroom"[^>]*aria-keyshortcuts="Shift\+F7"/u);
   assert.match(html, /id="copy-leftover-uncovered-leftover-only-minimum"/u);
@@ -377,9 +377,9 @@ test("release 1.4.34 ships cyclo-cross carnival lunch, leftover uncovered leftov
   assert.match(html, /function focusHideFirstLeftoverOnlyBuyer\(/u);
   assert.match(html, /function focusHideLastLeftoverOnlyBuyer\(/u);
   assert.match(html, /createLeftoverUncoveredLeftoverOnlyAllocatedMarkdown\(/u);
-  assert.match(html, /if \(event\.shiftKey && key === "F7"\) \{\s*event\.preventDefault\(\);\s*copyLeftoverUncoveredLeftoverOnlyAllocated\(\);/u);
-  assert.match(html, /if \(event\.shiftKey && key === "F8"\) \{\s*event\.preventDefault\(\);\s*focusLeftoverUncoveredLeftoverOnlyAllocatedCopy\(\);/u);
-  assert.match(html, /if \(event\.shiftKey && key === "F9"\) \{\s*event\.preventDefault\(\);\s*focusHideLastLeftoverOnlyBuyer\(\);/u);
+  assert.doesNotMatch(html, /if \(event\.shiftKey && key === "F7"\) \{\s*event\.preventDefault\(\);\s*copyLeftoverUncoveredLeftoverOnlyAllocated\(\);/u);
+  assert.doesNotMatch(html, /if \(event\.shiftKey && key === "F8"\) \{\s*event\.preventDefault\(\);\s*focusLeftoverUncoveredLeftoverOnlyAllocatedCopy\(\);/u);
+  assert.doesNotMatch(html, /if \(event\.shiftKey && key === "F9"\) \{\s*event\.preventDefault\(\);\s*focusHideLastLeftoverOnlyBuyer\(\);/u);
   assert.match(html, /if \(key === "F7"\) \{\s*event\.preventDefault\(\);\s*copyLeftoverUncoveredLeftoverOnlyCount\(\);/u);
   assert.match(html, /if \(key === "F8"\) \{\s*event\.preventDefault\(\);\s*focusLeftoverUncoveredLeftoverOnlyCountCopy\(\);/u);
   assert.match(html, /if \(key === "F9"\) \{\s*event\.preventDefault\(\);\s*focusHideFirstUncoveredLeftoverBuyer\(\);/u);
@@ -390,6 +390,50 @@ test("release 1.4.34 ships cyclo-cross carnival lunch, leftover uncovered leftov
   assert.match(html, /const key = event\.key\.length === 1 \? event\.key\.toLowerCase\(\) : event\.key;/u);
   assert.doesNotMatch(html.slice(html.indexOf('id="merchant-panel"'), html.indexOf('id="method-panel"')), /copy-leftover-uncovered-leftover-only-allocated/u);
   assert.doesNotMatch(html.slice(html.indexOf('id="merchant-panel"'), html.indexOf('id="method-panel"')), /hide-last-leftover-only-buyer/u);
+});
+
+test("release 1.4.35 ships track cycling carnival lunch, leftover uncovered leftover-only remaining copy and first leftover-only hide jump", async () => {
+  const html = await readFile(new URL("../standalone.html", import.meta.url), "utf8");
+  assert.match(html, /id="copy-leftover-uncovered-leftover-only-remaining"/u);
+  assert.match(html, /id="copy-leftover-uncovered-leftover-only-remaining"[^>]*aria-keyshortcuts="Shift\+F7 F10"/u);
+  assert.match(html, /id="copy-leftover-uncovered-leftover-only-allocated"/u);
+  assert.doesNotMatch(html, /id="copy-leftover-uncovered-leftover-only-allocated"[^>]*aria-keyshortcuts="Shift\+F7"/u);
+  assert.match(html, /id="copy-leftover-uncovered-leftover-only-headroom"/u);
+  assert.doesNotMatch(html, /id="copy-leftover-uncovered-leftover-only-headroom"[^>]*aria-keyshortcuts="Shift\+F7"/u);
+  assert.match(html, /id="copy-leftover-uncovered-leftover-only-minimum"/u);
+  assert.doesNotMatch(html, /id="copy-leftover-uncovered-leftover-only-minimum"[^>]*aria-keyshortcuts="Shift\+F7"/u);
+  assert.match(html, /id="copy-leftover-uncovered-leftover-only-unit-price"/u);
+  assert.doesNotMatch(html, /id="copy-leftover-uncovered-leftover-only-unit-price"[^>]*aria-keyshortcuts="Shift\+F7"/u);
+  assert.match(html, /id="copy-leftover-uncovered-leftover-only-capacity"/u);
+  assert.doesNotMatch(html, /id="copy-leftover-uncovered-leftover-only-capacity"[^>]*aria-keyshortcuts="Shift\+F7"/u);
+  assert.match(html, /id="hide-first-leftover-only-buyer"/u);
+  assert.match(html, /id="hide-last-leftover-only-buyer"/u);
+  assert.match(html, /data-preset="trackCyclingCarnivalLunch"/u);
+  assert.match(html, /data-preset="cycloCrossCarnivalLunch"/u);
+  assert.ok(html.indexOf('data-preset="cycloCrossCarnivalLunch"') < html.indexOf('data-preset="trackCyclingCarnivalLunch"'));
+  assert.match(html, /function copyLeftoverUncoveredLeftoverOnlyRemaining\(/u);
+  assert.match(html, /function focusLeftoverUncoveredLeftoverOnlyRemainingCopy\(/u);
+  assert.match(html, /function copyLeftoverUncoveredLeftoverOnlyAllocated\(/u);
+  assert.match(html, /function focusHideFirstLeftoverOnlyBuyer\(/u);
+  assert.match(html, /function focusHideLastLeftoverOnlyBuyer\(/u);
+  assert.match(html, /createLeftoverUncoveredLeftoverOnlyRemainingMarkdown\(/u);
+  assert.match(html, /if \(event\.shiftKey && key === "F7"\) \{\s*event\.preventDefault\(\);\s*copyLeftoverUncoveredLeftoverOnlyRemaining\(\);/u);
+  assert.match(html, /if \(event\.shiftKey && key === "F8"\) \{\s*event\.preventDefault\(\);\s*focusLeftoverUncoveredLeftoverOnlyRemainingCopy\(\);/u);
+  assert.match(html, /if \(event\.shiftKey && key === "F9"\) \{\s*event\.preventDefault\(\);\s*focusHideFirstLeftoverOnlyBuyer\(\);/u);
+  assert.match(html, /if \(key === "F7"\) \{\s*event\.preventDefault\(\);\s*copyLeftoverUncoveredLeftoverOnlyCount\(\);/u);
+  assert.match(html, /if \(key === "F8"\) \{\s*event\.preventDefault\(\);\s*focusLeftoverUncoveredLeftoverOnlyCountCopy\(\);/u);
+  assert.match(html, /if \(key === "F9"\) \{\s*event\.preventDefault\(\);\s*focusHideFirstUncoveredLeftoverBuyer\(\);/u);
+  assert.match(html, /if \(key === "F10"\) \{\s*event\.preventDefault\(\);\s*copyLeftoverUncoveredLeftoverOnlyRemaining\(\);/u);
+  assert.match(html, /if \(key === "F11"\) \{\s*event\.preventDefault\(\);\s*focusLeftoverUncoveredLeftoverOnlyRemainingCopy\(\);/u);
+  assert.match(html, /if \(event\.shiftKey && key === "F12"\) \{\s*event\.preventDefault\(\);\s*focusHideFirstUncoveredLeftoverBuyer\(\);/u);
+  assert.match(html, /if \(key === "ArrowUp"\) \{\s*event\.preventDefault\(\);\s*focusHideLastLeftoverOnlyBuyer\(\);/u);
+  assert.match(html, /if \(key === "ArrowLeft"\) \{\s*event\.preventDefault\(\);\s*focusHideFirstLeftoverOnlyBuyer\(\);/u);
+  assert.match(html, /function handleShortcut\(event\) \{\s*if \(event\.defaultPrevented \|\| event\.metaKey \|\| event\.ctrlKey \|\| event\.altKey\) return;/u);
+  assert.match(html, /const key = event\.key\.length === 1 \? event\.key\.toLowerCase\(\) : event\.key;/u);
+  assert.match(html, /Court-side Track Cycling Delivery/u);
+  assert.match(html, /Hall Track Cycling Pickup/u);
+  assert.doesNotMatch(html.slice(html.indexOf('id="merchant-panel"'), html.indexOf('id="method-panel"')), /copy-leftover-uncovered-leftover-only-remaining/u);
+  assert.doesNotMatch(html.slice(html.indexOf('id="merchant-panel"'), html.indexOf('id="method-panel"')), /hide-first-leftover-only-buyer/u);
 });
 
 
