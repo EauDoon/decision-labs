@@ -6,7 +6,8 @@ test("madison cycling club hours keeps remaining 19 / 21 / 56 after keirin", asy
   const app = (await readFile(new URL("../src/app.js", import.meta.url), "utf8")).replaceAll("\r\n", "\n");
   const html = (await readFile(new URL("../index.html", import.meta.url), "utf8")).replaceAll("\r\n", "\n");
   const madisonStart = app.indexOf('"madison-cycling-club-hours"');
-  const madisonEnd = app.indexOf("let agreementReviewPacket", madisonStart);
+  const omniumStart = app.indexOf('"omnium-cycling-club-hours"');
+  const madisonEnd = omniumStart === -1 ? app.indexOf("let agreementReviewPacket", madisonStart) : omniumStart;
   const madison = app.slice(madisonStart, madisonEnd === -1 ? undefined : madisonEnd);
   const keirinStart = app.indexOf('"keirin-cycling-club-hours"');
   const keirin = app.slice(keirinStart, madisonStart);
