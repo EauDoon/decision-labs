@@ -1,5 +1,24 @@
 # Changelog
 
+## 1.8.0 - 2026-09-12
+
+Scheduled funding tranches with cost accounting in Weekend Gap 1.8.0
+
+A capability release on 1.7.0. Weekend Gap remains a local-first decision aid, not a decision maker. Scheduled funding is arithmetic on a synthetic reserve, not a credit line, and funding costs are tracked expenses, not advice. Analysis JSON still has no timestamps.
+
+### Added
+
+- Optional `fundingTranches` (at most 16): each names a whole hour inside the horizon when reserve cash is added before that hour settles, plus a cost of securing the funds. Costs never reduce the reserve; they are reported beside the funded total. Any invalid entry rejects the whole schedule.
+- Simulation, reserve planner, comparisons, dashboard, reports, timeline analysis, and review packets all account for tranches: the planner counts only tranches before the deadline, comparisons list schedule changes with signed funding deltas, and the outcome explanation names the funded total and cost.
+- Scenario editor gains a funding tranche list with add, edit, and remove actions; edits are undoable and travel in scenario JSON, share links, and autosave. Form edits preserve tranches, and shrinking the horizon below a tranche drops it with a warning.
+- CLI gains a `funding` command (JSON and Markdown) comparing the funded run against the same scenario with tranches stripped, and now accepts `calendarOverrides` and `fundingTranches` schedule fields instead of rejecting them as unknown.
+
+### Fixed
+
+- Weekend review tools no longer assume the 72-hour case: checkpoints, closures, cohorts, overlap, reserve, throughput, and holiday reviews run at any horizon from 24 through 336 hours, and reviews accept scenarios carrying calendar overrides or funding tranches.
+- Comparisons now list `calendarOverrides` and `fundingTranches` changes; previously only scalar fields appeared, so a schedule-only edit reported no changed assumptions.
+- Dashboard empty-state labels (`No queue in Nh`, `No settlement in Nh`) and the first-closed-bank message follow the scenario horizon; static headings no longer pin the 72-hour case.
+
 ## 1.7.0 - 2026-09-12
 
 Operational calendars and longer horizons in Weekend Gap 1.7.0

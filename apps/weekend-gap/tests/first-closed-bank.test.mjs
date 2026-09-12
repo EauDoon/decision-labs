@@ -42,5 +42,6 @@ test("keyboard f is wired to the first closed bank hour jump", async () => {
   assert.match(html, /<kbd>F<\/kbd>/);
   assert.match(app, /function jumpToFirstClosedBank/);
   assert.match(app, /firstClosedGanttHour\(scenario\)/);
-  assert.match(app, /No closed bank or gate hour in this 72-hour calendar/);
+  assert.match(app, /No closed bank or gate hour in this /);
+  assert.match(app, /\$\{simHours\(\)\}-hour calendar/);
 });

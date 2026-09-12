@@ -12,7 +12,7 @@ test("print and print redacted include a peak-queue hour line without changing t
   assert.match(html, /class="outcome-card card print-keep"/);
   assert.match(css, /\.outcome-card/);
   assert.match(app, /peakQueueHour\.textContent/);
-  assert.match(app, /No queue in 72h/);
+  assert.match(app, /peakQueueHourLabel/);
   const printHandler = app.slice(app.indexOf('document.querySelector("#print-redacted")'), app.indexOf('document.querySelector("#copy-dashboard-markdown")'));
   assert.doesNotMatch(printHandler, /setScenario\(/);
   assert.match(printHandler, /The saved scenario was not changed/);

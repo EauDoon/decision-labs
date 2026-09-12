@@ -8,6 +8,13 @@ import {
   SIMULATION_HOURS,
   scenarioHours,
   sanitizeCalendarOverrides,
+  sanitizeFundingTranches,
+  fundingToMarkdown,
+  MAX_CALENDAR_OVERRIDES,
+  MAX_FUNDING_TRANCHES,
+  hoursToClearLabel,
+  hoursToFirstSettlementLabel,
+  peakQueueHourLabel,
   svgTickHours,
   formatTime,
   weekendCloseOverlapNotice,
@@ -282,6 +289,7 @@ function currentScenarioHashError(error) {
 
 function render() {
   renderCalendarOverrides();
+  renderFundingTranches();
   const point = simulation.timeline[selectedHour];
   elements.title.textContent = scenario.name;
   timelineRange.max = String(simHours());
@@ -302,13 +310,9 @@ function render() {
   elements.settledTotal.textContent = formatAud(totalSettledAud, false);
   elements.finalQueue.textContent = formatAud(finalQueuedAud, false);
   elements.peakQueue.textContent = formatAud(peakQueuedAud, false);
-  elements.peakQueueHour.textContent = peakQueuedAud > 0
-    ? `${formatTime(peakQueueHour)} (hour ${peakQueueHour})`
-    : "No queue in 72h";
+  elements.peakQueueHour.textContent = peakQueueHourLabel(simulation.summary, simHours());
   elements.backlogHours.textContent = `${hoursWithQueue} of ${simHours()}`;
-  elements.firstSettlement.textContent = hoursToFirstSettlement === null
-    ? "No settlement in 72h"
-    : `${hoursToFirstSettlement} hour${hoursToFirstSettlement === 1 ? "" : "s"}`;
+  elements.firstSettlement.textContent = formatHoursToFirstSettlement(hoursToFirstSettlement);
   elements.queueClear.textContent = formatHoursToClearQueue(hoursToClearQueue, peakQueuedAud);
   if (elements.selectedGanttHour) {
     elements.selectedGanttHour.textContent = `${point.timeLabel} (hour ${selectedHour})`;
@@ -366,9 +370,12 @@ function render() {
   if (jumpPeak) {
     jumpPeak.disabled = !(peakQueuedAud > 0);
   }
-  elements.outcomeExplanation.textContent = finalQueuedAud > 0
+  const fundingNote = simulation.summary.totalFundedAud > 0
+    ? ` Scheduled funding added ${formatAud(simulation.summary.totalFundedAud, false)} at a funding cost of ${formatAud(simulation.summary.totalFundingCostAud, false)}.`
+    : "";
+  elements.outcomeExplanation.textContent = (finalQueuedAud > 0
     ? `${formatAud(finalQueuedAud)} remains queued at ${formatTime(simHours())}. The peak queue was ${formatAud(peakQueuedAud)} at ${formatTime(peakQueueHour)}.`
-    : `All synthetic demand settles within the ${simHours()}-hour window. The peak queue was ${formatAud(peakQueuedAud)} at ${formatTime(peakQueueHour)}.`;
+    : `All synthetic demand settles within the ${simHours()}-hour window. The peak queue was ${formatAud(peakQueuedAud)} at ${formatTime(peakQueueHour)}.`) + fundingNote;
   elements.gateSummary.textContent = point.immediateAud > 0
     ? `Payout chain open · limited by ${point.limitingGate}`
     : `Payout chain closed · blocked at ${point.limitingGate}`;
@@ -749,7 +756,10 @@ function renderPlanning() {
     return row;
   })());
   document.querySelector("#changed-assumptions").textContent = comparison.changes.length
-    ? comparison.changes.map(({ field, baseline, candidate }) => `${field}: ${baseline} to ${candidate}`).join("; ")
+    ? comparison.changes.map(({ field, baseline, candidate }) => {
+      const print = (value) => Array.isArray(value) ? JSON.stringify(value) : String(value);
+      return `${field}: ${print(baseline)} to ${print(candidate)}`;
+    }).join("; ")
     : "No assumptions changed. Pin a baseline, then edit the scenario or choose a preset.";
   const output = document.querySelector("#reserve-result");
   const apply = document.querySelector("#apply-reserve");
@@ -1049,9 +1059,11 @@ function applyFormEdit(normaliseForm) {
   userEdited = true;
   const hadOverrides = Array.isArray(scenario.calendarOverrides) && scenario.calendarOverrides.length > 0;
   if (hadOverrides) raw.calendarOverrides = scenario.calendarOverrides;
+  const hadFunding = Array.isArray(scenario.fundingTranches) && scenario.fundingTranches.length > 0;
+  if (hadFunding) raw.fundingTranches = scenario.fundingTranches;
   setScenario(raw, { normaliseForm });
-  if (hadOverrides && !Array.isArray(scenario.calendarOverrides)) {
-    setMessage("The new horizon dropped calendar overrides outside its range. Re-add them inside the horizon.");
+  if ((hadOverrides && !Array.isArray(scenario.calendarOverrides)) || (hadFunding && !Array.isArray(scenario.fundingTranches))) {
+    setMessage("The new horizon dropped calendar overrides or funding tranches outside its range. Re-add them inside the horizon.");
     return;
   }
 }
@@ -1174,6 +1186,10 @@ document.querySelector("#add-calendar-override")?.addEventListener("click", () =
   const hours = simHours();
   const next = { ...scenario };
   const overrides = [...(Array.isArray(next.calendarOverrides) ? next.calendarOverrides : [])];
+  if (overrides.length >= MAX_CALENDAR_OVERRIDES) {
+    setMessage(`Calendar overrides allow at most ${MAX_CALENDAR_OVERRIDES} entries. Remove one before adding another.`);
+    return;
+  }
   const start = Math.min(9, hours - 1);
   overrides.push({ startHour: start, endHour: Math.min(start + 8, hours), gates: { payout: "closed" } });
   next.calendarOverrides = overrides;
@@ -1190,6 +1206,107 @@ document.querySelector("#calendar-overrides")?.addEventListener("click", (event)
   else delete next.calendarOverrides;
   setScenario(next, { normaliseForm: false, message: "Calendar override removed." });
   document.querySelector("#add-calendar-override")?.focus();
+});
+
+function fundingRowLabel(entry, index) {
+  return `Tranche ${index + 1}: A$${entry.amountAud} at hour ${entry.hour}`;
+}
+
+let lastRenderedFunding = null;
+function renderFundingTranches() {
+  const container = document.querySelector("#funding-tranches");
+  const status = document.querySelector("#funding-status");
+  if (!container) return;
+  const tranches = Array.isArray(scenario.fundingTranches) ? scenario.fundingTranches : [];
+  const signature = JSON.stringify(tranches);
+  if (signature === lastRenderedFunding && container.contains(document.activeElement)) return;
+  lastRenderedFunding = signature;
+  container.replaceChildren();
+  if (!tranches.length) {
+    const empty = document.createElement("p");
+    empty.className = "canvas-note";
+    empty.textContent = "No scheduled funding. The starting reserve covers the whole horizon unless you add a tranche.";
+    container.append(empty);
+  }
+  tranches.forEach((entry, index) => {
+    const row = document.createElement("div");
+    row.className = "funding-row";
+    const hours = simHours();
+    row.innerHTML = `
+      <strong>${fundingRowLabel(entry, index)} (${entry.hour < hours ? "inside horizon" : "outside horizon"})</strong>
+      <label>Funding hour <input type="number" min="0" max="${hours - 1}" step="1" value="${entry.hour}" data-funding-field="hour" data-funding-index="${index}"></label>
+      <label>Amount A$ <input type="number" min="0" step="0.01" value="${entry.amountAud}" data-funding-field="amountAud" data-funding-index="${index}"></label>
+      <label>Cost A$ <input type="number" min="0" step="0.01" value="${entry.costAud}" data-funding-field="costAud" data-funding-index="${index}"></label>
+      <button type="button" data-remove-funding="${index}">Remove tranche</button>`;
+    container.append(row);
+  });
+  if (status && !status.dataset.touched) status.textContent = "";
+}
+
+function readFundingFromEditor() {
+  const container = document.querySelector("#funding-tranches");
+  if (!container) return [];
+  return [...container.querySelectorAll(".funding-row")].map((row) => {
+    const get = (field) => row.querySelector(`[data-funding-field="${field}"]`)?.value ?? "";
+    const entry = { hour: Number(get("hour")), amountAud: Number(get("amountAud")) };
+    const costRaw = get("costAud");
+    if (costRaw.trim() !== "") entry.costAud = Number(costRaw);
+    return entry;
+  });
+}
+
+function applyFundingEdit() {
+  const status = document.querySelector("#funding-status");
+  const parsed = readFundingFromEditor();
+  const checked = sanitizeFundingTranches(parsed, simHours());
+  if (checked.errors.length) {
+    if (status) {
+      status.dataset.touched = "true";
+      status.textContent = checked.errors[0];
+    }
+    return;
+  }
+  if (status) {
+    delete status.dataset.touched;
+    status.textContent = "";
+  }
+  userEdited = true;
+  const next = { ...scenario };
+  if (checked.tranches && checked.tranches.length) next.fundingTranches = checked.tranches;
+  else delete next.fundingTranches;
+  lastRenderedFunding = JSON.stringify(next.fundingTranches ?? []);
+  setScenario(next, { normaliseForm: false });
+}
+
+document.querySelector("#funding-tranches")?.addEventListener("input", applyFundingEdit);
+document.querySelector("#funding-tranches")?.addEventListener("change", applyFundingEdit);
+document.querySelector("#add-funding-tranche")?.addEventListener("click", () => {
+  userEdited = true;
+  const next = { ...scenario };
+  const tranches = [...(Array.isArray(next.fundingTranches) ? next.fundingTranches : [])];
+  if (tranches.length >= MAX_FUNDING_TRANCHES) {
+    setMessage(`Funding tranches allow at most ${MAX_FUNDING_TRANCHES} entries. Remove one before adding another.`);
+    return;
+  }
+  tranches.push({ hour: 0, amountAud: 100000, costAud: 0 });
+  next.fundingTranches = tranches;
+  setScenario(next, { normaliseForm: false, message: "Funding tranche added. Edit its hour, amount, and cost." });
+});
+document.querySelector("#funding-tranches")?.addEventListener("click", (event) => {
+  const button = event.target.closest("[data-remove-funding]");
+  if (!button) return;
+  userEdited = true;
+  const next = { ...scenario };
+  const tranches = [...(Array.isArray(next.fundingTranches) ? next.fundingTranches : [])];
+  tranches.splice(Number(button.dataset.removeFunding), 1);
+  if (tranches.length) next.fundingTranches = tranches;
+  else delete next.fundingTranches;
+  setScenario(next, { normaliseForm: false, message: "Funding tranche removed." });
+  document.querySelector("#add-funding-tranche")?.focus();
+});
+document.querySelector("#copy-funding-schedule")?.addEventListener("click", async () => {
+  const text = fundingToMarkdown(scenario);
+  return copyTextWithFallback(text, "#funding-copy-fallback", "Funding schedule copied as Markdown. This is a synthetic snapshot, not a funding recommendation.");
 });
 
 timelineRange.addEventListener("input", () => {
@@ -1281,12 +1398,11 @@ function renderDiagnostics() {
 }
 
 function formatHoursToFirstSettlement(hours) {
-  return hours === null ? "No settlement in 72h" : `${hours} hour${hours === 1 ? "" : "s"}`;
+  return hoursToFirstSettlementLabel(hours, simHours());
 }
 
 function formatHoursToClearQueue(hours, peakQueuedAud = 0) {
-  if (hours === null) return peakQueuedAud > 0 ? "queue remains" : "No queue in 72h";
-  return `${hours} hour${hours === 1 ? "" : "s"}`;
+  return hoursToClearLabel(hours, peakQueuedAud, simHours());
 }
 
 function renderDemandProfiles() {
@@ -1385,7 +1501,7 @@ document.querySelector("#compare-experiments").addEventListener("click",()=>{
         planningAud(item.peakQueuedAud),
         planningAud(item.finalQueuedAud),
         planningAud(item.totalSettledAud),
-        item.hoursToFirstSettlement === null ? "No settlement in 72h" : `${item.hoursToFirstSettlement} hour${item.hoursToFirstSettlement === 1 ? "" : "s"}`
+        formatHoursToFirstSettlement(item.hoursToFirstSettlement)
       ]) {
         const td = document.createElement("td");
         td.textContent = value;
@@ -1632,7 +1748,7 @@ document.querySelector("#jump-first-settlement").addEventListener("click",()=>{
 function jumpToFirstClosedBank() {
   const hour = firstClosedGanttHour(scenario);
   if (hour === null) {
-    setMessage("No closed bank or gate hour in this 72-hour calendar.");
+    setMessage(`No closed bank or gate hour in this ${simHours()}-hour calendar.`);
     return false;
   }
   selectedHour = hour;

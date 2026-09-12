@@ -9,6 +9,7 @@ export const START_HOUR = 15;
 export const MIN_HORIZON_HOURS = 24;
 export const MAX_HORIZON_HOURS = 336;
 export const MAX_CALENDAR_OVERRIDES = 32;
+export const MAX_FUNDING_TRANCHES = 16;
 
 const SCENARIO_FORMAT = "weekend-gap-scenario";
 const SCENARIO_VERSION = 1;
@@ -450,6 +451,13 @@ export function sanitizeScenario(raw = {}) {
     scenario.calendarOverrides = overrides.overrides;
   }
 
+  const funding = sanitizeFundingTranches(source.fundingTranches, scenario.horizonHours);
+  if (funding.errors.length) {
+    errors.push(...funding.errors);
+  } else if (source.fundingTranches !== undefined) {
+    scenario.fundingTranches = funding.tranches;
+  }
+
   return { scenario, errors: [...new Set(errors)] };
 }
 
@@ -559,6 +567,75 @@ export function overrideAtHour(scenarioInput, hourOffset) {
     for (const [key, value] of Object.entries(entry.throughput ?? {})) merged.throughput[key] = value;
   }
   return found ? merged : null;
+}
+
+/**
+ * Validates scheduled funding tranches. Each tranche names a whole hour inside
+ * the horizon when reserve cash is added before that hour settles, plus an
+ * optional cost of securing the funds. Costs are tracked as an expense; they
+ * never reduce the reserve. Any invalid entry rejects the whole schedule, so a
+ * horizon change cannot silently reinterpret saved tranches.
+ */
+export function sanitizeFundingTranches(raw, horizon) {
+  const errors = [];
+  if (raw === undefined) return { tranches: undefined, errors };
+  if (!Array.isArray(raw)) return { tranches: undefined, errors: ["Funding tranches must be an array."] };
+  if (raw.length > MAX_FUNDING_TRANCHES) {
+    return { tranches: undefined, errors: [`Funding tranches allow at most ${MAX_FUNDING_TRANCHES} entries.`] };
+  }
+  const limit = Number.isInteger(horizon) && horizon >= MIN_HORIZON_HOURS && horizon <= MAX_HORIZON_HOURS ? horizon : SIMULATION_HOURS;
+  const tranches = [];
+  raw.forEach((entry, index) => {
+    const prefix = `Funding tranche ${index + 1}`;
+    if (!entry || typeof entry !== "object" || Array.isArray(entry)) {
+      errors.push(`${prefix} must be an object.`);
+      return;
+    }
+    for (const key of Object.keys(entry)) {
+      if (!["hour", "amountAud", "costAud"].includes(key)) {
+        errors.push(`${prefix} has unexpected field: ${key}.`);
+      }
+    }
+    const hour = entry.hour;
+    if (!Number.isInteger(hour) || hour < 0 || hour >= limit) {
+      errors.push(`${prefix} hour must be a whole hour from 0 through ${limit - 1}.`);
+    }
+    const amount = typeof entry.amountAud === "number" && Number.isFinite(entry.amountAud)
+      ? Math.round(entry.amountAud * 100) / 100 : NaN;
+    if (!Number.isFinite(amount) || amount <= 0 || amount > 1000000000) {
+      errors.push(`${prefix} amount must be more than A$0 and at most A$1,000,000,000.`);
+    }
+    let cost = 0;
+    if (entry.costAud !== undefined) {
+      cost = typeof entry.costAud === "number" && Number.isFinite(entry.costAud)
+        ? Math.round(entry.costAud * 100) / 100 : NaN;
+      if (!Number.isFinite(cost) || cost < 0 || cost > 1000000000) {
+        errors.push(`${prefix} cost must be from A$0 through A$1,000,000,000.`);
+      }
+    }
+    tranches.push({ hour, amountAud: amount, costAud: cost });
+  });
+  if (errors.length) return { tranches: undefined, errors };
+  return { tranches: Object.freeze(tranches.map((entry) => Object.freeze(entry))), errors };
+}
+
+/**
+ * Funding scheduled at one hour offset: cash added to the reserve before that
+ * hour settles, plus the tracked cost of securing it. Costs never reduce the
+ * reserve; they are reported as an expense beside the funded total.
+ */
+export function fundingAtHour(scenarioInput, hourOffset) {
+  const { scenario } = sanitizeScenario(scenarioInput);
+  const tranches = Array.isArray(scenario.fundingTranches) ? scenario.fundingTranches : [];
+  const hour = Math.floor(hourOffset);
+  let amountAud = 0;
+  let costAud = 0;
+  for (const entry of tranches) {
+    if (entry.hour !== hour) continue;
+    amountAud = Math.round((amountAud + entry.amountAud) * 100) / 100;
+    costAud = Math.round((costAud + entry.costAud) * 100) / 100;
+  }
+  return { amountAud, costAud };
 }
 
 /** Hourly throughput inputs with any scheduled capacity change applied. */
@@ -920,6 +997,8 @@ export function createSnapshot(scenario, hour, state, demandThisHour = 0, settle
     hour,
     timeLabel: formatTime(hour),
     reserveRemainingAud: state.reserveRemainingAud,
+    fundedThisHour: state.fundedThisHour ?? 0,
+    fundedTotalAud: state.fundedTotalAud ?? 0,
     queuedAud: state.queuedAud,
     settledAud: state.settledAud,
     demandArrivedAud: state.demandArrivedAud,
@@ -942,10 +1021,27 @@ export function runSimulation(input = {}) {
   const { scenario, errors } = sanitizeScenario(input);
   const hours = scenarioHours(scenario);
   const demandSchedule = buildDemandSchedule(scenario.redemptionDemandAud, hours, scenario.demandProfile);
-  const state = { reserveRemainingAud: scenario.reserveCashAud, queuedAud: 0, settledAud: 0, demandArrivedAud: 0 };
+  const tranches = Array.isArray(scenario.fundingTranches) ? scenario.fundingTranches : [];
+  const fundingByHour = new Map();
+  for (const entry of tranches) {
+    const prior = fundingByHour.get(entry.hour) ?? { amountAud: 0, costAud: 0 };
+    fundingByHour.set(entry.hour, {
+      amountAud: Math.round((prior.amountAud + entry.amountAud) * 100) / 100,
+      costAud: Math.round((prior.costAud + entry.costAud) * 100) / 100
+    });
+  }
+  const state = { reserveRemainingAud: scenario.reserveCashAud, queuedAud: 0, settledAud: 0, demandArrivedAud: 0,
+    fundedThisHour: 0, fundedTotalAud: 0, fundingCostTotalAud: 0 };
   const timeline = [createSnapshot(scenario, 0, state)];
 
   for (let hour = 0; hour < hours; hour += 1) {
+    const funding = fundingByHour.get(hour) ?? { amountAud: 0, costAud: 0 };
+    state.fundedThisHour = funding.amountAud;
+    if (funding.amountAud !== 0 || funding.costAud !== 0) {
+      state.reserveRemainingAud += funding.amountAud;
+      state.fundedTotalAud = Math.round((state.fundedTotalAud + funding.amountAud) * 100) / 100;
+      state.fundingCostTotalAud = Math.round((state.fundingCostTotalAud + funding.costAud) * 100) / 100;
+    }
     const demandThisHour = demandSchedule[hour];
     state.demandArrivedAud += demandThisHour;
     state.queuedAud += demandThisHour;
@@ -975,6 +1071,8 @@ export function runSimulation(input = {}) {
       hoursWithQueue: timeline.filter((point) => point.queuedAud > 0).length,
       hoursToFirstSettlement: hoursToFirstSettlement(timeline),
       hoursToClearQueue: hoursToClearQueue(timeline),
+      totalFundedAud: state.fundedTotalAud,
+      totalFundingCostAud: state.fundingCostTotalAud,
     })
   });
 }
@@ -986,6 +1084,11 @@ export function compareScenarios(baselineInput, candidateInput) {
   const changes = Object.keys(DEFAULT_SCENARIO)
     .filter((key) => baseline.scenario[key] !== candidate.scenario[key])
     .map((key) => ({ field: key, baseline: baseline.scenario[key], candidate: candidate.scenario[key] }));
+  for (const key of ["calendarOverrides", "fundingTranches"]) {
+    const before = JSON.stringify(baseline.scenario[key] ?? []);
+    const after = JSON.stringify(candidate.scenario[key] ?? []);
+    if (before !== after) changes.push({ field: key, baseline: JSON.parse(before), candidate: JSON.parse(after) });
+  }
   const deltas = Object.fromEntries(Object.keys(baseline.summary)
     .map((key) => {
       const before = baseline.summary[key];
@@ -1001,8 +1104,12 @@ function settlementByDeadline(scenario, reserveAud, deadlineHour) {
   let reserve = reserveAud;
   let queued = 0;
   let settled = 0;
+  const tranches = Array.isArray(scenario.fundingTranches) ? scenario.fundingTranches : [];
   const demand = buildDemandSchedule(scenario.redemptionDemandAud, scenarioHours(scenario), scenario.demandProfile);
   for (let hour = 0; hour < deadlineHour; hour += 1) {
+    for (const entry of tranches) {
+      if (entry.hour === hour) reserve += entry.amountAud;
+    }
     queued += demand[hour];
     const amount = Math.min(queued, capacityForHour(scenario, hour, reserve).capacityAud);
     queued = Math.max(0, queued - amount);
@@ -1210,7 +1317,8 @@ export function analyzeTimeline(input) {
     longestBacklogRun = Math.max(longestBacklogRun, currentRun);
     queueAudHours += after.queuedAud;
     rows.push({ hour, endHour: hour + 1, demandAud: after.demandThisHour,
-      settledAud: after.settledThisHour, queuedAud: after.queuedAud, capacityAud: capacity.capacityAud, blockers });
+      settledAud: after.settledThisHour, queuedAud: after.queuedAud, capacityAud: capacity.capacityAud,
+      fundedAud: after.fundedThisHour, blockers });
   }
   return { rows, queueAudHours, backlogIntervals, longestBacklogRun,
     blockers: [...counts].map(([label, intervals]) => ({ label, intervals })),
@@ -1441,9 +1549,12 @@ export function reportToHTML(current, baseline, options = {}) {
   const escape = value => String(value).replace(/[&<>"']/g, char => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[char]));
   const money = value => value.toLocaleString("en-AU", { style: "currency", currency: "AUD", minimumFractionDigits: 2 });
   const horizon = scenarioHours(workspace.current);
-  const summaryRows = [["Total demand", "totalDemandAud"], [`Settled by ${formatTime(horizon)}`, "totalSettledAud"], ["Final queue", "finalQueuedAud"], ["Peak queue", "peakQueuedAud"], ["Final reserve", "finalReserveAud"]]
+  const summaryRows = [["Total demand", "totalDemandAud"], [`Settled by ${formatTime(horizon)}`, "totalSettledAud"], ["Final queue", "finalQueuedAud"], ["Peak queue", "peakQueuedAud"], ["Final reserve", "finalReserveAud"], ["Scheduled funding", "totalFundedAud"], ["Funding cost", "totalFundingCostAud"]]
     .map(([label, field]) => "<tr><th scope=row>" + escape(label) + "</th><td>" + escape(money(comparison.baseline.summary[field])) + "</td><td>" + escape(money(comparison.candidate.summary[field])) + "</td></tr>").join("");
-  const assumptionRows = Object.keys(DEFAULT_SCENARIO).map(field => "<tr><th scope=row>" + escape(field) + "</th><td>" + escape(workspace.baseline[field]) + "</td><td>" + escape(workspace.current[field]) + "</td></tr>").join("");
+  const scheduleRows = [["calendarOverrides", "calendarOverrides"], ["fundingTranches", "fundingTranches"]]
+    .filter(([, field]) => workspace.baseline[field] !== undefined || workspace.current[field] !== undefined)
+    .map(([label, field]) => "<tr><th scope=row>" + escape(label) + "</th><td>" + escape(JSON.stringify(workspace.baseline[field] ?? [])) + "</td><td>" + escape(JSON.stringify(workspace.current[field] ?? [])) + "</td></tr>").join("");
+  const assumptionRows = Object.keys(DEFAULT_SCENARIO).map(field => "<tr><th scope=row>" + escape(field) + "</th><td>" + escape(workspace.baseline[field]) + "</td><td>" + escape(workspace.current[field]) + "</td></tr>").join("") + scheduleRows;
   const planText = plan.status === "reachable" ? "Minimum whole-cent starting reserve: " + money(plan.minimumReserveAud) : "Unreachable by reserve alone. Maximum modeled settlement: " + money(plan.maximumSettledAud);
   const firstSettlementText = (hours) => hours === null ? `No settlement in ${horizon}h` : hours + " hour" + (hours === 1 ? "" : "s");
   const firstSettlementRow = "<tr><th scope=row>" + escape("Hours to first settlement") + "</th><td>" + escape(firstSettlementText(comparison.baseline.summary.hoursToFirstSettlement)) + "</td><td>" + escape(firstSettlementText(comparison.candidate.summary.hoursToFirstSettlement)) + "</td></tr>";
@@ -1451,19 +1562,19 @@ export function reportToHTML(current, baseline, options = {}) {
   const queueClearRow = "<tr><th scope=row>" + escape("Hours to clear queue") + "</th><td>" + escape(queueClearText(comparison.baseline.summary.hoursToClearQueue, comparison.baseline.summary.peakQueuedAud)) + "</td><td>" + escape(queueClearText(comparison.candidate.summary.hoursToClearQueue, comparison.candidate.summary.peakQueuedAud)) + "</td></tr>";
   const bottleneckRows = attributeBottlenecks(workspace.current).rows.map((row) =>
     "<tr><th scope=row>" + escape(row.label) + "</th><td>" + escape(String(row.hours)) + "</td><td>" + escape((row.share * 100).toFixed(1) + "%") + "</td></tr>").join("");
-  return '<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta http-equiv="Content-Security-Policy" content="default-src &#39;none&#39;; style-src &#39;unsafe-inline&#39;; base-uri &#39;none&#39;; form-action &#39;none&#39;"><title>Weekend Gap experiment report</title><style>body{font:16px/1.5 system-ui,sans-serif;color:#172b35;background:white;max-width:1000px;margin:2rem auto;padding:1rem}h1,h2{line-height:1.2}table{border-collapse:collapse;width:100%;margin:1rem 0}th,td{border:1px solid #9aa9b0;padding:.55rem;text-align:left;overflow-wrap:anywhere}th{background:#eff3f5}pre{white-space:pre-wrap;overflow-wrap:anywhere;font:inherit}.notice{border-left:4px solid #54727f;padding:1rem;background:#f2f5f6}@media print{body{margin:0;padding:0;font-size:10pt}h2{break-after:avoid}tr{break-inside:avoid}thead{display:table-header-group}}</style></head><body><main><h1>Weekend Gap experiment report</h1><p class="notice">Synthetic educational analysis. No live data, issuer claims, financial advice or payout operations. ' + horizon + '-hour horizon: ' + formatTime(0) + ' to ' + formatTime(horizon) + ', using abstract local time.</p><p>Current: <strong>' + escape(workspace.current.name) + '</strong>. Baseline: <strong>' + escape(workspace.baseline.name) + '</strong>.</p><h2>Experiment notes</h2><pre>' + escape(workspace.notes || "No experiment notes provided.") + '</pre><h2>Outcome comparison</h2><p>AUD display values are rounded to cents. Compare total demand alongside settlement and queue size.</p><table><thead><tr><th scope="col">Metric</th><th scope="col">Baseline</th><th scope="col">Current</th></tr></thead><tbody>' + summaryRows + firstSettlementRow + queueClearRow + '</tbody></table><h2>Queue diagnostics</h2><p>' + diagnostics.backlogIntervals + ' of ' + horizon + ' intervals end with backlog. Longest run: ' + diagnostics.longestBacklogRun + ' hours. End-of-hour queue exposure: ' + escape(money(diagnostics.queueAudHours)) + '·hours.</p><ul>' + diagnostics.blockers.map(item => '<li>' + escape(item.label) + ': ' + item.intervals + ' backlog intervals</li>').join("") + '</ul><p>Concurrent blockers overlap. Counts describe observations, not marginal causal impact.</p><h2>Gate Gantt</h2><p>Open versus closed hours for the current scenario. The green dashed marker is the first hour the payout chain can settle given starting reserve. The solid marker is the selected hour from the workspace.</p>' + buildGateGanttSvg(workspace.current, workspace.selectedHour) + '<h2>Baseline versus current Gantt</h2><p>Paired rows compare current and baseline operating calendars. This is not a forecast.</p>' + buildComparisonGanttSvg(workspace.baseline, workspace.current, workspace.selectedHour) + '<h2>Queue path</h2><p>Printable queued AUD versus hour for the current scenario. The dashed path is the pinned baseline. The vertical line is the selected workspace hour.</p>' + buildQueueChartSvg(workspace.current, workspace.baseline, workspace.selectedHour) + '<h2>Hourly limiting gate</h2><p>Count of the ' + horizon + ' interval-start limitingGate values on the current scenario. Closed issuer, bank or payout gates are named before throughput or reserve. This is an observation count, not a ranking of which change would raise settlement.</p><table><thead><tr><th scope="col">Limiter</th><th scope="col">Hours</th><th scope="col">Share of ' + horizon + 'h</th></tr></thead><tbody>' + bottleneckRows + '</tbody></table><h2>Reserve experiment</h2><p>Target: ' + workspace.targetPercent + '% of total 72-hour demand by ' + escape(formatTime(workspace.deadlineHour)) + '. ' + escape(planText) + '.</p><p>' + escape(plan.reason) + '</p><h2>Complete assumptions</h2><table><thead><tr><th scope="col">Assumption</th><th scope="col">Baseline</th><th scope="col">Current</th></tr></thead><tbody>' + assumptionRows + '</tbody></table><h2>Method and limits</h2><p>Demand joins once per hour under the selected deterministic arrival profile. Settlement requires all three business-day operating windows to overlap. Capacity is the minimum of issuer throughput, FX depth, payout throughput and remaining starting reserve. No reserve replenishment occurs. Queue exposure sums end-of-hour balances; it is not a customer waiting-time estimate. The optional Monday and Saturday holiday flags are modeled. Other public holidays, time zones, settlement uncertainty and counterparty risk are not modeled. No result is a liquidity recommendation.</p><p>Report format: weekend-gap-report v1. Export the separate workspace JSON for editable inputs and hourly CSV for the complete ledger. Use your browser Print command to save or print this report.</p></main></body></html>';
+  return '<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta http-equiv="Content-Security-Policy" content="default-src &#39;none&#39;; style-src &#39;unsafe-inline&#39;; base-uri &#39;none&#39;; form-action &#39;none&#39;"><title>Weekend Gap experiment report</title><style>body{font:16px/1.5 system-ui,sans-serif;color:#172b35;background:white;max-width:1000px;margin:2rem auto;padding:1rem}h1,h2{line-height:1.2}table{border-collapse:collapse;width:100%;margin:1rem 0}th,td{border:1px solid #9aa9b0;padding:.55rem;text-align:left;overflow-wrap:anywhere}th{background:#eff3f5}pre{white-space:pre-wrap;overflow-wrap:anywhere;font:inherit}.notice{border-left:4px solid #54727f;padding:1rem;background:#f2f5f6}@media print{body{margin:0;padding:0;font-size:10pt}h2{break-after:avoid}tr{break-inside:avoid}thead{display:table-header-group}}</style></head><body><main><h1>Weekend Gap experiment report</h1><p class="notice">Synthetic educational analysis. No live data, issuer claims, financial advice or payout operations. ' + horizon + '-hour horizon: ' + formatTime(0) + ' to ' + formatTime(horizon) + ', using abstract local time.</p><p>Current: <strong>' + escape(workspace.current.name) + '</strong>. Baseline: <strong>' + escape(workspace.baseline.name) + '</strong>.</p><h2>Experiment notes</h2><pre>' + escape(workspace.notes || "No experiment notes provided.") + '</pre><h2>Outcome comparison</h2><p>AUD display values are rounded to cents. Compare total demand alongside settlement and queue size.</p><table><thead><tr><th scope="col">Metric</th><th scope="col">Baseline</th><th scope="col">Current</th></tr></thead><tbody>' + summaryRows + firstSettlementRow + queueClearRow + '</tbody></table><h2>Queue diagnostics</h2><p>' + diagnostics.backlogIntervals + ' of ' + horizon + ' intervals end with backlog. Longest run: ' + diagnostics.longestBacklogRun + ' hours. End-of-hour queue exposure: ' + escape(money(diagnostics.queueAudHours)) + '·hours.</p><ul>' + diagnostics.blockers.map(item => '<li>' + escape(item.label) + ': ' + item.intervals + ' backlog intervals</li>').join("") + '</ul><p>Concurrent blockers overlap. Counts describe observations, not marginal causal impact.</p><h2>Gate Gantt</h2><p>Open versus closed hours for the current scenario. The green dashed marker is the first hour the payout chain can settle given starting reserve. The solid marker is the selected hour from the workspace.</p>' + buildGateGanttSvg(workspace.current, workspace.selectedHour) + '<h2>Baseline versus current Gantt</h2><p>Paired rows compare current and baseline operating calendars. This is not a forecast.</p>' + buildComparisonGanttSvg(workspace.baseline, workspace.current, workspace.selectedHour) + '<h2>Queue path</h2><p>Printable queued AUD versus hour for the current scenario. The dashed path is the pinned baseline. The vertical line is the selected workspace hour.</p>' + buildQueueChartSvg(workspace.current, workspace.baseline, workspace.selectedHour) + '<h2>Hourly limiting gate</h2><p>Count of the ' + horizon + ' interval-start limitingGate values on the current scenario. Closed issuer, bank or payout gates are named before throughput or reserve. This is an observation count, not a ranking of which change would raise settlement.</p><table><thead><tr><th scope="col">Limiter</th><th scope="col">Hours</th><th scope="col">Share of ' + horizon + 'h</th></tr></thead><tbody>' + bottleneckRows + '</tbody></table><h2>Reserve experiment</h2><p>Target: ' + workspace.targetPercent + '% of total ' + horizon + '-hour demand by ' + escape(formatTime(workspace.deadlineHour)) + '. ' + escape(planText) + '.</p><p>' + escape(plan.reason) + '</p><h2>Complete assumptions</h2><table><thead><tr><th scope="col">Assumption</th><th scope="col">Baseline</th><th scope="col">Current</th></tr></thead><tbody>' + assumptionRows + '</tbody></table><h2>Method and limits</h2><p>Demand joins once per hour under the selected deterministic arrival profile. Settlement requires all three business-day operating windows to overlap. Capacity is the minimum of issuer throughput, FX depth, payout throughput and remaining starting reserve. ' + (scheduleRows.includes('fundingTranches') ? 'Scheduled funding tranches add reserve cash before their named hours settle; funding costs are tracked expenses, not reserve deductions.' : 'No reserve replenishment occurs.') + ' Queue exposure sums end-of-hour balances; it is not a customer waiting-time estimate. The optional Monday and Saturday holiday flags are modeled. Other public holidays, time zones, settlement uncertainty and counterparty risk are not modeled. No result is a liquidity recommendation.</p><p>Report format: weekend-gap-report v1. Export the separate workspace JSON for editable inputs and hourly CSV for the complete ledger. Use your browser Print command to save or print this report.</p></main></body></html>';
 }
 
-function hoursToClearLabel(hours, peak, horizon = SIMULATION_HOURS) {
+export function hoursToClearLabel(hours, peak, horizon = SIMULATION_HOURS) {
   if (hours === null) return peak > 0 ? "queue remains" : `No queue in ${horizon}h`;
   return hours + " hour" + (hours === 1 ? "" : "s");
 }
 
-function hoursToFirstSettlementLabel(hours, horizon = SIMULATION_HOURS) {
+export function hoursToFirstSettlementLabel(hours, horizon = SIMULATION_HOURS) {
   return hours === null ? `No settlement in ${horizon}h` : hours + " hour" + (hours === 1 ? "" : "s");
 }
 
-function peakQueueHourLabel(summary, horizon = SIMULATION_HOURS) {
+export function peakQueueHourLabel(summary, horizon = SIMULATION_HOURS) {
   if (!(summary.peakQueuedAud > 0)) return `No queue in ${horizon}h`;
   return formatTime(summary.peakQueueHour) + " (hour " + summary.peakQueueHour + ")";
 }
@@ -1496,6 +1607,8 @@ export function reportToMarkdown(current, baseline, options = {}) {
     "| Hours to clear queue | " + hoursToClearLabel(comparison.baseline.summary.hoursToClearQueue, comparison.baseline.summary.peakQueuedAud, scenarioHours(comparison.baseline.scenario)) + " | " + hoursToClearLabel(comparison.candidate.summary.hoursToClearQueue, comparison.candidate.summary.peakQueuedAud, scenarioHours(comparison.candidate.scenario)) + " |",
     "| Peak queue hour | " + peakQueueHourLabel(comparison.baseline.summary, scenarioHours(comparison.baseline.scenario)) + " | " + peakQueueHourLabel(comparison.candidate.summary, scenarioHours(comparison.candidate.scenario)) + " |",
     "| Peak queue | " + comparison.baseline.summary.peakQueuedAud + " | " + comparison.candidate.summary.peakQueuedAud + " |",
+    "| Scheduled funding AUD | " + comparison.baseline.summary.totalFundedAud + " | " + comparison.candidate.summary.totalFundedAud + " |",
+    "| Funding cost AUD | " + comparison.baseline.summary.totalFundingCostAud + " | " + comparison.candidate.summary.totalFundingCostAud + " |",
     "",
     "This is a synthetic comparison, not a liquidity recommendation.",
     ""
@@ -1507,15 +1620,39 @@ export function dashboardToMarkdown(input) {
   const result = runSimulation(input);
   const summary = result.summary;
   const hours = scenarioHours(result.scenario);
-  return [
+  const lines = [
     "# Weekend Gap dashboard",
     "",
     "Synthetic educational numbers. Not financial advice or live market data.",
     "",
     "- Hours to clear queue: " + hoursToClearLabel(summary.hoursToClearQueue, summary.peakQueuedAud, hours),
     "- Peak queue hour: " + peakQueueHourLabel(summary, hours),
-    "- Hours to first settlement: " + hoursToFirstSettlementLabel(summary.hoursToFirstSettlement, hours),
-    ""
+    "- Hours to first settlement: " + hoursToFirstSettlementLabel(summary.hoursToFirstSettlement, hours)
+  ];
+  const tranches = Array.isArray(result.scenario.fundingTranches) ? result.scenario.fundingTranches : [];
+  if (tranches.length) {
+    lines.push("- Scheduled funding: A$" + summary.totalFundedAud + " across " + tranches.length +
+      (tranches.length === 1 ? " tranche" : " tranches") + " (funding cost A$" + summary.totalFundingCostAud + ")");
+  }
+  lines.push("");
+  return lines.join("\n");
+}
+
+/** One funding row per tranche: hour label, amount, and cost. Costs are expenses, not reserve deductions. */
+export function fundingToMarkdown(input) {
+  const result = runSimulation(input);
+  const tranches = Array.isArray(result.scenario.fundingTranches) ? result.scenario.fundingTranches : [];
+  if (!tranches.length) return "No scheduled funding tranches. Synthetic educational snapshot, not a funding recommendation.";
+  const rows = tranches.map((entry) =>
+    "| " + formatTime(entry.hour) + " (hour " + entry.hour + ") | " + entry.amountAud + " | " + entry.costAud + " |");
+  return [
+    "Scheduled funding adds reserve cash before the named hour settles. Costs are tracked expenses, not reserve deductions.",
+    "",
+    "| Funding hour | Amount AUD | Cost AUD |",
+    "| --- | --- | --- |",
+    ...rows,
+    "",
+    "Total funded A$" + result.summary.totalFundedAud + " at a funding cost of A$" + result.summary.totalFundingCostAud + ". Synthetic educational snapshot, not a funding recommendation."
   ].join("\n");
 }
 
@@ -2867,63 +3004,69 @@ export const WEEKEND_REVIEW_TOOLS=Object.freeze([
 ]);
 function validateWeekendReviewScenario(raw){
  const fields=Object.keys(DEFAULT_SCENARIO);
- if(!raw||typeof raw!=='object'||Array.isArray(raw)||Object.keys(raw).length!==fields.length||!fields.every(field=>Object.hasOwn(raw,field)&&typeof raw[field]===typeof DEFAULT_SCENARIO[field]))throw new TypeError('Review requires a complete scenario with the declared field types.');
+ const extras=['calendarOverrides','fundingTranches'];
+ if(!raw||typeof raw!=='object'||Array.isArray(raw)||!fields.every(field=>Object.hasOwn(raw,field)&&typeof raw[field]===typeof DEFAULT_SCENARIO[field]))throw new TypeError('Review requires a complete scenario with the declared field types.');
+ for(const key of Object.keys(raw))if(!fields.includes(key)&&!extras.includes(key))throw new TypeError('Review requires a complete scenario with the declared field types.');
+ for(const key of extras)if(raw[key]!==undefined&&!Array.isArray(raw[key]))throw new TypeError('Review requires a complete scenario with the declared field types.');
+ if(Object.keys(raw).length>fields.length+extras.length)throw new TypeError('Review requires a complete scenario with the declared field types.');
  const cleaned=sanitizeScenario(raw);if(cleaned.errors.length)throw new TypeError(cleaned.errors.join(' '));return cleaned.scenario;
 }
 export function analyzeWeekendReview(rawScenario,tool){
  const scenario=validateWeekendReviewScenario(rawScenario);const selected=WEEKEND_REVIEW_TOOLS.find(entry=>entry.id===tool);if(!selected)throw new TypeError('Unknown weekend review.');
+ const hours=scenarioHours(scenario);
  const result=runSimulation(scenario);const report=(columns,rows,note)=>({tool,title:selected.title,currency:'AUD',columns,rows,note});
  switch(tool){
  case 'days':{
 
- const days=new Map();for(let hour=0;hour<72;hour++){const name=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'][dayAndHourAt(hour).dayIndex];if(!days.has(name))days.set(name,[name,0,0,0,0,0]);const row=days.get(name),point=result.timeline[hour+1];row[1]++;row[2]+=point.demandThisHour;row[3]+=point.settledThisHour;row[4]+=point.queuedAud;row[5]=Math.max(row[5],point.queuedAud);}
+ const days=new Map();for(let hour=0;hour<hours;hour++){const name=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'][dayAndHourAt(hour).dayIndex];if(!days.has(name))days.set(name,[name,0,0,0,0,0]);const row=days.get(name),point=result.timeline[hour+1];row[1]++;row[2]+=point.demandThisHour;row[3]+=point.settledThisHour;row[4]+=point.queuedAud;row[5]=Math.max(row[5],point.queuedAud);}
  return report(['Day','Modeled hours','Demand arrived AUD','Settled AUD','Queue AUD-hours','Peak end-hour queue AUD'],[...days.values()],'Queue AUD-hours sums the queue after each hourly step, multiplied by one hour. Friday and Monday are partial days. It measures modeled backlog exposure, not a charge or real customer waiting time.');
 
  }
  case 'cohorts':{
 
- const cohorts=[];let front=0;for(let hour=0;hour<72;hour++){const point=result.timeline[hour+1];cohorts.push({hour,arrived:point.demandThisHour,remaining:point.demandThisHour,settled:0,wait:0});let available=point.settledThisHour;while(available>0&&front<cohorts.length){const cohort=cohorts[front],amount=Math.min(available,cohort.remaining);cohort.remaining=Math.max(0,cohort.remaining-amount);available=Math.max(0,available-amount);cohort.settled+=amount;cohort.wait+=amount*(hour-cohort.hour);if(cohort.remaining===0)front++;else break;}}
- return report(['Arrival hour','Arrived AUD','Settled by hour 72 AUD','Remaining AUD','Mean completed wait hours','Unfinished wait AUD-hours'],cohorts.map(c=>[c.hour,c.arrived,c.settled,c.remaining,c.settled>0?c.wait/c.settled:null,c.remaining*(72-c.hour)]),'Analytical FIFO attribution only: the core model has no customer priority. Same-step settlement has zero completed wait. Remaining amounts accumulate wait through hour 72 and have no assumed later payout. Means exclude unfinished amounts.');
+ const cohorts=[];let front=0;for(let hour=0;hour<hours;hour++){const point=result.timeline[hour+1];cohorts.push({hour,arrived:point.demandThisHour,remaining:point.demandThisHour,settled:0,wait:0});let available=point.settledThisHour;while(available>0&&front<cohorts.length){const cohort=cohorts[front],amount=Math.min(available,cohort.remaining);cohort.remaining=Math.max(0,cohort.remaining-amount);available=Math.max(0,available-amount);cohort.settled+=amount;cohort.wait+=amount*(hour-cohort.hour);if(cohort.remaining===0)front++;else break;}}
+ return report(['Arrival hour','Arrived AUD','Settled by hour '+hours+' AUD','Remaining AUD','Mean completed wait hours','Unfinished wait AUD-hours'],cohorts.map(c=>[c.hour,c.arrived,c.settled,c.remaining,c.settled>0?c.wait/c.settled:null,c.remaining*(hours-c.hour)]),'Analytical FIFO attribution only: the core model has no customer priority. Same-step settlement has zero completed wait. Remaining amounts accumulate wait through hour '+hours+' and have no assumed later payout. Means exclude unfinished amounts.');
 
  }
  case 'deadlines':{
 
- return report(['Checkpoint hour','Arrived AUD','Settled AUD','Queued AUD','Settled / arrived %','Settled / total demand %'],[12,24,36,48,60,72].map(hour=>{const p=result.timeline[hour];return[hour,p.demandArrivedAud,p.settledAud,p.queuedAud,p.demandArrivedAud>0?p.settledAud/p.demandArrivedAud*100:null,scenario.redemptionDemandAud>0?p.settledAud/scenario.redemptionDemandAud*100:null];}),'Six fixed checkpoints. The total-demand denominator includes future arrivals, while arrived demand includes only arrivals by that checkpoint. Blank percentage means zero demand, not a promised service level.');
+ const marks=[12,24,36,48,60,72].filter(mark=>mark<=hours);if(marks[marks.length-1]!==hours)marks.push(hours);
+ return report(['Checkpoint hour','Arrived AUD','Settled AUD','Queued AUD','Settled / arrived %','Settled / total demand %'],marks.map(hour=>{const p=result.timeline[hour];return[hour,p.demandArrivedAud,p.settledAud,p.queuedAud,p.demandArrivedAud>0?p.settledAud/p.demandArrivedAud*100:null,scenario.redemptionDemandAud>0?p.settledAud/scenario.redemptionDemandAud*100:null];}),'Checkpoints every 12 hours within the horizon plus the final checkpoint. The total-demand denominator includes future arrivals, while arrived demand includes only arrivals by that checkpoint. Blank percentage means zero demand, not a promised service level.');
 
  }
  case 'closures':{
 
- const rows=[];let start=null;for(let hour=0;hour<=72;hour++){const status=hour<72?getOperationalStatus(scenario,hour):null;const closed=status&&!(status.issuerOpen&&status.bankOpen&&status.payoutOpen);if(closed&&start===null)start=hour;if(!closed&&start!==null){const arrived=result.timeline.slice(start+1,hour+1).reduce((sum,p)=>sum+p.demandThisHour,0);rows.push([start,hour,hour-start,result.timeline[start].queuedAud,arrived,result.timeline[hour].queuedAud]);start=null;}}
- return report(['Start hour inclusive','End hour exclusive','Consecutive closed hours','Queue at start AUD','Arrivals during closure AUD','Queue at end AUD'],rows,'A closure means at least one issuer, bank or payout window is closed. Zero reserve and zero throughput are separate constraints. Spells end at the 72-hour horizon; no reopening beyond that horizon is inferred.');
+ const rows=[];let start=null;for(let hour=0;hour<=hours;hour++){const status=hour<hours?getOperationalStatus(scenario,hour):null;const closed=status&&!(status.issuerOpen&&status.bankOpen&&status.payoutOpen);if(closed&&start===null)start=hour;if(!closed&&start!==null){const arrived=result.timeline.slice(start+1,hour+1).reduce((sum,p)=>sum+p.demandThisHour,0);rows.push([start,hour,hour-start,result.timeline[start].queuedAud,arrived,result.timeline[hour].queuedAud]);start=null;}}
+ return report(['Start hour inclusive','End hour exclusive','Consecutive closed hours','Queue at start AUD','Arrivals during closure AUD','Queue at end AUD'],rows,'A closure means at least one issuer, bank or payout window is closed. Zero reserve and zero throughput are separate constraints. Spells end at the '+hours+'-hour horizon; no reopening beyond that horizon is inferred.');
 
  }
  case 'overlap':{
 
- const counts={issuer:0,bank:0,payout:0};let common=0;for(let hour=0;hour<72;hour++){const status=getOperationalStatus(scenario,hour);for(const gate of Object.keys(counts))if(status[gate+'Open'])counts[gate]++;if(status.issuerOpen&&status.bankOpen&&status.payoutOpen)common++;}
+ const counts={issuer:0,bank:0,payout:0};let common=0;for(let hour=0;hour<hours;hour++){const status=getOperationalStatus(scenario,hour);for(const gate of Object.keys(counts))if(status[gate+'Open'])counts[gate]++;if(status.issuerOpen&&status.bankOpen&&status.payoutOpen)common++;}
  return report(['Gate','Individually open hours','Complete-chain open hours','Open hours without complete chain'],Object.entries(counts).map(([gate,hours])=>[gate,hours,common,hours-common]),'Hours use operating windows and holidays only. Open hours do not establish available reserve, FX depth, throughput or demand. The lost overlap counts are per gate and must not be summed as unique closure hours.');
 
  }
  case 'reserve':{
 
- return report(['Target of total demand %','Target AUD','Status','Minimum starting reserve AUD','Change from current AUD','Maximum possible settlement AUD'],[25,50,75,100].map(target=>{const p=planReserve(scenario,target,72);return[target,p.targetAud,p.status,p.minimumReserveAud,p.reserveChangeAud,p.maximumSettledAud];}),'Four targets at hour 72 use the existing whole-cent reserve planner. All gates, throughput and demand timing stay fixed. Unreachable means reserve alone cannot meet that target within nominal liquidity. Synthetic calculation only; no funding action or recommendation.');
+ return report(['Target of total demand %','Target AUD','Status','Minimum starting reserve AUD','Change from current AUD','Maximum possible settlement AUD'],[25,50,75,100].map(target=>{const p=planReserve(scenario,target,hours);return[target,p.targetAud,p.status,p.minimumReserveAud,p.reserveChangeAud,p.maximumSettledAud];}),'Four targets at hour '+hours+' use the existing whole-cent reserve planner. All gates, throughput, demand timing and scheduled funding stay fixed. Unreachable means reserve alone cannot meet that target within nominal liquidity. Synthetic calculation only; no funding action or recommendation.');
 
  }
  case 'throughput':{
 
  const fields=['issuerThroughputAudPerHour','fxDepthAudPerHour','payoutThroughputAudPerHour'];const rows=[1,2,4,8].map(multiplier=>{const candidate={...scenario};for(const field of fields)candidate[field]=Math.min(1000000000,scenario[field]*multiplier);const r=runSimulation(candidate);return[multiplier,...fields.map(f=>candidate[f]),r.summary.totalSettledAud,r.summary.totalSettledAud-result.summary.totalSettledAud,r.summary.finalQueuedAud];});
- return report(['Multiplier','Issuer AUD/hour','FX AUD/hour before weekend factor','Payout AUD/hour','Settled by 72 AUD','Extra settled AUD','Final queue AUD'],rows,'All three throughput assumptions scale together up to their 1 billion AUD/hour caps. Reserve and windows remain unchanged. Repeated settlements show a plateau only at these four tested points, not a global optimum. Zero rates remain zero.');
+ return report(['Multiplier','Issuer AUD/hour','FX AUD/hour before weekend factor','Payout AUD/hour','Settled by '+hours+' AUD','Extra settled AUD','Final queue AUD'],rows,'All three throughput assumptions scale together up to their 1 billion AUD/hour caps. Reserve and windows remain unchanged. Repeated settlements show a plateau only at these four tested points, not a global optimum. Zero rates remain zero.');
 
  }
  case 'holidays':{
 
  const rows=[];for(const saturdayHoliday of [false,true])for(const mondayHoliday of [false,true]){const r=runSimulation({...scenario,saturdayHoliday,mondayHoliday});rows.push([saturdayHoliday?'Yes':'No',mondayHoliday?'Yes':'No',r.summary.totalSettledAud,r.summary.totalSettledAud-result.summary.totalSettledAud,r.summary.finalQueuedAud]);}
- return report(['Saturday holiday','Monday holiday','Settled by 72 AUD','Change from current AUD','Final queue AUD'],rows,'These four declared holiday combinations are synthetic, not a calendar lookup. Saturday is already closed in the current business-day model, so its flag may have no numerical effect. No actual holiday or service availability is verified.');
+ return report(['Saturday holiday','Monday holiday','Settled by '+hours+' AUD','Change from current AUD','Final queue AUD'],rows,'These four declared holiday combinations are synthetic, not a calendar lookup. Saturday is already closed in the current business-day model, so its flag may have no numerical effect. No actual holiday or service availability is verified.');
 
  }
  case 'reserve-hours':{
 
  const added=Math.min(scenario.nominalLiquidityAud-scenario.reserveCashAud,Math.max(.01,scenario.reserveCashAud*.1));const candidate=runSimulation({...scenario,reserveCashAud:scenario.reserveCashAud+added});
- return report(['Hour ending','Base settled this hour AUD','With extra reserve AUD','Extra settled this hour AUD','Extra cumulative settled AUD'],result.timeline.slice(1).map((point,i)=>{const other=candidate.timeline[i+1];return[point.hour,point.settledThisHour,other.settledThisHour,other.settledThisHour-point.settledThisHour,other.settledAud-point.settledAud];}),'A single counterfactual adds '+added+' AUD starting reserve (10% or one cent, capped at nominal liquidity). All other assumptions stay fixed. With fixed rates and no reserve replenishment, extra reserve cannot reduce hourly settlement; the cumulative column tracks the added payout. No reserve is actually moved.');
+ return report(['Hour ending','Base settled this hour AUD','With extra reserve AUD','Extra settled this hour AUD','Extra cumulative settled AUD'],result.timeline.slice(1).map((point,i)=>{const other=candidate.timeline[i+1];return[point.hour,point.settledThisHour,other.settledThisHour,other.settledThisHour-point.settledThisHour,other.settledAud-point.settledAud];}),'A single counterfactual adds '+added+' AUD starting reserve (10% or one cent, capped at nominal liquidity). All other assumptions stay fixed, including any scheduled funding tranches. With fixed rates, extra starting reserve cannot reduce hourly settlement; the cumulative column tracks the added payout. No reserve is actually moved.');
 
  }
 // WG_REVIEW_CASES

@@ -1,7 +1,7 @@
 import { open } from 'node:fs/promises';
 import { constants } from 'node:fs';
 import {
-  DEFAULT_SCENARIO, scenarioFromJSON, runSimulation, dashboardToMarkdown,
+  DEFAULT_SCENARIO, scenarioFromJSON, runSimulation, dashboardToMarkdown, fundingToMarkdown,
   compareScenarios,
   planReserve,
   timelineToCSV, analyzeTimeline,
@@ -17,6 +17,7 @@ const usage = `Weekend Gap offline analysis (synthetic AUD only)
   simulate SCENARIO [--format json|markdown]
   compare BASELINE CANDIDATE
   reserve SCENARIO TARGET_PERCENT DEADLINE_HOUR
+  funding SCENARIO [--format json|markdown]
   timeline SCENARIO [--format json|csv]
   sensitivity SCENARIO FIELD
   shift SCENARIO GATE START_DELTA_HOURS END_DELTA_HOURS
@@ -94,7 +95,11 @@ function parseScenario(text) {
   if (raw !== parsed && Object.keys(parsed).some(key => !['format', 'version', 'scenario'].includes(key))) {
     throw new Error('Unknown scenario envelope field.');
   }
-  if (Object.keys(raw).some(key => !Object.hasOwn(DEFAULT_SCENARIO, key) || typeof raw[key] !== typeof DEFAULT_SCENARIO[key])) {
+  const scheduleKeys = ['calendarOverrides', 'fundingTranches'];
+  if (Object.keys(raw).some(key => {
+    if (Object.hasOwn(DEFAULT_SCENARIO, key)) return typeof raw[key] !== typeof DEFAULT_SCENARIO[key];
+    return !scheduleKeys.includes(key) || !Array.isArray(raw[key]);
+  })) {
     throw new Error('Unknown scenario field or incorrect field type.');
   }
   return result.scenario;
@@ -166,6 +171,18 @@ async function main([command, ...rest]) {
       const input = await scenario(path);
       return { scenario: input, field, rows: runSensitivity(input, field),
         note: 'Five one-factor synthetic experiments. Requested values can hit model caps; inspect effectiveValue and adjusted. This is not optimization.' };
+    }
+    case 'funding': {
+      const { args: [path], format } = argumentsFor(rest, 1, ['json', 'markdown']);
+      const input = await scenario(path);
+      if (format === 'markdown') return fundingToMarkdown(input);
+      const bare = { ...input };
+      delete bare.fundingTranches;
+      const comparison = compareScenarios(bare, input);
+      return { scenario: input, tranches: comparison.candidate.scenario.fundingTranches ?? [],
+        fundedSummary: comparison.candidate.summary, unfundedSummary: comparison.baseline.summary,
+        deltas: comparison.deltas,
+        note: 'Deltas are funded minus unfunded with every other assumption fixed. Funding costs are tracked expenses, not reserve deductions. This is not a funding recommendation.' };
     }
     case 'timeline': {
       const { args: [path], format } = argumentsFor(rest, 1, ['json', 'csv']);

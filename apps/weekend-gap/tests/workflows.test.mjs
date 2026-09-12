@@ -732,3 +732,14 @@ test("demand timing earlier and later previews apply without randomness", async 
 test("invalid numeric edit clears timing review and blocks a stale export", async () => {
  const ui=await boot();await ui.nodes.get("weekend-review-run").click();assert.equal(ui.nodes.get("weekend-review-export").disabled,false);ui.nodes.get("reserveCashAud").value="";await ui.nodes.get("scenario-form").emit("input");assert.equal(ui.nodes.get("weekend-review-export").disabled,true);await ui.nodes.get("weekend-review-run").click();assert.equal(ui.nodes.get("weekend-review-export").disabled,true);assert.match(ui.nodes.get("weekend-review-output").textContent,/Complete invalid/);
 });
+test("funding tranches add reserve and survive unrelated form edits", async () => {
+  const ui = await boot();
+  assert.doesNotMatch(ui.nodes.get("outcome-explanation").textContent, /Scheduled funding/);
+  await ui.nodes.get("add-funding-tranche").click();
+  assert.match(ui.nodes.get("outcome-explanation").textContent, /Scheduled funding added A\$100,000 at a funding cost of A\$0/);
+  ui.nodes.get("reserveCashAud").value = "0";
+  await ui.nodes.get("scenario-form").emit("change");
+  assert.match(ui.nodes.get("outcome-explanation").textContent, /Scheduled funding added A\$100,000/);
+  const saved = JSON.parse(ui.storage.get("weekend-gap:workspace:v1"));
+  assert.deepEqual(saved.current.fundingTranches, [{ hour: 0, amountAud: 100000, costAud: 0 }]);
+});

@@ -66,6 +66,10 @@ npm run check
 - A horizon-length gate Gantt (SVG plus table) with hatch marks for closed hours and a consolidated hour filter (all hours, closed on at least one gate, closed on every gate, open on at least one gate, weekend only, weekday only, queued demand only), a single-gate display filter, and row-density control. Gate hour evidence buttons copy the first and last open and closed hours plus open and closed counts for one gate. Closed-hours, FX-hours and weekend-FX-counts lists and the selected hour remain copyable. Older workspace files keep loading: legacy per-gate hide flags map onto the consolidated filter and are no longer written.
 - Import and export of scenario JSON, server-mode URL-hash sharing, reset and safe local autosave.
 
+## Scheduled funding tranches
+
+Add reserve cash before a named hour settles, with the cost of securing it tracked as an expense that never reduces the reserve. The outcome summary names the funded total and cost, comparisons show signed funding deltas, and the reserve planner counts only tranches before its deadline. Copy the schedule as Markdown from the editor. This is arithmetic on a synthetic reserve, not a credit line or a funding recommendation.
+
 ## Scenario comparison and reserve planner
 
 Pin a baseline, then test a preset or edit an assumption. The comparison table
@@ -138,6 +142,15 @@ CHANGELOG.md        Version history
 ## License
 
 MIT. See [LICENSE](LICENSE).
+
+## New in v1.8.0: scheduled funding tranches with cost accounting
+
+Weekend Gap 1.8.0 is a capability release on 1.7.0. Scheduled funding is arithmetic on a synthetic reserve, not a credit line.
+
+1. Optional `fundingTranches` (at most 16) add reserve cash before a named hour settles, each with a tracked cost of securing the funds. Costs never reduce the reserve. Any invalid entry rejects the whole schedule.
+2. The simulation, reserve planner, comparisons, dashboard, reports, timeline analysis, and review packets all account for tranches. The planner counts only tranches before the deadline; comparisons list schedule edits with signed funding deltas.
+3. The scenario editor gains a funding tranche list with add, edit, and remove actions, plus a schedule copy button. Edits are undoable and travel in scenario JSON, share links, and autosave.
+4. The CLI gains a `funding` command comparing the funded run against the same scenario with tranches stripped, and now accepts dated schedule fields. Review tools run at any horizon and accept scheduled scenarios.
 
 ## New in v1.7.0: configurable horizons and operating calendar overrides
 

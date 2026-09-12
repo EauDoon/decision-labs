@@ -30,3 +30,20 @@ test("demand timing label no longer pins 72 hours", async () => {
   assert.match(html, /Even across the horizon/);
   assert.doesNotMatch(html, /Even across 72 hours/);
 });
+
+test("funding tranche editor exists with bounded controls and schedule copy", async () => {
+  const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
+  const app = await readFile(new URL("../src/app.js", import.meta.url), "utf8");
+  assert.match(html, /id="funding-tranches"/);
+  assert.match(html, /id="add-funding-tranche"/);
+  assert.match(html, /id="funding-status"/);
+  assert.match(html, /id="copy-funding-schedule"/);
+  assert.match(html, /id="funding-copy-fallback"/);
+  assert.match(html, /Costs never reduce the reserve/);
+  assert.match(app, /function renderFundingTranches\(/);
+  assert.match(app, /function applyFundingEdit\(/);
+  assert.match(app, /sanitizeFundingTranches\(parsed, simHours\(\)\)/);
+  assert.match(app, /data-remove-funding/);
+  assert.match(app, /MAX_FUNDING_TRANCHES/);
+  assert.match(app, /fundingToMarkdown\(scenario\)/);
+});

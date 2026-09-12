@@ -43,6 +43,18 @@ can carry a narrower reopening. Ranges outside the horizon are rejected, not
 clamped. Every simulator, planner, comparison, CSV, and report follows the
 scenario horizon; the 72-hour case is unchanged byte-for-byte in its outputs.
 
+## Compare funded and unfunded runs
+
+`node scripts/analyze.mjs funding scenario.json` runs the scenario with its
+funding tranches and again with them stripped, then reports both summaries
+with signed deltas (funded minus unfunded). Add `--format markdown` for the
+tranche table with hours, amounts, costs, and totals. Costs are tracked
+expenses, not reserve deductions. This is not a funding recommendation.
+
+Scenario files may carry `calendarOverrides` and `fundingTranches` arrays;
+their contents are validated by the model and rejected files name the first
+problem. Unknown fields are still rejected.
+
 ## Compare assumptions
 
 `node scripts/analyze.mjs compare baseline.json candidate.json` returns both
