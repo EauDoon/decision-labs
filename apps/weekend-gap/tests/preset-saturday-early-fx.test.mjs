@@ -28,6 +28,7 @@ test("Saturday early FX open keeps the Normal Friday calendar with an earlier Sa
   assert.equal(preset.saturdayEarlyFxOpen, true);
   assert.equal(DEFAULT_SCENARIO.saturdayEarlyFxOpen, false);
   assert.equal(preset.fridayFxLateClose, false);
+  assert.equal(preset.saturdayMiddayFxOpen, false);
   assert.equal(preset.demandProfile, DEFAULT_SCENARIO.demandProfile);
   assert.equal(preset.mondayHoliday, false);
   assert.equal(preset.saturdayHoliday, false);
@@ -49,6 +50,8 @@ test("Saturday early FX open keeps the Normal Friday calendar with an earlier Sa
   assert.notDeepEqual(preset, PRESETS.compressedFridayClose);
   assert.notDeepEqual(preset, PRESETS.earlyMondayBankOpen);
   assert.notDeepEqual(preset, PRESETS.fridayLateFxClose);
+  assert.notDeepEqual(preset, PRESETS.saturdayMiddayFxOpen);
+  assert.notDeepEqual(preset, PRESETS.saturdayLateFxOpen);
   assert.notDeepEqual(preset, PRESETS.mondayLateIssuerOpen);
   assert.notDeepEqual(preset, PRESETS.sundayLateBankClose);
   assert.notDeepEqual(preset, PRESETS.sundayLatePayoutClose);
@@ -79,6 +82,8 @@ test("Saturday early FX open keeps the Normal Friday calendar with an earlier Sa
   assert.equal(earlyOpen, 15);
   assert.equal(firstSaturdayMorningFxOpenHour(PRESETS.thinSaturdayFx), null);
   assert.equal(firstSaturdayMorningFxOpenHour(PRESETS.fridayLateFxClose), null);
+  assert.equal(firstSaturdayMorningFxOpenHour(PRESETS.saturdayMiddayFxOpen), null);
+  assert.equal(firstSaturdayMorningFxOpenHour(PRESETS.saturdayLateFxOpen), null);
   assert.equal(firstSaturdayMorningFxOpenHour(PRESETS.mondayLateIssuerOpen), null);
   assert.equal(firstSaturdayMorningFxOpenHour(PRESETS.earlyMondayBankOpen), null);
   assert.ok(earlyOpen < 57);
