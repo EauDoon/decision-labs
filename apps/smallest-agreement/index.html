@@ -78,6 +78,7 @@ SOFTWARE.
             <option value="dragon-boat-club-hours">Dragon boat club hours</option>
             <option value="surf-club-hours">Surf club hours</option>
             <option value="triathlon-club-hours">Triathlon club hours</option>
+            <option value="cycling-club-hours">Cycling club hours</option>
           </select>
         </label>
         <button class="button button-secondary" type="button" id="load-preset">Load preset</button>
@@ -129,7 +130,8 @@ SOFTWARE.
         <button class="button button-secondary" type="button" id="copy-groups-without-floor-remaining-button">Copy groups-without-floor remaining</button>
         <button class="button button-secondary" type="button" id="copy-last-group-without-floor-remaining-button">Copy last-without-floor remaining</button>
         <button class="button button-secondary" type="button" id="copy-first-group-without-floor-remaining-button">Copy first-without-floor remaining</button>
-        <button class="button button-secondary" type="button" id="copy-first-group-without-floor-cost-button" aria-keyshortcuts="Shift+F7">Copy first-without-floor cost</button>
+        <button class="button button-secondary" type="button" id="copy-first-group-without-floor-cost-button">Copy first-without-floor cost</button>
+        <button class="button button-secondary" type="button" id="copy-last-group-without-floor-cost-button" aria-keyshortcuts="Shift+F7">Copy last-without-floor cost</button>
         <button class="button button-secondary" type="button" id="copy-change-cost-button">Copy change-cost table</button>
         <button class="button button-secondary" type="button" id="copy-veto-button">Copy veto blockers</button>
         <button class="button button-secondary" type="button" id="share-button">Share link</button>
@@ -393,13 +395,16 @@ SOFTWARE.
             <p id="groups-without-floor-remaining-fallback-note" class="field-note">One line of remaining mixing-weight total of groups without a declared support floor, or an honest zero. Distinct from last-without-floor remaining copy, first-without-floor remaining copy, groups-without-floor count copy, first group-without-floor label copy, last group-without-floor label copy, and remaining change-budget copy. A floor is a number you entered, not a legal quorum. Mixing weights are not a legal right. If the clipboard is blocked, copy from this box.</p>
             <label class="last-group-without-floor-remaining-fallback-label" for="last-group-without-floor-remaining-fallback">Last-without-floor remaining Markdown</label>
             <textarea id="last-group-without-floor-remaining-fallback" readonly rows="3" spellcheck="false" aria-describedby="last-group-without-floor-remaining-fallback-note"></textarea>
-            <p id="last-group-without-floor-remaining-fallback-note" class="field-note">One line of remaining mixing weight of the last group without a declared support floor, or an honest zero. Distinct from first-without-floor remaining copy, aggregate groups-without-floor remaining copy, groups-without-floor count copy, first group-without-floor label copy, last group-without-floor label copy, and remaining change-budget copy. A floor is a number you entered, not a legal quorum. Mixing weights are not a legal right. If the clipboard is blocked, copy from this box.</p>
+            <p id="last-group-without-floor-remaining-fallback-note" class="field-note">One line of remaining mixing weight of the last group without a declared support floor, or an honest zero. Distinct from last-without-floor cost copy, first-without-floor remaining copy, aggregate groups-without-floor remaining copy, groups-without-floor count copy, first group-without-floor label copy, last group-without-floor label copy, and remaining change-budget copy. A floor is a number you entered, not a legal quorum. Mixing weights are not a legal right. If the clipboard is blocked, copy from this box.</p>
             <label class="first-group-without-floor-remaining-fallback-label" for="first-group-without-floor-remaining-fallback">First-without-floor remaining Markdown</label>
             <textarea id="first-group-without-floor-remaining-fallback" readonly rows="3" spellcheck="false" aria-describedby="first-group-without-floor-remaining-fallback-note"></textarea>
-            <p id="first-group-without-floor-remaining-fallback-note" class="field-note">One line of remaining mixing weight of the first group without a declared support floor, or an honest zero. Distinct from first-without-floor cost copy, last-without-floor remaining copy, aggregate groups-without-floor remaining copy, groups-without-floor count copy, first group-without-floor label copy, last group-without-floor label copy, and remaining change-budget copy. A floor is a number you entered, not a legal quorum. Mixing weights are not a legal right. If the clipboard is blocked, copy from this box.</p>
+            <p id="first-group-without-floor-remaining-fallback-note" class="field-note">One line of remaining mixing weight of the first group without a declared support floor, or an honest zero. Distinct from first-without-floor cost copy, last-without-floor cost copy, last-without-floor remaining copy, aggregate groups-without-floor remaining copy, groups-without-floor count copy, first group-without-floor label copy, last group-without-floor label copy, and remaining change-budget copy. A floor is a number you entered, not a legal quorum. Mixing weights are not a legal right. If the clipboard is blocked, copy from this box.</p>
             <label class="first-group-without-floor-cost-fallback-label" for="first-group-without-floor-cost-fallback">First-without-floor cost Markdown</label>
             <textarea id="first-group-without-floor-cost-fallback" readonly rows="3" spellcheck="false" aria-describedby="first-group-without-floor-cost-fallback-note"></textarea>
-            <p id="first-group-without-floor-cost-fallback-note" class="field-note">One line of mixing-weight cost of the first group without a declared support floor, or an honest zero. Distinct from first-without-floor remaining copy, last-without-floor remaining copy, aggregate groups-without-floor remaining copy, groups-without-floor count copy, first group-without-floor label copy, last group-without-floor label copy, and remaining change-budget copy. A floor is a number you entered, not a legal quorum. Mixing weights are not a legal right. If the clipboard is blocked, copy from this box.</p>
+            <p id="first-group-without-floor-cost-fallback-note" class="field-note">One line of mixing-weight cost of the first group without a declared support floor, or an honest zero. Distinct from last-without-floor cost copy, first-without-floor remaining copy, last-without-floor remaining copy, aggregate groups-without-floor remaining copy, groups-without-floor count copy, first group-without-floor label copy, last group-without-floor label copy, and remaining change-budget copy. A floor is a number you entered, not a legal quorum. Mixing weights are not a legal right. If the clipboard is blocked, copy from this box.</p>
+            <label class="last-group-without-floor-cost-fallback-label" for="last-group-without-floor-cost-fallback">Last-without-floor cost Markdown</label>
+            <textarea id="last-group-without-floor-cost-fallback" readonly rows="3" spellcheck="false" aria-describedby="last-group-without-floor-cost-fallback-note"></textarea>
+            <p id="last-group-without-floor-cost-fallback-note" class="field-note">One line of mixing-weight cost of the last group without a declared support floor, or an honest zero. Distinct from First-without-floor cost, First-without-floor remaining, Last-without-floor remaining, Groups-without-floor remaining, Groups without a support floor count, first/last group-without-floor label, and remaining change-budget. A floor is a number you entered, not a legal quorum. Mixing weights are not a legal right. If the clipboard is blocked, copy from this box.</p>
             <label class="change-cost-csv-fallback-label" for="change-cost-csv-fallback">Change-cost CSV</label>
             <textarea id="change-cost-csv-fallback" readonly rows="8" spellcheck="false" aria-describedby="change-cost-csv-fallback-note"></textarea>
             <p id="change-cost-csv-fallback-note" class="field-note">Compact CSV of clause, original option, recommended option, and cost delta. Cells that look like spreadsheet formulas receive a leading apostrophe. If the clipboard is blocked, copy from this box.</p>
@@ -615,9 +620,9 @@ SOFTWARE.
           <li><kbd>F10</kbd> Copy the first group-without-floor label as one-line Markdown</li>
           <li><kbd>F11</kbd> Jump to the first group-without-floor copy control, or the groups heading</li>
           <li><kbd>F12</kbd> Jump to the hide-first-group-without-floor control, or the groups heading</li>
-          <li><kbd>Shift+F7</kbd> Copy the first-without-floor cost as one-line Markdown</li>
-          <li><kbd>Shift+F8</kbd> Jump to the first-without-floor cost copy control, or the groups heading</li>
-          <li><kbd>Shift+F9</kbd> Jump to the hide-first-group-without-floor control, or the groups heading</li>
+          <li><kbd>Shift+F7</kbd> Copy the last-without-floor cost as one-line Markdown</li>
+          <li><kbd>Shift+F8</kbd> Jump to the last-without-floor cost copy control, or the groups heading</li>
+          <li><kbd>Shift+F9</kbd> Jump to the hide-last-group-without-floor control, or the groups heading</li>
           <li><kbd>Shift+F10</kbd> Copy the groups-without-floor count as one-line Markdown</li>
           <li><kbd>Shift+F11</kbd> Jump to the groups-without-floor count copy control, or the groups heading</li>
           <li><kbd>Shift+F12</kbd> Jump to the hide-first-group-without-floor control, or the groups heading</li>

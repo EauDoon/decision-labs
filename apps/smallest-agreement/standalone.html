@@ -296,6 +296,7 @@ kbd { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; border: 1px s
             <option value="dragon-boat-club-hours">Dragon boat club hours</option>
             <option value="surf-club-hours">Surf club hours</option>
             <option value="triathlon-club-hours">Triathlon club hours</option>
+            <option value="cycling-club-hours">Cycling club hours</option>
           </select>
         </label>
         <button class="button button-secondary" type="button" id="load-preset">Load preset</button>
@@ -347,7 +348,8 @@ kbd { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; border: 1px s
         <button class="button button-secondary" type="button" id="copy-groups-without-floor-remaining-button">Copy groups-without-floor remaining</button>
         <button class="button button-secondary" type="button" id="copy-last-group-without-floor-remaining-button">Copy last-without-floor remaining</button>
         <button class="button button-secondary" type="button" id="copy-first-group-without-floor-remaining-button">Copy first-without-floor remaining</button>
-        <button class="button button-secondary" type="button" id="copy-first-group-without-floor-cost-button" aria-keyshortcuts="Shift+F7">Copy first-without-floor cost</button>
+        <button class="button button-secondary" type="button" id="copy-first-group-without-floor-cost-button">Copy first-without-floor cost</button>
+        <button class="button button-secondary" type="button" id="copy-last-group-without-floor-cost-button" aria-keyshortcuts="Shift+F7">Copy last-without-floor cost</button>
         <button class="button button-secondary" type="button" id="copy-change-cost-button">Copy change-cost table</button>
         <button class="button button-secondary" type="button" id="copy-veto-button">Copy veto blockers</button>
         <button class="button button-secondary" type="button" id="share-button">Share link</button>
@@ -611,13 +613,16 @@ kbd { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; border: 1px s
             <p id="groups-without-floor-remaining-fallback-note" class="field-note">One line of remaining mixing-weight total of groups without a declared support floor, or an honest zero. Distinct from last-without-floor remaining copy, first-without-floor remaining copy, groups-without-floor count copy, first group-without-floor label copy, last group-without-floor label copy, and remaining change-budget copy. A floor is a number you entered, not a legal quorum. Mixing weights are not a legal right. If the clipboard is blocked, copy from this box.</p>
             <label class="last-group-without-floor-remaining-fallback-label" for="last-group-without-floor-remaining-fallback">Last-without-floor remaining Markdown</label>
             <textarea id="last-group-without-floor-remaining-fallback" readonly rows="3" spellcheck="false" aria-describedby="last-group-without-floor-remaining-fallback-note"></textarea>
-            <p id="last-group-without-floor-remaining-fallback-note" class="field-note">One line of remaining mixing weight of the last group without a declared support floor, or an honest zero. Distinct from first-without-floor remaining copy, aggregate groups-without-floor remaining copy, groups-without-floor count copy, first group-without-floor label copy, last group-without-floor label copy, and remaining change-budget copy. A floor is a number you entered, not a legal quorum. Mixing weights are not a legal right. If the clipboard is blocked, copy from this box.</p>
+            <p id="last-group-without-floor-remaining-fallback-note" class="field-note">One line of remaining mixing weight of the last group without a declared support floor, or an honest zero. Distinct from last-without-floor cost copy, first-without-floor remaining copy, aggregate groups-without-floor remaining copy, groups-without-floor count copy, first group-without-floor label copy, last group-without-floor label copy, and remaining change-budget copy. A floor is a number you entered, not a legal quorum. Mixing weights are not a legal right. If the clipboard is blocked, copy from this box.</p>
             <label class="first-group-without-floor-remaining-fallback-label" for="first-group-without-floor-remaining-fallback">First-without-floor remaining Markdown</label>
             <textarea id="first-group-without-floor-remaining-fallback" readonly rows="3" spellcheck="false" aria-describedby="first-group-without-floor-remaining-fallback-note"></textarea>
-            <p id="first-group-without-floor-remaining-fallback-note" class="field-note">One line of remaining mixing weight of the first group without a declared support floor, or an honest zero. Distinct from first-without-floor cost copy, last-without-floor remaining copy, aggregate groups-without-floor remaining copy, groups-without-floor count copy, first group-without-floor label copy, last group-without-floor label copy, and remaining change-budget copy. A floor is a number you entered, not a legal quorum. Mixing weights are not a legal right. If the clipboard is blocked, copy from this box.</p>
+            <p id="first-group-without-floor-remaining-fallback-note" class="field-note">One line of remaining mixing weight of the first group without a declared support floor, or an honest zero. Distinct from first-without-floor cost copy, last-without-floor cost copy, last-without-floor remaining copy, aggregate groups-without-floor remaining copy, groups-without-floor count copy, first group-without-floor label copy, last group-without-floor label copy, and remaining change-budget copy. A floor is a number you entered, not a legal quorum. Mixing weights are not a legal right. If the clipboard is blocked, copy from this box.</p>
             <label class="first-group-without-floor-cost-fallback-label" for="first-group-without-floor-cost-fallback">First-without-floor cost Markdown</label>
             <textarea id="first-group-without-floor-cost-fallback" readonly rows="3" spellcheck="false" aria-describedby="first-group-without-floor-cost-fallback-note"></textarea>
-            <p id="first-group-without-floor-cost-fallback-note" class="field-note">One line of mixing-weight cost of the first group without a declared support floor, or an honest zero. Distinct from first-without-floor remaining copy, last-without-floor remaining copy, aggregate groups-without-floor remaining copy, groups-without-floor count copy, first group-without-floor label copy, last group-without-floor label copy, and remaining change-budget copy. A floor is a number you entered, not a legal quorum. Mixing weights are not a legal right. If the clipboard is blocked, copy from this box.</p>
+            <p id="first-group-without-floor-cost-fallback-note" class="field-note">One line of mixing-weight cost of the first group without a declared support floor, or an honest zero. Distinct from last-without-floor cost copy, first-without-floor remaining copy, last-without-floor remaining copy, aggregate groups-without-floor remaining copy, groups-without-floor count copy, first group-without-floor label copy, last group-without-floor label copy, and remaining change-budget copy. A floor is a number you entered, not a legal quorum. Mixing weights are not a legal right. If the clipboard is blocked, copy from this box.</p>
+            <label class="last-group-without-floor-cost-fallback-label" for="last-group-without-floor-cost-fallback">Last-without-floor cost Markdown</label>
+            <textarea id="last-group-without-floor-cost-fallback" readonly rows="3" spellcheck="false" aria-describedby="last-group-without-floor-cost-fallback-note"></textarea>
+            <p id="last-group-without-floor-cost-fallback-note" class="field-note">One line of mixing-weight cost of the last group without a declared support floor, or an honest zero. Distinct from First-without-floor cost, First-without-floor remaining, Last-without-floor remaining, Groups-without-floor remaining, Groups without a support floor count, first/last group-without-floor label, and remaining change-budget. A floor is a number you entered, not a legal quorum. Mixing weights are not a legal right. If the clipboard is blocked, copy from this box.</p>
             <label class="change-cost-csv-fallback-label" for="change-cost-csv-fallback">Change-cost CSV</label>
             <textarea id="change-cost-csv-fallback" readonly rows="8" spellcheck="false" aria-describedby="change-cost-csv-fallback-note"></textarea>
             <p id="change-cost-csv-fallback-note" class="field-note">Compact CSV of clause, original option, recommended option, and cost delta. Cells that look like spreadsheet formulas receive a leading apostrophe. If the clipboard is blocked, copy from this box.</p>
@@ -833,9 +838,9 @@ kbd { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; border: 1px s
           <li><kbd>F10</kbd> Copy the first group-without-floor label as one-line Markdown</li>
           <li><kbd>F11</kbd> Jump to the first group-without-floor copy control, or the groups heading</li>
           <li><kbd>F12</kbd> Jump to the hide-first-group-without-floor control, or the groups heading</li>
-          <li><kbd>Shift+F7</kbd> Copy the first-without-floor cost as one-line Markdown</li>
-          <li><kbd>Shift+F8</kbd> Jump to the first-without-floor cost copy control, or the groups heading</li>
-          <li><kbd>Shift+F9</kbd> Jump to the hide-first-group-without-floor control, or the groups heading</li>
+          <li><kbd>Shift+F7</kbd> Copy the last-without-floor cost as one-line Markdown</li>
+          <li><kbd>Shift+F8</kbd> Jump to the last-without-floor cost copy control, or the groups heading</li>
+          <li><kbd>Shift+F9</kbd> Jump to the hide-last-group-without-floor control, or the groups heading</li>
           <li><kbd>Shift+F10</kbd> Copy the groups-without-floor count as one-line Markdown</li>
           <li><kbd>Shift+F11</kbd> Jump to the groups-without-floor count copy control, or the groups heading</li>
           <li><kbd>Shift+F12</kbd> Jump to the hide-first-group-without-floor control, or the groups heading</li>
@@ -3518,9 +3523,9 @@ function formatGroupsWithoutFloorCountMarkdown(proposal, options) {
  * hideLastGroupWithoutFloor.
  * Honest when remaining is zero or no inspected package is available.
  * Distinct prefix from last-without-floor remaining copy, first-without-floor
- * remaining copy, first-without-floor cost copy, groups-without-floor count copy, first
- * group-without-floor label copy, last group-without-floor label copy,
- * and remaining change-budget copy.
+ * remaining copy, first-without-floor cost copy, last-without-floor cost copy,
+ * groups-without-floor count copy, first group-without-floor label copy, last
+ * group-without-floor label copy, and remaining change-budget copy.
  * A floor is a number you entered, not a legal quorum.
  * Mixing weights are not a legal right.
  * Do not treat labels as legal identities.
@@ -3566,7 +3571,7 @@ function formatGroupsWithoutFloorRemainingMarkdown(proposal, options) {
  * Distinct prefix from aggregate groups-without-floor remaining copy, groups-without-floor
  * count copy, first group-without-floor label copy, last group-without-floor
  * label copy, first-without-floor remaining copy, first-without-floor cost copy,
- * and remaining change-budget copy.
+ * last-without-floor cost copy, and remaining change-budget copy.
  * A floor is a number you entered, not a legal quorum.
  * Mixing weights are not a legal right.
  * Do not treat labels as legal identities.
@@ -3615,10 +3620,11 @@ function formatLastGroupWithoutFloorRemainingMarkdown(proposal, options) {
  * Uses the same without-floor list as hideFirstGroupWithoutFloor and
  * hideLastGroupWithoutFloor.
  * Honest when remaining is zero, none, or no inspected package is available.
- * Distinct prefix from last-without-floor remaining copy, aggregate
- * groups-without-floor remaining copy, groups-without-floor count copy, first
- * group-without-floor label copy, last group-without-floor label copy,
- * first-without-floor cost copy, and remaining change-budget copy.
+ * Distinct prefix from last-without-floor remaining copy, last-without-floor
+ * cost copy, aggregate groups-without-floor remaining copy,
+ * groups-without-floor count copy, first group-without-floor label copy, last
+ * group-without-floor label copy, first-without-floor cost copy, and remaining
+ * change-budget copy.
  * A floor is a number you entered, not a legal quorum.
  * Mixing weights are not a legal right.
  * Do not treat labels as legal identities.
@@ -3667,10 +3673,11 @@ function formatFirstGroupWithoutFloorRemainingMarkdown(proposal, options) {
  * Uses the same without-floor list as hideFirstGroupWithoutFloor,
  * hideLastGroupWithoutFloor, and formatFirstGroupWithoutFloorRemainingMarkdown.
  * Honest when cost is zero, none, or no inspected package is available.
- * Distinct prefix from first-without-floor remaining copy, last-without-floor
- * remaining copy, aggregate groups-without-floor remaining copy,
- * groups-without-floor count copy, first group-without-floor label copy, last
- * group-without-floor label copy, and remaining change-budget copy.
+ * Distinct prefix from last-without-floor cost copy, first-without-floor
+ * remaining copy, last-without-floor remaining copy, aggregate
+ * groups-without-floor remaining copy, groups-without-floor count copy, first
+ * group-without-floor label copy, last group-without-floor label copy, and
+ * remaining change-budget copy.
  * A floor is a number you entered, not a legal quorum.
  * Mixing weights are not a legal right.
  * Do not treat labels as legal identities.
@@ -3710,6 +3717,68 @@ function formatFirstGroupWithoutFloorCostMarkdown(proposal, options) {
     empty: cost === 0,
     cost,
     text: `First-without-floor cost: ${cost}. ${disclaimer}\n`,
+  };
+}
+
+/**
+ * One-line Markdown of mixing-weight cost of the last group without a
+ * declared support floor (minSupport missing).
+ * Walks groups from the end. Does not call formatFirstGroupWithoutFloorCostMarkdown.
+ * Looks up that listed group's weight from proposal.groups.
+ * Uses the same without-floor list as hideFirstGroupWithoutFloor,
+ * hideLastGroupWithoutFloor, and formatLastGroupWithoutFloorRemainingMarkdown.
+ * Honest when cost is zero, none, or no inspected package is available.
+ * Distinct prefix from First-without-floor cost, First-without-floor remaining,
+ * Last-without-floor remaining, Groups-without-floor remaining, Groups without a
+ * support floor count, first/last group-without-floor label, and remaining
+ * change-budget.
+ * A floor is a number you entered, not a legal quorum.
+ * Mixing weights are not a legal right.
+ * Do not treat labels as legal identities.
+ * Display-only. The solver ignores the copy.
+ */
+function formatLastGroupWithoutFloorCostMarkdown(proposal, options) {
+  const validation = validateProposal(proposal);
+  if (!validation.valid) return { status: "invalid", errors: validation.errors };
+  const disclaimer = "A floor is a number you entered, not a legal quorum.";
+  if (!Array.isArray(options) || options.length !== proposal.clauses.length) {
+    return {
+      status: "unavailable",
+      empty: true,
+      cost: 0,
+      text: `No inspected package is available, so there is no last-without-floor cost to copy. ${disclaimer}\n`,
+    };
+  }
+  const selected = proposal.clauses.map((clause, index) => clause.options.find((option) => option.id === options[index]?.id) ?? null);
+  if (selected.some((option) => !option)) {
+    return { status: "invalid", errors: ["Every selected option must belong to its clause."] };
+  }
+  const listed = groupsWithoutDeclaredSupportFloor(proposal);
+  if (listed.status !== "ok") return listed;
+  const listedById = new Map(listed.groups.map((group) => [group.id, group]));
+  let last = null;
+  for (let index = proposal.groups.length - 1; index >= 0; index -= 1) {
+    const candidate = listedById.get(proposal.groups[index].id);
+    if (candidate) {
+      last = candidate;
+      break;
+    }
+  }
+  if (!last) {
+    return {
+      status: "ok",
+      empty: true,
+      cost: 0,
+      text: `Last-without-floor cost: 0. ${disclaimer}\n`,
+    };
+  }
+  const weightsById = new Map(proposal.groups.map((group) => [group.id, group.weight]));
+  const cost = weightsById.get(last.id);
+  return {
+    status: "ok",
+    empty: cost === 0,
+    cost,
+    text: `Last-without-floor cost: ${cost}. ${disclaimer}\n`,
   };
 }
 
@@ -6011,6 +6080,39 @@ const presets = {
       },
     ],
   },
+  "cycling-club-hours": {
+    title: "Cycling club hours: velodrome staging booking, cafe hours, and bike-box lock-up",
+    threshold: 70,
+    maxChangeCost: 8,
+    groups: [
+      { id: "students", name: "Students", weight: 8 },
+      { id: "neighbours", name: "Neighbours", weight: 7, veto: true },
+      { id: "pandc", name: "P&C", weight: 10 },
+    ],
+    clauses: [
+      {
+        id: "cycling-staging-booking", title: "Velodrome staging booking", options: [
+          { id: "cycling-staging-booking-original", original: true, label: "Keep weekday velodrome staging from 10:05 with no posted bike-rack rota", changeCost: 0, support: { students: 5, neighbours: 92, pandc: 59 } },
+          { id: "cycling-staging-booking-late", original: false, label: "Open weekday velodrome staging at 17:10 with a posted bike-rack rota", changeCost: 2, support: { students: 88, neighbours: 32, pandc: 44 } },
+          { id: "cycling-staging-booking-weekend", original: false, label: "Hold Sunday morning velodrome staging at 08:40 with a bike-rack booking card", changeCost: 4, support: { students: 73, neighbours: 40, pandc: 52 } },
+        ],
+      },
+      {
+        id: "cycling-cafe", title: "Cafe hours", options: [
+          { id: "cycling-cafe-original", original: true, label: "No posted cycling cafe hours", changeCost: 0, support: { students: 70, neighbours: 18, pandc: 29 } },
+          { id: "cycling-cafe-cap", original: false, label: "Close the cycling cafe at 19:05 and keep drinks inside the velodrome cafe", changeCost: 1, support: { students: 43, neighbours: 82, pandc: 61 } },
+          { id: "cycling-cafe-cut", original: false, label: "Serve tea only after 13:55 and retire the cycling cafe drinks", changeCost: 5, support: { students: 25, neighbours: 85, pandc: 41 } },
+        ],
+      },
+      {
+        id: "cycling-bike-box-lockup", title: "Bike-box lock-up", options: [
+          { id: "cycling-bike-box-lockup-original", original: true, label: "Leave the bike-box door on a shared padlock after club hours", changeCost: 0, support: { students: 10, neighbours: 30, pandc: 35 } },
+          { id: "cycling-bike-box-lockup-steward", original: false, label: "Require a P&C steward to lock the bike-box store before 20:15", changeCost: 3, support: { students: 57, neighbours: 56, pandc: 76 } },
+          { id: "cycling-bike-box-lockup-timer", original: false, label: "Add a timed lock on the bike-box store after the last cycling session", changeCost: 2, support: { students: 46, neighbours: 49, pandc: 66 } },
+        ],
+      },
+    ],
+  },
 };
 
 let agreementReviewPacket = null;
@@ -6212,6 +6314,11 @@ function renderCopyFallbacks(result) {
   if (firstGroupWithoutFloorCostBox) {
     const listed = formatFirstGroupWithoutFloorCostMarkdown(state.proposal, inspectedPackage(result ?? currentResult()));
     firstGroupWithoutFloorCostBox.value = listed.status === "ok" || listed.status === "unavailable" ? listed.text : "";
+  }
+  const lastGroupWithoutFloorCostBox = $("#last-group-without-floor-cost-fallback");
+  if (lastGroupWithoutFloorCostBox) {
+    const listed = formatLastGroupWithoutFloorCostMarkdown(state.proposal, inspectedPackage(result ?? currentResult()));
+    lastGroupWithoutFloorCostBox.value = listed.status === "ok" || listed.status === "unavailable" ? listed.text : "";
   }
   const costBox = $("#change-cost-csv-fallback");
   if (costBox) {
@@ -7076,6 +7183,7 @@ function renderResults(result, vetoBlocks = blockingVetoIds(result)) {
   $("#copy-last-group-without-floor-remaining-button").disabled = result.status === "invalid";
   $("#copy-first-group-without-floor-remaining-button").disabled = result.status === "invalid";
   $("#copy-first-group-without-floor-cost-button").disabled = result.status === "invalid";
+  $("#copy-last-group-without-floor-cost-button").disabled = result.status === "invalid";
   $("#copy-change-cost-button").disabled = result.status === "invalid" || !result.agreement;
   $("#copy-veto-button").disabled = result.status === "invalid" || result.status === "too_large";
   $("#share-button").disabled = result.status === "invalid";
@@ -9038,6 +9146,24 @@ async function copyFirstGroupWithoutFloorCost() {
   }
 }
 $("#copy-first-group-without-floor-cost-button").addEventListener("click", copyFirstGroupWithoutFloorCost);
+async function copyLastGroupWithoutFloorCost() {
+  const listed = formatLastGroupWithoutFloorCostMarkdown(state.proposal, inspectedPackage(currentResult()));
+  if (listed.status === "invalid") return notifyDraft("Fix the draft before copying the last-without-floor cost.");
+  const fallback = $("#last-group-without-floor-cost-fallback");
+  if (fallback) fallback.value = listed.text;
+  notifyDraft(listed.status === "unavailable"
+    ? "No inspected package is available. Copied an honest empty last-without-floor cost. A floor is a number you entered, not a legal quorum."
+    : listed.empty
+    ? "No group is without a support floor. Copied an honest zero. A floor is a number you entered, not a legal quorum."
+    : "Last-without-floor cost copied as Markdown. A floor is a number you entered, not a legal quorum.");
+  try {
+    await navigator.clipboard.writeText(listed.text);
+  } catch {
+    fallback?.focus?.();
+    notifyDraft("Clipboard is blocked. Copy the last-without-floor cost from the Markdown box. A floor is a number you entered, not a legal quorum.");
+  }
+}
+$("#copy-last-group-without-floor-cost-button").addEventListener("click", copyLastGroupWithoutFloorCost);
 $("#copy-change-cost-button").addEventListener("click", async () => {
   const exported = formatRecommendedChangeCostCsv(state.proposal, currentResult());
   if (exported.status === "invalid") return notifyDraft("Fix the draft before copying the change-cost table.");
@@ -10317,6 +10443,15 @@ function jumpToFirstGroupWithoutFloorCostCopy() {
   $("#groups-heading")?.focus?.();
 }
 
+function jumpToLastGroupWithoutFloorCostCopy() {
+  const control = $("#copy-last-group-without-floor-cost-button");
+  if (control?.focus) {
+    control.focus();
+    return;
+  }
+  $("#groups-heading")?.focus?.();
+}
+
 function jumpToPrintPack() {
   const control = $("#print-button");
   if (control?.focus) {
@@ -10659,13 +10794,13 @@ document.addEventListener("keydown", (event) => {
     jumpToHideLastGroupBelowFloor();
   } else if (event.shiftKey && key === "F7") {
     event.preventDefault();
-    copyFirstGroupWithoutFloorCost();
+    copyLastGroupWithoutFloorCost();
   } else if (event.shiftKey && key === "F8") {
     event.preventDefault();
-    jumpToFirstGroupWithoutFloorCostCopy();
+    jumpToLastGroupWithoutFloorCostCopy();
   } else if (event.shiftKey && key === "F9") {
     event.preventDefault();
-    jumpToHideFirstGroupWithoutFloor();
+    jumpToHideLastGroupWithoutFloor();
   } else if (key === "F7") {
     event.preventDefault();
     copyLastGroupWithoutFloor();
