@@ -653,6 +653,7 @@ footer {
           <button class="preset" data-preset="gravelCyclingCarnivalLunch" type="button">Gravel cycling carnival</button>
           <button class="preset" data-preset="roadCyclingCarnivalLunch" type="button">Road cycling carnival</button>
           <button class="preset" data-preset="criteriumCyclingCarnivalLunch" type="button">Criterium cycling carnival</button>
+          <button class="preset" data-preset="timeTrialCyclingCarnivalLunch" type="button">Time-trial cycling carnival</button>
           <button class="preset" data-preset="tiers" type="button">Price ladder</button>
         </div>
       </div>
@@ -2061,6 +2062,23 @@ const presets = Object.freeze({
       offer("O01", "Court-side Criterium Delivery", "Criterium lunch pack", "Criterium pie", 17, 17, 3, 54, 3),
       offer("O02", "Circuit Salad Run", "Criterium lunch pack", "Circuit salad", 15, 15, 4, 42, 2),
       { ...offer("O03", "Hall Criterium Pickup", "Criterium lunch pack", "Circuit water", 26, 31, 1, 62, 5), fulfillment: "pickup" }
+    ]
+  },
+  timeTrialCyclingCarnivalLunch: {
+    title: "Time-trial cycling carnival lunch",
+    currency: "AUD",
+    buyers: [
+      buyer("B01", "Start-ramp crate", "Time-trial lunch pack", 15, 23, 4, ["Time-trial pie", "Ramp salad"]),
+      buyer("B02", "Timing-hut bench", "Time-trial lunch pack", 19, 19, 3, ["Time-trial pie"]),
+      buyer("B03", "Time-check hamper", "Time-trial lunch pack", 15, 27, 5, ["Ramp salad", "Ramp water"]),
+      buyer("B04", "Sideline cooler", "Time-trial lunch pack", 18, 27, 2, ["Ramp water"]),
+      buyer("B05", "Scoreboard trolley", "Time-trial lunch pack", 16, 22, 4, ["Time-trial pie", "Ramp water"]),
+      buyer("B06", "Bench table", "Time-trial lunch pack", 13, 20, 3, ["Ramp salad", "Time-trial pie"])
+    ],
+    offers: [
+      offer("O01", "Court-side Time Trial Delivery", "Time-trial lunch pack", "Time-trial pie", 17, 17, 3, 54, 3),
+      offer("O02", "Ramp Salad Run", "Time-trial lunch pack", "Ramp salad", 15, 15, 4, 42, 2),
+      { ...offer("O03", "Hall Time Trial Pickup", "Time-trial lunch pack", "Ramp water", 27, 32, 1, 64, 5), fulfillment: "pickup" }
     ]
   }
 });
