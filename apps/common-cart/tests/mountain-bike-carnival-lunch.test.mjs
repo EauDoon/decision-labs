@@ -46,6 +46,7 @@ test("mountain bike carnival lunch leftover fill is hall pickup and stays distin
   assert.notDeepEqual(clonePreset("mountainBikeCarnivalLunch"), clonePreset("hockeyCarnivalLunch"));
   assert.notDeepEqual(clonePreset("mountainBikeCarnivalLunch"), clonePreset("rugbyCarnivalLunch"));
   assert.notDeepEqual(clonePreset("mountainBikeCarnivalLunch"), clonePreset("soccerCarnivalLunch"));
+  assert.notDeepEqual(clonePreset("mountainBikeCarnivalLunch"), clonePreset("bmxCarnivalLunch"));
   const leftoverFill = computeResidualCoverage(mountainBike.scenario).secondary;
   assert.ok(leftoverFill);
   assert.equal(leftoverFill.merchant, "Hall Mountain Bike Pickup");
@@ -113,5 +114,7 @@ test("the example bar includes mountain bike carnival lunch next to cycling carn
   assert.match(html, /data-preset="mountainBikeCarnivalLunch"/u);
   assert.match(html, /Mountain bike carnival/u);
   assert.match(html, /data-preset="cyclingCarnivalLunch"/u);
+  assert.match(html, /data-preset="bmxCarnivalLunch"/u);
   assert.ok(html.indexOf('data-preset="cyclingCarnivalLunch"') < html.indexOf('data-preset="mountainBikeCarnivalLunch"'));
+  assert.ok(html.indexOf('data-preset="mountainBikeCarnivalLunch"') < html.indexOf('data-preset="bmxCarnivalLunch"'));
 });
