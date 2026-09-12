@@ -37,18 +37,3 @@ test("first closed bank hour Markdown uses none when no modeled hour is closed",
   assert.doesNotMatch(empty, /timestamp|createdAt|exportedAt/i);
   assert.notEqual(empty, firstClosedFxHourToMarkdown(DEFAULT_SCENARIO));
 });
-
-test("copy first closed bank hour uses clipboard and a textarea fallback", async () => {
-  const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
-  const app = await readFile(new URL("../src/app.js", import.meta.url), "utf8");
-  assert.match(html, /id="copy-first-closed-bank"/);
-  assert.match(html, /Copy first closed bank hour/);
-  assert.match(html, /id="first-closed-bank-copy-fallback"/);
-  assert.match(html, /id="copy-first-closed-fx"/);
-  assert.match(app, /firstClosedBankHourToMarkdown\(scenario\)/);
-  assert.match(app, /first-closed-bank-copy-fallback/);
-  assert.match(app, /copyTextWithFallback/);
-  assert.match(app, /counts of modeled hours, not a bank calendar/);
-  assert.match(app, /Clipboard unavailable\. Copy the Markdown from the text box\./);
-  assert.notEqual(app.match(/function copyFirstClosedBankHourMarkdown/)?.[0], app.match(/function copyFirstClosedFxHourMarkdown/)?.[0]);
-});

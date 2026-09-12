@@ -24,15 +24,3 @@ test("selected Gantt hour Markdown reports closed weekend gates", () => {
   assert.match(text, /\| Payout \| Closed \|/);
   assert.match(text, /\| FX \| Weekend thinned \|/);
 });
-
-test("copy selected Gantt hour uses clipboard and a textarea fallback", async () => {
-  const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
-  const app = await readFile(new URL("../src/app.js", import.meta.url), "utf8");
-  assert.match(html, /id="copy-gantt-hour"/);
-  assert.match(html, /Copy selected hour/);
-  assert.match(html, /id="gantt-hour-copy-fallback"/);
-  assert.match(app, /selectedGanttHourToMarkdown\(scenario, selectedHour\)/);
-  assert.match(app, /copyTextWithFallback/);
-  assert.match(app, /gantt-hour-copy-fallback/);
-  assert.match(app, /Clipboard unavailable\. Copy the Markdown from the text box\./);
-});

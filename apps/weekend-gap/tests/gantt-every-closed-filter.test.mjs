@@ -26,7 +26,7 @@ test("every-gate-closed helper requires issuer, bank, payout and weekend FX", ()
 
 test("every-gate-closed Gantt SVG is display-only and leaves the 72-hour model unchanged", () => {
   const full = buildGateGanttSvg(DEFAULT_SCENARIO, 0);
-  const filtered = buildGateGanttSvg(DEFAULT_SCENARIO, 0, { everyClosedOnly: true });
+  const filtered = buildGateGanttSvg(DEFAULT_SCENARIO, 0, { hourFilter: "every-closed" });
   assert.notEqual(full, filtered);
   assert.match(filtered, /viewBox="0 0 720/);
   const closedRects = (filtered.match(/<rect /g) || []).length;
@@ -38,10 +38,10 @@ test("every-gate-closed Gantt SVG is display-only and leaves the 72-hour model u
 test("every-gate-closed Gantt filter is a display control that can restore all hours", async () => {
   const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
   const app = await readFile(new URL("../src/app.js", import.meta.url), "utf8");
-  assert.match(html, /id="gantt-every-closed"/);
-  assert.match(html, /Show only hours where every gate is closed/);
-  assert.match(app, /ganttHourClosedOnEveryGate/);
-  assert.match(app, /everyClosedOnly/);
-  assert.match(app, /Uncheck to restore all hours/);
+  assert.match(html, /id="gantt-hour-filter"/);
+  assert.match(html, /Hours where every gate is closed/);
+  assert.match(app, /ganttHourMatchesFilter/);
+  assert.match(app, /currentGanttHourFilter/);
+  
   assert.match(app, /Display only/);
 });

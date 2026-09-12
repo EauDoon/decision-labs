@@ -1,5 +1,25 @@
 # Changelog
 
+## 1.6.0 - 2026-09-12
+
+Consolidated Gantt filters, gate hour evidence, and a concise keyboard set in Weekend Gap 1.6.0
+
+A maintainability release on 1.5.33. The simulation math is unchanged. Weekend Gap remains a local-first decision aid, not a decision maker. Hatched Gantt rows are a local drawing. They do not connect to a bank or a live redemption queue. Analysis JSON still has no timestamps.
+
+### Changed
+
+- The Gantt card replaces the twenty-three per-gate hide checkboxes (hide bank closed, hide weekend FX open, and their siblings, each bound to a punctuation or function key) with one Show hours select: all hours, closed on at least one gate, closed on every gate, open on at least one gate, weekend only, weekday only, or queued demand only. The Show gates select and row density stay.
+- The twenty-five first or last open and closed hour copy buttons become four gate hour evidence buttons (issuer, bank, payout, FX). Each copies the first and last open and closed hour plus open and closed counts for one gate as Markdown through the shared clipboard-and-fallback path.
+- The global keyboard set is trimmed to the list shown under `?`: Space, J, F, P, S, D, Q, G, H, M, A, T, K, Y, N, I, B, O, W, C, U, R, E and Esc. Punctuation keys, F2 through F12, Insert, PageUp, Home, End, Delete, Backspace and the arrow keys no longer trigger copy or filter jumps, so browser Find, fullscreen, dev tools and scrolling behave normally again.
+- Workspace JSON now writes one `ganttHourFilter` value and stops writing the legacy `hide*GanttHours` keys. Import still accepts files that contain them: each legacy flag maps onto the closest consolidated filter (`hideWeekdayGanttHours` to weekend-only, `hideWeekendGanttHours` to weekdays-only, closed-gate hides to closed-on-at-least-one-gate, zero-queue hide to queued demand, `ganttClosedOnly` and `ganttEveryGateClosed` likewise). Unmapped legacy flags restore to all hours. New files remain version-1 workspace documents with the documented size limit.
+
+### Preserved
+
+- Scenario JSON and share links still carry only the current scenario. Analysis JSON is a report, not an importable scenario, and has no timestamps.
+- All presets from 1.5.1 through 1.5.33, the timing review panel, comparisons, reserve planner, CSV exports and the standalone build format are unchanged.
+
+# Changelog
+
 ## 1.5.33 - 2026-09-12
 
 Wednesday late FX open, last-weekend-FX-closed copy, and weekend-FX-open hide in Weekend Gap 1.5.33

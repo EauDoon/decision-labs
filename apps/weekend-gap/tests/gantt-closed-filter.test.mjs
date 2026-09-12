@@ -25,7 +25,7 @@ test("closed-on-any-gate helper matches issuer, bank, payout or weekend FX", () 
 
 test("closed-only Gantt SVG is a local drawing and leaves the 72-hour model unchanged", () => {
   const full = buildGateGanttSvg(DEFAULT_SCENARIO, 0);
-  const filtered = buildGateGanttSvg(DEFAULT_SCENARIO, 0, { closedOnly: true });
+  const filtered = buildGateGanttSvg(DEFAULT_SCENARIO, 0, { hourFilter: "any-closed" });
   assert.notEqual(full, filtered);
   assert.match(filtered, /viewBox="0 0 720/);
   const closedRects = (filtered.match(/<rect /g) || []).length;
@@ -37,10 +37,10 @@ test("closed-only Gantt SVG is a local drawing and leaves the 72-hour model unch
 test("closed-hours Gantt filter is a display control next to density", async () => {
   const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
   const app = await readFile(new URL("../src/app.js", import.meta.url), "utf8");
-  assert.match(html, /id="gantt-closed-only"/);
-  assert.match(html, /Show only hours closed on at least one gate/);
+  assert.match(html, /id="gantt-hour-filter"/);
+  assert.match(html, /Hours closed on at least one gate/);
   assert.match(html, /id="gantt-filter-note"/);
-  assert.match(app, /ganttHourClosedOnAnyGate/);
-  assert.match(app, /closedOnly/);
+  assert.match(app, /ganttHourMatchesFilter/);
+  assert.match(app, /currentGanttHourFilter/);
   assert.match(app, /The model still contains/);
 });

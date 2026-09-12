@@ -16,9 +16,7 @@ test("print and print redacted include the first open FX hour label with an hone
   assert.match(css, /\.print-keep/);
   assert.match(app, /firstOpenFxHour\.textContent/);
   assert.match(app, /firstOpenFxGanttHour\(scenario\)/);
-  assert.match(app, /the first open FX hour when one exists, with an honest empty when none/);
-  assert.match(app, /The first open FX hour stays on the printed brief when one exists, with an honest empty when none/);
-  assert.match(app, /counts of modeled hours, not a bank calendar/);
+      assert.match(app, /The hour evidence lines stay on the printed brief with honest empty values when none exist/);
   assert.match(app, /openFxHour === null/);
   const printHandler = app.slice(app.indexOf('document.querySelector("#print")'), app.indexOf('document.querySelector("#copy-dashboard-markdown")'));
   assert.doesNotMatch(printHandler, /setScenario\(/);
