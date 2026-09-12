@@ -1554,17 +1554,17 @@ function handleShortcut(event) {
   }
   if (event.shiftKey && key === "F7") {
     event.preventDefault();
-    copyLeftoverUncoveredLeftoverOnlyHeadroom();
+    copyLeftoverUncoveredLeftoverOnlyAllocated();
     return;
   }
   if (event.shiftKey && key === "F8") {
     event.preventDefault();
-    focusLeftoverUncoveredLeftoverOnlyHeadroomCopy();
+    focusLeftoverUncoveredLeftoverOnlyAllocatedCopy();
     return;
   }
   if (event.shiftKey && key === "F9") {
     event.preventDefault();
-    focusHideFirstLeftoverOnlyBuyer();
+    focusHideLastLeftoverOnlyBuyer();
     return;
   }
   if (key === "F7") {

@@ -162,6 +162,15 @@ export const presets: Readonly<{
   waterPoloCarnivalLunch: Scenario;
   rowingCarnivalLunch: Scenario;
   sailingCarnivalLunch: Scenario;
+  canoeingCarnivalLunch: Scenario;
+  kayakingCarnivalLunch: Scenario;
+  dragonBoatCarnivalLunch: Scenario;
+  surfCarnivalLunch: Scenario;
+  triathlonCarnivalLunch: Scenario;
+  cyclingCarnivalLunch: Scenario;
+  mountainBikeCarnivalLunch: Scenario;
+  bmxCarnivalLunch: Scenario;
+  cycloCrossCarnivalLunch: Scenario;
 }>;
 
 export function clonePreset(name?: keyof typeof presets): Scenario;

@@ -115,6 +115,8 @@ test("the example bar includes mountain bike carnival lunch next to cycling carn
   assert.match(html, /Mountain bike carnival/u);
   assert.match(html, /data-preset="cyclingCarnivalLunch"/u);
   assert.match(html, /data-preset="bmxCarnivalLunch"/u);
+  assert.match(html, /data-preset="cycloCrossCarnivalLunch"/u);
   assert.ok(html.indexOf('data-preset="cyclingCarnivalLunch"') < html.indexOf('data-preset="mountainBikeCarnivalLunch"'));
   assert.ok(html.indexOf('data-preset="mountainBikeCarnivalLunch"') < html.indexOf('data-preset="bmxCarnivalLunch"'));
+  assert.ok(html.indexOf('data-preset="bmxCarnivalLunch"') < html.indexOf('data-preset="cycloCrossCarnivalLunch"'));
 });
