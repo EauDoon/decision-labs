@@ -10,7 +10,7 @@ test("1.5.23 keeps Insert ArrowDown ArrowLeft last-open-FX controls and PageUp P
   assert.match(html, /<kbd>Insert<\/kbd>/);
   assert.match(html, /<kbd>ArrowDown<\/kbd>/);
   assert.match(html, /<kbd>ArrowLeft<\/kbd>/);
-  assert.match(html, /id="gantt-hide-weekend-fx-open"[^>]*aria-keyshortcuts="ArrowLeft F12"/);
+  assert.match(html, /id="gantt-hide-weekend-fx-open"[^>]*aria-keyshortcuts="ArrowLeft F12 Shift\+F12"/);
   assert.match(html, /id="copy-last-open-payout"[^>]*aria-keyshortcuts="PageUp"/);
   assert.match(html, /<kbd>PageUp<\/kbd>/);
   assert.match(html, /<kbd>PageDown<\/kbd>/);
