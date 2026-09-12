@@ -31,6 +31,7 @@ test("Wednesday early FX open keeps the Normal Friday calendar with a Wednesday 
   assert.match(preset.name, /Wednesday early FX open/i);
   assert.equal(preset.wednesdayEarlyFxOpen, true);
   assert.equal(DEFAULT_SCENARIO.wednesdayEarlyFxOpen, false);
+  assert.equal(preset.wednesdayLateFxOpen, false);
   assert.equal(preset.tuesdayLateFxOpen, false);
   assert.equal(preset.tuesdayEarlyFxOpen, false);
   assert.equal(preset.mondayEarlyFxOpen, false);
@@ -44,6 +45,7 @@ test("Wednesday early FX open keeps the Normal Friday calendar with a Wednesday 
   assert.equal(preset.bankOpenStartHour, DEFAULT_SCENARIO.bankOpenStartHour);
   assert.equal(preset.redemptionDemandAud, DEFAULT_SCENARIO.redemptionDemandAud);
   assert.notDeepEqual(preset, PRESETS.normal);
+  assert.notDeepEqual(preset, PRESETS.wednesdayLateFxOpen);
   assert.notDeepEqual(preset, PRESETS.tuesdayLateFxOpen);
   assert.notDeepEqual(preset, PRESETS.tuesdayEarlyFxOpen);
   assert.notDeepEqual(preset, PRESETS.mondayEarlyFxOpen);
@@ -79,6 +81,7 @@ test("Wednesday early FX open keeps the Normal Friday calendar with a Wednesday 
   assert.equal(getOperationalStatus(preset, 113).payoutOpen, getOperationalStatus(DEFAULT_SCENARIO, 113).payoutOpen);
   assert.equal(firstWednesdayEarlyFxOpenHour(preset), null);
   assert.equal(firstWednesdayEarlyFxOpenHour(DEFAULT_SCENARIO), null);
+  assert.equal(firstWednesdayEarlyFxOpenHour(PRESETS.wednesdayLateFxOpen), null);
   assert.equal(firstWednesdayEarlyFxOpenHour(PRESETS.tuesdayLateFxOpen), null);
   assert.equal(firstWednesdayEarlyFxOpenHour(PRESETS.tuesdayEarlyFxOpen), null);
   assert.equal(firstWednesdayEarlyFxOpenHour(PRESETS.mondayEarlyFxOpen), null);
@@ -118,6 +121,7 @@ test("Wednesday early FX open ORs into fxWeekday through isWednesdayEarlyFxOpenH
   assert.match(status, /isTuesdayEarlyFxOpenHour\(hourOffset, scenario\)/);
   assert.match(status, /isTuesdayLateFxOpenHour\(hourOffset, scenario\)/);
   assert.match(status, /isWednesdayEarlyFxOpenHour\(hourOffset, scenario\)/);
+  assert.match(status, /isWednesdayLateFxOpenHour\(hourOffset, scenario\)/);
   assert.match(status, /isMondayLateFxOpenHour\(hourOffset, scenario\)/);
   assert.match(status, /isFridayLateFxOpenHour\(hourOffset, scenario\)/);
   assert.doesNotMatch(model, /Date\.now/);
