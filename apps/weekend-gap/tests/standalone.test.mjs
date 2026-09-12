@@ -31,7 +31,9 @@ test("release 1.5.37 ships Saturday midday FX open, last-weekday-FX-open copy an
   assert.match(changelog, /Saturday midday FX open, last-weekday-FX-open copy, and weekday-FX-closed hide in Weekend Gap 1\.5\.37/);
   assert.ok(html.includes('event.key === "F10" && event.shiftKey'));
   assert.match(html, /id="copy-last-weekday-fx-open"/);
+  assert.match(html, /id="copy-last-weekday-fx-open"[^>]*aria-keyshortcuts="Shift\+F10"/);
   assert.match(html, /id="copy-first-weekend-fx-closed"/);
+  assert.doesNotMatch(html, /id="copy-first-weekend-fx-closed"[^>]*aria-keyshortcuts="Shift\+F10"/);
   assert.ok(html.includes('event.key === "F11" && event.shiftKey'));
   assert.ok(html.includes('event.key === "F12" && event.shiftKey'));
   assert.match(html, /id="gantt-hide-weekday-fx-closed"/);
