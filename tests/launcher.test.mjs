@@ -4772,6 +4772,8 @@ test('404 copy first unlabelled skip href uses the href without extra public pat
   assert.match(page, /id="version-line"/);
   assert.match(page, /id="whats-new"/);
   assert.match(page, /aria-labelledby="whats-new-title"/);
+  assert.match(page, /aria-labelledby="workbenches-title"/);
+  assert.match(page, /aria-labelledby="how-title"/);
   assert.match(page, /Not a live product feed/);
   assert.match(page, /Copied the first unlabelled skip-link href from this page/);
   assert.match(page, /This is the first unlabelled skip-link href, not a live product feed/);
