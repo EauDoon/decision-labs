@@ -160,6 +160,7 @@ test('catalog names current workbench tools without live services', () => {
   assert.match(html, /Cyclo-cross carnival, first-over-capacity volume copy, and first-over-capacity hide jump in Partnership Breakpoint 1\.5\.34/);
   assert.match(html, /Track cycling carnival, last-over-capacity remaining listed capacity copy, and last-over-capacity hide jump in Partnership Breakpoint 1\.5\.35/);
   assert.match(html, /Gravel cycling carnival, last-over-capacity remaining listed capacity copy, and last-over-capacity hide jump in Partnership Breakpoint 1\.5\.36/);
+  assert.match(html, /Road cycling carnival, last-over-capacity remaining listed capacity copy, and last-over-capacity hide jump in Partnership Breakpoint 1\.5\.37/);
   assert.match(html, /Leftover fill and overlap counts in Common Cart 1\.3\.1/);
   assert.match(html, /Offer CSV, sort, and leftover headroom in Common Cart 1\.3\.2/);
   assert.match(html, /Offer export, variant filter, and empty-offer recovery in Common Cart 1\.3\.3/);
@@ -368,6 +369,7 @@ test('catalog names current workbench tools without live services', () => {
   assert.match(readme, /first-over-capacity volume copy shortcut, the Cyclo-cross carnival split start/);
   assert.match(readme, /last-over-capacity remaining listed capacity copy shortcut, the Track cycling carnival split start/);
   assert.match(readme, /last-over-capacity remaining listed capacity copy shortcut, the Gravel cycling carnival split start/);
+  assert.match(readme, /last-over-capacity remaining listed capacity copy shortcut, the Road cycling carnival split start/);
   assert.match(readme, /package pin, locks, and notes/);
   assert.match(readme, /facilitator pack, group CSV/);
   assert.match(readme, /clause CSV\s+import, veto-only filter/);
@@ -5718,6 +5720,7 @@ test('What\'s new and README name first What\'s new copy, intro jump, and skip-l
   assert.equal(headings.includes('Cyclo-cross carnival, first-over-capacity volume copy, and first-over-capacity hide jump in Partnership Breakpoint 1.5.34'), true);
   assert.equal(headings.includes('Track cycling carnival, last-over-capacity remaining listed capacity copy, and last-over-capacity hide jump in Partnership Breakpoint 1.5.35'), true);
   assert.equal(headings.includes('Gravel cycling carnival, last-over-capacity remaining listed capacity copy, and last-over-capacity hide jump in Partnership Breakpoint 1.5.36'), true);
+  assert.equal(headings.includes('Road cycling carnival, last-over-capacity remaining listed capacity copy, and last-over-capacity hide jump in Partnership Breakpoint 1.5.37'), true);
   assert.equal(headings.includes('Swimming carnival lunch, leftover-fulfillment copy, and winner-allocated hide in Common Cart 1.4.12'), true);
   assert.equal(headings.includes('Athletics carnival lunch, leftover-delivery copy, and leftover-fill hide in Common Cart 1.4.13'), true);
   assert.equal(headings.includes('Cricket carnival lunch, leftover-pickup copy, and last leftover-fill hide in Common Cart 1.4.14'), true);
@@ -5860,6 +5863,7 @@ test('What\'s new and README name first-workbench copy, first-card jump, and fir
   assert.equal(headings.includes('Cyclo-cross carnival, first-over-capacity volume copy, and first-over-capacity hide jump in Partnership Breakpoint 1.5.34'), true);
   assert.equal(headings.includes('Track cycling carnival, last-over-capacity remaining listed capacity copy, and last-over-capacity hide jump in Partnership Breakpoint 1.5.35'), true);
   assert.equal(headings.includes('Gravel cycling carnival, last-over-capacity remaining listed capacity copy, and last-over-capacity hide jump in Partnership Breakpoint 1.5.36'), true);
+  assert.equal(headings.includes('Road cycling carnival, last-over-capacity remaining listed capacity copy, and last-over-capacity hide jump in Partnership Breakpoint 1.5.37'), true);
   assert.equal(headings.includes('Athletics carnival lunch, leftover-delivery copy, and leftover-fill hide in Common Cart 1.4.13'), true);
   assert.equal(headings.includes('Cricket carnival lunch, leftover-pickup copy, and last leftover-fill hide in Common Cart 1.4.14'), true);
   assert.equal(headings.includes('Tennis carnival lunch, leftover-label copy, and first leftover-fill hide in Common Cart 1.4.15'), true);
@@ -15167,7 +15171,7 @@ test('copy first unlabelled skip target text markdown is the text of the first s
   const versionLine = {
     getAttribute() { return null; },
     tagName: 'P',
-    textContent: 'Partnership Breakpoint 1.5.36, Common Cart 1.4.36, The Smallest Agreement 1.5.36, Weekend Gap 1.5.36. Each workbench versions itself.',
+    textContent: 'Partnership Breakpoint 1.5.37, Common Cart 1.4.36, The Smallest Agreement 1.5.36, Weekend Gap 1.5.36. Each workbench versions itself.',
   };
   const extra = {
     getAttribute() { return null; },
@@ -15213,7 +15217,7 @@ test('copy first unlabelled skip target text markdown is the text of the first s
     navigator: { clipboard: { writeText: async (text) => { copied = text; } } },
   });
   await clickFirst();
-  assert.equal(copied, '- Partnership Breakpoint 1.5.36, Common Cart 1.4.36, The Smallest Agreement 1.5.36, Weekend Gap 1.5.36. Each workbench versions itself.');
+  assert.equal(copied, '- Partnership Breakpoint 1.5.37, Common Cart 1.4.36, The Smallest Agreement 1.5.36, Weekend Gap 1.5.36. Each workbench versions itself.');
   assert.doesNotMatch(copied, /\n/);
   assert.doesNotMatch(copied, /#version-line/);
   assert.doesNotMatch(copied, /Skip to catalog versions/);
@@ -15233,7 +15237,7 @@ test('copy first unlabelled skip target text markdown is the text of the first s
   copied = 'stale';
   await clickFirst();
   assert.equal(copied, '- Extra');
-  assert.notEqual(copied, '- Partnership Breakpoint 1.5.36, Common Cart 1.4.36, The Smallest Agreement 1.5.36, Weekend Gap 1.5.36. Each workbench versions itself.');
+  assert.notEqual(copied, '- Partnership Breakpoint 1.5.37, Common Cart 1.4.36, The Smallest Agreement 1.5.36, Weekend Gap 1.5.36. Each workbench versions itself.');
   skips = [];
   copied = 'stale';
   await clickFirst();
@@ -15519,7 +15523,7 @@ test('copy last unlabelled skip target text markdown is the text of the last ski
   const versionLine = {
     getAttribute() { return null; },
     tagName: 'P',
-    textContent: 'Partnership Breakpoint 1.5.36, Common Cart 1.4.36, The Smallest Agreement 1.5.36, Weekend Gap 1.5.36. Each workbench versions itself.',
+    textContent: 'Partnership Breakpoint 1.5.37, Common Cart 1.4.36, The Smallest Agreement 1.5.36, Weekend Gap 1.5.36. Each workbench versions itself.',
   };
   const extra = {
     getAttribute() { return null; },
@@ -15565,7 +15569,7 @@ test('copy last unlabelled skip target text markdown is the text of the last ski
     navigator: { clipboard: { writeText: async (text) => { copied = text; } } },
   });
   await clickLast();
-  assert.equal(copied, '- Partnership Breakpoint 1.5.36, Common Cart 1.4.36, The Smallest Agreement 1.5.36, Weekend Gap 1.5.36. Each workbench versions itself.');
+  assert.equal(copied, '- Partnership Breakpoint 1.5.37, Common Cart 1.4.36, The Smallest Agreement 1.5.36, Weekend Gap 1.5.36. Each workbench versions itself.');
   assert.doesNotMatch(copied, /\n/);
   assert.doesNotMatch(copied, /#version-line/);
   assert.doesNotMatch(copied, /Skip to catalog versions/);
@@ -15589,7 +15593,7 @@ test('copy last unlabelled skip target text markdown is the text of the last ski
   copied = 'stale';
   await clickLast();
   assert.equal(copied, '- Extra');
-  assert.notEqual(copied, '- Partnership Breakpoint 1.5.36, Common Cart 1.4.36, The Smallest Agreement 1.5.36, Weekend Gap 1.5.36. Each workbench versions itself.');
+  assert.notEqual(copied, '- Partnership Breakpoint 1.5.37, Common Cart 1.4.36, The Smallest Agreement 1.5.36, Weekend Gap 1.5.36. Each workbench versions itself.');
   skips = [];
   copied = 'stale';
   await clickLast();

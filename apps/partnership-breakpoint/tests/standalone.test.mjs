@@ -42,30 +42,38 @@ const appImport = `import {
 
 `;
 
-test('release 1.5.36 ships gravel cycling carnival, last-over-capacity remaining copy and last-over-capacity hide jump', async () => {
+test('release 1.5.37 ships road cycling carnival, last-over-capacity remaining copy and last-over-capacity hide jump', async () => {
   const pkg = JSON.parse(await readFile(new URL('../package.json', import.meta.url), 'utf8'));
   const readme = await readFile(new URL('../README.md', import.meta.url), 'utf8');
   const changelog = await readFile(new URL('../CHANGELOG.md', import.meta.url), 'utf8');
   const html = await buildStandalone();
-  assert.equal(pkg.version, '1.5.36');
-  assert.match(readme, /New in v1\.5\.36/);
-  assert.match(readme, /Decision workflow \(v1\.5\.36\)/);
-  assert.match(readme, /Gravel cycling carnival, last-over-capacity remaining listed capacity copy, and last-over-capacity hide jump in Partnership Breakpoint 1\.5\.36/);
+  assert.equal(pkg.version, '1.5.37');
+  assert.match(readme, /New in v1\.5\.37/);
+  assert.match(readme, /Decision workflow \(v1\.5\.37\)/);
+  assert.match(readme, /Road cycling carnival, last-over-capacity remaining listed capacity copy, and last-over-capacity hide jump in Partnership Breakpoint 1\.5\.37/);
   const firstHeading = changelog.match(/^## .+$/m)?.[0];
-  assert.equal(firstHeading, '## 1.5.36');
-  assert.match(changelog, /Gravel cycling carnival, last-over-capacity remaining listed capacity copy, and last-over-capacity hide jump in Partnership Breakpoint 1\.5\.36/);
+  assert.equal(firstHeading, '## 1.5.37');
+  assert.match(changelog, /Road cycling carnival, last-over-capacity remaining listed capacity copy, and last-over-capacity hide jump in Partnership Breakpoint 1\.5\.37/);
+  assert.match(html, /roadCyclingCarnivalSplit/);
+  assert.match(html, /Road cycling carnival split/);
   assert.match(html, /gravelCyclingCarnivalSplit/);
   assert.match(html, /Gravel cycling carnival split/);
   assert.match(html, /trackCyclingCarnivalSplit/);
   assert.match(html, /Track cycling carnival split/);
   assert.match(html, /cycloCrossCarnivalSplit/);
   assert.match(html, /Cyclo-cross carnival split/);
-  const trackPresetAt = html.indexOf('trackCyclingCarnivalSplit:');
   const gravelPresetAt = html.indexOf('gravelCyclingCarnivalSplit:');
+  const roadPresetAt = html.indexOf('roadCyclingCarnivalSplit:');
+  const trackPresetAt = html.indexOf('trackCyclingCarnivalSplit:');
   assert.notEqual(trackPresetAt, -1);
   assert.notEqual(gravelPresetAt, -1);
+  assert.notEqual(roadPresetAt, -1);
   assert.ok(trackPresetAt < gravelPresetAt);
+  assert.ok(gravelPresetAt < roadPresetAt);
   assert.match(html, /variableCostPerTransaction: 1\.56/);
+  assert.match(html, /variableCostPerTransaction: 1\.52/);
+  assert.match(html, /id: 'cyclo-cross-first-aid', name: 'First-aid', revenueShare: 0\.25, variableCostPerTransaction: 1\.56/);
+  assert.match(html, /id: 'road-cycling-first-aid', name: 'First-aid', revenueShare: 0\.25, variableCostPerTransaction: 1\.52/);
   assert.match(html, /id="copy-last-over-capacity-remaining"[^>]*aria-keyshortcuts="\* Shift\+F7 Shift\+F10"/);
   assert.doesNotMatch(html, /id="copy-first-over-capacity-volume"[^>]*aria-keyshortcuts="Shift\+F7"/);
   assert.match(html, /id="copy-first-over-capacity-remaining"[^>]*aria-keyshortcuts="~"/);
@@ -378,6 +386,7 @@ test('standalone retains 1.5.16 review tools and 1.5.17 copy controls', async ()
   assert.match(html, /Cyclo-cross carnival split/);
   assert.match(html, /Track cycling carnival split/);
   assert.match(html, /Gravel cycling carnival split/);
+  assert.match(html, /Road cycling carnival split/);
   const surfAt = html.indexOf('Surf carnival split');
   const triathlonAt = html.indexOf('Triathlon carnival split');
   const cyclingAt = html.indexOf('Cycling carnival split');
@@ -386,6 +395,7 @@ test('standalone retains 1.5.16 review tools and 1.5.17 copy controls', async ()
   const cycloAt = html.indexOf('Cyclo-cross carnival split');
   const trackAt = html.indexOf('Track cycling carnival split');
   const gravelAt = html.indexOf('Gravel cycling carnival split');
+  const roadAt = html.indexOf('Road cycling carnival split');
   assert.notEqual(surfAt, -1);
   assert.notEqual(triathlonAt, -1);
   assert.notEqual(cyclingAt, -1);
@@ -394,6 +404,7 @@ test('standalone retains 1.5.16 review tools and 1.5.17 copy controls', async ()
   assert.notEqual(cycloAt, -1);
   assert.notEqual(trackAt, -1);
   assert.notEqual(gravelAt, -1);
+  assert.notEqual(roadAt, -1);
   assert.ok(surfAt < triathlonAt);
   assert.ok(triathlonAt < cyclingAt);
   assert.ok(cyclingAt < mountainAt);
@@ -401,6 +412,7 @@ test('standalone retains 1.5.16 review tools and 1.5.17 copy controls', async ()
   assert.ok(bmxAt < cycloAt);
   assert.ok(cycloAt < trackAt);
   assert.ok(trackAt < gravelAt);
+  assert.ok(gravelAt < roadAt);
   assert.match(html, /lastOverCapacityVolumeMarkdown/);
   assert.match(html, /copyLastOverCapacityVolume/);
   assert.match(html, /firstOverCapacityVolumeMarkdown/);
