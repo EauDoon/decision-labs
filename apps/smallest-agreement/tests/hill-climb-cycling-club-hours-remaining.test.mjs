@@ -1,0 +1,34 @@
+import assert from "node:assert/strict";
+import test from "node:test";
+import { readFile } from "node:fs/promises";
+
+test("hill-climb cycling club hours keeps remaining 17 / 19 / 50 after time-trial", async () => {
+  const app = (await readFile(new URL("../src/app.js", import.meta.url), "utf8")).replaceAll("\r\n", "\n");
+  const html = (await readFile(new URL("../index.html", import.meta.url), "utf8")).replaceAll("\r\n", "\n");
+  const hillClimbStart = app.indexOf('"hill-climb-cycling-club-hours"');
+  const hillClimbEnd = app.indexOf("let agreementReviewPacket", hillClimbStart);
+  const hillClimb = app.slice(hillClimbStart, hillClimbEnd === -1 ? undefined : hillClimbEnd);
+  const timeTrialStart = app.indexOf('"time-trial-cycling-club-hours"');
+  const timeTrial = app.slice(timeTrialStart, hillClimbStart);
+  assert.ok(hillClimbStart > timeTrialStart);
+  assert.match(hillClimb, /weight: 17/);
+  assert.match(hillClimb, /weight: 19/);
+  assert.match(hillClimb, /Summit-marshal hours/);
+  assert.match(hillClimb, /Climb-chip lock-up/);
+  assert.match(hillClimb, /timekeepers at the summit-marshal hut/);
+  assert.doesNotMatch(hillClimb, /start-ramp/);
+  assert.doesNotMatch(hillClimb, /timing-hut/);
+  assert.doesNotMatch(hillClimb, /time-check/);
+  assert.doesNotMatch(hillClimb, /pit-lane/);
+  assert.doesNotMatch(hillClimb, /commissaires/);
+  assert.doesNotMatch(hillClimb, /sealed-road/);
+  assert.doesNotMatch(hillClimb, /circuit/);
+  assert.match(timeTrial, /weight: 16/);
+  assert.match(timeTrial, /weight: 18/);
+  assert.match(timeTrial, /Start-ramp hours/);
+  assert.doesNotMatch(timeTrial, /Summit-marshal hours/);
+  assert.doesNotMatch(timeTrial, /Climb-chip lock-up/);
+  assert.equal(app.includes('} else if (event.shiftKey && key === "F9") {\n    event.preventDefault();\n    jumpToHideLastGroupWithoutFloor();'), true);
+  assert.equal(app.includes('} else if (key === "F9") {\n    event.preventDefault();\n    jumpToHideLastGroupWithoutFloor();'), true);
+  assert.match(html, /<kbd>Shift\+F9<\/kbd> Jump to the hide-last-group-without-floor control, or the groups heading/);
+});
