@@ -96,6 +96,17 @@ A score can be incomplete, a weight can be contested, and a low numerical change
 
 Support floors and veto marks protect only the numerical averages you enter. They do not establish consent, a legal veto, or prevent a low score on an individual clause. Clause locks express a supplied constraint, not a grant of decision authority. Optional clause notes are facilitator reminders only.
 
+## v1.5.37, 12-09-2026
+
+Road cycling club hours, first-without-floor remaining copy, and first-without-floor hide jump in The Smallest Agreement 1.5.37.
+
+- Kept keyboard `Shift+F7`, `Shift+F8`, and `Shift+F9` for first-without-floor remaining copy, the first-without-floor remaining copy control, and the existing hide-first-group-without-floor control. Shift+F7 remaining stays. Last-without-floor remaining stays on its button without `Shift+F7`. Last-without-floor cost and first-without-floor cost stay on their buttons without `Shift+F7`. The `shiftKey && F7` branch is handled before unshifted `F7`. Shortcut help lists them. Shortcuts are ignored while typing. Unshifted `F7`, `F8`, and `F9` stay last-without-floor label copy, last-without-floor copy jump, and hide-last-group-without-floor jump. `Shift+F10` count stays. `Shift+F12` and `F12` still jump to hide-first-group-without-floor. Shift+F9 now matches the existing first-without-floor hide (same as 1.5.34). That last-without-floor hide stays on screen. That first-without-floor hide stays on screen. A floor is a number you entered, not a legal quorum.
+- Kept copy of remaining mixing weight of the first group without a declared support floor as one-line Markdown, with a clipboard fallback. Honest 0 when none. Distinct prefix from Last-without-floor remaining, First-without-floor cost, Last-without-floor cost, Groups-without-floor remaining, Groups without a support floor count, first/last group-without-floor label, and remaining change-budget. A floor is a number you entered, not a legal quorum. Mixing weights are not a legal right. Display-only. Workspace JSON is unchanged.
+- Added the Road cycling club hours preset: students, neighbours, and P&C scoring road course booking, feed-station hours, and wheel-bag lock-up. Distinct from Gravel cycling club hours (gravel course / feed-zone / drop-bag), Track cycling club hours (sprint track / timing-hut / wheel-box), Cyclo-cross club hours (cyclo-cross course / start-grid / pit-box), BMX club hours (pump-track / start-gate / pad-box), Mountain bike club hours (downhill staging / trail cafe / helmet-box), Cycling club hours (velodrome staging / cafe / bike-box), Triathlon club hours (staging/transition-area/bike-bag), Surf club hours (staging/clubhouse bar/board-bag), Dragon boat club hours (staging/drum bar/paddle-box), Kayaking club hours (whitewater/slalom/spraydeck), Canoeing club hours (canoe-shed/paddle-pontoon), Sailing club hours (jetty/yacht), and Swimming club hours (pool open). Neighbours veto is a flag you entered, not a legal right. A veto is a number, not a legal right. Not a recorded vote.
+- Kept the 1.5.0 package review tools, `createAgreementReviewPacket`, replay, and AGREEMENT_REVIEW_TOOLS.
+
+See [CHANGELOG.md](CHANGELOG.md) for the full list.
+
 ## v1.5.36, 12-09-2026
 
 Gravel cycling club hours, first-without-floor remaining copy, and last-without-floor hide jump in The Smallest Agreement 1.5.36.
