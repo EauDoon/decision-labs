@@ -1339,6 +1339,39 @@ const presets = {
       },
     ],
   },
+  "mountain-bike-club-hours": {
+    title: "Mountain bike club hours: downhill staging booking, trail cafe hours, and helmet-box lock-up",
+    threshold: 70,
+    maxChangeCost: 8,
+    groups: [
+      { id: "students", name: "Students", weight: 9 },
+      { id: "neighbours", name: "Neighbours", weight: 8, veto: true },
+      { id: "pandc", name: "P&C", weight: 11 },
+    ],
+    clauses: [
+      {
+        id: "mountain-bike-staging-booking", title: "Downhill staging booking", options: [
+          { id: "mountain-bike-staging-booking-original", original: true, label: "Keep weekday downhill staging from 09:35 with no posted trail-gate rota", changeCost: 0, support: { students: 4, neighbours: 91, pandc: 60 } },
+          { id: "mountain-bike-staging-booking-late", original: false, label: "Open weekday downhill staging at 16:25 with a posted trail-gate rota", changeCost: 2, support: { students: 89, neighbours: 31, pandc: 43 } },
+          { id: "mountain-bike-staging-booking-weekend", original: false, label: "Hold Saturday morning downhill staging at 07:50 with a trail-gate booking card", changeCost: 4, support: { students: 74, neighbours: 39, pandc: 51 } },
+        ],
+      },
+      {
+        id: "mountain-bike-trail-cafe", title: "Trail cafe hours", options: [
+          { id: "mountain-bike-trail-cafe-original", original: true, label: "No posted mountain-bike trail cafe hours", changeCost: 0, support: { students: 69, neighbours: 17, pandc: 30 } },
+          { id: "mountain-bike-trail-cafe-cap", original: false, label: "Close the trail cafe at 18:40 and keep drinks inside the downhill hut", changeCost: 1, support: { students: 42, neighbours: 83, pandc: 62 } },
+          { id: "mountain-bike-trail-cafe-cut", original: false, label: "Serve tea only after 15:10 and retire the trail cafe drinks", changeCost: 5, support: { students: 24, neighbours: 87, pandc: 40 } },
+        ],
+      },
+      {
+        id: "mountain-bike-helmet-box-lockup", title: "Helmet-box lock-up", options: [
+          { id: "mountain-bike-helmet-box-lockup-original", original: true, label: "Leave the helmet-box door on a shared padlock after club hours", changeCost: 0, support: { students: 9, neighbours: 29, pandc: 34 } },
+          { id: "mountain-bike-helmet-box-lockup-steward", original: false, label: "Require a P&C steward to lock the helmet-box store before 19:40", changeCost: 3, support: { students: 56, neighbours: 57, pandc: 77 } },
+          { id: "mountain-bike-helmet-box-lockup-timer", original: false, label: "Add a timed lock on the helmet-box store after the last downhill session", changeCost: 2, support: { students: 45, neighbours: 48, pandc: 65 } },
+        ],
+      },
+    ],
+  },
 };
 
 let agreementReviewPacket = null;
