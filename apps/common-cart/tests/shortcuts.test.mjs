@@ -1546,8 +1546,9 @@ test("keyboard handler jumps to hide first uncovered leftover buyer with F9 when
 test("shortcut help documents leftover uncovered leftover-only remaining copy", async () => {
   const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
   assert.match(html, /<kbd>F10<\/kbd> Copy leftover uncovered leftover-only remaining \(organizer private\)/u);
+  assert.match(html, /<kbd>Shift\+F7<\/kbd> Copy leftover uncovered leftover-only remaining \(organizer private\)/u);
   assert.match(html, /id="copy-leftover-uncovered-leftover-only-remaining"/u);
-  assert.match(html, /id="copy-leftover-uncovered-leftover-only-remaining"[^>]*aria-keyshortcuts="F10"/u);
+  assert.match(html, /id="copy-leftover-uncovered-leftover-only-remaining"[^>]*aria-keyshortcuts="Shift\+F7 F10"/u);
 });
 
 test("keyboard handler copies leftover uncovered leftover-only remaining with F10 when not typing", async () => {
@@ -1566,6 +1567,7 @@ test("keyboard handler copies leftover uncovered leftover-only remaining with F1
 test("shortcut help documents leftover uncovered leftover-only remaining copy jump", async () => {
   const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
   assert.match(html, /<kbd>F11<\/kbd> Focus the leftover uncovered leftover-only remaining copy control, or leftover heading if missing/u);
+  assert.match(html, /<kbd>Shift\+F8<\/kbd> Focus the leftover uncovered leftover-only remaining copy control, or leftover heading if missing/u);
   assert.match(html, /id="copy-leftover-uncovered-leftover-only-remaining"/u);
   assert.match(html, /id="residual-title"/u);
 });
