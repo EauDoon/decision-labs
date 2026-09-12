@@ -3389,6 +3389,7 @@ export function compareWorkshopFiles(leftText, rightText) {
 }
 
 const WORKSPACE_DOCUMENT_KEYS = new Set([
+  "rounds",
   "format",
   "version",
   "clauseDensity",
@@ -3468,7 +3469,7 @@ function readWorkspaceBoolean(raw, key) {
  * Filter flags are display-only. The solver ignores them.
  * Unknown wrapper keys are rejected.
  */
-export function formatWorkspaceJson(proposal, prefs = {}) {
+export function formatWorkspaceJson(proposal, prefs = {}, rounds = []) {
   const validation = validateProposal(proposal);
   if (!validation.valid) return { status: "invalid", errors: [namedFileError("invalid_proposal", validation.errors[0])] };
   if (!isPlainObject(prefs)) {
@@ -3539,6 +3540,13 @@ export function formatWorkspaceJson(proposal, prefs = {}) {
   if (hideLastGroupWithoutFloor.error) return { status: "invalid", errors: [hideLastGroupWithoutFloor.error] };
   const hideFirstGroupWithoutFloor = readWorkspaceBoolean(prefs, "hideFirstGroupWithoutFloor");
   if (hideFirstGroupWithoutFloor.error) return { status: "invalid", errors: [hideFirstGroupWithoutFloor.error] };
+  if (!Array.isArray(rounds) || rounds.length > MAX_ROUNDS) {
+    return { status: "invalid", errors: [namedFileError("invalid_rounds", `Workspace rounds must contain at most ${MAX_ROUNDS} rounds.`)] };
+  }
+  for (const round of rounds) {
+    const validation = validateRound(round);
+    if (!validation.valid) return { status: "invalid", errors: [namedFileError("invalid_round", validation.errors[0])] };
+  }
   return {
     status: "ok",
     clauseDensity,
@@ -3602,6 +3610,7 @@ export function formatWorkspaceJson(proposal, prefs = {}) {
       hideLastGroupBelowFloor: hideLastGroupBelowFloor.value,
       hideLastGroupWithoutFloor: hideLastGroupWithoutFloor.value,
       hideFirstGroupWithoutFloor: hideFirstGroupWithoutFloor.value,
+      rounds,
       proposal: canonicalProposal(proposal),
     }, null, 2)}\n`,
   };
@@ -3647,6 +3656,7 @@ export function parseWorkspaceJson(text) {
       hideLastGroupBelowFloor: null,
       hideLastGroupWithoutFloor: null,
       hideFirstGroupWithoutFloor: null,
+      rounds: [],
     };
   }
   for (const key of Object.keys(raw)) {
@@ -3719,9 +3729,21 @@ export function parseWorkspaceJson(text) {
   if (hideLastGroupWithoutFloor.error) return { status: "invalid", errors: [hideLastGroupWithoutFloor.error] };
   const hideFirstGroupWithoutFloor = readWorkspaceBoolean(raw, "hideFirstGroupWithoutFloor");
   if (hideFirstGroupWithoutFloor.error) return { status: "invalid", errors: [hideFirstGroupWithoutFloor.error] };
+  let rounds = [];
+  if (Object.hasOwn(raw, "rounds")) {
+    if (!Array.isArray(raw.rounds) || raw.rounds.length > MAX_ROUNDS) {
+      return { status: "invalid", errors: [namedFileError("invalid_rounds", `Workspace rounds must contain at most ${MAX_ROUNDS} rounds.`)] };
+    }
+    for (const round of raw.rounds) {
+      const validation = validateRound(round);
+      if (!validation.valid) return { status: "invalid", errors: [namedFileError("invalid_round", validation.errors[0])] };
+    }
+    rounds = raw.rounds;
+  }
   return {
     status: "ok",
     kind: "workspace",
+    rounds,
     proposal: proposal.proposal,
     clauseDensity,
     vetoGroupsOnly: vetoGroupsOnly.value,
@@ -3753,6 +3775,246 @@ export function parseWorkspaceJson(text) {
     hideLastGroupWithoutFloor: hideLastGroupWithoutFloor.value,
     hideFirstGroupWithoutFloor: hideFirstGroupWithoutFloor.value,
   };
+}
+
+export const MAX_ROUNDS = 20;
+export const MAX_ROUND_NOTES = 4000;
+export const MAX_ROUND_DECISION = 500;
+
+/**
+ * Records one negotiation round: an immutable proposal baseline plus
+ * human-authored notes and an optional explicitly recorded outcome.
+ * Human statements stay separate from calculated results: a saved round is
+ * not a recorded vote unless `decision` says what was decided, in the user's
+ * own words. `recordedAt` is display-only metadata and never participates in
+ * equality, diffs, or replay.
+ */
+export function createRound(proposal, fields = {}) {
+  const errors = [];
+  if (!isPlainObject(fields)) return { status: "invalid", errors: ["Round fields must be an object."] };
+  for (const key of Object.keys(fields)) {
+    if (!["id", "name", "notes", "decision", "recordedAt"].includes(key)) {
+      errors.push(`Round has unexpected field: ${key}.`);
+    }
+  }
+  const validation = validateProposal(proposal);
+  if (!validation.valid) {
+    return { status: "invalid", errors: [`Round proposal is invalid: ${validation.errors[0]}`] };
+  }
+  const canonical = canonicalProposal(proposal);
+  let id = fields.id;
+  if (id === undefined) id = `round-${contentHash(JSON.stringify(canonical))}`;
+  if (typeof id !== "string" || !ID_PATTERN.test(id) || RESERVED_IDS.has(id)) {
+    errors.push("Round id must be 1 to 64 safe identifier characters.");
+  }
+  const text = (value, max, label) => {
+    if (value === undefined) return null;
+    if (typeof value !== "string" || !value.trim() || value.trim().length > max) {
+      errors.push(`Round ${label} must be 1 to ${max} characters, or omitted.`);
+      return null;
+    }
+    return value.trim();
+  };
+  const name = text(fields.name, 120, "name");
+  const notes = text(fields.notes, MAX_ROUND_NOTES, "notes");
+  const decision = text(fields.decision, MAX_ROUND_DECISION, "decision");
+  let recordedAt = null;
+  if (fields.recordedAt !== undefined) {
+    if (typeof fields.recordedAt !== "string" || !fields.recordedAt.trim() || fields.recordedAt.trim().length > 64) {
+      errors.push("Round recordedAt must be 1 to 64 characters, or omitted.");
+    } else {
+      recordedAt = fields.recordedAt.trim();
+    }
+  }
+  if (errors.length > 0) return { status: "invalid", errors };
+  return { status: "ok", round: { id, name, notes, decision, recordedAt, proposal: canonical } };
+}
+
+function contentHash(text) {
+  let hash = 5381;
+  for (let i = 0; i < text.length; i += 1) {
+    hash = ((hash << 5) + hash + text.charCodeAt(i)) >>> 0;
+  }
+  return hash.toString(16).padStart(8, "0");
+}
+
+export function validateRound(round) {
+  if (!isPlainObject(round)) return { valid: false, errors: ["Round must be an object."] };
+  const errors = [];
+  for (const key of Object.keys(round)) {
+    if (!["id", "name", "notes", "decision", "recordedAt", "proposal"].includes(key)) {
+      errors.push(`Round has unexpected field: ${key}.`);
+    }
+  }
+  if (typeof round.id !== "string" || !ID_PATTERN.test(round.id) || RESERVED_IDS.has(round.id)) {
+    errors.push("Round id must be 1 to 64 safe identifier characters.");
+  }
+  for (const [key, max] of [["name", 120], ["notes", MAX_ROUND_NOTES], ["decision", MAX_ROUND_DECISION]]) {
+    const value = round[key];
+    if (value !== null && value !== undefined && (typeof value !== "string" || !value.trim() || value.trim().length > max)) {
+      errors.push(`Round ${key} must be 1 to ${max} characters, or omitted.`);
+    }
+  }
+  if (round.recordedAt !== null && round.recordedAt !== undefined
+    && (typeof round.recordedAt !== "string" || !round.recordedAt.trim() || round.recordedAt.trim().length > 64)) {
+    errors.push("Round recordedAt must be 1 to 64 characters, or omitted.");
+  }
+  if (!isPlainObject(round.proposal)) {
+    errors.push("Round proposal must be an object.");
+  } else {
+    const validation = validateProposal(round.proposal);
+    if (!validation.valid) errors.push(`Round proposal is invalid: ${validation.errors[0]}`);
+  }
+  return { valid: errors.length === 0, errors };
+}
+
+/** Rounds match when their deterministic content matches; recordedAt is ignored. */
+export function roundsEqual(left, right) {
+  if (!isPlainObject(left) || !isPlainObject(right)) return false;
+  const strip = (round) => {
+    const copy = { ...round };
+    delete copy.recordedAt;
+    return copy;
+  };
+  return JSON.stringify(strip(left)) === JSON.stringify(strip(right));
+}
+
+/**
+ * Summarizes one round proposal with an explicit outcome for every search
+ * state: completed search, invalid input, infeasibility, or unsupported size.
+ * A summary never presents an unfinished search as proof.
+ */
+export function summarizeRound(proposal) {
+  const validation = validateProposal(proposal);
+  if (!validation.valid) {
+    return { status: "invalid", changeCost: null, approval: null, threshold: null, groupSupport: [], optionIds: null, note: `Invalid inputs: ${validation.errors[0]}` };
+  }
+  const result = findSmallestAgreement(proposal);
+  if (result.status === "too_large") {
+    return { status: "too_large", changeCost: null, approval: null, threshold: proposal.threshold, groupSupport: [], optionIds: null, possibleCombinations: result.possibleCombinations, note: `Search exceeds the supported bound of ${result.possibleCombinations.toLocaleString("en-US")} combinations; no optimum is claimed.` };
+  }
+  if (result.status === "infeasible") {
+    const baseline = selectionSummary(proposal, getOriginalOptions(proposal));
+    return { status: "infeasible", changeCost: null, approval: baseline.approval, threshold: proposal.threshold, groupSupport: approvalByGroup(proposal.groups, getOriginalOptions(proposal)), optionIds: null, note: "Every permitted combination was evaluated and none meets the threshold with every constraint." };
+  }
+  const agreement = result.agreement;
+  return {
+    status: result.status, changeCost: agreement.changeCost, approval: agreement.approval,
+    threshold: proposal.threshold, groupSupport: approvalByGroup(proposal.groups, agreement.options),
+    optionIds: agreement.options.map((option) => option.id),
+    selections: proposal.clauses.map((clause, index) => ({
+      clauseId: clause.id, clauseTitle: clause.title,
+      optionId: agreement.options[index].id, optionLabel: agreement.options[index].label,
+    })),
+    note: result.status === "already_passing" ? "The original proposal already passes; no change is recommended." : "Lowest-cost passing combination within the supported bound.",
+  };
+}
+
+/**
+ * Compares two rounds input by input and result by result. Support-score and
+ * change-cost cell changes are listed up to 25 entries with a remaining count.
+ * Calculated summaries stay separate from each round's human-authored notes.
+ */
+export function compareRounds(leftRound, rightRound) {
+  for (const [label, round] of [["first", leftRound], ["second", rightRound]]) {
+    const validation = validateRound(round);
+    if (!validation.valid) throw new TypeError(`Cannot compare: ${label} round is invalid: ${validation.errors[0]}`);
+  }
+  const left = canonicalProposal(leftRound.proposal);
+  const right = canonicalProposal(rightRound.proposal);
+  const summaryLeft = summarizeRound(left);
+  const summaryRight = summarizeRound(right);
+  const inputChanges = describeProposalChanges(left, right);
+  const optionChanges = [];
+  const leftOptions = new Map(left.clauses.map((clause) => [clause.id, clause.options]));
+  const rightOptions = new Map(right.clauses.map((clause) => [clause.id, clause.options]));
+  for (const [clauseId, leftList] of leftOptions) {
+    const rightList = rightOptions.get(clauseId);
+    if (!rightList) continue;
+    const rightById = new Map(rightList.map((option) => [option.id, option]));
+    for (const option of leftList) {
+      const match = rightById.get(option.id);
+      if (!match) {
+        optionChanges.push({ clauseId, optionId: option.id, field: "option", before: option.label, after: null });
+        continue;
+      }
+      if (option.label !== match.label) optionChanges.push({ clauseId, optionId: option.id, field: "label", before: option.label, after: match.label });
+      if (option.changeCost !== match.changeCost) optionChanges.push({ clauseId, optionId: option.id, field: "changeCost", before: option.changeCost, after: match.changeCost });
+      for (const group of left.groups) {
+        if (option.support[group.id] !== match.support[group.id]) {
+          optionChanges.push({ clauseId, optionId: option.id, field: `support.${group.id}`, before: option.support[group.id], after: match.support[group.id] });
+        }
+      }
+    }
+    for (const option of rightList) {
+      if (!leftList.some((entry) => entry.id === option.id)) {
+        optionChanges.push({ clauseId, optionId: option.id, field: "option", before: null, after: option.label });
+      }
+    }
+  }
+  const supportDeltas = [];
+  const rightSummary = summaryRight.groupSupport.length ? summaryRight : null;
+  if (summaryLeft.groupSupport.length && rightSummary) {
+    const rightById = new Map(rightSummary.groupSupport.map((group) => [group.id, group]));
+    for (const group of summaryLeft.groupSupport) {
+      const match = rightById.get(group.id);
+      if (match) supportDeltas.push({ id: group.id, name: group.name, before: group.approval, after: match.approval, delta: match.approval - group.approval });
+    }
+  }
+  return {
+    left: { id: leftRound.id, name: leftRound.name, ...summaryLeft },
+    right: { id: rightRound.id, name: rightRound.name, ...summaryRight },
+    inputChanges,
+    optionChanges: optionChanges.slice(0, 25),
+    optionChangeCount: optionChanges.length,
+    supportDeltas,
+    costDelta: summaryRight.changeCost === null || summaryLeft.changeCost === null ? null : summaryRight.changeCost - summaryLeft.changeCost,
+    approvalDelta: summaryRight.approval === null || summaryLeft.approval === null ? null : summaryRight.approval - summaryLeft.approval,
+  };
+}
+
+function describeProposalChanges(left, right) {
+  const changes = [];
+  if (left.threshold !== right.threshold) changes.push(`Threshold ${left.threshold}% to ${right.threshold}%.`);
+  if ((left.maxChangeCost ?? null) !== (right.maxChangeCost ?? null)) {
+    changes.push(`Budget ${left.maxChangeCost ?? "unlimited"} to ${right.maxChangeCost ?? "unlimited"}.`);
+  }
+  const leftGroups = new Map(left.groups.map((group) => [group.id, group]));
+  const rightGroups = new Map(right.groups.map((group) => [group.id, group]));
+  for (const [id, group] of leftGroups) {
+    if (!rightGroups.has(id)) changes.push(`Group removed: ${group.name}.`);
+  }
+  for (const [id, group] of rightGroups) {
+    const match = leftGroups.get(id);
+    if (!match) {
+      changes.push(`Group added: ${group.name}.`);
+      continue;
+    }
+    if (match.weight !== group.weight) changes.push(`Group ${group.name} weight ${match.weight} to ${group.weight}.`);
+    if ((match.minSupport ?? null) !== (group.minSupport ?? null)) changes.push(`Group ${group.name} floor ${match.minSupport ?? "none"} to ${group.minSupport ?? "none"}.`);
+    if ((match.veto ?? false) !== (group.veto ?? false)) changes.push(`Group ${group.name} veto ${match.veto === true ? "on" : "off"} to ${group.veto === true ? "on" : "off"}.`);
+  }
+  const leftClauses = new Map(left.clauses.map((clause) => [clause.id, clause]));
+  const rightClauses = new Map(right.clauses.map((clause) => [clause.id, clause]));
+  for (const [id, clause] of leftClauses) {
+    if (!rightClauses.has(id)) changes.push(`Clause removed: ${clause.title}.`);
+  }
+  for (const [id, clause] of rightClauses) {
+    if (!leftClauses.has(id)) changes.push(`Clause added: ${clause.title}.`);
+  }
+  const lockOf = (proposal, clauseId) => proposal.clauses.find((clause) => clause.id === clauseId)?.lockedOptionId ?? null;
+  for (const [id, clause] of leftClauses) {
+    if (!rightClauses.has(id)) continue;
+    const before = lockOf(left, id);
+    const after = lockOf(right, id);
+    if (before !== after) changes.push(`Clause ${clause.title} lock ${before ?? "none"} to ${after ?? "none"}.`);
+  }
+  const ruleIds = (proposal) => new Set((proposal.relationships ?? []).map((rule) => rule.id));
+  const leftRules = ruleIds(left);
+  const rightRules = ruleIds(right);
+  for (const id of leftRules) if (!rightRules.has(id)) changes.push(`Relationship removed: ${id}.`);
+  for (const id of rightRules) if (!leftRules.has(id)) changes.push(`Relationship added: ${id}.`);
+  return changes;
 }
 
 /**

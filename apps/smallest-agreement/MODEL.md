@@ -126,6 +126,14 @@ Small textual edits can have large semantic, legal, financial, or lived effects.
 Use the result to focus a human conversation. Establish process rules, evidence standards, decision rights, and adoption requirements separately.
 
 
+## Negotiation rounds
+
+A round records one immutable proposal baseline with human-authored notes and an optional explicitly recorded outcome. Create rounds with `createRound`, which validates and canonicalizes the proposal; omit the id to derive a deterministic content id. Names (120), notes (4,000), and decisions (500) are trimmed human text. `recordedAt` is display-only metadata and never participates in equality, diffs, or replay: a saved round is not a recorded vote unless `decision` says what was decided.
+
+`validateRound` checks stored rounds. `summarizeRound` states every outcome explicitly: completed search, invalid input, genuine infeasibility, or search over the supported bound. `compareRounds` separates deliberate input changes (threshold, budget, groups, clauses, locks, relationships, option-level support and cost edits up to 25 listed) from calculated results (cost and approval deltas, per-group support deltas, per-clause selections). `roundsEqual` ignores `recordedAt`.
+
+Workspace files (format `smallest-agreement-workspace`, version 1) optionally carry up to 20 rounds. Files without rounds stay valid. Invalid rounds reject the file with a named reason. Search performance was measured during development: about 16,000 combinations evaluate in roughly 50 ms, so the exhaustive search needs no pruning or cancellation path; the bound and its explicit outcomes stand as documented.
+
 ## Inspection APIs and local workflows
 
 - `evaluatePackage(proposal, optionIds)` requires exactly one valid option ID per clause and returns `passing`, `not_passing`, or `invalid`. It tests all constraints, including locks, without modifying the proposal or performing an optimization.

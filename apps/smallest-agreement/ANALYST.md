@@ -68,6 +68,13 @@ import. Scenario review searches retain each model tool's existing caps;
 the packet explicitly identifies its original-package context. A packet is
 reproducible model evidence, not an authenticated decision record.
 
+## List negotiation rounds
+
+`node scripts/analyze.mjs rounds workspace.json` lists deterministic summaries
+for each saved round: status, change cost, approval, group support, and
+selected options. Human notes, decisions, and recording timestamps are shown
+as recorded, never recalculated. A workspace without rounds lists none.
+
 ## Verify a received review
 
 `node scripts/analyze.mjs replay review.json` accepts a review packet up to

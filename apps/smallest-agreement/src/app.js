@@ -79,6 +79,10 @@ import {
   compareWorkshopFiles,
   formatWorkspaceJson,
   parseWorkspaceJson,
+  createRound,
+  compareRounds,
+  summarizeRound,
+  MAX_ROUNDS,
   formatLocksJson,
   parseLocksJson,
   resetGroupSupport,
@@ -94,6 +98,7 @@ import {
 
 const STORAGE_KEY = "smallest-agreement:proposal:v1";
 const LIBRARY_KEY = "smallest-agreement:scenarios:v1";
+const ROUNDS_KEY = "smallest-agreement:rounds:v1";
 const COACH_KEY = "smallest-agreement:coach:v1";
 const WORKSPACE_KEY = "smallest-agreement:workspace:v1";
 const MAX_SCENARIOS = 20;
@@ -1411,6 +1416,9 @@ let agreementReviewPacket = null;
 let agreementReviewSequence = 0;
 const state = { proposal: loadInitialProposal(), saveMessage: initialLoadMessage };
 let scenarios = loadScenarios();
+let roundsBlocked = false;
+let rounds = loadRounds();
+let roundsRaw = readRoundsRaw();
 let manualSelection = Object.create(null);
 let lockPreview = null;
 let clauseFilter = "";
@@ -1868,6 +1876,7 @@ function render() {
   $("#autosave-status").textContent = state.saveMessage;
   updateHistoryButtons();
   renderScenarios();
+  renderRounds();
   const result = currentResult();
   const vetoBlocks = blockingVetoIds(result);
   renderGroups(vetoBlocks);
@@ -3722,8 +3731,118 @@ document.addEventListener("click", (event) => {
   });
 });
 
-function loadScenarios() {
+function readRoundsRaw() {
   try {
+    return localStorage.getItem(ROUNDS_KEY);
+  } catch {
+    roundsBlocked = true;
+    return null;
+  }
+}
+
+function loadRounds() {
+  try {
+    const raw = localStorage.getItem(ROUNDS_KEY);
+    if (raw === null) return [];
+    if (raw.length > 5_000_000) throw new Error("Rounds exceed their storage bound.");
+    const rows = JSON.parse(raw);
+    if (!Array.isArray(rows) || rows.length > MAX_ROUNDS) throw new Error("Invalid rounds.");
+    return rows.map((row) => {
+      const created = createRound(row.proposal, { id: row.id, name: row.name ?? undefined, notes: row.notes ?? undefined, decision: row.decision ?? undefined, recordedAt: row.recordedAt ?? undefined });
+      if (created.status !== "ok") throw new Error("Invalid round.");
+      return created.round;
+    });
+  } catch {
+    roundsBlocked = true;
+    return [];
+  }
+}
+
+function persistRounds(next) {
+  try {
+    if (localStorage.getItem(ROUNDS_KEY) !== roundsRaw) {
+      notifyDraft("The rounds list changed in another tab. Export this draft, then reload before saving a round.");
+      return false;
+    }
+    const serialized = JSON.stringify(next);
+    localStorage.setItem(ROUNDS_KEY, serialized);
+    roundsRaw = serialized;
+    rounds = next;
+    renderRounds();
+    return true;
+  } catch {
+    notifyDraft("Round could not be saved. Export JSON to keep this draft.");
+    return false;
+  }
+}
+
+function roundSummaryLine(summary) {
+  if (summary.status === "invalid") return `Invalid: ${summary.note}`;
+  if (summary.status === "too_large") return "Search over bound; no optimum claimed";
+  if (summary.status === "infeasible") return "Infeasible; nothing passes";
+  return `Cost ${summary.changeCost}, approval ${summary.approval.toFixed(1)}%`;
+}
+
+function renderRounds() {
+  const select = $("#round-select");
+  const selected = select.value;
+  select.innerHTML = '<option value="">Choose a saved round</option>' + rounds.map((row, index) => '<option value="' + index + '">' + escapeHtml(row.name ?? row.id) + '</option>').join("");
+  if (selected !== "" && rounds[Number(selected)]) select.value = selected;
+  const comparison = $("#round-compare");
+  const previousComparison = comparison.value;
+  comparison.innerHTML = '<option value="">Choose a round to compare</option>' + rounds.map((row, index) => '<option value="' + index + '">' + escapeHtml(row.name ?? row.id) + '</option>').join("");
+  if (previousComparison !== "" && rounds[Number(previousComparison)]) comparison.value = previousComparison;
+  $("#round-count").textContent = roundsBlocked ? "Round storage is unavailable or invalid. Existing stored bytes are preserved. Export JSON to keep your work." : rounds.length + " of " + MAX_ROUNDS + " rounds saved in this browser. Loading can be undone.";
+  $("#save-round").disabled = roundsBlocked || rounds.length >= MAX_ROUNDS;
+  $("#load-round").disabled = !rounds.length;
+  $("#delete-round").disabled = !rounds.length;
+  renderRoundComparison();
+}
+
+function renderRoundComparison() {
+  const target = $("#round-comparison");
+  const value = $("#round-compare").value;
+  const round = value === "" ? null : rounds[Number(value)];
+  if (!round) {
+    target.innerHTML = "";
+    return;
+  }
+  let comparison;
+  try {
+    comparison = compareRounds(round, createRound(state.proposal, {}).status === "ok" ? createRound(state.proposal, {}).round : round);
+  } catch {
+    target.innerHTML = '<p class="field-note">Fix the draft before comparing rounds.</p>';
+    return;
+  }
+  const statusLine = (summary) => summary.status === "invalid" ? `Invalid: ${escapeHtml(summary.note)}` : `${escapeHtml(summary.status)}; ${escapeHtml(roundSummaryLine(summary))}`;
+  const supportRows = comparison.supportDeltas.map((row) => `<tr><th scope="row">${escapeHtml(row.name)}</th><td>${row.before.toFixed(1)}%</td><td>${row.after.toFixed(1)}%</td><td>${row.delta >= 0 ? "+" : ""}${row.delta.toFixed(1)}</td></tr>`).join("");
+  const labelOf = (selections, clauseId) => (selections ?? []).find((entry) => entry.clauseId === clauseId) ?? null;
+  const clauseTitles = new Map();
+  for (const clause of round.proposal.clauses) clauseTitles.set(clause.id, clause.title);
+  for (const clause of state.proposal.clauses) {
+    if (!clauseTitles.has(clause.id)) clauseTitles.set(clause.id, clause.title);
+  }
+  const optionRows = [...clauseTitles].map(([clauseId, title]) => {
+    const left = labelOf(comparison.left.selections, clauseId);
+    const right = labelOf(comparison.right.selections, clauseId);
+    if (left && right && left.optionId === right.optionId) return "";
+    return `<tr><th scope="row">${escapeHtml(title)}</th><td>${escapeHtml(left?.optionLabel ?? "—")}</td><td>${escapeHtml(right?.optionLabel ?? "—")}</td></tr>`;
+  }).join("");
+  target.innerHTML = `<div class="options-table-wrap"><table class="coalition-table"><caption>Calculated comparison of ${escapeHtml(round.name ?? round.id)} against the current draft. Human notes stay separate below.</caption>
+    <thead><tr><th scope="col">Measure</th><th scope="col">Round</th><th scope="col">Current draft</th></tr></thead><tbody>
+    <tr><th scope="row">Status</th><td>${statusLine(comparison.left)}</td><td>${statusLine(comparison.right)}</td></tr>
+    <tr><th scope="row">Change cost</th><td>${comparison.left.changeCost ?? "—"}</td><td>${comparison.right.changeCost ?? "—"}</td></tr>
+    <tr><th scope="row">Approval</th><td>${comparison.left.approval === null ? "—" : comparison.left.approval.toFixed(1) + "%"}</td><td>${comparison.right.approval === null ? "—" : comparison.right.approval.toFixed(1) + "%"}</td></tr>
+    ${supportRows}
+    ${optionRows}
+    </tbody></table></div>
+    ${comparison.inputChanges.length ? `<p class="field-note">Input changes: ${escapeHtml(comparison.inputChanges.join(" "))}</p>` : '<p class="field-note">No input changes; only the recorded notes may differ.</p>'}
+    ${comparison.optionChangeCount > comparison.optionChanges.length ? `<p class="field-note">Showing ${comparison.optionChanges.length} of ${comparison.optionChangeCount} option-level changes.</p>` : ""}
+    ${round.notes ? `<p class="field-note">Human-authored round notes: ${escapeHtml(round.notes)}</p>` : ""}
+    ${round.decision ? `<p class="field-note">Human-recorded outcome: ${escapeHtml(round.decision)}</p>` : ""}`;
+}
+
+function loadScenarios() {  try {
     const raw = localStorage.getItem(LIBRARY_KEY);
     libraryRaw = raw;
     if (raw === null) return [];
@@ -3804,6 +3923,43 @@ $("#delete-scenario").addEventListener("click", () => {
   if (persistScenarios(scenarios.filter((_, index) => index !== Number(value)))) notifyDraft("Saved scenario deleted. The current draft is retained.");
 });
 
+$("#save-round").addEventListener("click", () => {
+  if (roundsBlocked || rounds.length >= MAX_ROUNDS) return;
+  const cause = firstProposalError(state.proposal);
+  if (cause) return notifyDraft("Fix the draft before saving a round: " + cause);
+  const fields = {
+    name: $("#round-name").value.trim() || undefined,
+    notes: $("#round-notes").value.trim() || undefined,
+    decision: $("#round-decision").value.trim() || undefined,
+  };
+  const created = createRound(state.proposal, fields);
+  if (created.status !== "ok") return notifyDraft("Round was not saved: " + created.errors[0]);
+  if (persistRounds([...rounds, created.round])) {
+    $("#round-select").value = String(rounds.length - 1);
+    $("#round-name").value = "";
+    $("#round-notes").value = "";
+    $("#round-decision").value = "";
+    notifyDraft("Round saved as an immutable baseline: " + (created.round.name ?? created.round.id));
+  }
+});
+$("#load-round").addEventListener("click", () => {
+  const value = $("#round-select").value;
+  const row = value === "" ? null : rounds[Number(value)];
+  if (!row) return notifyDraft("Choose a saved round first.");
+  changeAndRender(() => { state.proposal = clone(row.proposal); });
+  notifyDraft("Loaded round: " + (row.name ?? row.id) + ". Undo restores the previous draft.");
+});
+$("#delete-round").addEventListener("click", () => {
+  const value = $("#round-select").value;
+  const row = value === "" ? null : rounds[Number(value)];
+  if (!row) return notifyDraft("Choose a saved round first.");
+  if (!window.confirm("Delete saved round: " + (row.name ?? row.id) + "? The current draft is retained.")) return;
+  if (persistRounds(rounds.filter((_, index) => index !== Number(value)))) notifyDraft("Saved round deleted. The current draft is retained.");
+});
+$("#round-compare").addEventListener("change", () => {
+  renderRoundComparison();
+});
+
 function restoreHistory(from, to) {
   if (!from.length) return;
   to.push(JSON.stringify(state.proposal));
@@ -3835,7 +3991,7 @@ $("#export-button").addEventListener("click", () => {
   downloadText("smallest-agreement.json", JSON.stringify(canonicalProposal(state.proposal), null, 2), "application/json");
 });
 $("#export-workspace-button").addEventListener("click", () => {
-  const exported = formatWorkspaceJson(state.proposal, { clauseDensity, vetoGroupsOnly, lockedClausesOnly, hideUnlockedClauses, hideLockedClauses, changedClausesOnly, belowFloorGroupsOnly, overBudgetClausesOnly, hideGroupsAtFloor, hideGroupsWithoutFloors, hideGroupsMeetingThreshold, hideGroupsBelowThreshold, hideVetoGroups, hideNonVetoGroups, hideFirstVetoGroup, hideLastVetoGroup, hideFirstNonVetoGroup, hideLastNonVetoGroup, hideLastGroupBelowThreshold, hideFirstGroupBelowThreshold, hideLastGroupAtOrAboveThreshold, hideFirstGroupAtOrAboveThreshold, hideLastGroupAtFloor, hideFirstGroupAtFloor, hideFirstGroupBelowFloor, hideLastGroupBelowFloor, hideLastGroupWithoutFloor, hideFirstGroupWithoutFloor, noCheaperRemainingClausesOnly });
+  const exported = formatWorkspaceJson(state.proposal, { clauseDensity, vetoGroupsOnly, lockedClausesOnly, hideUnlockedClauses, hideLockedClauses, changedClausesOnly, belowFloorGroupsOnly, overBudgetClausesOnly, hideGroupsAtFloor, hideGroupsWithoutFloors, hideGroupsMeetingThreshold, hideGroupsBelowThreshold, hideVetoGroups, hideNonVetoGroups, hideFirstVetoGroup, hideLastVetoGroup, hideFirstNonVetoGroup, hideLastNonVetoGroup, hideLastGroupBelowThreshold, hideFirstGroupBelowThreshold, hideLastGroupAtOrAboveThreshold, hideFirstGroupAtOrAboveThreshold, hideLastGroupAtFloor, hideFirstGroupAtFloor, hideFirstGroupBelowFloor, hideLastGroupBelowFloor, hideLastGroupWithoutFloor, hideFirstGroupWithoutFloor, noCheaperRemainingClausesOnly }, rounds);
   if (exported.status !== "ok") return notifyDraft("Fix the draft before exporting workspace JSON.");
   downloadText("smallest-agreement-workspace.json", exported.json, "application/json");
   notifyDraft("Workspace JSON downloaded with the current draft, clause card density, and display filters. The solver ignores those filters.");
@@ -4646,8 +4802,17 @@ $("#import-file").addEventListener("change", async (event) => {
       hideFirstGroupWithoutFloor = workspace.hideFirstGroupWithoutFloor === true;
       noCheaperRemainingClausesOnly = workspace.noCheaperRemainingClausesOnly === true;
       persistWorkspacePrefs();
-    } else if (workspace.clauseDensity === "compact" || workspace.clauseDensity === "comfortable") {
-      clauseDensity = workspace.clauseDensity;
+      if (workspace.kind === "workspace") {
+        rounds = workspace.rounds ?? [];
+        try {
+          const serialized = JSON.stringify(rounds);
+          localStorage.setItem(ROUNDS_KEY, serialized);
+          roundsRaw = serialized;
+        } catch {
+          roundsBlocked = true;
+        }
+      }
+    } else if (workspace.clauseDensity === "compact" || workspace.clauseDensity === "comfortable") {      clauseDensity = workspace.clauseDensity;
       persistWorkspacePrefs();
     }
     save();

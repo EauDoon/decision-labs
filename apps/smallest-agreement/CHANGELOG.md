@@ -1,5 +1,16 @@
 # Changelog
 
+## 1.6.0
+
+Negotiation rounds in The Smallest Agreement 1.6.0
+
+- Rounds record an immutable proposal baseline with human-authored notes and an optional explicitly recorded outcome. Human statements stay separate from calculated results; a saved round is not a recorded vote unless the outcome says so.
+- The Negotiation rounds panel saves, loads (undoable), deletes, and compares rounds against the current draft: status, change cost, approval, per-group support deltas, per-clause selections, deliberate input changes, and capped option-level edits. Rounds persist in browser storage and workspace files; old files without rounds stay valid.
+- Model APIs `createRound`, `validateRound`, `summarizeRound`, `compareRounds`, and `roundsEqual` with explicit outcomes for completed search, invalid input, infeasibility, and unsupported size. CLI gains `rounds` for deterministic round summaries.
+- Search performance measured: about 16,000 combinations in roughly 50 ms, so no pruning was added; exactness is preserved and reference-verified.
+
+# Changelog
+
 ## 1.5.35
 
 Option relationships in The Smallest Agreement 1.5.35
