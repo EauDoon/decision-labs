@@ -148,6 +148,7 @@ test('catalog names current workbench tools without live services', () => {
   assert.match(html, /Dragon boat carnival, last-zero-share volume copy, and zero-share hide jump in Partnership Breakpoint 1\.5\.28/);
   assert.match(html, /Surf carnival, first-zero-share volume copy, and last-zero-share hide jump in Partnership Breakpoint 1\.5\.29/);
   assert.match(html, /Triathlon carnival, last-over-capacity volume copy, and first-over-capacity hide jump in Partnership Breakpoint 1\.5\.30/);
+  assert.match(html, /Cycling carnival, first-over-capacity volume copy, and last-over-capacity hide jump in Partnership Breakpoint 1\.5\.31/);
   assert.match(html, /Leftover fill and overlap counts in Common Cart 1\.3\.1/);
   assert.match(html, /Offer CSV, sort, and leftover headroom in Common Cart 1\.3\.2/);
   assert.match(html, /Offer export, variant filter, and empty-offer recovery in Common Cart 1\.3\.3/);
@@ -181,6 +182,7 @@ test('catalog names current workbench tools without live services', () => {
   assert.match(html, /Dragon boat carnival lunch, leftover-uncovered leftover-only headroom copy, and last uncovered-leftover hide jump in Common Cart 1\.4\.28/);
   assert.match(html, /Surf carnival lunch, leftover-uncovered leftover-only allocated copy, and first uncovered-leftover hide jump in Common Cart 1\.4\.29/);
   assert.match(html, /Triathlon carnival lunch, leftover-uncovered leftover-only capacity copy, and last leftover-only hide jump in Common Cart 1\.4\.30/);
+  assert.match(html, /Cycling carnival lunch, leftover-uncovered leftover-only unit-price copy, and first leftover-only hide jump in Common Cart 1\.4\.31/);
   assert.match(html, /Package pin, locks, and notes in The Smallest Agreement 1\.4\.1/);
   assert.match(html, /Facilitator pack and group CSV in The Smallest Agreement 1\.4\.2/);
   assert.match(html, /Clause CSV, veto filter, and quiet-hours preset in The Smallest Agreement 1\.4\.3/);
@@ -296,6 +298,7 @@ test('catalog names current workbench tools without live services', () => {
   assert.match(readme, /leftover uncovered leftover-only headroom copy shortcut, the Dragon boat carnival lunch start/);
   assert.match(readme, /leftover uncovered leftover-only allocated copy shortcut, the Surf carnival lunch start/);
   assert.match(readme, /leftover uncovered leftover-only capacity copy shortcut, the Triathlon carnival lunch start/);
+  assert.match(readme, /leftover uncovered leftover-only unit price copy shortcut, the Cycling carnival lunch start/);
   assert.match(readme, /waterfall SVG download, compare and print keys/);
   assert.match(readme, /waterfall\s+Markdown copy, the Talent, agent, and platform start/);
   assert.match(readme, /tornado Markdown copy, the\s+Three-party joint venture start/);
@@ -326,6 +329,7 @@ test('catalog names current workbench tools without live services', () => {
   assert.match(readme, /last-zero-share volume copy shortcut, the Dragon boat carnival split start/);
   assert.match(readme, /first-zero-share volume copy shortcut, the Surf carnival split start/);
   assert.match(readme, /last-over-capacity volume copy shortcut, the Triathlon carnival split start/);
+  assert.match(readme, /first-over-capacity volume copy shortcut, the Cycling carnival split start/);
   assert.match(readme, /package pin, locks, and notes/);
   assert.match(readme, /facilitator pack, group CSV/);
   assert.match(readme, /clause CSV\s+import, veto-only filter/);
@@ -5645,6 +5649,7 @@ test('What\'s new and README name first What\'s new copy, intro jump, and skip-l
   assert.equal(headings.includes('Dragon boat carnival, last-zero-share volume copy, and zero-share hide jump in Partnership Breakpoint 1.5.28'), true);
   assert.equal(headings.includes('Surf carnival, first-zero-share volume copy, and last-zero-share hide jump in Partnership Breakpoint 1.5.29'), true);
   assert.equal(headings.includes('Triathlon carnival, last-over-capacity volume copy, and first-over-capacity hide jump in Partnership Breakpoint 1.5.30'), true);
+  assert.equal(headings.includes('Cycling carnival, first-over-capacity volume copy, and last-over-capacity hide jump in Partnership Breakpoint 1.5.31'), true);
   assert.equal(headings.includes('Swimming carnival lunch, leftover-fulfillment copy, and winner-allocated hide in Common Cart 1.4.12'), true);
   assert.equal(headings.includes('Athletics carnival lunch, leftover-delivery copy, and leftover-fill hide in Common Cart 1.4.13'), true);
   assert.equal(headings.includes('Cricket carnival lunch, leftover-pickup copy, and last leftover-fill hide in Common Cart 1.4.14'), true);
@@ -5664,6 +5669,7 @@ test('What\'s new and README name first What\'s new copy, intro jump, and skip-l
   assert.equal(headings.includes('Dragon boat carnival lunch, leftover-uncovered leftover-only headroom copy, and last uncovered-leftover hide jump in Common Cart 1.4.28'), true);
   assert.equal(headings.includes('Surf carnival lunch, leftover-uncovered leftover-only allocated copy, and first uncovered-leftover hide jump in Common Cart 1.4.29'), true);
   assert.equal(headings.includes('Triathlon carnival lunch, leftover-uncovered leftover-only capacity copy, and last leftover-only hide jump in Common Cart 1.4.30'), true);
+  assert.equal(headings.includes('Cycling carnival lunch, leftover-uncovered leftover-only unit-price copy, and first leftover-only hide jump in Common Cart 1.4.31'), true);
   assert.equal(headings.includes('Swimming club hours, first-veto copy, and first-veto hide in The Smallest Agreement 1.5.12'), true);
   assert.equal(headings.includes('Athletics club hours, veto-count copy, and last-veto hide in The Smallest Agreement 1.5.13'), true);
   assert.equal(headings.includes('Cricket club hours, first-non-veto copy, and first-non-veto hide in The Smallest Agreement 1.5.14'), true);
@@ -5759,6 +5765,7 @@ test('What\'s new and README name first-workbench copy, first-card jump, and fir
   assert.equal(headings.includes('Dragon boat carnival, last-zero-share volume copy, and zero-share hide jump in Partnership Breakpoint 1.5.28'), true);
   assert.equal(headings.includes('Surf carnival, first-zero-share volume copy, and last-zero-share hide jump in Partnership Breakpoint 1.5.29'), true);
   assert.equal(headings.includes('Triathlon carnival, last-over-capacity volume copy, and first-over-capacity hide jump in Partnership Breakpoint 1.5.30'), true);
+  assert.equal(headings.includes('Cycling carnival, first-over-capacity volume copy, and last-over-capacity hide jump in Partnership Breakpoint 1.5.31'), true);
   assert.equal(headings.includes('Athletics carnival lunch, leftover-delivery copy, and leftover-fill hide in Common Cart 1.4.13'), true);
   assert.equal(headings.includes('Cricket carnival lunch, leftover-pickup copy, and last leftover-fill hide in Common Cart 1.4.14'), true);
   assert.equal(headings.includes('Tennis carnival lunch, leftover-label copy, and first leftover-fill hide in Common Cart 1.4.15'), true);
@@ -5777,6 +5784,7 @@ test('What\'s new and README name first-workbench copy, first-card jump, and fir
   assert.equal(headings.includes('Dragon boat carnival lunch, leftover-uncovered leftover-only headroom copy, and last uncovered-leftover hide jump in Common Cart 1.4.28'), true);
   assert.equal(headings.includes('Surf carnival lunch, leftover-uncovered leftover-only allocated copy, and first uncovered-leftover hide jump in Common Cart 1.4.29'), true);
   assert.equal(headings.includes('Triathlon carnival lunch, leftover-uncovered leftover-only capacity copy, and last leftover-only hide jump in Common Cart 1.4.30'), true);
+  assert.equal(headings.includes('Cycling carnival lunch, leftover-uncovered leftover-only unit-price copy, and first leftover-only hide jump in Common Cart 1.4.31'), true);
   assert.equal(headings.includes('Athletics club hours, veto-count copy, and last-veto hide in The Smallest Agreement 1.5.13'), true);
   assert.equal(headings.includes('Cricket club hours, first-non-veto copy, and first-non-veto hide in The Smallest Agreement 1.5.14'), true);
   assert.equal(headings.includes('Tennis club hours, last-veto copy, and last-non-veto hide in The Smallest Agreement 1.5.15'), true);
