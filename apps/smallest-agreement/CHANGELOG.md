@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.5.34
+
+Exhaustive-reference cross-check for the search in The Smallest Agreement 1.5.34
+
+- New tests cross-check `findSmallestAgreement` against an independent brute-force reference on fixed small cases (thresholds 60/70/55, budgets 12/4/0, a single-clause case, and a locked-clause case). The reference enumerates every lock-permitted combination with `evaluatePackage` and keeps the cheapest passing summary. The search result agrees on status and change cost in every case.
+- Infeasible cases are proven genuine: the reference also finds no passing combination. Already-passing proposals remain distinguished from a found change (threshold 55 passes untouched; 57 requires changes; 70 is infeasible).
+- No model code changed. The search remains a plain exhaustive enumeration inside the documented combination bound; these tests are the standing evidence that the reported minimum is exact within that bound.
+
+# Changelog
+
 ## 1.5.33 - 2026-09-12
 
 BMX club hours, last-without-floor-cost copy, and last-without-floor hide jump in The Smallest Agreement 1.5.33
