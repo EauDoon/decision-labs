@@ -389,7 +389,8 @@ export function notFoundPage() {
     .copy-first-labelled-skip-href-tools { margin: 16px 0 0; }
     .copy-last-labelled-skip-href-tools { margin: 16px 0 0; }
     .copy-last-labelled-skip-text-tools { margin: 16px 0 0; }
-    .copy-first-labelled-skip-text-tools, .copy-first-unlabelled-skip-text-tools { margin: 16px 0 0; }
+    .copy-first-labelled-skip-text-tools { margin: 16px 0 0; }
+    .copy-first-unlabelled-skip-text-tools { margin: 16px 0 0; }
     .copy-first-review-tools { margin: 16px 0 0; }
     .copy-last-review-tools { margin: 16px 0 0; }
     .copy-lede-tools { margin: 16px 0 0; }
@@ -417,7 +418,7 @@ export function notFoundPage() {
       border: 1px solid #c3d0d3;
       border-radius: 4px;
     }
-    .copy-versions-fallback[hidden], .copy-trust-fallback[hidden], .copy-how-fallback[hidden], .copy-jobs-fallback[hidden], .copy-lede-fallback[hidden], .copy-version-line-fallback[hidden], .copy-first-trust-fallback[hidden], .copy-first-how-fallback[hidden], .copy-last-how-fallback[hidden], .copy-last-job-fallback[hidden], .copy-last-whats-new-fallback[hidden], .copy-first-whats-new-fallback[hidden], .copy-first-workbench-fallback[hidden], .copy-last-workbench-fallback[hidden], .copy-first-open-fallback[hidden], .copy-last-open-fallback[hidden], .copy-first-skip-fallback[hidden], .copy-last-skip-fallback[hidden], .copy-first-skip-text-fallback[hidden], .copy-last-skip-text-fallback[hidden], .copy-first-skip-target-text-fallback[hidden], .copy-last-skip-target-text-fallback[hidden], .copy-first-labelled-skip-target-text-fallback[hidden], .copy-last-labelled-skip-target-text-fallback[hidden], .copy-first-labelled-skip-href-fallback[hidden], .copy-last-labelled-skip-href-fallback, .copy-last-labelled-skip-text-fallback[hidden], .copy-first-labelled-skip-text-fallback, .copy-first-unlabelled-skip-text-fallback[hidden], .copy-first-review-fallback[hidden], .copy-last-review-fallback[hidden] { display: none; }
+    .copy-versions-fallback[hidden], .copy-trust-fallback[hidden], .copy-how-fallback[hidden], .copy-jobs-fallback[hidden], .copy-lede-fallback[hidden], .copy-version-line-fallback[hidden], .copy-first-trust-fallback[hidden], .copy-first-how-fallback[hidden], .copy-last-how-fallback[hidden], .copy-last-job-fallback[hidden], .copy-last-whats-new-fallback[hidden], .copy-first-whats-new-fallback[hidden], .copy-first-workbench-fallback[hidden], .copy-last-workbench-fallback[hidden], .copy-first-open-fallback[hidden], .copy-last-open-fallback[hidden], .copy-first-skip-fallback[hidden], .copy-last-skip-fallback[hidden], .copy-first-skip-text-fallback[hidden], .copy-last-skip-text-fallback[hidden], .copy-first-skip-target-text-fallback[hidden], .copy-last-skip-target-text-fallback[hidden], .copy-first-labelled-skip-target-text-fallback[hidden], .copy-last-labelled-skip-target-text-fallback[hidden], .copy-first-labelled-skip-href-fallback[hidden], .copy-last-labelled-skip-href-fallback, .copy-last-labelled-skip-text-fallback[hidden], .copy-first-labelled-skip-text-fallback[hidden], .copy-first-unlabelled-skip-text-fallback[hidden], .copy-first-review-fallback[hidden], .copy-last-review-fallback[hidden] { display: none; }
     .trust, .guide { margin: 28px 0 8px; padding-top: 8px; }
     .trust ul, .guide ul { margin: 12px 0 0; padding-left: 1.2rem; color: #1e3a42; }
     .trust li, .guide li { margin: 8px 0; }
