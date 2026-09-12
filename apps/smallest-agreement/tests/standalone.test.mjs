@@ -188,7 +188,7 @@ test("standalone artifact is current, self-contained, and LF-normalized", async 
   assert.match(html, /criterium-cycling-club-hours/u);
   assert.match(html, /time-trial-cycling-club-hours/u);
   assert.match(html, /road-cycling-club-hours/u);
-  assert.match(html, /<option value="track-cycling-club-hours">Track cycling club hours<\/option>\s*<option value="gravel-cycling-club-hours">Gravel cycling club hours<\/option>\s*<option value="road-cycling-club-hours">Road cycling club hours<\/option>\s*<option value="criterium-cycling-club-hours">Criterium cycling club hours<\/option>\s*<option value="time-trial-cycling-club-hours">Time-trial cycling club hours<\/option>\s*<option value="hill-climb-cycling-club-hours">Hill-climb cycling club hours<\/option>/u);
+  assert.match(html, /<option value="track-cycling-club-hours">Track cycling club hours<\/option>\s*<option value="gravel-cycling-club-hours">Gravel cycling club hours<\/option>\s*<option value="road-cycling-club-hours">Road cycling club hours<\/option>\s*<option value="criterium-cycling-club-hours">Criterium cycling club hours<\/option>\s*<option value="time-trial-cycling-club-hours">Time-trial cycling club hours<\/option>\s*<option value="hill-climb-cycling-club-hours">Hill-climb cycling club hours<\/option>\s*<option value="keirin-cycling-club-hours">Keirin cycling club hours<\/option>/u);
   assert.match(html, /id="clause-filter"/u);
   assert.match(html, /id="clause-filter-status"/u);
   assert.match(html, /id="veto-groups-only"/u);
@@ -4208,6 +4208,7 @@ test("road cycling club hours preset loads a distinct synthetic road-cycling wor
   assert.doesNotMatch(app.groupsWithoutFloorCount(), /Last group without a support floor/u);
   assert.doesNotMatch(app.firstGroupWithoutFloor(), /Last group without a support floor/u);
   assert.doesNotMatch(app.lastGroupWithoutFloor(), /First group without a support floor/u);
+  assert.doesNotMatch(app.title(), /Keirin cycling club hours/u);
   assert.doesNotMatch(app.title(), /Hill-climb cycling club hours/u);
   assert.doesNotMatch(app.title(), /Time-trial cycling club hours/u);
   assert.doesNotMatch(app.title(), /Criterium cycling club hours/u);
@@ -4265,6 +4266,8 @@ test("road cycling club hours preset loads a distinct synthetic road-cycling wor
   assert.doesNotMatch(app.clauses(), /09:45/u);
   assert.doesNotMatch(app.clauses(), /18:25/u);
   assert.doesNotMatch(app.clauses(), /13:35/u);
+  assert.doesNotMatch(app.clauses(), /18:35/u);
+  assert.doesNotMatch(app.clauses(), /13:45/u);
   assert.doesNotMatch(app.clauses(), /09:40/u);
   assert.doesNotMatch(app.clauses(), /08:15/u);
   assert.doesNotMatch(app.clauses(), /19:25/u);
@@ -4330,6 +4333,8 @@ test("road cycling club hours preset loads a distinct synthetic road-cycling wor
   assert.doesNotMatch(app.clauses(), /09:45/u);
   assert.doesNotMatch(app.clauses(), /18:25/u);
   assert.doesNotMatch(app.clauses(), /13:35/u);
+  assert.doesNotMatch(app.clauses(), /18:35/u);
+  assert.doesNotMatch(app.clauses(), /13:45/u);
   assert.doesNotMatch(app.clauses(), /09:40/u);
   assert.doesNotMatch(app.clauses(), /08:15/u);
   assert.doesNotMatch(app.clauses(), /19:25/u);
@@ -4538,6 +4543,8 @@ test("criterium cycling club hours preset loads a distinct synthetic criterium-c
   assert.doesNotMatch(app.clauses(), /09:45/u);
   assert.doesNotMatch(app.clauses(), /18:25/u);
   assert.doesNotMatch(app.clauses(), /13:35/u);
+  assert.doesNotMatch(app.clauses(), /18:35/u);
+  assert.doesNotMatch(app.clauses(), /13:45/u);
   assert.doesNotMatch(app.clauses(), /09:40/u);
   assert.doesNotMatch(app.clauses(), /08:15/u);
   assert.doesNotMatch(app.clauses(), /19:25/u);
@@ -4566,6 +4573,58 @@ test("criterium cycling club hours preset loads a distinct synthetic criterium-c
   assert.doesNotMatch(app.groups(), /Building managers/u);
   assert.doesNotMatch(app.groups(), /Hirers/u);
   assert.doesNotMatch(app.groups(), /Hall committee/u);
+});
+
+test("keirin cycling club hours preset loads a distinct synthetic keirin-cycling workshop", async () => {
+  const pkg = JSON.parse(readFileSync(new URL("../package.json", import.meta.url), "utf8"));
+  assert.equal(pkg.version, "1.5.40");
+  const app = await savedWorkbench(new Map());
+  app.field("#preset-select", "keirin-cycling-club-hours");
+  app.click("#load-preset");
+  assert.match(app.title(), /Keirin cycling club hours: keirin course booking, derny-pacer hours, and keirin-chip lock-up/u);
+  assert.equal(app.disabled("#export-button"), false);
+  assert.doesNotMatch(app.alert(), /Fix the proposal/u);
+  assert.match(app.clauses(), /Keirin course booking/u);
+  assert.match(app.clauses(), /Derny-pacer hours/u);
+  assert.match(app.clauses(), /Keirin-chip lock-up/u);
+  assert.match(app.clauses(), /keirin course/u);
+  assert.match(app.clauses(), /derny-pacer/u);
+  assert.match(app.clauses(), /keirin-chip/u);
+  assert.match(app.clauses(), /keirin cycling/u);
+  assert.match(app.clauses(), /09:50/u);
+  assert.match(app.clauses(), /18:35/u);
+  assert.match(app.clauses(), /13:45/u);
+  assert.match(app.clauses(), /pacer crew/u);
+  assert.match(app.groups(), /Students/u);
+  assert.match(app.groups(), /Neighbours/u);
+  assert.match(app.groups(), /P&amp;C/u);
+  assert.match(app.firstGroupWithoutFloor(), /First group without a support floor: Students/u);
+  assert.match(app.lastGroupWithoutFloor(), /Last group without a support floor: P&amp;C/u);
+  assert.match(app.groupsWithoutFloorCount(), /Groups without a support floor: 3/u);
+  assert.match(app.groupsWithoutFloorRemaining(), /Groups-without-floor remaining: 53/u);
+  assert.match(app.lastGroupWithoutFloorRemaining(), /Last-without-floor remaining: 20/u);
+  assert.match(app.firstGroupWithoutFloorRemaining(), /First-without-floor remaining: 18/u);
+  assert.match(app.firstGroupWithoutFloorCost(), /First-without-floor cost: 18/u);
+  assert.match(app.lastGroupWithoutFloorCost(), /Last-without-floor cost: 20/u);
+  assert.doesNotMatch(app.title(), /Hill-climb cycling club hours/u);
+  assert.doesNotMatch(app.title(), /Time-trial cycling club hours/u);
+  assert.doesNotMatch(app.title(), /Criterium cycling club hours/u);
+  assert.doesNotMatch(app.title(), /Road cycling club hours/u);
+  assert.doesNotMatch(app.clauses(), /start-ramp/u);
+  assert.doesNotMatch(app.clauses(), /timing-hut/u);
+  assert.doesNotMatch(app.clauses(), /time-check/u);
+  assert.doesNotMatch(app.clauses(), /pit-lane/u);
+  assert.doesNotMatch(app.clauses(), /circuit/u);
+  assert.doesNotMatch(app.clauses(), /sealed-road/u);
+  assert.doesNotMatch(app.clauses(), /feed-zone/u);
+  assert.doesNotMatch(app.clauses(), /banked-boards/u);
+  assert.doesNotMatch(app.clauses(), /summit-marshal/u);
+  assert.doesNotMatch(app.clauses(), /hairpin/u);
+  assert.doesNotMatch(app.clauses(), /climb-chip/u);
+  assert.doesNotMatch(app.clauses(), /09:45/u);
+  assert.doesNotMatch(app.clauses(), /18:25/u);
+  assert.doesNotMatch(app.clauses(), /13:35/u);
+  assert.doesNotMatch(app.groups(), /Residents/u);
 });
 
 test("hill-climb cycling club hours preset loads a distinct synthetic hill-climb-cycling workshop", async () => {
@@ -4599,6 +4658,7 @@ test("hill-climb cycling club hours preset loads a distinct synthetic hill-climb
   assert.match(app.firstGroupWithoutFloorRemaining(), /First-without-floor remaining: 17/u);
   assert.match(app.firstGroupWithoutFloorCost(), /First-without-floor cost: 17/u);
   assert.match(app.lastGroupWithoutFloorCost(), /Last-without-floor cost: 19/u);
+  assert.doesNotMatch(app.title(), /Keirin cycling club hours/u);
   assert.doesNotMatch(app.title(), /Time-trial cycling club hours/u);
   assert.doesNotMatch(app.title(), /Criterium cycling club hours/u);
   assert.doesNotMatch(app.title(), /Road cycling club hours/u);
@@ -4608,6 +4668,10 @@ test("hill-climb cycling club hours preset loads a distinct synthetic hill-climb
   assert.doesNotMatch(app.clauses(), /pit-lane/u);
   assert.doesNotMatch(app.clauses(), /circuit/u);
   assert.doesNotMatch(app.clauses(), /sealed-road/u);
+  assert.doesNotMatch(app.clauses(), /derny-pacer/u);
+  assert.doesNotMatch(app.clauses(), /keirin-chip/u);
+  assert.doesNotMatch(app.clauses(), /18:35/u);
+  assert.doesNotMatch(app.clauses(), /13:45/u);
   assert.doesNotMatch(app.clauses(), /commissaires/u);
   assert.doesNotMatch(app.clauses(), /09:40/u);
   assert.doesNotMatch(app.clauses(), /18:15/u);
@@ -4681,6 +4745,7 @@ test("time-trial cycling club hours preset loads a distinct synthetic time-trial
   assert.doesNotMatch(app.groupsWithoutFloorCount(), /Last group without a support floor/u);
   assert.doesNotMatch(app.firstGroupWithoutFloor(), /Last group without a support floor/u);
   assert.doesNotMatch(app.lastGroupWithoutFloor(), /First group without a support floor/u);
+  assert.doesNotMatch(app.title(), /Keirin cycling club hours/u);
   assert.doesNotMatch(app.title(), /Hill-climb cycling club hours/u);
   assert.doesNotMatch(app.title(), /Criterium cycling club hours/u);
   assert.doesNotMatch(app.title(), /Road cycling club hours/u);
@@ -4705,6 +4770,8 @@ test("time-trial cycling club hours preset loads a distinct synthetic time-trial
   assert.doesNotMatch(app.clauses(), /09:45/u);
   assert.doesNotMatch(app.clauses(), /18:25/u);
   assert.doesNotMatch(app.clauses(), /13:35/u);
+  assert.doesNotMatch(app.clauses(), /18:35/u);
+  assert.doesNotMatch(app.clauses(), /13:45/u);
   assert.doesNotMatch(app.clauses(), /Road course booking/u);
   assert.doesNotMatch(app.clauses(), /feed-station/u);
   assert.doesNotMatch(app.clauses(), /wheel-bag/u);
