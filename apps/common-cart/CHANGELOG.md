@@ -1,5 +1,18 @@
 # Changelog
 
+## 1.4.33 - 2026-09-12
+
+BMX carnival lunch, leftover-uncovered leftover-only headroom copy, and first leftover-only hide jump in Common Cart 1.4.33.
+
+A workshop follow-up on 1.4.32. Common Cart remains an offline simulator. Residual coverage is leftover planning, not checkout. Merchant views, JSON, CSV, overlap Markdown, leftover print, winning merchant copy, winning fulfillment copy, and remaining-capacity copy still receive aggregates, counts, merchant labels, or fulfillment modes only. Organizer leftover copies are labeled organizer-private. Review packets from 1.4.0 and the 1.4.1-1.4.32 review UI stay private and unsigned.
+
+### Added
+
+- Keyboard `Shift+F7` copies leftover uncovered leftover-only headroom through the leftover uncovered leftover-only headroom copy control, using one-line organizer-private Markdown of leftover-fill remaining capacity after leftover-only units. Honest empty none when leftover after the winner is missing. Ignored while typing. Distinct prefix from leftover uncovered leftover-only unit price, leftover uncovered leftover-only capacity, leftover uncovered leftover-only allocated, leftover uncovered leftover-only remaining, leftover uncovered leftover-only minimum, leftover uncovered leftover-only maximum, leftover uncovered leftover-only count, leftover uncovered remaining, leftover uncovered maximum, leftover uncovered minimum, leftover uncovered count, leftover-fill remaining, leftover-fill maximum, leftover-fill minimum, leftover unspent item headroom, leftover unit price, and leftover-only allocated units even when the number matches. Shift is handled before unshifted `F7` leftover-only count copy. The leftover uncovered leftover-only minimum button stays on screen without that shortcut.
+- Keyboard `Shift+F8` jumps to the leftover uncovered leftover-only headroom copy control, or the leftover heading if that control is missing. Does not copy. Ignored while typing. Distinct from unshifted `F8` leftover uncovered leftover-only count jump and leftover uncovered leftover-only minimum jump.
+- Keyboard `Shift+F9` jumps to hide first leftover-only buyer (`hide-first-leftover-only-buyer`), or the buyer list if that control is missing. Ignored while typing. Distinct from unshifted `F9` and `Shift+F12` hide first uncovered leftover buyer. `ArrowUp` still jumps to hide last leftover-only buyer. `ArrowLeft` still jumps to hide first leftover-only buyer.
+- BMX carnival lunch (synthetic) preset after Mountain bike carnival lunch. Winner Court-side BMX Delivery. Leftover Hall BMX Pickup with pickup minimum 26, unit price 21, and capacity 52. Leftover uncovered leftover-only allocated on this room is 27 leftover-only units. Leftover uncovered leftover-only headroom is 25. Leftover uncovered leftover-only capacity reports 52, not 25. Leftover uncovered leftover-only minimum is the smallest leftover-only buyer quantity 12. Distinct from mountain bike leftover minimum 25, unit price 20, capacity 50, allocated 26, and headroom 24. Distinct from cycling leftover minimum 24, unit price 19, capacity 48, allocated 25, and headroom 23. Soccer 11 through mountain bike 25 stay. Synthetic. Not live inventory.
+
 ## 1.4.32 - 2026-09-12
 
 Mountain bike carnival lunch, leftover-uncovered leftover-only minimum copy, and last leftover-only hide jump in Common Cart 1.4.32.
