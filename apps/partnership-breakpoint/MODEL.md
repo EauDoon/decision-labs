@@ -71,6 +71,32 @@ The partnership is viable only when every participant holds.
 
 The named weakest participant has the smallest transaction-volume distance to either its economic exit threshold or its capacity ceiling. Its binding limit identifies the nearest boundary as minimum acceptable profit, minimum commitment, or capacity. This is a local headroom comparison, not a probability of exit. First breakpoint uses a different measure, relative shock size, so the two rankings can name different participants.
 
+## Multi-period commercial plan (v1.7.0)
+
+The optional `plan` object carries 1 through 24 periods. Each period is one planning interval (a month by convention) with its own `volume`, `feePerTransaction`, optional `addressableVolume` (inheriting the deal cap when omitted), and optional one-time `setupExpense`. Revenue shares stay fixed. Per-participant overrides for `variableCostPerTransaction`, `fixedMonthlyCost`, `minimumAcceptableProfit`, `capacity`, and `minimumCommitment` are optional; omitted or blank fields inherit the base case, including capacity. Unknown participant ids, unknown fields, and reserved keys are rejected. Legacy cases omit `plan` and stay valid.
+
+Per-period economics reuse the monthly formulas with period values, and the same three exit tests:
+
+```text
+V_t = min(volume_t, addressableVolume_t)
+profit_t = V_t * F_t * S - V_t * C_t - K_t - R
+cumulativeOperating_t = sum of profit_1..t
+net_t = sum of participant profit_t - setupExpense_t
+cumulativeNet_t = sum of net_1..t
+```
+
+Recovery compares cumulative operating contribution against cumulative setup expense. With no setup expense there is nothing to recover. Otherwise the first period with non-negative cumulative net recovers; when no such period exists within the horizon, recovery is impossible if the best single-period net is non-positive (repeating the stated economics can never close the gap), and beyond the horizon otherwise, reporting the shortfall.
+
+Cash timing is a separate view of the same earned amounts. With whole-period collection and payment lags:
+
+```text
+cashIn_t = earnedRevenue_{t - collectionLag}, or 0 before period 1
+cashOut_t = incurredExpense_{t - paymentLag}, or 0 before period 1
+closing_t = opening_t + cashIn_t - cashOut_t, with opening_1 = startingCash
+```
+
+Amounts earned or incurred but arriving or due after the horizon are reported as receivables and payables, never counted twice. The funding requirement is the extra starting cash that keeps every closing balance non-negative: `max(0, -minClosingCash)`. Conservation holds exactly: movements plus after-horizon balances equal earned revenue and incurred expense.
+
 ## Adverse shocks
 
 The app calculates a local deterministic boundary for each participant using all other inputs unchanged:

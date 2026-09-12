@@ -32,6 +32,11 @@ import {
   stressGridCsv,
   uniqueCopyName,
   validateConfiguration,
+  validateCommercialPlan,
+  evaluateCommercialPlan,
+  createCommercialBrief,
+  commercialPlanCsv,
+  MAX_PLAN_PERIODS,
 } from './model.js';
 
 const STORAGE_KEY = 'partnership-breakpoint.v1';
@@ -1292,6 +1297,7 @@ function resultsPanel(result) {
     ${tornadoSection(result)}
     ${waterfallSection(result)}
     ${stressSection()}
+    ${commercialPlanSection()}
     ${result.volumeCappedByAddressableDemand ? '<p class="error-box">Addressable demand limits realized volume below the post-shock monthly-volume input.</p>' : ''}
     ${participantTable(result)}
     ${shockSection(result)}
@@ -1380,6 +1386,110 @@ function capacityUtilizationCell(participant) {
   const over = pct > 100 + 1e-9;
   const label = `${formatPct(pct)} of capacity`;
   return `<td><span class="capacity-use"><svg class="capacity-meter" role="img" aria-label="${escapeAttribute(label)}" viewBox="0 0 100 8" width="72" height="8"><rect x="0" y="0" width="100" height="8" fill="#eae7de"></rect><rect x="0" y="0" width="${capped}" height="8" fill="${over ? '#d94f3d' : '#1558d6'}"></rect></svg><span>${escapeAttribute(label)}</span></span></td>`;
+}
+
+function defaultPlanFromCase() {
+  return {
+    startingCash: 0,
+    collectionLagPeriods: 0,
+    paymentLagPeriods: 0,
+    periods: [
+      {
+        volume: state.deal.monthlyVolume ?? 0,
+        feePerTransaction: state.deal.feePerTransaction ?? 0,
+        addressableVolume: state.deal.addressableVolume ?? 0,
+        setupExpense: 0,
+      },
+      {
+        volume: state.deal.monthlyVolume ?? 0,
+        feePerTransaction: state.deal.feePerTransaction ?? 0,
+        addressableVolume: state.deal.addressableVolume ?? 0,
+        setupExpense: 0,
+      },
+    ],
+  };
+}
+
+function planField(path, value, { min = 0, step = 'any', title = '' } = {}) {
+  const invalid = value !== null && value !== undefined && (!Number.isFinite(value) || value < min);
+  return `<input type="number" data-path="${path}" min="${min}" step="${step}" value="${inputValue(value)}"${title ? ` title="${escapeAttribute(title)}"` : ''} aria-invalid="${invalid}" />`;
+}
+
+function planOverrideField(periodIndex, participantId, key, value, label) {
+  return `<label>${label}<input type="number" data-plan-override="${key}" data-period="${periodIndex}" data-participant="${escapeAttribute(participantId)}" min="0" step="any" value="${inputValue(value)}" title="Blank inherits the base case ${label.toLowerCase()}." /></label>`;
+}
+
+function isPlainRecord(value) {
+  return value !== null && typeof value === 'object' && !Array.isArray(value);
+}
+
+function commercialPlanSection() {
+  const plan = state.plan ?? null;
+  if (!plan) {
+    return `<section class="panel print-keep" id="commercial-plan"><div class="panel-heading"><h2 id="commercial-plan-title" tabindex="-1">Commercial plan</h2><span class="optional">multi-period</span></div><div class="panel-body"><p>Phase volume, fees, setup costs, and participant assumptions across up to ${MAX_PLAN_PERIODS} periods. The monthly workflow above is unchanged.</p><div class="button-row"><button type="button" data-action="plan-create">Create commercial plan from current case</button></div></div></section>`;
+  }
+  const periodCount = Array.isArray(plan.periods) ? plan.periods.length : 0;
+  const periodRows = (plan.periods ?? []).map((period, index) => `<tr>
+      <td>Period ${index + 1}</td>
+      <td>${planField(`plan.periods.${index}.volume`, period.volume, { step: '1', title: 'Planned transactions for this period.' })}</td>
+      <td>${planField(`plan.periods.${index}.feePerTransaction`, period.feePerTransaction, { step: '0.0001', title: 'Gross fee per transaction for this period.' })}</td>
+      <td>${planField(`plan.periods.${index}.addressableVolume`, period.addressableVolume, { step: '1', title: 'Demand cap for this period. Blank inherits the base case.' })}</td>
+      <td>${planField(`plan.periods.${index}.setupExpense`, period.setupExpense, { step: '0.01', title: 'One-time expense attributed to this period.' })}</td>
+      <td><button type="button" data-action="plan-remove-period" data-period="${index}" ${periodCount <= 1 ? 'disabled title="At least one period is required"' : ''}>Remove</button></td>
+    </tr>`).join('');
+  const overrideBlocks = state.participants.map((participant) => {
+    const cells = (plan.periods ?? []).map((period, index) => {
+      const overrides = period.participants?.[participant.id] ?? {};
+      return `<td>${planOverrideField(index, participant.id, 'variableCostPerTransaction', overrides.variableCostPerTransaction, 'Variable cost / txn')}
+        ${planOverrideField(index, participant.id, 'fixedMonthlyCost', overrides.fixedMonthlyCost, 'Fixed cost')}
+        ${planOverrideField(index, participant.id, 'minimumAcceptableProfit', overrides.minimumAcceptableProfit, 'Minimum profit')}
+        ${planOverrideField(index, participant.id, 'minimumCommitment', overrides.minimumCommitment, 'Min commitment')}
+        ${planOverrideField(index, participant.id, 'capacity', overrides.capacity, 'Capacity')}</td>`;
+    }).join('');
+    return `<details><summary>${escapeAttribute(participant.name)} per-period overrides</summary><p>Blank inherits the base case. Capacity blank inherits too; enter 0 only to model zero capacity.</p><div class="table-wrap" tabindex="0" role="region" aria-label="${escapeAttribute(participant.name)} overrides"><table><caption>Per-period overrides for ${escapeAttribute(participant.name)}</caption><thead><tr>${(plan.periods ?? []).map((_, index) => `<th scope="col">Period ${index + 1}</th>`).join('')}</tr></thead><tbody><tr>${cells}</tr></tbody></table></div></details>`;
+  }).join('');
+  let evaluation = null;
+  let evaluationError = '';
+  try {
+    evaluation = evaluateCommercialPlan(state);
+  } catch (error) {
+    evaluationError = error instanceof ValidationError ? error.errors.join(' ') : String(error?.message ?? error);
+  }
+  const results = evaluation ? commercialPlanResults(evaluation) : `<p class="error-box">${escapeAttribute(evaluationError || 'Resolve invalid inputs before evaluating the plan.')}</p>`;
+  return `<section class="panel print-keep" id="commercial-plan"><div class="panel-heading"><h2 id="commercial-plan-title" tabindex="-1">Commercial plan</h2><span class="optional">multi-period</span></div><div class="panel-body">
+    <p>Periods are whole planning intervals in the same units as the monthly model. Shares stay fixed; omitted participant fields inherit the base case. Profit-and-loss and cash are separate views; cash lags move collections and payments without changing earned amounts.</p>
+    <div class="field-row">
+      <div class="field"><label>Starting cash ${planField('plan.startingCash', plan.startingCash, { step: '0.01', title: 'Cash on hand when period 1 opens.' })}</label></div>
+      <div class="field"><label>Collection lag (periods) ${planField('plan.collectionLagPeriods', plan.collectionLagPeriods ?? 0, { step: '1', title: 'Periods between earning revenue and collecting it.' })}</label></div>
+      <div class="field"><label>Payment lag (periods) ${planField('plan.paymentLagPeriods', plan.paymentLagPeriods ?? 0, { step: '1', title: 'Periods between incurring expense and paying it.' })}</label></div>
+    </div>
+    <div class="button-row"><button type="button" data-action="plan-add-period" ${periodCount >= MAX_PLAN_PERIODS ? 'disabled title="Period limit reached"' : ''}>Add period</button><button type="button" data-action="plan-remove">Remove commercial plan</button><button type="button" data-action="plan-export-brief">Export commercial brief</button><button type="button" data-action="plan-export-csv">Export plan CSV</button></div>
+    <div class="table-wrap" tabindex="0" role="region" aria-label="Commercial plan periods"><table><caption>Per-period deal assumptions</caption><thead><tr><th scope="col">Period</th><th scope="col">Volume</th><th scope="col">Fee / txn</th><th scope="col">Addressable</th><th scope="col">Setup expense</th><th scope="col">Row</th></tr></thead><tbody>${periodRows}</tbody></table></div>
+    ${overrideBlocks}
+    ${results}
+  </div></section>`;
+}
+
+function commercialPlanResults(plan) {
+  const profitRows = plan.participantPeriods.map((entry) => `<tr><th scope="row">${escapeAttribute(entry.name)}</th>${entry.rows.map((row) => `<td class="${row.viable ? '' : 'failure-text'}">${formatMoney(row.monthlyProfit)}${row.viable ? '' : ' (exit)'}</td>`).join('')}<td><strong>${formatMoney(entry.cumulativeOperating)}</strong></td><td>${entry.firstConstrainedPeriod === null ? 'None' : `Period ${entry.firstConstrainedPeriod}`}</td></tr>`).join('');
+  const totals = plan.periodTotals.map((row) => `<tr><th scope="row">Period ${row.period}</th><td>${formatMoney(row.operatingContribution)}</td><td>${formatMoney(row.setupExpense)}</td><td>${formatMoney(row.netContribution)}</td><td><strong>${formatMoney(row.cumulativeNet)}</strong></td></tr>`).join('');
+  const cashRows = plan.cash.rows.map((row) => `<tr><th scope="row">Period ${row.period}</th><td>${formatMoney(row.openingCash)}</td><td>${formatMoney(row.cashIn)}</td><td>${formatMoney(row.cashOut)}</td><td><strong>${formatMoney(row.closingCash)}</strong></td></tr>`).join('');
+  const recoveryLabel = plan.recovery.status === 'recovered'
+    ? `Recovered in period ${plan.recovery.period}.`
+    : plan.recovery.status === 'none-required'
+      ? 'No setup expense to recover.'
+      : plan.recovery.status === 'impossible'
+        ? 'Recovery is impossible under the stated assumptions.'
+        : `Not recovered within ${plan.horizon} periods (short ${formatMoney(plan.recovery.shortfall)}).`;
+  const brief = `Recovery: ${recoveryLabel} Funding requirement: ${formatMoney(plan.cash.fundingRequirement)}.`;
+  return `<h3>Period profitability</h3><p>${escapeAttribute(brief)}</p>
+    <div class="table-wrap" tabindex="0" role="region" aria-label="Period profit by participant"><table><caption>Monthly profit per participant per period; (exit) marks a failed exit test</caption><thead><tr><th scope="col">Participant</th>${plan.periodTotals.map((row) => `<th scope="col">Period ${row.period}</th>`).join('')}<th scope="col">Cumulative</th><th scope="col">First constrained</th></tr></thead><tbody>${profitRows}</tbody></table></div>
+    <h3>Partnership totals</h3>
+    <div class="table-wrap" tabindex="0" role="region" aria-label="Partnership period totals"><table><caption>Operating contribution, setup, and cumulative net per period</caption><thead><tr><th scope="col">Period</th><th scope="col">Operating</th><th scope="col">Setup</th><th scope="col">Net</th><th scope="col">Cumulative net</th></tr></thead><tbody>${totals}</tbody></table></div>
+    <h3>Cash schedule</h3><p>Opening cash, movements, and closing cash per period. Amounts arriving or due after the horizon are memo lines, not counted twice.</p>
+    <div class="table-wrap" tabindex="0" role="region" aria-label="Cash schedule"><table><caption>Cash movements with collection and payment lags</caption><thead><tr><th scope="col">Period</th><th scope="col">Opening</th><th scope="col">In</th><th scope="col">Out</th><th scope="col">Closing</th></tr></thead><tbody>${cashRows}</tbody></table></div>
+    <p>Minimum closing cash ${formatMoney(plan.cash.minClosingCash)}. Receivables after horizon ${formatMoney(plan.cash.receivablesAfterHorizon)}. Payables after horizon ${formatMoney(plan.cash.payablesAfterHorizon)}.</p>
+    <section class="print-only print-keep"><h2>Commercial plan brief</h2><p>${escapeAttribute(brief)} Horizon operating contribution ${escapeAttribute(formatMoney(plan.horizonOperatingContribution))}; setup ${escapeAttribute(formatMoney(plan.totalSetupExpense))}.</p></section>`;
 }
 
 function participantTable(result) {
@@ -1693,6 +1803,32 @@ function attachEvents() {
         }
       } else {
         setPath(input.dataset.path, numberFromInput(input.value, input.dataset.optional === 'true'));
+      }
+      activePreset = '';
+      const validation = validateConfiguration(state);
+      refresh(validation.valid
+        ? (standaloneFileMode ? 'Saved locally. Export JSON to transfer this standalone case.' : 'Saved locally and updated the shareable URL.')
+        : `Invalid inputs are not saved. ${summarizeErrors(validation.errors)}`);
+      return;
+    }
+    if (input.dataset.planOverride) {
+      checkpoint();
+      const periodIndex = Number(input.dataset.period);
+      const participantId = input.dataset.participant;
+      const key = input.dataset.planOverride;
+      const periods = state.plan?.periods;
+      if (!Array.isArray(periods) || !Number.isInteger(periodIndex) || periodIndex < 0 || periodIndex >= periods.length) return;
+      const period = periods[periodIndex];
+      period.participants = isPlainRecord(period.participants) ? period.participants : {};
+      if (input.value.trim() === '') {
+        if (isPlainRecord(period.participants[participantId])) {
+          delete period.participants[participantId][key];
+          if (Object.keys(period.participants[participantId]).length === 0) delete period.participants[participantId];
+        }
+        if (Object.keys(period.participants).length === 0) delete period.participants;
+      } else {
+        if (!isPlainRecord(period.participants[participantId])) period.participants[participantId] = {};
+        period.participants[participantId][key] = numberFromInput(input.value, false);
       }
       activePreset = '';
       const validation = validateConfiguration(state);
@@ -2359,6 +2495,12 @@ function attachEvents() {
     if (action === 'copy-deal-title') copyDealTitleCurrency();
     if (action === 'copy-share-url') copyShareUrl();
     if (action === 'export-csv') exportStressCsv(false);
+    if (action === 'plan-create') createCommercialPlan();
+    if (action === 'plan-remove') removeCommercialPlan();
+    if (action === 'plan-add-period') addCommercialPlanPeriod();
+    if (action === 'plan-remove-period') removeCommercialPlanPeriod(Number(button.dataset.period));
+    if (action === 'plan-export-brief') exportCommercialPlanBrief();
+    if (action === 'plan-export-csv') exportCommercialPlanCsv();
     if (action === 'export-visible-csv') exportStressCsv(true);
     if (action === 'copy-visible-csv') copyVisibleStressCsv();
     if (action === 'export-participants-csv') exportParticipantsCsv();
@@ -5575,6 +5717,57 @@ function exportParticipantsCsv() {
   }
   downloadText(participantsToCsv(state), 'text/csv;charset=utf-8', exportDownloadName('participants', caseExportTitle()));
   setNotice('Participant CSV exported. Columns match import. Formula-like names are stored as text.');
+}
+
+function createCommercialPlan() {
+  checkpoint();
+  state.plan = defaultPlanFromCase();
+  activePreset = '';
+  refresh('Commercial plan created from the current case. Edit periods, then review profitability, recovery, and cash.');
+}
+
+function removeCommercialPlan() {
+  checkpoint();
+  delete state.plan;
+  activePreset = '';
+  refresh('Commercial plan removed. The monthly case is unchanged.');
+}
+
+function addCommercialPlanPeriod() {
+  if (!state.plan || !Array.isArray(state.plan.periods) || state.plan.periods.length >= MAX_PLAN_PERIODS) return;
+  checkpoint();
+  const last = state.plan.periods[state.plan.periods.length - 1];
+  state.plan.periods.push({ ...JSON.parse(JSON.stringify(last)) });
+  activePreset = '';
+  refresh('Period added, copied from the previous period. Edit its assumptions.');
+}
+
+function removeCommercialPlanPeriod(index) {
+  if (!state.plan || !Array.isArray(state.plan.periods) || state.plan.periods.length <= 1) return;
+  if (!Number.isInteger(index) || index < 0 || index >= state.plan.periods.length) return;
+  checkpoint();
+  state.plan.periods.splice(index, 1);
+  activePreset = '';
+  refresh('Period removed.');
+}
+
+function exportCommercialPlanBrief() {
+  try {
+    const brief = createCommercialBrief(state);
+    downloadText(`${JSON.stringify(brief, null, 2)}\n`, 'application/json;charset=utf-8', exportDownloadName('report', `${caseExportTitle()}-commercial-plan`));
+    setNotice('Commercial brief exported. It records canonical inputs and the evaluated plan; import the separate case JSON to reopen the work.');
+  } catch (error) {
+    setNotice(error instanceof ValidationError ? `Resolve invalid inputs before exporting a brief. ${summarizeErrors(error.errors)}` : String(error?.message ?? error));
+  }
+}
+
+function exportCommercialPlanCsv() {
+  try {
+    downloadText(commercialPlanCsv(state), 'text/csv;charset=utf-8', exportDownloadName('participants', `${caseExportTitle()}-commercial-plan`));
+    setNotice('Commercial plan CSV exported. Period-profit, plan-total, cash, recovery, and funding rows are separate sections.');
+  } catch (error) {
+    setNotice(error instanceof ValidationError ? `Resolve invalid inputs before exporting CSV. ${summarizeErrors(error.errors)}` : String(error?.message ?? error));
+  }
 }
 
 function exportStressCsv(visibleOnly = false) {

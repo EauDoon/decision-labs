@@ -1,5 +1,16 @@
 # Changelog
 
+## 1.7.0
+
+Multi-period commercial planning in Partnership Breakpoint 1.7.0
+
+- Optional `plan` on the case carries 1 through 24 periods with per-period volume, fee, demand cap, and setup expense, plus optional per-participant cost, commitment, and capacity overrides that inherit omitted fields from the base case. Legacy cases without a plan stay valid.
+- The Commercial plan panel shows period profit per participant with exit flags, cumulative contribution, the first constrained period per participant, partnership totals, and a recovery verdict (recovered, none required, beyond the horizon with shortfall, or impossible). The cash schedule separates earned amounts from collections and payments through whole-period lags, with opening, movements, and closing cash, after-horizon receivables and payables, and the funding requirement that keeps every closing non-negative.
+- Review constraints and negotiation room gains a Multi-period commercial plan question under the same packet replay contract. CLI gains `plan INPUT [--csv|--brief]`. Export commercial brief and Export plan CSV download the reproducible record; the plan travels in case JSON, share links, and autosave.
+- Recovery and funding answers are deterministic comparisons of declared inputs, not forecasts or funding commitments.
+
+# Changelog
+
 ## 1.6.0
 
 Least-headroom versus first-breakpoint ranking explanation in Partnership Breakpoint 1.6.0

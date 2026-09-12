@@ -37,6 +37,11 @@ const appImport = `import {
   stressGridCsv,
   uniqueCopyName,
   validateConfiguration,
+  validateCommercialPlan,
+  evaluateCommercialPlan,
+  createCommercialBrief,
+  commercialPlanCsv,
+  MAX_PLAN_PERIODS,
 } from './model.js';
 
 `;
