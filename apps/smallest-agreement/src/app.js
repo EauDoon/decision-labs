@@ -1438,6 +1438,39 @@ const presets = {
       },
     ],
   },
+  "track-cycling-club-hours": {
+    title: "Track cycling club hours: sprint track booking, timing-hut hours, and wheel-box lock-up",
+    threshold: 70,
+    maxChangeCost: 8,
+    groups: [
+      { id: "students", name: "Students", weight: 12 },
+      { id: "neighbours", name: "Neighbours", weight: 11, veto: true },
+      { id: "pandc", name: "P&C", weight: 14 },
+    ],
+    clauses: [
+      {
+        id: "track-cycling-sprint-track-booking", title: "Sprint track booking", options: [
+          { id: "track-cycling-sprint-track-booking-original", original: true, label: "Keep weekday sprint track from 09:50 with no posted timing-hut rota", changeCost: 0, support: { students: 1, neighbours: 88, pandc: 63 } },
+          { id: "track-cycling-sprint-track-booking-late", original: false, label: "Open weekday sprint track at 17:35 with a posted timing-hut rota", changeCost: 2, support: { students: 92, neighbours: 28, pandc: 40 } },
+          { id: "track-cycling-sprint-track-booking-weekend", original: false, label: "Hold Sunday morning sprint track at 07:25 with a timing-hut booking card", changeCost: 4, support: { students: 77, neighbours: 36, pandc: 48 } },
+        ],
+      },
+      {
+        id: "track-cycling-timing-hut", title: "Timing-hut hours", options: [
+          { id: "track-cycling-timing-hut-original", original: true, label: "No posted timing-hut hours", changeCost: 0, support: { students: 66, neighbours: 14, pandc: 33 } },
+          { id: "track-cycling-timing-hut-cap", original: false, label: "Close timing-hut at 20:25 and keep commissaires at the sprint track hut", changeCost: 1, support: { students: 39, neighbours: 86, pandc: 65 } },
+          { id: "track-cycling-timing-hut-cut", original: false, label: "Serve commissaires only after 12:45", changeCost: 5, support: { students: 21, neighbours: 90, pandc: 37 } },
+        ],
+      },
+      {
+        id: "track-cycling-wheel-box-lockup", title: "Wheel-box lock-up", options: [
+          { id: "track-cycling-wheel-box-lockup-original", original: true, label: "Leave the wheel-box door on a shared padlock after club hours", changeCost: 0, support: { students: 6, neighbours: 26, pandc: 31 } },
+          { id: "track-cycling-wheel-box-lockup-steward", original: false, label: "Require a P&C steward to lock the wheel-box store before 21:10", changeCost: 3, support: { students: 53, neighbours: 60, pandc: 80 } },
+          { id: "track-cycling-wheel-box-lockup-timer", original: false, label: "Add a timed lock on the wheel-box store after the last track cycling session", changeCost: 2, support: { students: 42, neighbours: 45, pandc: 62 } },
+        ],
+      },
+    ],
+  },
 };
 
 let agreementReviewPacket = null;
