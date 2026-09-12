@@ -1,6 +1,6 @@
 {
   "name": "weekend-gap",
-  "version": "1.5.37",
+  "version": "1.5.38",
   "private": true,
   "description": "An educational AUD stablecoin weekend liquidity simulator.",
   "type": "module",
