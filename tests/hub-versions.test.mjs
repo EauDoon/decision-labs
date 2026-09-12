@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 
-import { catalogVersionLine, notFoundPage, catalogJobs, catalogLastWhatsNewHeading, catalogFirstWhatsNewHeading, catalogFirstWorkbenchHeading, catalogLastWorkbenchHeading, catalogLastReviewPath, catalogFirstReviewPath, catalogFirstOpenHref, catalogLastOpenHref, catalogFirstSkipHref, catalogLastSkipHref, catalogFirstSkipText, catalogLastSkipText, catalogFirstSkipTargetText, catalogLastSkipTargetText, catalogFirstLabelledSkipTargetText, catalogLastLabelledSkipTargetText, catalogFirstLabelledSkipHref, catalogLastLabelledSkipHref, catalogLastLabelledSkipText, catalogFirstLabelledSkipText, catalogLastUnlabelledSkipText, catalogFirstUnlabelledSkipText, catalogFirstUnlabelledSkipHref } from '../scripts/serve.mjs';
+import { catalogVersionLine, notFoundPage, catalogJobs, catalogLastWhatsNewHeading, catalogFirstWhatsNewHeading, catalogFirstWorkbenchHeading, catalogLastWorkbenchHeading, catalogLastReviewPath, catalogFirstReviewPath, catalogFirstOpenHref, catalogLastOpenHref, catalogFirstSkipHref, catalogLastSkipHref, catalogFirstSkipText, catalogLastSkipText, catalogFirstSkipTargetText, catalogLastSkipTargetText, catalogFirstLabelledSkipTargetText, catalogLastLabelledSkipTargetText, catalogFirstLabelledSkipHref, catalogLastLabelledSkipHref, catalogLastLabelledSkipText, catalogFirstLabelledSkipText, catalogLastUnlabelledSkipText, catalogFirstUnlabelledSkipText, catalogFirstUnlabelledSkipHref, catalogLastUnlabelledSkipHref } from '../scripts/serve.mjs';
 
 const html = readFileSync(new URL('../index.html', import.meta.url), 'utf8');
 const readme = readFileSync(new URL('../README.md', import.meta.url), 'utf8');
@@ -599,6 +599,45 @@ test('404 first unlabelled skip href matches the first skip href whose target ha
   assert.match(page, /id="skips"/);
   assert.match(page, /id="whats-new"/);
   assert.match(page, /aria-labelledby="whats-new-title"/);
+});
+
+test('404 last unlabelled skip href matches the last skip href whose target has no aria-labelledby', () => {
+  const href = catalogLastUnlabelledSkipHref();
+  assert.equal(href, '#version-line');
+  assert.equal(html.includes(`href="${href}"`), true, 'last unlabelled skip href missing from catalog');
+  assert.equal(href, catalogFirstUnlabelledSkipHref());
+  assert.equal(href, catalogLastSkipHref());
+  assert.notEqual(href, catalogFirstLabelledSkipHref());
+  assert.notEqual(href, catalogLastLabelledSkipHref());
+  assert.notEqual(href, catalogFirstSkipHref());
+  assert.notEqual(href, catalogLastUnlabelledSkipText());
+  const serve = readFileSync(new URL('../scripts/serve.mjs', import.meta.url), 'utf8');
+  const start = serve.indexOf('export function catalogLastUnlabelledSkipHref');
+  const end = serve.indexOf('export function catalogLastUnlabelledSkipText');
+  const body = serve.slice(start, end);
+  assert.match(body, /aria-labelledby/);
+  assert.match(body, /continue/);
+  assert.match(body, /links\.length - 1/);
+  assert.match(body, /return href/);
+  assert.doesNotMatch(body, /catalogLastSkipHref/);
+  assert.doesNotMatch(body, /return link\.text/);
+  assert.doesNotMatch(body, /return links\[i\]\.text/);
+  const page = notFoundPage();
+  assert.equal(page.includes(href), true, 'last unlabelled skip href missing from 404 page');
+  assert.match(page, /id="copy-last-unlabelled-skip-href"/);
+  assert.match(page, />Copy last unlabelled skip href</);
+  assert.match(page, /lastUnlabelledSkipHrefMarkdown/);
+  assert.match(page, /id="copy-first-unlabelled-skip-href"/);
+  assert.match(page, />Copy first unlabelled skip href</);
+  assert.match(page, /id="copy-last-labelled-skip-href"/);
+  assert.match(page, />Copy last labelled skip href</);
+  assert.match(page, /id="copy-last-skip"/);
+  assert.match(page, />Copy last skip href</);
+  assert.match(page, /id="version-line"/);
+  assert.match(page, /id="skips"/);
+  assert.match(page, /id="whats-new"/);
+  assert.match(page, /aria-labelledby="whats-new-title"/);
+  assert.equal(page.indexOf('id="copy-first-unlabelled-skip-href"') < page.indexOf('id="copy-last-unlabelled-skip-href"'), true);
 });
 
 test('404 first Open href matches the first catalog Open workbench href', () => {
