@@ -2325,6 +2325,7 @@ test('gravel cycling carnival split preset loads from the starting-point buttons
   assert.ok(markup.indexOf('data-preset="gravelCyclingCarnivalSplit"') < markup.indexOf('data-preset="roadCyclingCarnivalSplit"'));
   assert.ok(markup.indexOf('data-preset="roadCyclingCarnivalSplit"') < markup.indexOf('data-preset="criteriumCyclingCarnivalSplit"'));
   assert.ok(markup.indexOf('data-preset="criteriumCyclingCarnivalSplit"') < markup.indexOf('data-preset="timeTrialCyclingCarnivalSplit"'));
+  assert.ok(markup.indexOf('data-preset="timeTrialCyclingCarnivalSplit"') < markup.indexOf('data-preset="hillClimbCyclingCarnivalSplit"'));
   app.click('preset', { preset: 'gravelCyclingCarnivalSplit' });
   assert.equal(app.saved().participants.length, 3);
   assert.deepEqual(app.saved().participants.map((item) => item.id), ['gravel-cycling-committee', 'gravel-cycling-club-hire', 'gravel-cycling-first-aid']);
@@ -2378,6 +2379,7 @@ test('road cycling carnival split preset loads from the starting-point buttons',
   assert.ok(markup.indexOf('data-preset="gravelCyclingCarnivalSplit"') < markup.indexOf('data-preset="roadCyclingCarnivalSplit"'));
   assert.ok(markup.indexOf('data-preset="roadCyclingCarnivalSplit"') < markup.indexOf('data-preset="criteriumCyclingCarnivalSplit"'));
   assert.ok(markup.indexOf('data-preset="criteriumCyclingCarnivalSplit"') < markup.indexOf('data-preset="timeTrialCyclingCarnivalSplit"'));
+  assert.ok(markup.indexOf('data-preset="timeTrialCyclingCarnivalSplit"') < markup.indexOf('data-preset="hillClimbCyclingCarnivalSplit"'));
   app.click('preset', { preset: 'roadCyclingCarnivalSplit' });
   assert.equal(app.saved().participants.length, 3);
   assert.deepEqual(app.saved().participants.map((item) => item.id), ['road-cycling-committee', 'road-cycling-club-hire', 'road-cycling-first-aid']);
@@ -2435,6 +2437,7 @@ test('criterium cycling carnival split preset loads from the starting-point butt
   assert.ok(markup.indexOf('data-preset="gravelCyclingCarnivalSplit"') < markup.indexOf('data-preset="roadCyclingCarnivalSplit"'));
   assert.ok(markup.indexOf('data-preset="roadCyclingCarnivalSplit"') < markup.indexOf('data-preset="criteriumCyclingCarnivalSplit"'));
   assert.ok(markup.indexOf('data-preset="criteriumCyclingCarnivalSplit"') < markup.indexOf('data-preset="timeTrialCyclingCarnivalSplit"'));
+  assert.ok(markup.indexOf('data-preset="timeTrialCyclingCarnivalSplit"') < markup.indexOf('data-preset="hillClimbCyclingCarnivalSplit"'));
   app.click('preset', { preset: 'criteriumCyclingCarnivalSplit' });
   assert.equal(app.saved().participants.length, 3);
   assert.deepEqual(app.saved().participants.map((item) => item.id), ['criterium-cycling-committee', 'criterium-cycling-club-hire', 'criterium-cycling-first-aid']);
@@ -2495,6 +2498,7 @@ test('time-trial cycling carnival split preset loads from the starting-point but
   assert.ok(markup.indexOf('data-preset="gravelCyclingCarnivalSplit"') < markup.indexOf('data-preset="roadCyclingCarnivalSplit"'));
   assert.ok(markup.indexOf('data-preset="roadCyclingCarnivalSplit"') < markup.indexOf('data-preset="criteriumCyclingCarnivalSplit"'));
   assert.ok(markup.indexOf('data-preset="criteriumCyclingCarnivalSplit"') < markup.indexOf('data-preset="timeTrialCyclingCarnivalSplit"'));
+  assert.ok(markup.indexOf('data-preset="timeTrialCyclingCarnivalSplit"') < markup.indexOf('data-preset="hillClimbCyclingCarnivalSplit"'));
   app.click('preset', { preset: 'timeTrialCyclingCarnivalSplit' });
   assert.equal(app.saved().participants.length, 3);
   assert.deepEqual(app.saved().participants.map((item) => item.id), ['time-trial-cycling-committee', 'time-trial-cycling-club-hire', 'time-trial-cycling-first-aid']);
@@ -2569,6 +2573,52 @@ test('cyclo-cross carnival first-aid stays 1.56 after loading criterium cycling 
   assert.doesNotMatch(exported, /live roster/i);
   assert.doesNotMatch(exported, /hosted/i);
   assert.doesNotMatch(exported, /\bapi\b/i);
+});
+
+test('hill-climb cycling carnival split preset loads from the starting-point buttons', async () => {
+  const app = await workbench();
+  assert.match(app.markup(), /data-preset="hillClimbCyclingCarnivalSplit"/);
+  assert.match(app.markup(), /Hill-climb cycling carnival split/);
+  assert.match(app.markup(), /data-preset="timeTrialCyclingCarnivalSplit"/);
+  assert.match(app.markup(), /Time-trial cycling carnival split/);
+  assert.match(app.markup(), /data-preset="criteriumCyclingCarnivalSplit"/);
+  assert.match(app.markup(), /Criterium cycling carnival split/);
+  const markup = app.markup();
+  assert.ok(markup.indexOf('data-preset="criteriumCyclingCarnivalSplit"') < markup.indexOf('data-preset="timeTrialCyclingCarnivalSplit"'));
+  assert.ok(markup.indexOf('data-preset="timeTrialCyclingCarnivalSplit"') < markup.indexOf('data-preset="hillClimbCyclingCarnivalSplit"'));
+  app.click('preset', { preset: 'hillClimbCyclingCarnivalSplit' });
+  assert.equal(app.saved().participants.length, 3);
+  assert.deepEqual(app.saved().participants.map((item) => item.id), ['hill-climb-cycling-committee', 'hill-climb-cycling-club-hire', 'hill-climb-cycling-first-aid']);
+  assert.deepEqual(app.saved().participants.map((item) => item.name), ['Carnival committee', 'Hill-climb cycling club hire', 'First-aid']);
+  assert.equal(app.saved().deal.feePerTransaction, 8);
+  assert.equal(app.saved().deal.monthlyVolume, 5900);
+  assert.equal(app.saved().deal.addressableVolume, 7100);
+  assert.deepEqual(app.saved().participants.map((item) => item.capacity), [6900, 8000, 5900]);
+  assert.notEqual(app.saved().participants[0].variableCostPerTransaction, app.saved().participants[1].variableCostPerTransaction);
+  assert.notEqual(app.saved().participants[1].variableCostPerTransaction, app.saved().participants[2].variableCostPerTransaction);
+  assert.notEqual(app.saved().participants[0].fixedMonthlyCost, app.saved().participants[1].fixedMonthlyCost);
+  assert.notEqual(app.saved().participants[1].fixedMonthlyCost, app.saved().participants[2].fixedMonthlyCost);
+  assert.equal(app.saved().participants[2].variableCostPerTransaction, 1.46);
+  assert.match(app.notice(), /Hill-climb cycling carnival split loaded/);
+  assert.match(app.markup(), /Operating region holds/);
+  assert.notEqual(app.saved().participants.map((item) => item.id).join(','), 'time-trial-cycling-committee,time-trial-cycling-club-hire,time-trial-cycling-first-aid');
+  assert.notEqual(app.saved().participants.map((item) => item.id).join(','), 'criterium-cycling-committee,criterium-cycling-club-hire,criterium-cycling-first-aid');
+  assert.equal(app.saved().participants.map((item) => item.name)[1], 'Hill-climb cycling club hire');
+  const exported = JSON.stringify(app.saved());
+  assert.doesNotMatch(exported, /live roster/i);
+  assert.doesNotMatch(exported, /hosted/i);
+  assert.doesNotMatch(exported, /\bapi\b/i);
+  assert.doesNotMatch(exported, /forecast/i);
+  assert.doesNotMatch(exported, /live capacity/i);
+  assert.doesNotMatch(exported, /start-ramp/i);
+  assert.doesNotMatch(exported, /time-check/i);
+  assert.doesNotMatch(exported, /timing-hut/i);
+  assert.doesNotMatch(exported, /pit-lane/i);
+  assert.doesNotMatch(exported, /sealed-road/i);
+  assert.doesNotMatch(exported, /circuit/i);
+  assert.doesNotMatch(exported, /feed-zone/i);
+  assert.doesNotMatch(exported, /banked-boards/i);
+  assert.notEqual(app.saved().participants.map((item) => item.id).join(','), 'creator,platform');
 });
 
 test('cyclo-cross carnival first-aid stays 1.56 after loading time-trial cycling carnival', async () => {
@@ -6659,6 +6709,63 @@ test('keyboard last-over-capacity remaining copy shortcuts stay on time-trial cy
   assert.doesNotMatch(JSON.stringify(timeTrial.saved()), /hosted/i);
   assert.doesNotMatch(JSON.stringify(timeTrial.saved()), /\bapi\b/i);
   assert.doesNotMatch(JSON.stringify(timeTrial.saved()), /forecast/i);
+});
+
+test('cyclo-cross carnival first-aid stays 1.56 after loading hill-climb cycling carnival', async () => {
+  const app = await workbench();
+  app.click('preset', { preset: 'hillClimbCyclingCarnivalSplit' });
+  assert.equal(app.saved().participants[2].variableCostPerTransaction, 1.46);
+  app.click('preset', { preset: 'cycloCrossCarnivalSplit' });
+  assert.equal(app.saved().participants[2].id, 'cyclo-cross-first-aid');
+  assert.equal(app.saved().participants[2].variableCostPerTransaction, 1.56);
+  assert.equal(app.saved().deal.monthlyVolume, 5300);
+  assert.deepEqual(app.saved().participants.map((item) => item.capacity), [6200, 7300, 5300]);
+  assert.match(app.notice(), /Cyclo-cross carnival split loaded/);
+  const exported = JSON.stringify(app.saved());
+  assert.doesNotMatch(exported, /live roster/i);
+  assert.doesNotMatch(exported, /hosted/i);
+  assert.doesNotMatch(exported, /\bapi\b/i);
+});
+
+test('keyboard last-over-capacity remaining copy shortcuts stay on hill-climb cycling carnival', async () => {
+  const hillClimb = await workbench('file:', { clipboard: 'ok' });
+  hillClimb.click('preset', { preset: 'hillClimbCyclingCarnivalSplit' });
+  assert.match(hillClimb.markup(), /id="copy-last-over-capacity-remaining"[^>]*aria-keyshortcuts="\* Shift\+F7 Shift\+F10"/);
+  assert.match(hillClimb.markup(), /id="hide-last-over-capacity-participant"[^>]*aria-keyshortcuts="# Shift\+F9"/);
+  assert.match(hillClimb.markup(), /id="hide-first-over-capacity-participant"[^>]*aria-keyshortcuts="@"/);
+  assert.doesNotMatch(hillClimb.markup(), /id="hide-first-over-capacity-participant"[^>]*aria-keyshortcuts="Shift\+F9"/);
+  assert.match(hillClimb.markup(), /id="copy-first-over-capacity-remaining"[^>]*aria-keyshortcuts="~"/);
+  assert.doesNotMatch(hillClimb.markup(), /id="copy-first-over-capacity-remaining"[^>]*aria-keyshortcuts="Shift\+F7"/);
+  assert.doesNotMatch(hillClimb.markup(), /id="copy-first-over-capacity-volume"[^>]*aria-keyshortcuts="Shift\+F7"/);
+  assert.match(hillClimb.markup(), /id="copy-first-zero-share-participant"[^>]*aria-keyshortcuts="F7"/);
+  hillClimb.edit('deal.monthlyVolume', '7000');
+  hillClimb.keydown('F7', { shiftKey: true });
+  assert.equal(hillClimb.copied().at(-1), 'Last over-capacity remaining listed capacity: 1,100 txn over for First-aid. How far over listed capacity. Not a forecast.');
+  hillClimb.keydown('F10', { shiftKey: true });
+  assert.equal(hillClimb.copied().at(-1), 'Last over-capacity remaining listed capacity: 1,100 txn over for First-aid. How far over listed capacity. Not a forecast.');
+  hillClimb.keydown('~');
+  assert.equal(hillClimb.copied().at(-1), 'First over-capacity remaining listed capacity: 100 txn over for Carnival committee. How far over listed capacity. Not a forecast.');
+  hillClimb.keydown('F7');
+  assert.equal(hillClimb.copied().at(-1), 'First zero-share participant: none entered.');
+  hillClimb.keydown('F8', { shiftKey: true });
+  assert.ok(hillClimb.focused().includes('#copy-last-over-capacity-remaining'));
+  hillClimb.keydown('F11', { shiftKey: true });
+  assert.ok(hillClimb.focused().includes('#copy-last-over-capacity-remaining'));
+  hillClimb.keydown('F8');
+  assert.ok(hillClimb.focused().includes('#copy-first-zero-share-participant'));
+  hillClimb.keydown('F9', { shiftKey: true });
+  assert.ok(hillClimb.focused().includes('#hide-last-over-capacity-participant'));
+  hillClimb.keydown('F9');
+  assert.ok(hillClimb.focused().includes('#hide-first-zero-share-participant'));
+  hillClimb.keydown('@');
+  assert.ok(hillClimb.focused().includes('#hide-first-over-capacity-participant'));
+  hillClimb.keydown('F12', { shiftKey: true });
+  assert.ok(hillClimb.focused().includes('#hide-first-over-capacity-participant'));
+  assert.equal(hillClimb.saved().participants[2].variableCostPerTransaction, 1.46);
+  assert.doesNotMatch(JSON.stringify(hillClimb.saved()), /live roster/i);
+  assert.doesNotMatch(JSON.stringify(hillClimb.saved()), /hosted/i);
+  assert.doesNotMatch(JSON.stringify(hillClimb.saved()), /\bapi\b/i);
+  assert.doesNotMatch(JSON.stringify(hillClimb.saved()), /forecast/i);
 });
 
 test('keyboard Shift+F10 copies last over-capacity remaining listed capacity through the dedicated control', async () => {
