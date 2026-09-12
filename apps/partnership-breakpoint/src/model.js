@@ -438,7 +438,7 @@ export const PRESETS = Object.freeze({
     name: 'BMX carnival split',
     deal: { monthlyVolume: 5200, feePerTransaction: 8, addressableVolume: 6400, volumeShockPct: 0 },
     participants: [
-      { id: 'bmx-committee', name: 'Carnival committee', revenueShare: 0.37, variableCostPerTransaction: 1.86, fixedMonthlyCost: 3740, minimumAcceptableProfit: 1440, capacity: 6100, minimumCommitment: 0, riskCost: 555 },
+      { id: 'bmx-committee', name: 'Carnival committee', revenueShare: 0.37, variableCostPerTransaction: 1.85, fixedMonthlyCost: 3730, minimumAcceptableProfit: 1440, capacity: 6100, minimumCommitment: 0, riskCost: 552 },
       { id: 'bmx-club-hire', name: 'BMX club hire', revenueShare: 0.38, variableCostPerTransaction: 2.00, fixedMonthlyCost: 2800, minimumAcceptableProfit: 980, capacity: 7200, minimumCommitment: 430, riskCost: 440 },
       { id: 'bmx-first-aid', name: 'First-aid', revenueShare: 0.25, variableCostPerTransaction: 1.52, fixedMonthlyCost: 1470, minimumAcceptableProfit: 550, capacity: 5200, minimumCommitment: 0, riskCost: 320 },
     ],
