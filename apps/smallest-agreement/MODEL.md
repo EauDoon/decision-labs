@@ -2,7 +2,7 @@
 
 ## Purpose
 
-The model compares explicitly supplied structured options. It finds the smallest calculated change that crosses a configurable approval threshold. It makes no claim that the result is a collective decision. Version 1.5.33 keeps the 1.5.0 review packet contract. Workshop display filters, print redaction, pasted tables, lock copy, unique group copies, and `moveClause` do not change search math. A veto is a number, not a legal right. Locks are draft choices, not a legal hold.
+The model compares explicitly supplied structured options. It finds the smallest calculated change that crosses a configurable approval threshold. It makes no claim that the result is a collective decision. Version 1.5.34 keeps the 1.5.0 review packet contract. Workshop display filters, print redaction, pasted tables, lock copy, unique group copies, and `moveClause` do not change search math. A veto is a number, not a legal right. Locks are draft choices, not a legal hold.
 
 ## Inputs
 
@@ -229,4 +229,4 @@ The optional package review can stress one group at a time while holding the sel
 
 ### Review packet contract
 
-`createAgreementReviewPacket(proposal, tool)` and `replayAgreementReviewPacket(packet)` bind canonical inputs to exact review result primitives. Version 1 uses format `agreement-review`, six strict top-level fields and a 1 MiB serialized cap. Replay recomputes; changing an input snapshot or result rejects the packet. These are unsigned records, not authenticated decisions. Aggregate calculations preserve full floating-point values in the packet even when the display rounds. The normal solver retains its 50,000-combination cap. Threshold/budget reviews cap each of at most five additional searches at 10,000; single-lock reviews share a total 50,000-candidate budget across their counterfactual searches. 1.5.33 does not change this contract or AGREEMENT_REVIEW_TOOLS.
+`createAgreementReviewPacket(proposal, tool)` and `replayAgreementReviewPacket(packet)` bind canonical inputs to exact review result primitives. Version 1 uses format `agreement-review`, six strict top-level fields and a 1 MiB serialized cap. Replay recomputes; changing an input snapshot or result rejects the packet. These are unsigned records, not authenticated decisions. Aggregate calculations preserve full floating-point values in the packet even when the display rounds. The normal solver retains its 50,000-combination cap. Threshold/budget reviews cap each of at most five additional searches at 10,000; single-lock reviews share a total 50,000-candidate budget across their counterfactual searches. 1.5.34 does not change this contract or AGREEMENT_REVIEW_TOOLS.
