@@ -2603,6 +2603,65 @@
           }
         }
       });
+      const lastUnlabelledSkipTextBtn = document.getElementById('copy-last-unlabelled-skip-text');
+      const lastUnlabelledSkipTextStatus = document.getElementById('copy-last-unlabelled-skip-text-status');
+      const lastUnlabelledSkipTextFallback = document.getElementById('copy-last-unlabelled-skip-text-fallback');
+      const lastUnlabelledSkipTextMarkdown = () => {
+        const skips = document.querySelectorAll('#skips a.skip');
+        for (let i = skips.length - 1; i >= 0; i -= 1) {
+          const skip = skips[i];
+          const href = skip && skip.getAttribute ? skip.getAttribute('href') : '';
+          if (!href || href.charAt(0) !== '#' || href.length < 2) continue;
+          const target = document.getElementById(href.slice(1));
+          if (!target) continue;
+          const labelledBy = target.getAttribute ? target.getAttribute('aria-labelledby') : '';
+          if (labelledBy) continue;
+          const text = skip.textContent ? skip.textContent.trim() : '';
+          if (!text) return '';
+          return `- ${text}`;
+        }
+        return '';
+      };
+      const lastUnlabelledSkipLink = () => {
+        const skips = document.querySelectorAll('#skips a.skip');
+        for (let i = skips.length - 1; i >= 0; i -= 1) {
+          const skip = skips[i];
+          const href = skip && skip.getAttribute ? skip.getAttribute('href') : '';
+          if (!href || href.charAt(0) !== '#' || href.length < 2) continue;
+          const target = document.getElementById(href.slice(1));
+          if (!target) continue;
+          const labelledBy = target.getAttribute ? target.getAttribute('aria-labelledby') : '';
+          if (labelledBy) continue;
+          return skip;
+        }
+        return null;
+      };
+      lastUnlabelledSkipTextBtn?.addEventListener('click', async () => {
+        const markdown = lastUnlabelledSkipTextMarkdown();
+        const empty = markdown === '';
+        try {
+          if (!navigator.clipboard?.writeText) throw new Error('clipboard unavailable');
+          await navigator.clipboard.writeText(markdown);
+          if (lastUnlabelledSkipTextFallback) lastUnlabelledSkipTextFallback.hidden = true;
+          if (lastUnlabelledSkipTextStatus) {
+            lastUnlabelledSkipTextStatus.textContent = empty
+              ? 'Last unlabelled skip-link text was missing. Copied an empty string. This is catalog copy, not a live product feed.'
+              : 'Copied the last unlabelled skip-link text from this catalog page as Markdown. Not a live product feed.';
+          }
+        } catch {
+          if (lastUnlabelledSkipTextFallback) {
+            lastUnlabelledSkipTextFallback.hidden = false;
+            lastUnlabelledSkipTextFallback.value = markdown;
+            lastUnlabelledSkipTextFallback.focus();
+            lastUnlabelledSkipTextFallback.select();
+          }
+          if (lastUnlabelledSkipTextStatus) {
+            lastUnlabelledSkipTextStatus.textContent = empty
+              ? 'Clipboard unavailable. Copy the empty string from the text box. Last unlabelled skip-link text was missing. This is catalog copy, not a live product feed.'
+              : 'Clipboard unavailable. Copy the Markdown from the text box. This is the last unlabelled skip-link text, not a live product feed.';
+          }
+        }
+      });
       const firstUnlabelledSkipTextBtn = document.getElementById('copy-first-unlabelled-skip-text');
       const firstUnlabelledSkipTextStatus = document.getElementById('copy-first-unlabelled-skip-text-status');
       const firstUnlabelledSkipTextFallback = document.getElementById('copy-first-unlabelled-skip-text-fallback');
