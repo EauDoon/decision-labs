@@ -1559,7 +1559,7 @@ function handleShortcut(event) {
   }
   if (event.shiftKey && key === "F8") {
     event.preventDefault();
-    focusLeftoverUncoveredLeftoverOnlyMinimumCopy();
+    focusLeftoverUncoveredLeftoverOnlyHeadroomCopy();
     return;
   }
   if (event.shiftKey && key === "F9") {
