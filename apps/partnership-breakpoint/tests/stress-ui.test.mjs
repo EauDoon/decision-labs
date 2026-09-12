@@ -2277,6 +2277,7 @@ test('track cycling carnival split preset loads from the starting-point buttons'
   const markup = app.markup();
   assert.ok(markup.indexOf('data-preset="bmxCarnivalSplit"') < markup.indexOf('data-preset="cycloCrossCarnivalSplit"'));
   assert.ok(markup.indexOf('data-preset="cycloCrossCarnivalSplit"') < markup.indexOf('data-preset="trackCyclingCarnivalSplit"'));
+  assert.ok(markup.indexOf('data-preset="trackCyclingCarnivalSplit"') < markup.indexOf('data-preset="gravelCyclingCarnivalSplit"'));
   app.click('preset', { preset: 'trackCyclingCarnivalSplit' });
   assert.equal(app.saved().participants.length, 3);
   assert.deepEqual(app.saved().participants.map((item) => item.id), ['track-cycling-committee', 'track-cycling-club-hire', 'track-cycling-first-aid']);
@@ -2304,6 +2305,54 @@ test('track cycling carnival split preset loads from the starting-point buttons'
   assert.doesNotMatch(exported, /forecast/i);
   assert.doesNotMatch(exported, /live capacity/i);
   assert.doesNotMatch(exported, /velodrome/i);
+  assert.notEqual(app.saved().participants.map((item) => item.id).join(','), 'creator,platform');
+});
+
+test('gravel cycling carnival split preset loads from the starting-point buttons', async () => {
+  const app = await workbench();
+  assert.match(app.markup(), /data-preset="gravelCyclingCarnivalSplit"/);
+  assert.match(app.markup(), /Gravel cycling carnival split/);
+  assert.match(app.markup(), /data-preset="trackCyclingCarnivalSplit"/);
+  assert.match(app.markup(), /Track cycling carnival split/);
+  assert.match(app.markup(), /data-preset="cycloCrossCarnivalSplit"/);
+  assert.match(app.markup(), /Cyclo-cross carnival split/);
+  assert.match(app.markup(), /data-preset="bmxCarnivalSplit"/);
+  assert.match(app.markup(), /BMX carnival split/);
+  const markup = app.markup();
+  assert.ok(markup.indexOf('data-preset="bmxCarnivalSplit"') < markup.indexOf('data-preset="cycloCrossCarnivalSplit"'));
+  assert.ok(markup.indexOf('data-preset="cycloCrossCarnivalSplit"') < markup.indexOf('data-preset="trackCyclingCarnivalSplit"'));
+  assert.ok(markup.indexOf('data-preset="trackCyclingCarnivalSplit"') < markup.indexOf('data-preset="gravelCyclingCarnivalSplit"'));
+  app.click('preset', { preset: 'gravelCyclingCarnivalSplit' });
+  assert.equal(app.saved().participants.length, 3);
+  assert.deepEqual(app.saved().participants.map((item) => item.id), ['gravel-cycling-committee', 'gravel-cycling-club-hire', 'gravel-cycling-first-aid']);
+  assert.deepEqual(app.saved().participants.map((item) => item.name), ['Carnival committee', 'Gravel cycling club hire', 'First-aid']);
+  assert.equal(app.saved().deal.feePerTransaction, 8);
+  assert.equal(app.saved().deal.monthlyVolume, 5500);
+  assert.equal(app.saved().deal.addressableVolume, 6700);
+  assert.deepEqual(app.saved().participants.map((item) => item.capacity), [6400, 7500, 5500]);
+  assert.notEqual(app.saved().participants[0].variableCostPerTransaction, app.saved().participants[1].variableCostPerTransaction);
+  assert.notEqual(app.saved().participants[1].variableCostPerTransaction, app.saved().participants[2].variableCostPerTransaction);
+  assert.notEqual(app.saved().participants[0].fixedMonthlyCost, app.saved().participants[1].fixedMonthlyCost);
+  assert.notEqual(app.saved().participants[1].fixedMonthlyCost, app.saved().participants[2].fixedMonthlyCost);
+  assert.equal(app.saved().participants[2].variableCostPerTransaction, 1.54);
+  assert.match(app.notice(), /Gravel cycling carnival split loaded/);
+  assert.match(app.markup(), /Operating region holds/);
+  assert.notEqual(app.saved().participants.map((item) => item.id).join(','), 'track-cycling-committee,track-cycling-club-hire,track-cycling-first-aid');
+  assert.notEqual(app.saved().participants.map((item) => item.id).join(','), 'cyclo-cross-committee,cyclo-cross-club-hire,cyclo-cross-first-aid');
+  assert.notEqual(app.saved().participants.map((item) => item.id).join(','), 'bmx-committee,bmx-club-hire,bmx-first-aid');
+  assert.notEqual(app.saved().participants.map((item) => item.name)[1], 'Track cycling club hire');
+  assert.notEqual(app.saved().participants.map((item) => item.name)[1], 'Cyclo-cross club hire');
+  assert.notEqual(app.saved().participants.map((item) => item.name)[1], 'BMX club hire');
+  assert.notEqual(app.saved().participants.map((item) => item.name)[1], 'Cycling club hire');
+  assert.equal(app.saved().participants.map((item) => item.name)[1], 'Gravel cycling club hire');
+  const exported = JSON.stringify(app.saved());
+  assert.doesNotMatch(exported, /live roster/i);
+  assert.doesNotMatch(exported, /hosted/i);
+  assert.doesNotMatch(exported, /\bapi\b/i);
+  assert.doesNotMatch(exported, /forecast/i);
+  assert.doesNotMatch(exported, /live capacity/i);
+  assert.doesNotMatch(exported, /velodrome/i);
+  assert.doesNotMatch(exported, /banked-boards/i);
   assert.notEqual(app.saved().participants.map((item) => item.id).join(','), 'creator,platform');
 });
 
@@ -6235,6 +6284,27 @@ test('keyboard Shift+F7 copies last over-capacity remaining listed capacity thro
   assert.doesNotMatch(JSON.stringify(track.saved()), /hosted/i);
   assert.doesNotMatch(JSON.stringify(track.saved()), /\bapi\b/i);
   assert.doesNotMatch(JSON.stringify(track.saved()), /forecast/i);
+
+  const gravel = await workbench('file:', { clipboard: 'ok' });
+  gravel.click('preset', { preset: 'gravelCyclingCarnivalSplit' });
+  assert.match(gravel.markup(), /id="copy-last-over-capacity-remaining"[^>]*aria-keyshortcuts="\* Shift\+F7 Shift\+F10"/);
+  assert.match(gravel.markup(), /id="hide-last-over-capacity-participant"[^>]*aria-keyshortcuts="# Shift\+F9"/);
+  assert.match(gravel.markup(), /id="hide-first-over-capacity-participant"[^>]*aria-keyshortcuts="@"/);
+  assert.doesNotMatch(gravel.markup(), /id="hide-first-over-capacity-participant"[^>]*aria-keyshortcuts="Shift\+F9"/);
+  assert.match(gravel.markup(), /id="copy-first-over-capacity-remaining"[^>]*aria-keyshortcuts="~"/);
+  gravel.edit('deal.monthlyVolume', '6500');
+  gravel.keydown('F7', { shiftKey: true });
+  assert.equal(gravel.copied().at(-1), 'Last over-capacity remaining listed capacity: 1,000 txn over for First-aid. How far over listed capacity. Not a forecast.');
+  gravel.keydown('F10', { shiftKey: true });
+  assert.equal(gravel.copied().at(-1), 'Last over-capacity remaining listed capacity: 1,000 txn over for First-aid. How far over listed capacity. Not a forecast.');
+  gravel.keydown('~');
+  assert.equal(gravel.copied().at(-1), 'First over-capacity remaining listed capacity: 100 txn over for Carnival committee. How far over listed capacity. Not a forecast.');
+  gravel.keydown('F7');
+  assert.equal(gravel.copied().at(-1), 'First zero-share participant: none entered.');
+  assert.doesNotMatch(JSON.stringify(gravel.saved()), /live roster/i);
+  assert.doesNotMatch(JSON.stringify(gravel.saved()), /hosted/i);
+  assert.doesNotMatch(JSON.stringify(gravel.saved()), /\bapi\b/i);
+  assert.doesNotMatch(JSON.stringify(gravel.saved()), /forecast/i);
 });
 
 test('keyboard Shift+F10 copies last over-capacity remaining listed capacity through the dedicated control', async () => {
