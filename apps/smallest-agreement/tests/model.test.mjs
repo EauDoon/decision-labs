@@ -4387,6 +4387,38 @@ test("first-without-floor cost Markdown is one line, honest 0 when none, and dis
   const bmxAggregate = formatGroupsWithoutFloorRemainingMarkdown(bmx, getOriginalOptions(bmx));
   assert.equal(bmxAggregate.remaining, 31);
   assert.doesNotMatch(bmxAggregate.text, /First-without-floor cost/u);
+  const cycloCross = proposal({
+    title: "Cyclo-cross club hours: cyclo-cross course booking, start-grid hours, and pit-box lock-up",
+    threshold: 70,
+    groups: [
+      { id: "students", name: "Students", weight: 11 },
+      { id: "neighbours", name: "Neighbours", weight: 10, veto: true },
+      { id: "pandc", name: "P&C", weight: 13 },
+    ],
+    clauses: [{ id: "cyclo-cross-course-booking", title: "Cyclo-cross course booking", options: [
+      option("cyclo-cross-course-booking-original", true, { students: 2, neighbours: 89, pandc: 62 }),
+      option("cyclo-cross-course-booking-late", false, { students: 91, neighbours: 29, pandc: 41 }, 2),
+      option("cyclo-cross-course-booking-weekend", false, { students: 76, neighbours: 37, pandc: 49 }, 4),
+    ] }],
+  });
+  const cycloCopied = formatFirstGroupWithoutFloorCostMarkdown(cycloCross, getOriginalOptions(cycloCross));
+  assert.equal(cycloCopied.status, "ok");
+  assert.equal(cycloCopied.cost, 11);
+  assert.equal(cycloCopied.text, "First-without-floor cost: 11. A floor is a number you entered, not a legal quorum.\n");
+  assert.doesNotMatch(cycloCopied.text, /Last-without-floor cost/u);
+  assert.doesNotMatch(cycloCopied.text, /First-without-floor remaining/u);
+  assert.doesNotMatch(cycloCopied.text, /Last-without-floor remaining/u);
+  assert.doesNotMatch(cycloCopied.text, /Groups-without-floor remaining/u);
+  assert.doesNotMatch(cycloCopied.text, /Students/u);
+  const cycloRemaining = formatFirstGroupWithoutFloorRemainingMarkdown(cycloCross, getOriginalOptions(cycloCross));
+  assert.equal(cycloRemaining.remaining, 11);
+  assert.notEqual(cycloCopied.text, cycloRemaining.text);
+  const cycloLast = formatLastGroupWithoutFloorRemainingMarkdown(cycloCross, getOriginalOptions(cycloCross));
+  assert.equal(cycloLast.remaining, 13);
+  assert.doesNotMatch(cycloLast.text, /First-without-floor cost/u);
+  const cycloAggregate = formatGroupsWithoutFloorRemainingMarkdown(cycloCross, getOriginalOptions(cycloCross));
+  assert.equal(cycloAggregate.remaining, 34);
+  assert.doesNotMatch(cycloAggregate.text, /First-without-floor cost/u);
 });
 
 test("last-without-floor cost Markdown is one line, honest 0 when none, and distinct from first cost and remaining", async () => {
@@ -4598,6 +4630,31 @@ test("last-without-floor cost Markdown is one line, honest 0 when none, and dist
   const bmxFirst = formatFirstGroupWithoutFloorCostMarkdown(bmx, getOriginalOptions(bmx));
   assert.equal(bmxFirst.cost, 10);
   assert.notEqual(bmxCopied.text, bmxFirst.text);
+  const cycloCross = proposal({
+    title: "Cyclo-cross club hours: cyclo-cross course booking, start-grid hours, and pit-box lock-up",
+    threshold: 70,
+    groups: [
+      { id: "students", name: "Students", weight: 11 },
+      { id: "neighbours", name: "Neighbours", weight: 10, veto: true },
+      { id: "pandc", name: "P&C", weight: 13 },
+    ],
+    clauses: [{ id: "cyclo-cross-course-booking", title: "Cyclo-cross course booking", options: [
+      option("cyclo-cross-course-booking-original", true, { students: 2, neighbours: 89, pandc: 62 }),
+      option("cyclo-cross-course-booking-late", false, { students: 91, neighbours: 29, pandc: 41 }, 2),
+      option("cyclo-cross-course-booking-weekend", false, { students: 76, neighbours: 37, pandc: 49 }, 4),
+    ] }],
+  });
+  const cycloCopied = formatLastGroupWithoutFloorCostMarkdown(cycloCross, getOriginalOptions(cycloCross));
+  assert.equal(cycloCopied.status, "ok");
+  assert.equal(cycloCopied.cost, 13);
+  assert.equal(cycloCopied.text, "Last-without-floor cost: 13. A floor is a number you entered, not a legal quorum.\n");
+  assert.doesNotMatch(cycloCopied.text, /First-without-floor cost/u);
+  assert.doesNotMatch(cycloCopied.text, /Last-without-floor remaining/u);
+  assert.doesNotMatch(cycloCopied.text, /Students/u);
+  assert.doesNotMatch(cycloCopied.text, /P&C/u);
+  const cycloFirst = formatFirstGroupWithoutFloorCostMarkdown(cycloCross, getOriginalOptions(cycloCross));
+  assert.equal(cycloFirst.cost, 11);
+  assert.notEqual(cycloCopied.text, cycloFirst.text);
 });
 
 test("first veto group label Markdown escapes the group name and is not a legal right", () => {
