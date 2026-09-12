@@ -2754,6 +2754,49 @@
           }
         }
       });
+      const firstUnlabelledSkipHrefBtn = document.getElementById('copy-first-unlabelled-skip-href');
+      const firstUnlabelledSkipHrefStatus = document.getElementById('copy-first-unlabelled-skip-href-status');
+      const firstUnlabelledSkipHrefFallback = document.getElementById('copy-first-unlabelled-skip-href-fallback');
+      const firstUnlabelledSkipHrefMarkdown = () => {
+        const skips = document.querySelectorAll('#skips a.skip');
+        for (let i = 0; i < skips.length; i += 1) {
+          const skip = skips[i];
+          const href = skip && skip.getAttribute ? skip.getAttribute('href') : '';
+          if (!href || href.charAt(0) !== '#' || href.length < 2) continue;
+          const target = document.getElementById(href.slice(1));
+          if (!target) continue;
+          const labelledBy = target.getAttribute ? target.getAttribute('aria-labelledby') : '';
+          if (labelledBy) continue;
+          return `- ${href}`;
+        }
+        return '';
+      };
+      firstUnlabelledSkipHrefBtn?.addEventListener('click', async () => {
+        const markdown = firstUnlabelledSkipHrefMarkdown();
+        const empty = markdown === '';
+        try {
+          if (!navigator.clipboard?.writeText) throw new Error('clipboard unavailable');
+          await navigator.clipboard.writeText(markdown);
+          if (firstUnlabelledSkipHrefFallback) firstUnlabelledSkipHrefFallback.hidden = true;
+          if (firstUnlabelledSkipHrefStatus) {
+            firstUnlabelledSkipHrefStatus.textContent = empty
+              ? 'First unlabelled skip-link href was missing. Copied an empty string. This is catalog copy, not a live product feed.'
+              : 'Copied the first unlabelled skip-link href from this catalog page as Markdown. Not a live product feed.';
+          }
+        } catch {
+          if (firstUnlabelledSkipHrefFallback) {
+            firstUnlabelledSkipHrefFallback.hidden = false;
+            firstUnlabelledSkipHrefFallback.value = markdown;
+            firstUnlabelledSkipHrefFallback.focus();
+            firstUnlabelledSkipHrefFallback.select();
+          }
+          if (firstUnlabelledSkipHrefStatus) {
+            firstUnlabelledSkipHrefStatus.textContent = empty
+              ? 'Clipboard unavailable. Copy the empty string from the text box. First unlabelled skip-link href was missing. This is catalog copy, not a live product feed.'
+              : 'Clipboard unavailable. Copy the Markdown from the text box. This is the first unlabelled skip-link href, not a live product feed.';
+          }
+        }
+      });
       const lastLabelledSkipTargetTextBtn = document.getElementById('copy-last-labelled-skip-target-text');
       const lastLabelledSkipTargetTextStatus = document.getElementById('copy-last-labelled-skip-target-text-status');
       const lastLabelledSkipTargetTextFallback = document.getElementById('copy-last-labelled-skip-target-text-fallback');
