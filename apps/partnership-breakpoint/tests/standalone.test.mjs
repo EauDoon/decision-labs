@@ -56,10 +56,10 @@ test('release 1.5.34 ships cyclo-cross carnival, first-over-capacity volume copy
   assert.match(changelog, /Cyclo-cross carnival, first-over-capacity volume copy, and first-over-capacity hide jump in Partnership Breakpoint 1\.5\.34/);
   assert.match(html, /cycloCrossCarnivalSplit/);
   assert.match(html, /Cyclo-cross carnival split/);
-  assert.match(html, /id="copy-first-over-capacity-volume"[^>]*aria-keyshortcuts="Shift\+F7"/);
+  assert.doesNotMatch(html, /id="copy-first-over-capacity-volume"[^>]*aria-keyshortcuts="Shift\+F7"/);
   assert.match(html, /id="copy-first-over-capacity-remaining"[^>]*aria-keyshortcuts="~"/);
-  assert.match(html, /id="hide-first-over-capacity-participant"[^>]*aria-keyshortcuts="@ Shift\+F9"/);
-  assert.match(html, /id="hide-last-over-capacity-participant"[^>]*aria-keyshortcuts="#"/);
+  assert.match(html, /id="hide-first-over-capacity-participant"[^>]*aria-keyshortcuts="@"/);
+  assert.match(html, /id="hide-last-over-capacity-participant"[^>]*aria-keyshortcuts="# Shift\+F9"/);
   assert.match(html, /event\.key === 'F7' && event\.shiftKey/);
   assert.match(html, /copyFirstOverCapacityVolume/);
   assert.match(html, /event\.key === 'F8' && event\.shiftKey/);
@@ -113,7 +113,7 @@ test('standalone retains 1.5.16 review tools and 1.5.17 copy controls', async ()
   assert.match(html, /id="copy-first-over-capacity-label"/);
   assert.match(html, /id="copy-first-over-capacity-label"[^>]*aria-keyshortcuts="\}"/u);
   assert.match(html, /id="hide-first-over-capacity-participant"/);
-  assert.match(html, /id="hide-first-over-capacity-participant"[^>]*aria-keyshortcuts="@ Shift\+F9"/);
+  assert.match(html, /id="hide-first-over-capacity-participant"[^>]*aria-keyshortcuts="@"/);
   assert.match(html, /id="copy-first-over-capacity-remaining"/);
   assert.match(html, /id="copy-first-over-capacity-remaining"[^>]*aria-keyshortcuts="~"/);
   assert.doesNotMatch(html, /id="copy-first-over-capacity-remaining"[^>]*aria-keyshortcuts="Shift\+F7"/);
@@ -122,13 +122,13 @@ test('standalone retains 1.5.16 review tools and 1.5.17 copy controls', async ()
   assert.match(html, /id="copy-last-over-capacity-label"[^>]*aria-keyshortcuts="\("/);
   assert.match(html, /id="copy-last-over-capacity-remaining"/);
   assert.match(html, /data-action="copy-last-over-capacity-remaining"/);
-  assert.match(html, /id="copy-last-over-capacity-remaining"[^>]*aria-keyshortcuts="\* Shift\+F10"/);
+  assert.match(html, /id="copy-last-over-capacity-remaining"[^>]*aria-keyshortcuts="\* Shift\+F7 Shift\+F10"/);
   assert.match(html, /id="copy-last-over-capacity-volume"/);
   assert.match(html, /data-action="copy-last-over-capacity-volume"/);
   assert.doesNotMatch(html, /id="copy-last-over-capacity-volume"[^>]*aria-keyshortcuts="Shift\+F10"/);
   assert.match(html, /id="copy-first-over-capacity-volume"/);
   assert.match(html, /data-action="copy-first-over-capacity-volume"/);
-  assert.match(html, /id="copy-first-over-capacity-volume"[^>]*aria-keyshortcuts="Shift\+F7"/);
+  assert.doesNotMatch(html, /id="copy-first-over-capacity-volume"[^>]*aria-keyshortcuts="Shift\+F7"/);
   assert.doesNotMatch(html, /id="copy-first-over-capacity-volume"[^>]*aria-keyshortcuts="Shift\+F10"/);
   assert.match(html, /id="copy-first-within-capacity-remaining"/);
   assert.match(html, /data-action="copy-first-within-capacity-remaining"/);
@@ -136,7 +136,7 @@ test('standalone retains 1.5.16 review tools and 1.5.17 copy controls', async ()
   assert.match(html, /id="copy-last-within-capacity-remaining"/);
   assert.match(html, /data-action="copy-last-within-capacity-remaining"/);
   assert.match(html, /id="copy-last-within-capacity-remaining"[^>]*aria-keyshortcuts="5"/);
-  assert.match(html, /id="hide-last-over-capacity-participant"[^>]*aria-keyshortcuts="#"/);
+  assert.match(html, /id="hide-last-over-capacity-participant"[^>]*aria-keyshortcuts="# Shift\+F9"/);
   assert.doesNotMatch(html, /id="hide-last-over-capacity-participant"[^>]*aria-keyshortcuts="Shift\+F9"/);
   assert.match(html, /id="hide-last-breakpoint-participant"/);
   assert.match(html, /data-action="hide-last-breakpoint-participant"/);
