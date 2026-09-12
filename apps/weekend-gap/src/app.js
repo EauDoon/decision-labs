@@ -2897,7 +2897,7 @@ document.addEventListener("keydown", (event) => {
   }
   if (event.key === "F10" && event.shiftKey) {
     event.preventDefault();
-    copyLastWeekdayFxOpenHourMarkdown();
+    copyFirstWeekdayFxOpenHourMarkdown();
     return;
   }
   if (event.key === "F10") {
@@ -2992,7 +2992,7 @@ document.addEventListener("keydown", (event) => {
   }
   if (event.key === "F11" && event.shiftKey) {
     event.preventDefault();
-    jumpToLastWeekdayFxOpenCopy();
+    jumpToFirstWeekdayFxOpenCopy();
     return;
   }
   if (event.key === "F11") {

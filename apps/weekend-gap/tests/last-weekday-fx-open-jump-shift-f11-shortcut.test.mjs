@@ -2,14 +2,14 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { readFile } from "node:fs/promises";
 
-test("keyboard Shift+F11 is wired to the last-weekday-FX-open-hour copy control before unshifted F11", async () => {
+test("1.5.37 keeps last-weekday-FX-open jump without taking Shift+F11", async () => {
   const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
   const app = await readFile(new URL("../src/app.js", import.meta.url), "utf8");
   assert.match(html, /id="copy-last-weekday-fx-open"/);
   assert.match(html, /id="copy-last-weekend-fx-closed"/);
   assert.match(html, /id="gantt-title"/);
   assert.match(html, /<kbd>Shift\+F11<\/kbd>/);
-  assert.match(html, /Jump to the last-weekday-FX-open-hour copy control/);
+  assert.match(html, /Jump to the first-weekday-FX-open-hour copy control/);
   assert.match(html, /Jump to the last-weekend-FX-closed-hour copy control/);
   assert.match(app, /function jumpToLastWeekdayFxOpenCopy/);
   assert.match(app, /#copy-last-weekday-fx-open/);
@@ -33,7 +33,8 @@ test("keyboard Shift+F11 is wired to the last-weekday-FX-open-hour copy control 
   assert.ok(unshiftedF11 !== -1);
   assert.ok(shiftF11 < unshiftedF11);
   const shiftSlice = handler.slice(shiftF11, shiftF11 + 180);
-  assert.match(shiftSlice, /jumpToLastWeekdayFxOpenCopy\(\)/);
+  assert.match(shiftSlice, /jumpToFirstWeekdayFxOpenCopy\(\)/);
+  assert.doesNotMatch(shiftSlice, /jumpToLastWeekdayFxOpenCopy/);
   assert.doesNotMatch(shiftSlice, /jumpToFirstWeekendFxClosedCopy/);
   assert.doesNotMatch(shiftSlice, /jumpToFirstWeekendFxOpenCopy/);
   assert.doesNotMatch(shiftSlice, /jumpToLastWeekendFxOpenCopy/);

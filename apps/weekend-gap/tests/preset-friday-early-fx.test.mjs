@@ -43,6 +43,7 @@ test("Friday early FX open keeps the Normal Friday calendar with a Friday mornin
   assert.equal(preset.sundayEarlyFxOpen, false);
   assert.equal(preset.saturdayLateFxOpen, false);
   assert.equal(preset.saturdayMiddayFxOpen, false);
+  assert.equal(preset.sundayMiddayFxOpen, false);
   assert.equal(preset.mondayHoliday, false);
   assert.equal(preset.demandProfile, DEFAULT_SCENARIO.demandProfile);
   assert.equal(preset.issuerOpenStartHour, DEFAULT_SCENARIO.issuerOpenStartHour);
@@ -61,6 +62,7 @@ test("Friday early FX open keeps the Normal Friday calendar with a Friday mornin
   assert.notDeepEqual(preset, PRESETS.sundayEarlyFxOpen);
   assert.notDeepEqual(preset, PRESETS.saturdayLateFxOpen);
   assert.notDeepEqual(preset, PRESETS.saturdayMiddayFxOpen);
+  assert.notDeepEqual(preset, PRESETS.sundayMiddayFxOpen);
   const early = runSimulation(preset);
   const normal = runSimulation(DEFAULT_SCENARIO);
   const thursdayLate = runSimulation(PRESETS.thursdayLateFxOpen);
@@ -183,8 +185,10 @@ test("Friday early FX open is available as a preset button and is not an FX feed
   const thursdayPreset = html.indexOf('data-preset="thursdayLateFxOpen"');
   const fridayPreset = html.indexOf('data-preset="fridayEarlyFxOpen"');
   const middayPreset = html.indexOf('data-preset="saturdayMiddayFxOpen"');
+  const sundayPreset = html.indexOf('data-preset="sundayMiddayFxOpen"');
   assert.ok(thursdayPreset !== -1 && fridayPreset > thursdayPreset);
   assert.ok(middayPreset > fridayPreset);
+  assert.ok(sundayPreset > middayPreset);
   assert.match(html, /Friday early FX open \(synthetic\)/);
   assert.match(html, /id="fridayEarlyFxOpen"/);
   assert.match(html, /Keep Friday FX open 08:00 to 10:00/);
