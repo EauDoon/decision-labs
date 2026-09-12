@@ -1669,6 +1669,39 @@ const presets = {
       },
     ],
   },
+  "madison-cycling-club-hours": {
+    title: "Madison cycling club hours: madison course booking, handsling hours, and pairing-board lock-up",
+    threshold: 70,
+    maxChangeCost: 8,
+    groups: [
+      { id: "students", name: "Students", weight: 19 },
+      { id: "neighbours", name: "Neighbours", weight: 16, veto: true },
+      { id: "pandc", name: "P&C", weight: 21 },
+    ],
+    clauses: [
+      {
+        id: "madison-cycling-course-booking", title: "Madison course booking", options: [
+          { id: "madison-cycling-course-booking-original", original: true, label: "Keep weekday madison course from 10:05 with no posted handsling rota", changeCost: 0, support: { students: 9, neighbours: 81, pandc: 62 } },
+          { id: "madison-cycling-course-booking-late", original: false, label: "Open weekday madison course at 18:50 with a posted handsling rota", changeCost: 2, support: { students: 84, neighbours: 21, pandc: 33 } },
+          { id: "madison-cycling-course-booking-weekend", original: false, label: "Hold Saturday morning madison course at 08:40 with a handsling booking card", changeCost: 4, support: { students: 69, neighbours: 29, pandc: 41 } },
+        ],
+      },
+      {
+        id: "madison-cycling-handsling", title: "Handsling hours", options: [
+          { id: "madison-cycling-handsling-original", original: true, label: "No posted handsling hours", changeCost: 0, support: { students: 59, neighbours: 7, pandc: 32 } },
+          { id: "madison-cycling-handsling-cap", original: false, label: "Close handsling hours at 19:55 and keep pairing crew at the handsling shed", changeCost: 1, support: { students: 32, neighbours: 85, pandc: 64 } },
+          { id: "madison-cycling-handsling-cut", original: false, label: "Serve pairing crew only after 14:00", changeCost: 5, support: { students: 14, neighbours: 89, pandc: 30 } },
+        ],
+      },
+      {
+        id: "madison-cycling-pairing-board-lockup", title: "Pairing-board lock-up", options: [
+          { id: "madison-cycling-pairing-board-lockup-original", original: true, label: "Leave the pairing-board door on a shared padlock after club hours", changeCost: 0, support: { students: 1, neighbours: 19, pandc: 24 } },
+          { id: "madison-cycling-pairing-board-lockup-steward", original: false, label: "Require a P&C steward to lock the pairing-board store before 21:30", changeCost: 3, support: { students: 46, neighbours: 67, pandc: 87 } },
+          { id: "madison-cycling-pairing-board-lockup-timer", original: false, label: "Add a timed lock on the pairing-board store after the last madison cycling session", changeCost: 2, support: { students: 35, neighbours: 38, pandc: 55 } },
+        ],
+      },
+    ],
+  },
 };
 
 let agreementReviewPacket = null;
