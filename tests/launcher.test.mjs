@@ -5,7 +5,7 @@ import { readFileSync } from 'node:fs';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import vm from 'node:vm';
-import { createLauncher, parsePort, PUBLIC_PATHS, publicFile, CONTENT_SECURITY_POLICY, notFoundPage, catalogVersionLine, catalogJobs, catalogLastWhatsNewHeading, catalogFirstWhatsNewHeading, catalogFirstWorkbenchHeading, catalogLastWorkbenchHeading, catalogLastReviewPath, catalogFirstReviewPath, catalogFirstOpenHref, catalogLastOpenHref, catalogFirstSkipHref, catalogLastSkipHref, catalogFirstSkipText, catalogLastSkipText, catalogFirstSkipTargetText, catalogLastSkipTargetText, catalogFirstLabelledSkipTargetText, catalogLastLabelledSkipTargetText, catalogFirstLabelledSkipHref, catalogLastLabelledSkipHref, catalogLastLabelledSkipText, catalogFirstLabelledSkipText, catalogLastUnlabelledSkipText, catalogFirstUnlabelledSkipText, catalogFirstUnlabelledSkipHref, catalogLastUnlabelledSkipHref, catalogFirstUnlabelledSkipTargetText, catalogLastUnlabelledSkipTargetText, catalogFirstUnlabelledSkipTargetId, catalogLastUnlabelledSkipTargetId, catalogFirstLabelledSkipTargetId, catalogLastLabelledSkipTargetId } from '../scripts/serve.mjs';
+import { createLauncher, parsePort, PUBLIC_PATHS, publicFile, CONTENT_SECURITY_POLICY, notFoundPage, catalogVersionLine, catalogJobs, catalogLastWhatsNewHeading, catalogFirstWhatsNewHeading, catalogFirstWorkbenchHeading, catalogLastWorkbenchHeading, catalogLastReviewPath, catalogFirstReviewPath, catalogFirstOpenHref, catalogLastOpenHref, catalogFirstSkipHref, catalogLastSkipHref, catalogFirstSkipText, catalogLastSkipText, catalogFirstSkipTargetText, catalogLastSkipTargetText, catalogFirstLabelledSkipTargetText, catalogLastLabelledSkipTargetText, catalogFirstLabelledSkipHref, catalogLastLabelledSkipHref, catalogLastLabelledSkipText, catalogFirstLabelledSkipText, catalogLastUnlabelledSkipText, catalogFirstUnlabelledSkipText, catalogFirstUnlabelledSkipHref, catalogLastUnlabelledSkipHref, catalogFirstUnlabelledSkipTargetText, catalogLastUnlabelledSkipTargetText, catalogFirstUnlabelledSkipTargetId, catalogLastUnlabelledSkipTargetId, catalogFirstLabelledSkipTargetId, catalogLastLabelledSkipTargetId, catalogLastLabelledSkipLabelledbyId } from '../scripts/serve.mjs';
 
 test('all analyst commands reject Windows console aliases before opening input', { skip: process.platform !== 'win32' }, () => {
   const commands = [
@@ -5736,13 +5736,14 @@ test('404 copy last labelled skip target id markdown is the target id, or empty 
   const page = notFoundPage();
   const source = page.match(/<script>([\s\S]*?)<\/script>/)[1];
   const start = source.indexOf('const lastLabelledSkipTargetIdMarkdown');
-  const end = source.indexOf('const firstReviewBtn');
+  const end = source.indexOf('const lastLabelledSkipLabelledbyIdBtn');
   const body = source.slice(start, end);
   assert.match(body, /if \(!labelledBy\) continue/);
   assert.match(body, /return '- ' \+ id/);
   assert.match(body, /skips\.length - 1/);
   assert.doesNotMatch(body, /return '- ' \+ href/);
   assert.doesNotMatch(body, /return '- ' \+ text/);
+  assert.doesNotMatch(body, /return '- ' \+ labelledBy/);
   assert.equal(source.indexOf('firstLabelledSkipTargetIdMarkdown') < source.indexOf('lastLabelledSkipTargetIdMarkdown'), true);
   let copied = '';
   let clickLast = null;
@@ -5808,6 +5809,133 @@ test('404 copy last labelled skip target id markdown is the target id, or empty 
   assert.doesNotMatch(copied, /\n/);
   assert.doesNotMatch(copied, /Each workbench versions itself/);
   assert.notEqual(copied, '- whats-new');
+  skips = [
+    {
+      getAttribute(name) { return name === 'href' ? '#version-line' : null; },
+      textContent: 'Skip to catalog versions',
+    },
+  ];
+  copied = 'stale';
+  await clickLast();
+  assert.equal(copied, '');
+  skips = [];
+  copied = 'stale';
+  await clickLast();
+  assert.equal(copied, '');
+  assert.equal(PUBLIC_PATHS.length, 6);
+});
+
+test('404 copy last labelled skip labelledby id uses the labelledby id without extra public paths', () => {
+  const page = notFoundPage();
+  const id = catalogLastLabelledSkipLabelledbyId();
+  assert.equal(id, 'trust-title');
+  assert.notEqual(id, catalogLastLabelledSkipTargetId());
+  assert.notEqual(id, catalogFirstLabelledSkipTargetId());
+  assert.notEqual(id, catalogLastUnlabelledSkipTargetId());
+  assert.notEqual(id, catalogLastLabelledSkipHref());
+  assert.match(page, /id="copy-last-labelled-skip-labelledby-id"/);
+  assert.match(page, />Copy last labelled skip labelledby id</);
+  assert.match(page, /id="copy-last-labelled-skip-labelledby-id-fallback"/);
+  assert.match(page, /textarea id="copy-last-labelled-skip-labelledby-id-fallback"/);
+  assert.match(page, /lastLabelledSkipLabelledbyIdMarkdown/);
+  assert.match(page, /id="skips"/);
+  assert.match(page, /id="trust"/);
+  assert.match(page, /id="trust-title"/);
+  assert.match(page, /Not a live product feed/);
+  assert.match(page, /Copied the last labelled skip labelledby id from this page/);
+  assert.match(page, /This is the last labelled skip labelledby id, not a live product feed/);
+  assert.match(page, /id="copy-last-labelled-skip-target-id"/);
+  assert.match(page, />Copy last labelled skip target id</);
+  assert.match(page, /id="copy-first-labelled-skip-target-id"/);
+  assert.match(page, />Copy first labelled skip target id</);
+  assert.match(page, /id="copy-last-unlabelled-skip-target-id"/);
+  assert.match(page, />Copy last unlabelled skip target id</);
+  assert.notEqual(page.match(/id="copy-last-labelled-skip-labelledby-id"/)?.[0], page.match(/id="copy-last-labelled-skip-target-id"/)?.[0]);
+  assert.equal(page.indexOf('id="copy-last-labelled-skip-target-id"') < page.indexOf('id="copy-last-labelled-skip-labelledby-id"'), true);
+  assert.doesNotMatch(page, /\bfetch\s*\(/);
+  assert.doesNotMatch(page, /XMLHttpRequest/);
+  assert.equal(PUBLIC_PATHS.length, 6);
+});
+
+test('404 copy last labelled skip labelledby id markdown is the labelledby id, or empty if missing', async () => {
+  const page = notFoundPage();
+  const source = page.match(/<script>([\s\S]*?)<\/script>/)[1];
+  const start = source.indexOf('const lastLabelledSkipLabelledbyIdMarkdown');
+  const end = source.indexOf('const firstReviewBtn');
+  const body = source.slice(start, end);
+  assert.match(body, /if \(!labelledBy\) continue/);
+  assert.match(body, /return '- ' \+ labelledBy/);
+  assert.match(body, /skips\.length - 1/);
+  assert.doesNotMatch(body, /return '- ' \+ id/);
+  assert.doesNotMatch(body, /return '- ' \+ href/);
+  assert.doesNotMatch(body, /return '- ' \+ text/);
+  assert.equal(source.indexOf('lastLabelledSkipTargetIdMarkdown') < source.indexOf('lastLabelledSkipLabelledbyIdMarkdown'), true);
+  let copied = '';
+  let clickLast = null;
+  let skips = [
+    {
+      getAttribute(name) { return name === 'href' ? '#whats-new' : null; },
+      textContent: "Skip to what's new",
+    },
+    {
+      getAttribute(name) { return name === 'href' ? '#version-line' : null; },
+      textContent: 'Skip to catalog versions',
+    },
+    {
+      getAttribute(name) { return name === 'href' ? '#trust' : null; },
+      textContent: 'Skip to Trust and limits',
+    },
+  ];
+  const versionLine = {
+    getAttribute() { return null; },
+    tagName: 'P',
+    textContent: 'Partnership Breakpoint 1.5.41, Common Cart 1.4.41. Each workbench versions itself.',
+  };
+  const extra = {
+    getAttribute() { return null; },
+    tagName: 'P',
+    textContent: 'Extra target text',
+  };
+  const whatsNew = {
+    getAttribute(name) { return name === 'aria-labelledby' ? 'whats-new-title' : null; },
+    tagName: 'SECTION',
+    textContent: 'Whats new labelled',
+  };
+  const trust = {
+    getAttribute(name) { return name === 'aria-labelledby' ? 'trust-title' : null; },
+    tagName: 'SECTION',
+    textContent: 'Trust labelled',
+  };
+  const document = {
+    getElementById(id) {
+      if (id === 'copy-last-labelled-skip-labelledby-id') return { addEventListener(name, handler) { if (name === 'click') clickLast = handler; } };
+      if (id === 'copy-last-labelled-skip-labelledby-id-status') return { textContent: '' };
+      if (id === 'copy-last-labelled-skip-labelledby-id-fallback') return { hidden: true, value: '', focus() {}, select() {} };
+      if (id === 'whats-new') return whatsNew;
+      if (id === 'trust') return trust;
+      if (id === 'version-line') return versionLine;
+      if (id === 'extra') return extra;
+      return null;
+    },
+    querySelector: () => null,
+    querySelectorAll(selector) {
+      return selector === '#skips a.skip' ? skips : [];
+    },
+    addEventListener() {},
+  };
+  vm.runInNewContext(source, {
+    document,
+    location: { protocol: 'file:', hash: '' },
+    localStorage: { getItem: () => null, setItem() {} },
+    navigator: { clipboard: { writeText: async (text) => { copied = text; } } },
+  });
+  await clickLast();
+  assert.equal(copied, '- trust-title');
+  assert.doesNotMatch(copied, /\n/);
+  assert.doesNotMatch(copied, /Each workbench versions itself/);
+  assert.notEqual(copied, '- trust');
+  assert.notEqual(copied, '- whats-new');
+  assert.notEqual(copied, '- whats-new-title');
   skips = [
     {
       getAttribute(name) { return name === 'href' ? '#version-line' : null; },
