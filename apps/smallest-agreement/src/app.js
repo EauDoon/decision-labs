@@ -1504,6 +1504,39 @@ const presets = {
       },
     ],
   },
+  "road-cycling-club-hours": {
+    title: "Road cycling club hours: road course booking, feed-station hours, and wheel-bag lock-up",
+    threshold: 70,
+    maxChangeCost: 8,
+    groups: [
+      { id: "students", name: "Students", weight: 14 },
+      { id: "neighbours", name: "Neighbours", weight: 13, veto: true },
+      { id: "pandc", name: "P&C", weight: 16 },
+    ],
+    clauses: [
+      {
+        id: "road-cycling-course-booking", title: "Road course booking", options: [
+          { id: "road-cycling-course-booking-original", original: true, label: "Keep weekday road course from 08:25 with no posted feed-station rota", changeCost: 0, support: { students: 4, neighbours: 86, pandc: 65 } },
+          { id: "road-cycling-course-booking-late", original: false, label: "Open weekday road course at 17:55 with a posted feed-station rota", changeCost: 2, support: { students: 89, neighbours: 26, pandc: 38 } },
+          { id: "road-cycling-course-booking-weekend", original: false, label: "Hold Sunday morning road course at 07:40 with a feed-station booking card", changeCost: 4, support: { students: 74, neighbours: 34, pandc: 46 } },
+        ],
+      },
+      {
+        id: "road-cycling-feed-station", title: "Feed-station hours", options: [
+          { id: "road-cycling-feed-station-original", original: true, label: "No posted feed-station hours", changeCost: 0, support: { students: 64, neighbours: 12, pandc: 35 } },
+          { id: "road-cycling-feed-station-cap", original: false, label: "Close feed-station at 20:50 and keep soigneurs at the road hut", changeCost: 1, support: { students: 37, neighbours: 88, pandc: 67 } },
+          { id: "road-cycling-feed-station-cut", original: false, label: "Serve soigneurs only after 12:20", changeCost: 5, support: { students: 19, neighbours: 92, pandc: 35 } },
+        ],
+      },
+      {
+        id: "road-cycling-wheel-bag-lockup", title: "Wheel-bag lock-up", options: [
+          { id: "road-cycling-wheel-bag-lockup-original", original: true, label: "Leave the wheel-bag door on a shared padlock after club hours", changeCost: 0, support: { students: 4, neighbours: 24, pandc: 29 } },
+          { id: "road-cycling-wheel-bag-lockup-steward", original: false, label: "Require a P&C steward to lock the wheel-bag store before 21:25", changeCost: 3, support: { students: 51, neighbours: 62, pandc: 82 } },
+          { id: "road-cycling-wheel-bag-lockup-timer", original: false, label: "Add a timed lock on the wheel-bag store after the last road cycling session", changeCost: 2, support: { students: 40, neighbours: 43, pandc: 60 } },
+        ],
+      },
+    ],
+  },
 };
 
 let agreementReviewPacket = null;
