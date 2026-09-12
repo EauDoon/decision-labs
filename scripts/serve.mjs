@@ -381,6 +381,20 @@ export function catalogFirstUnlabelledSkipTargetId() {
   return '';
 }
 
+export function catalogLastUnlabelledSkipTargetId() {
+  const html = readFileSync(new URL('index.html', root), 'utf8');
+  const links = catalogSkipLinks();
+  for (let i = links.length - 1; i >= 0; i -= 1) {
+    const href = links[i].href;
+    if (!href.startsWith('#') || href.length < 2) continue;
+    const found = catalogMarkupTag(html, href.slice(1));
+    if (!found) continue;
+    if (found.tag.match(/aria-labelledby="([^"]+)"/)) continue;
+    return href.slice(1);
+  }
+  return '';
+}
+
 export function notFoundPage() {
   const versions = catalogVersionLine();
   const jobsList = catalogJobs().map(({ name, job }) => `<li>${escapeHtml(name)}: ${escapeHtml(job)}</li>`).join('\n      ');
