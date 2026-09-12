@@ -3629,7 +3629,7 @@ test("BMX club hours preset loads a distinct synthetic BMX workshop", async () =
 
 test("cyclo-cross club hours preset loads a distinct synthetic cyclo-cross workshop", async () => {
   const pkg = JSON.parse(readFileSync(new URL("../package.json", import.meta.url), "utf8"));
-  assert.equal(pkg.version, "1.5.41");
+  assert.equal(pkg.version, "1.5.42");
   const app = await savedWorkbench(new Map());
   app.field("#preset-select", "cyclo-cross-club-hours");
   app.click("#load-preset");
@@ -3792,7 +3792,7 @@ test("cyclo-cross club hours preset loads a distinct synthetic cyclo-cross works
 
 test("track cycling club hours preset loads a distinct synthetic track-cycling workshop", async () => {
   const pkg = JSON.parse(readFileSync(new URL("../package.json", import.meta.url), "utf8"));
-  assert.equal(pkg.version, "1.5.41");
+  assert.equal(pkg.version, "1.5.42");
   const app = await savedWorkbench(new Map());
   app.field("#preset-select", "track-cycling-club-hours");
   app.click("#load-preset");
@@ -3958,7 +3958,7 @@ test("track cycling club hours preset loads a distinct synthetic track-cycling w
 
 test("gravel cycling club hours preset loads a distinct synthetic gravel-cycling workshop", async () => {
   const pkg = JSON.parse(readFileSync(new URL("../package.json", import.meta.url), "utf8"));
-  assert.equal(pkg.version, "1.5.41");
+  assert.equal(pkg.version, "1.5.42");
   const app = await savedWorkbench(new Map());
   app.field("#preset-select", "gravel-cycling-club-hours");
   app.click("#load-preset");
@@ -4144,7 +4144,7 @@ test("gravel cycling club hours preset loads a distinct synthetic gravel-cycling
 
 test("road cycling club hours preset loads a distinct synthetic road-cycling workshop", async () => {
   const pkg = JSON.parse(readFileSync(new URL("../package.json", import.meta.url), "utf8"));
-  assert.equal(pkg.version, "1.5.41");
+  assert.equal(pkg.version, "1.5.42");
   const app = await savedWorkbench(new Map());
   app.field("#preset-select", "road-cycling-club-hours");
   app.click("#load-preset");
@@ -4367,7 +4367,7 @@ test("road cycling club hours preset loads a distinct synthetic road-cycling wor
 
 test("criterium cycling club hours preset loads a distinct synthetic criterium-cycling workshop", async () => {
   const pkg = JSON.parse(readFileSync(new URL("../package.json", import.meta.url), "utf8"));
-  assert.equal(pkg.version, "1.5.41");
+  assert.equal(pkg.version, "1.5.42");
   const app = await savedWorkbench(new Map());
   app.field("#preset-select", "criterium-cycling-club-hours");
   app.click("#load-preset");
@@ -4577,7 +4577,7 @@ test("criterium cycling club hours preset loads a distinct synthetic criterium-c
 
 test("keirin cycling club hours preset loads a distinct synthetic keirin-cycling workshop", async () => {
   const pkg = JSON.parse(readFileSync(new URL("../package.json", import.meta.url), "utf8"));
-  assert.equal(pkg.version, "1.5.41");
+  assert.equal(pkg.version, "1.5.42");
   const app = await savedWorkbench(new Map());
   app.field("#preset-select", "keirin-cycling-club-hours");
   app.click("#load-preset");
@@ -4629,7 +4629,7 @@ test("keirin cycling club hours preset loads a distinct synthetic keirin-cycling
 
 test("madison cycling club hours preset loads a distinct synthetic madison-cycling workshop", async () => {
   const pkg = JSON.parse(readFileSync(new URL("../package.json", import.meta.url), "utf8"));
-  assert.equal(pkg.version, "1.5.41");
+  assert.equal(pkg.version, "1.5.42");
   const app = await savedWorkbench(new Map());
   app.field("#preset-select", "madison-cycling-club-hours");
   app.click("#load-preset");
@@ -4684,7 +4684,7 @@ test("madison cycling club hours preset loads a distinct synthetic madison-cycli
 
 test("hill-climb cycling club hours preset loads a distinct synthetic hill-climb-cycling workshop", async () => {
   const pkg = JSON.parse(readFileSync(new URL("../package.json", import.meta.url), "utf8"));
-  assert.equal(pkg.version, "1.5.41");
+  assert.equal(pkg.version, "1.5.42");
   const app = await savedWorkbench(new Map());
   app.field("#preset-select", "hill-climb-cycling-club-hours");
   app.click("#load-preset");
@@ -4736,7 +4736,7 @@ test("hill-climb cycling club hours preset loads a distinct synthetic hill-climb
 
 test("time-trial cycling club hours preset loads a distinct synthetic time-trial-cycling workshop", async () => {
   const pkg = JSON.parse(readFileSync(new URL("../package.json", import.meta.url), "utf8"));
-  assert.equal(pkg.version, "1.5.41");
+  assert.equal(pkg.version, "1.5.42");
   const app = await savedWorkbench(new Map());
   app.field("#preset-select", "time-trial-cycling-club-hours");
   app.click("#load-preset");
@@ -10455,7 +10455,7 @@ test("keyboard Shift+F12 jumps to hide-first-group-without-floor unless an input
 test("keyboard Shift+F7 copies the first-without-floor remaining unless an input is active", async () => {
   const html = await standaloneBytes();
   const pkg = JSON.parse(readFileSync(new URL("../package.json", import.meta.url), "utf8"));
-  assert.equal(pkg.version, "1.5.41");
+  assert.equal(pkg.version, "1.5.42");
   assert.match(html, /<kbd>Shift\+F7<\/kbd> Copy the first-without-floor remaining as one-line Markdown/u);
   assert.match(html, /id="copy-first-group-without-floor-remaining-button"/u);
   assert.match(html, /id="copy-first-group-without-floor-remaining-button"[^>]*aria-keyshortcuts="Shift\+F7"/u);
