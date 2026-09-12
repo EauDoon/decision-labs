@@ -440,6 +440,27 @@ test("release 1.4.36 ships gravel cycling carnival lunch, leftover uncovered lef
   assert.doesNotMatch(html.slice(html.indexOf('id="merchant-panel"'), html.indexOf('id="method-panel"')), /hide-first-leftover-only-buyer/u);
 });
 
+
+test("release 1.4.40 ships hill-climb cycling carnival lunch, leftover uncovered leftover-only remaining copy and first leftover-only hide jump", async () => {
+  const html = await readFile(new URL("../standalone.html", import.meta.url), "utf8");
+  assert.match(html, /id="copy-leftover-uncovered-leftover-only-remaining"/u);
+  assert.match(html, /id="copy-leftover-uncovered-leftover-only-remaining"[^>]*aria-keyshortcuts="Shift\+F7 F10"/u);
+  assert.match(html, /id="hide-first-leftover-only-buyer"/u);
+  assert.match(html, /id="hide-last-leftover-only-buyer"/u);
+  assert.match(html, /data-preset="hillClimbCyclingCarnivalLunch"/u);
+  assert.match(html, /data-preset="timeTrialCyclingCarnivalLunch"/u);
+  assert.ok(html.indexOf('data-preset="timeTrialCyclingCarnivalLunch"') < html.indexOf('data-preset="hillClimbCyclingCarnivalLunch"'));
+  assert.ok(html.indexOf('data-preset="hillClimbCyclingCarnivalLunch"') < html.indexOf('data-preset="tiers"'));
+  assert.match(html, /Court-side Hill Climb Delivery/u);
+  assert.match(html, /Hall Hill Climb Pickup/u);
+  assert.match(html, /Hairpin crate/u);
+  assert.match(html, /Summit-marshal bench/u);
+  assert.match(html, /Hairpin hamper/u);
+  assert.match(html, /if \(event\.shiftKey && key === "F9"\) \{\s*event\.preventDefault\(\);\s*focusHideFirstLeftoverOnlyBuyer\(\);/u);
+  assert.match(html, /if \(key === "F9"\) \{\s*event\.preventDefault\(\);\s*focusHideFirstUncoveredLeftoverBuyer\(\);/u);
+  assert.match(html, /if \(key === "ArrowUp"\) \{\s*event\.preventDefault\(\);\s*focusHideLastLeftoverOnlyBuyer\(\);/u);
+});
+
 test("release 1.4.39 ships time-trial cycling carnival lunch, leftover uncovered leftover-only remaining copy and first leftover-only hide jump", async () => {
   const html = await readFile(new URL("../standalone.html", import.meta.url), "utf8");
   assert.match(html, /id="copy-leftover-uncovered-leftover-only-remaining"/u);
@@ -465,6 +486,8 @@ test("release 1.4.39 ships time-trial cycling carnival lunch, leftover uncovered
   assert.ok(html.indexOf('data-preset="gravelCyclingCarnivalLunch"') < html.indexOf('data-preset="roadCyclingCarnivalLunch"'));
   assert.ok(html.indexOf('data-preset="roadCyclingCarnivalLunch"') < html.indexOf('data-preset="criteriumCyclingCarnivalLunch"'));
   assert.ok(html.indexOf('data-preset="criteriumCyclingCarnivalLunch"') < html.indexOf('data-preset="timeTrialCyclingCarnivalLunch"'));
+  assert.ok(html.indexOf('data-preset="timeTrialCyclingCarnivalLunch"') < html.indexOf('data-preset="hillClimbCyclingCarnivalLunch"'));
+  assert.match(html, /data-preset="hillClimbCyclingCarnivalLunch"/u);
   assert.match(html, /function copyLeftoverUncoveredLeftoverOnlyRemaining\(/u);
   assert.match(html, /function focusLeftoverUncoveredLeftoverOnlyRemainingCopy\(/u);
   assert.match(html, /function copyLeftoverUncoveredLeftoverOnlyAllocated\(/u);
