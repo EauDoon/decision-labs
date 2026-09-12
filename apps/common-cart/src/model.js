@@ -720,6 +720,23 @@ export const presets = Object.freeze({
       offer("O02", "Feed-zone Salad Run", "Gravel cycling lunch pack", "Feed-zone salad", 15, 15, 4, 42, 2),
       { ...offer("O03", "Hall Gravel Cycling Pickup", "Gravel cycling lunch pack", "Neutral water", 24, 29, 1, 58, 5), fulfillment: "pickup" }
     ]
+  },
+  roadCyclingCarnivalLunch: {
+    title: "Road cycling carnival lunch",
+    currency: "AUD",
+    buyers: [
+      buyer("B01", "Hood-rack crate", "Road cycling lunch pack", 15, 23, 4, ["Road pie", "Peloton salad"]),
+      buyer("B02", "Brake-hood bench", "Road cycling lunch pack", 19, 19, 3, ["Road pie"]),
+      buyer("B03", "Feed-station hamper", "Road cycling lunch pack", 15, 25, 5, ["Peloton salad", "Bottle water"]),
+      buyer("B04", "Sideline cooler", "Road cycling lunch pack", 16, 25, 2, ["Bottle water"]),
+      buyer("B05", "Scoreboard trolley", "Road cycling lunch pack", 16, 22, 4, ["Road pie", "Bottle water"]),
+      buyer("B06", "Bench table", "Road cycling lunch pack", 13, 20, 3, ["Peloton salad", "Road pie"])
+    ],
+    offers: [
+      offer("O01", "Court-side Road Cycling Delivery", "Road cycling lunch pack", "Road pie", 17, 17, 3, 54, 3),
+      offer("O02", "Peloton Salad Run", "Road cycling lunch pack", "Peloton salad", 15, 15, 4, 42, 2),
+      { ...offer("O03", "Hall Road Cycling Pickup", "Road cycling lunch pack", "Bottle water", 25, 30, 1, 59, 5), fulfillment: "pickup" }
+    ]
   }
 });
 
