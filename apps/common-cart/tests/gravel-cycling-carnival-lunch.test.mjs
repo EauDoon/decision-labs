@@ -144,9 +144,11 @@ test("the example bar includes gravel cycling carnival lunch next to track cycli
   const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
   assert.match(html, /data-preset="gravelCyclingCarnivalLunch"/u);
   assert.match(html, /Gravel cycling carnival/u);
+  assert.match(html, /data-preset="roadCyclingCarnivalLunch"/u);
   assert.match(html, /data-preset="trackCyclingCarnivalLunch"/u);
   assert.match(html, /data-preset="cycloCrossCarnivalLunch"/u);
   assert.ok(html.indexOf('data-preset="cycloCrossCarnivalLunch"') < html.indexOf('data-preset="trackCyclingCarnivalLunch"'));
   assert.ok(html.indexOf('data-preset="trackCyclingCarnivalLunch"') < html.indexOf('data-preset="gravelCyclingCarnivalLunch"'));
-  assert.ok(html.indexOf('data-preset="gravelCyclingCarnivalLunch"') < html.indexOf('data-preset="tiers"'));
+  assert.ok(html.indexOf('data-preset="gravelCyclingCarnivalLunch"') < html.indexOf('data-preset="roadCyclingCarnivalLunch"'));
+  assert.ok(html.indexOf('data-preset="roadCyclingCarnivalLunch"') < html.indexOf('data-preset="tiers"'));
 });
