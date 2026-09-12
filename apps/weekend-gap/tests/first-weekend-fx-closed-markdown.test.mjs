@@ -79,6 +79,7 @@ test("first weekend-FX-closed hour Markdown is one synthetic line distinct from 
   assert.equal(firstWeekendFxClosedGanttHour(PRESETS.wednesdayLateFxOpen), 9);
   assert.equal(firstWeekendFxClosedGanttHour(PRESETS.thursdayEarlyFxOpen), 9);
   assert.equal(firstWeekendFxClosedGanttHour(PRESETS.thursdayLateFxOpen), 9);
+  assert.equal(firstWeekendFxClosedGanttHour(PRESETS.fridayEarlyFxOpen), 9);
   assert.equal(firstWeekendFxClosedGanttHour(PRESETS.tuesdayLateFxOpen), 9);
   assert.equal(firstWeekendFxClosedGanttHour(PRESETS.tuesdayEarlyFxOpen), 9);
 });
