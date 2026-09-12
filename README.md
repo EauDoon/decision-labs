@@ -217,6 +217,8 @@ The catalog also names first-unlabelled-skip-href copy, first-unlabelled-skip-hr
 That What's new entry is hub-only. It does not change workbench versions.
 The catalog also names first-unlabelled-skip-target-text copy, first-unlabelled-skip-target-text jump, and first-unlabelled-skip-target-heading jump.
 That What's new entry is hub-only. It does not change workbench versions.
+The catalog also names last-unlabelled-skip-target-text copy, last-unlabelled-skip-target-text jump, and last-unlabelled-skip-target-heading jump.
+That What's new entry is hub-only. It does not change workbench versions.
 The catalog also names last-unlabelled-skip-href copy, last-unlabelled-skip-href jump, and last-unlabelled-skip-target jump.
 That What's new entry is hub-only. It does not change workbench versions.
 The catalog also names first-labelled-skip-text copy, first-labelled-skip-text jump, and first-labelled-skip-link jump.
@@ -277,6 +279,13 @@ that 404 page copies the same unlabelled skip-target text without adding a publi
 Key `Shift+F13` copies the text of the first skip target that has no aria-labelledby.
 Key `Shift+F14` focuses the Copy first unlabelled skip target text control.
 Key `Shift+F15` focuses the first unlabelled skip target heading.
+Copy last unlabelled skip target text copies the text of the last skip target that has no aria-labelledby
+already printed on this page as one Markdown line. If that text is missing, it copies an empty string.
+Copy last unlabelled skip target text on
+that 404 page copies the same unlabelled skip-target text without adding a public path.
+Key `Shift+F16` copies the text of the last skip target that has no aria-labelledby.
+Key `Shift+F17` focuses the Copy last unlabelled skip target text control.
+Key `Shift+F18` focuses the last unlabelled skip target heading.
 Copy last unlabelled skip href copies the href of the last skip link whose target has no aria-labelledby
 already printed on this page as one Markdown line. If that href is missing, it copies an empty string.
 Copy last unlabelled skip href on
@@ -621,6 +630,22 @@ Press `Shift+F15` to focus the heading inside the first unlabelled skip target, 
 That key moves focus; it does not open a workbench. It does not copy. That key
 is distinct from `Shift+Pause`, which focuses the first unlabelled skip target, from `Shift+F12`, which focuses the first labelled skip label, from `F9`,
 which focuses the first skip target, from `n`, which focuses What's new.
+Press `Shift+F16` to copy the text of the last skip target that has no aria-labelledby from this page as one Markdown
+line. That key uses the same Copy last unlabelled skip target text control, including
+the visible text box when the clipboard API is unavailable. If that text is
+missing, it copies an empty string. This is catalog copy, not a live product
+feed. It is distinct from `Shift+ContextMenu`, which copies the last unlabelled skip href, from
+`F10`, which copies the last skip-target text, from `Shift+F7`, which copies the last labelled skip-target text, from
+`Shift+PageUp`, which copies the last unlabelled skip text, and from `Shift+F13`, which copies the first unlabelled skip target text.
+Press `Shift+F17` to focus the Copy last unlabelled skip target text control, or the skip-link row
+or catalog heading if that control is missing. That key moves focus; it does not
+open a workbench. It does not copy. That key is distinct from `Shift+F14`, which
+focuses Copy first unlabelled skip target text, from `Shift+ScrollLock`, which focuses Copy last unlabelled skip href, from
+`F11`, which focuses Copy last skip target text, and from `Shift+F8`, which focuses Copy last labelled skip target text.
+Press `Shift+F18` to focus the heading inside the last unlabelled skip target, or that target, the skip-link row, or catalog heading if that heading is missing.
+That key moves focus; it does not open a workbench. It does not copy. That key
+is distinct from `Shift+PrintScreen`, which focuses the last unlabelled skip target, from `Shift+F15`, which focuses the first unlabelled skip target heading, from `F6`,
+which focuses the last skip target, from `n`, which focuses What's new.
 Press `Shift+ContextMenu` to copy the href of the last skip link whose target has no aria-labelledby from this page as one Markdown
 line. That key uses the same Copy last unlabelled skip href control, including
 the visible text box when the clipboard API is unavailable. If that href is
@@ -789,6 +814,8 @@ fetch a product feed or add another public path. Copy last unlabelled skip href 
 that 404 page copies the printed last unlabelled skip-link href as one Markdown line. It does not
 fetch a product feed or add another public path. Copy first unlabelled skip target text on
 that 404 page copies the printed first unlabelled skip-target text as one Markdown line. It does not
+fetch a product feed or add another public path. Copy last unlabelled skip target text on
+that 404 page copies the printed last unlabelled skip-target text as one Markdown line. It does not
 fetch a product feed or add another public path. When the catalog is served over http,
 a control copies the loopback address; it stays hidden on a file URL.
 Copy versions copies the four workbench names and versions already printed on
