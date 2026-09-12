@@ -150,5 +150,6 @@ test("the example bar includes gravel cycling carnival lunch next to track cycli
   assert.ok(html.indexOf('data-preset="cycloCrossCarnivalLunch"') < html.indexOf('data-preset="trackCyclingCarnivalLunch"'));
   assert.ok(html.indexOf('data-preset="trackCyclingCarnivalLunch"') < html.indexOf('data-preset="gravelCyclingCarnivalLunch"'));
   assert.ok(html.indexOf('data-preset="gravelCyclingCarnivalLunch"') < html.indexOf('data-preset="roadCyclingCarnivalLunch"'));
-  assert.ok(html.indexOf('data-preset="roadCyclingCarnivalLunch"') < html.indexOf('data-preset="tiers"'));
+  assert.ok(html.indexOf('data-preset="roadCyclingCarnivalLunch"') < html.indexOf('data-preset="criteriumCyclingCarnivalLunch"'));
+  assert.ok(html.indexOf('data-preset="criteriumCyclingCarnivalLunch"') < html.indexOf('data-preset="tiers"'));
 });
