@@ -42,6 +42,7 @@ test("road cycling carnival lunch leftover fill is hall pickup and stays distinc
   assert.notEqual(roadCycling.scenario.title, kayaking.scenario.title);
   assert.notEqual(roadCycling.scenario.title, canoeing.scenario.title);
   assert.notEqual(roadCycling.scenario.title, sailing.scenario.title);
+  assert.notDeepEqual(clonePreset("roadCyclingCarnivalLunch"), clonePreset("criteriumCyclingCarnivalLunch"));
   assert.notDeepEqual(clonePreset("roadCyclingCarnivalLunch"), clonePreset("gravelCyclingCarnivalLunch"));
   assert.notDeepEqual(clonePreset("roadCyclingCarnivalLunch"), clonePreset("trackCyclingCarnivalLunch"));
   assert.notDeepEqual(clonePreset("roadCyclingCarnivalLunch"), clonePreset("cycloCrossCarnivalLunch"));
@@ -156,5 +157,6 @@ test("the example bar includes road cycling carnival lunch next to gravel cyclin
   assert.match(html, /data-preset="trackCyclingCarnivalLunch"/u);
   assert.ok(html.indexOf('data-preset="trackCyclingCarnivalLunch"') < html.indexOf('data-preset="gravelCyclingCarnivalLunch"'));
   assert.ok(html.indexOf('data-preset="gravelCyclingCarnivalLunch"') < html.indexOf('data-preset="roadCyclingCarnivalLunch"'));
-  assert.ok(html.indexOf('data-preset="roadCyclingCarnivalLunch"') < html.indexOf('data-preset="tiers"'));
+  assert.ok(html.indexOf('data-preset="roadCyclingCarnivalLunch"') < html.indexOf('data-preset="criteriumCyclingCarnivalLunch"'));
+  assert.ok(html.indexOf('data-preset="criteriumCyclingCarnivalLunch"') < html.indexOf('data-preset="tiers"'));
 });
