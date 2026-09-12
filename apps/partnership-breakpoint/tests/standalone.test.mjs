@@ -42,18 +42,59 @@ const appImport = `import {
 
 `;
 
+test('release 1.5.42 ships madison cycling carnival, last-over-capacity remaining copy and last-over-capacity hide jump', async () => {
+  const pkg = JSON.parse(await readFile(new URL('../package.json', import.meta.url), 'utf8'));
+  const readme = await readFile(new URL('../README.md', import.meta.url), 'utf8');
+  const changelog = await readFile(new URL('../CHANGELOG.md', import.meta.url), 'utf8');
+  const html = await buildStandalone();
+  assert.equal(pkg.version, '1.5.42');
+  assert.match(readme, /New in v1\.5\.42/);
+  assert.match(readme, /Decision workflow \(v1\.5\.42\)/);
+  assert.match(readme, /Madison cycling carnival, last-over-capacity remaining listed capacity copy, and last-over-capacity hide jump in Partnership Breakpoint 1\.5\.42/);
+  assert.match(readme, /Cyclo-cross first-aid stays variable cost 1\.56 after the Madison cycling carnival starting point is loaded/);
+  const firstHeading = changelog.match(/^## .+$/m)?.[0];
+  assert.equal(firstHeading, '## 1.5.42');
+  assert.match(changelog, /Madison cycling carnival, last-over-capacity remaining listed capacity copy, and last-over-capacity hide jump in Partnership Breakpoint 1\.5\.42/);
+  assert.match(html, /madisonCyclingCarnivalSplit/);
+  assert.match(html, /Madison cycling carnival split/);
+  assert.match(html, /keirinCyclingCarnivalSplit/);
+  const madisonPresetAt = html.indexOf('madisonCyclingCarnivalSplit:');
+  const keirinPresetAt42 = html.indexOf('keirinCyclingCarnivalSplit:');
+  assert.notEqual(madisonPresetAt, -1);
+  assert.notEqual(keirinPresetAt42, -1);
+  assert.ok(keirinPresetAt42 < madisonPresetAt);
+  assert.match(html, /variableCostPerTransaction: 1\.42/);
+  assert.match(html, /id: 'madison-cycling-first-aid', name: 'First-aid', revenueShare: 0\.25, variableCostPerTransaction: 1\.42/);
+  assert.match(html, /id: 'keirin-cycling-first-aid', name: 'First-aid', revenueShare: 0\.25, variableCostPerTransaction: 1\.44/);
+  assert.match(html, /id: 'hill-climb-cycling-first-aid', name: 'First-aid', revenueShare: 0\.25, variableCostPerTransaction: 1\.46/);
+  assert.match(html, /id: 'time-trial-cycling-first-aid', name: 'First-aid', revenueShare: 0\.25, variableCostPerTransaction: 1\.48/);
+  assert.match(html, /id: 'cyclo-cross-first-aid', name: 'First-aid', revenueShare: 0\.25, variableCostPerTransaction: 1\.56/);
+  assert.match(html, /id="copy-last-over-capacity-remaining"[^>]*aria-keyshortcuts="\* Shift\+F7 Shift\+F10"/);
+  assert.doesNotMatch(html, /id="copy-first-over-capacity-volume"[^>]*aria-keyshortcuts="Shift\+F7"/);
+  assert.match(html, /id="copy-first-over-capacity-remaining"[^>]*aria-keyshortcuts="~"/);
+  assert.match(html, /id="hide-first-over-capacity-participant"[^>]*aria-keyshortcuts="@"/);
+  assert.match(html, /id="hide-last-over-capacity-participant"[^>]*aria-keyshortcuts="# Shift\+F9"/);
+  assert.match(html, /event\.key === 'F7' && event\.shiftKey/);
+  assert.match(html, /copyLastOverCapacityRemaining/);
+  assert.match(html, /event\.key === 'F8' && event\.shiftKey/);
+  assert.match(html, /event\.key === 'F9' && event\.shiftKey/);
+  assert.match(html, /<kbd>Shift\+F7<\/kbd> Copy last over-capacity remaining listed capacity as Markdown/);
+  assert.match(html, /<kbd>Shift\+F8<\/kbd> Jump to Copy last over-capacity remaining listed capacity, or the Participants heading if missing/);
+  assert.match(html, /<kbd>Shift\+F9<\/kbd> Jump to Hide the last over-capacity participant, or the Participants heading if missing/);
+  assert.match(html, /print-only print-keep"><h2>Last over-capacity remaining listed capacity/);
+  assert.match(html, /print-only print-keep"><h2>First over-capacity volume-to-hold/);
+});
+
 test('release 1.5.41 ships keirin cycling carnival, last-over-capacity remaining copy and last-over-capacity hide jump', async () => {
   const pkg = JSON.parse(await readFile(new URL('../package.json', import.meta.url), 'utf8'));
   const readme = await readFile(new URL('../README.md', import.meta.url), 'utf8');
   const changelog = await readFile(new URL('../CHANGELOG.md', import.meta.url), 'utf8');
   const html = await buildStandalone();
-  assert.equal(pkg.version, '1.5.41');
+  assert.equal(pkg.version, '1.5.42');
   assert.match(readme, /New in v1\.5\.41/);
-  assert.match(readme, /Decision workflow \(v1\.5\.41\)/);
   assert.match(readme, /Keirin cycling carnival, last-over-capacity remaining listed capacity copy, and last-over-capacity hide jump in Partnership Breakpoint 1\.5\.41/);
   assert.match(readme, /Cyclo-cross first-aid stays variable cost 1\.56 after the Keirin cycling carnival starting point is loaded/);
-  const firstHeading = changelog.match(/^## .+$/m)?.[0];
-  assert.equal(firstHeading, '## 1.5.41');
+  assert.match(changelog, /## 1\.5\.41/);
   assert.match(changelog, /Keirin cycling carnival, last-over-capacity remaining listed capacity copy, and last-over-capacity hide jump in Partnership Breakpoint 1\.5\.41/);
   assert.match(html, /keirinCyclingCarnivalSplit/);
   assert.match(html, /Keirin cycling carnival split/);
@@ -89,7 +130,7 @@ test('release 1.5.40 ships hill-climb cycling carnival, last-over-capacity remai
   const readme = await readFile(new URL('../README.md', import.meta.url), 'utf8');
   const changelog = await readFile(new URL('../CHANGELOG.md', import.meta.url), 'utf8');
   const html = await buildStandalone();
-  assert.equal(pkg.version, '1.5.41');
+  assert.equal(pkg.version, '1.5.42');
   assert.match(readme, /New in v1\.5\.40/);
   assert.match(readme, /Hill-climb cycling carnival, last-over-capacity remaining listed capacity copy, and last-over-capacity hide jump in Partnership Breakpoint 1\.5\.40/);
   assert.match(readme, /Cyclo-cross first-aid stays variable cost 1\.56 after the Hill-climb cycling carnival starting point is loaded/);
@@ -130,7 +171,7 @@ test('release 1.5.39 ships time-trial cycling carnival, last-over-capacity remai
   const readme = await readFile(new URL('../README.md', import.meta.url), 'utf8');
   const changelog = await readFile(new URL('../CHANGELOG.md', import.meta.url), 'utf8');
   const html = await buildStandalone();
-  assert.equal(pkg.version, '1.5.41');
+  assert.equal(pkg.version, '1.5.42');
   assert.match(readme, /New in v1\.5\.39/);
   assert.match(readme, /Time-trial cycling carnival, last-over-capacity remaining listed capacity copy, and last-over-capacity hide jump in Partnership Breakpoint 1\.5\.39/);
   assert.match(readme, /Cyclo-cross first-aid stays variable cost 1\.56 after the Time-trial cycling carnival starting point is loaded/);
@@ -191,7 +232,7 @@ test('release 1.5.38 ships criterium cycling carnival, last-over-capacity remain
   const readme = await readFile(new URL('../README.md', import.meta.url), 'utf8');
   const changelog = await readFile(new URL('../CHANGELOG.md', import.meta.url), 'utf8');
   const html = await buildStandalone();
-  assert.equal(pkg.version, '1.5.41');
+  assert.equal(pkg.version, '1.5.42');
   assert.match(readme, /New in v1\.5\.38/);
   assert.match(readme, /Criterium cycling carnival, last-over-capacity remaining listed capacity copy, and last-over-capacity hide jump in Partnership Breakpoint 1\.5\.38/);
   assert.match(changelog, /## 1\.5\.38/);
@@ -244,7 +285,7 @@ test('release 1.5.37 ships road cycling carnival, last-over-capacity remaining c
   const readme = await readFile(new URL('../README.md', import.meta.url), 'utf8');
   const changelog = await readFile(new URL('../CHANGELOG.md', import.meta.url), 'utf8');
   const html = await buildStandalone();
-  assert.equal(pkg.version, '1.5.41');
+  assert.equal(pkg.version, '1.5.42');
   assert.match(readme, /New in v1\.5\.37/);
   assert.match(readme, /Road cycling carnival, last-over-capacity remaining listed capacity copy, and last-over-capacity hide jump in Partnership Breakpoint 1\.5\.37/);
   assert.match(changelog, /## 1\.5\.37/);
