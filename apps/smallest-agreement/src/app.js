@@ -6023,7 +6023,7 @@ document.addEventListener("keydown", (event) => {
     copyFirstGroupWithoutFloorCost();
   } else if (event.shiftKey && key === "F8") {
     event.preventDefault();
-    jumpToLastGroupWithoutFloorCostCopy();
+    jumpToFirstGroupWithoutFloorCostCopy();
   } else if (event.shiftKey && key === "F9") {
     event.preventDefault();
     jumpToHideLastGroupWithoutFloor();
