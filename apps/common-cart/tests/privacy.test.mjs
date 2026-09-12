@@ -55,7 +55,8 @@ import {
   createLeftoverUncoveredLeftoverOnlyMinimumMarkdown,
   createLeftoverUncoveredLeftoverOnlyHeadroomMarkdown,
   createLeftoverUncoveredLeftoverOnlyAllocatedMarkdown,
-  createLeftoverUncoveredLeftoverOnlyCapacityMarkdown
+  createLeftoverUncoveredLeftoverOnlyCapacityMarkdown,
+  createLeftoverUncoveredLeftoverOnlyUnitPriceMarkdown
 } from "../src/model.js";
 
 const PRIVATE_BUYER_MARKERS = ["SECRET_LABEL", "SECRET_ID", "SECRET_STUDIO", "987654.32", "maxUnitPrice", "leftoverBuyerIds", '"selectedBuyerIds":', '"allocations":'];
@@ -772,6 +773,7 @@ test("leftover print one-pager uses merchant labels and omits private buyer rows
   assert.equal(merchantPanel.includes("copy-leftover-uncovered-leftover-only-headroom"), false);
   assert.equal(merchantPanel.includes("copy-leftover-uncovered-leftover-only-allocated"), false);
   assert.equal(merchantPanel.includes("copy-leftover-uncovered-leftover-only-capacity"), false);
+  assert.equal(merchantPanel.includes("copy-leftover-uncovered-leftover-only-unit-price"), false);
   assert.equal(merchantPanel.includes("hide-first-uncovered-leftover-buyer"), false);
   assert.equal(merchantPanel.includes("hideFirstUncoveredLeftoverBuyer"), false);
   assert.equal(merchantPanel.includes("hide-last-uncovered-leftover-buyer"), false);
@@ -1056,6 +1058,51 @@ test("merchant surfaces omit leftover uncovered leftover-only capacity copy", as
   for (const text of capacityMerchantSurfaces) {
     assert.equal(String(text).includes("leftover uncovered leftover-only capacity (organizer private)"), false);
     assert.equal(String(text).includes("copy-leftover-uncovered-leftover-only-capacity"), false);
+    assert.equal(String(text).includes("Not a merchant export"), false);
+    assertOmitsPrivateBuyers(text, ["SECRET_TITLE"]);
+  }
+});
+
+test("merchant surfaces omit leftover uncovered leftover-only unit price copy", async () => {
+  const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
+  const buyerPanel = html.slice(html.indexOf('id="buyer-panel"'), html.indexOf('id="merchant-panel"'));
+  const merchantPanel = html.slice(html.indexOf('id="merchant-panel"'), html.indexOf('id="method-panel"'));
+  assert.match(buyerPanel, /id="copy-leftover-uncovered-leftover-only-unit-price"/u);
+  assert.match(buyerPanel, /Leftover uncovered leftover-only unit price copy is leftover-fill offer unit price/u);
+  assert.equal(merchantPanel.includes("copy-leftover-uncovered-leftover-only-unit-price"), false);
+  assert.equal(merchantPanel.includes("Copy leftover uncovered leftover-only unit price"), false);
+  assert.equal(merchantPanel.includes("Leftover uncovered leftover-only unit price copy"), false);
+  assert.equal(merchantPanel.includes("createLeftoverUncoveredLeftoverOnlyUnitPriceMarkdown"), false);
+  const leftoverOnlyUnitPrice = createLeftoverUncoveredLeftoverOnlyUnitPriceMarkdown(secretNeighbourhood());
+  assert.match(leftoverOnlyUnitPrice, /organizer private/);
+  assert.match(leftoverOnlyUnitPrice, /Not a merchant export/);
+  assert.match(leftoverOnlyUnitPrice, /leftover uncovered leftover-only unit price \(organizer private\)/);
+  assert.doesNotMatch(leftoverOnlyUnitPrice, /leftover uncovered leftover-only capacity \(organizer private\)/);
+  assert.doesNotMatch(leftoverOnlyUnitPrice, /leftover uncovered leftover-only allocated \(organizer private\)/);
+  assert.doesNotMatch(leftoverOnlyUnitPrice, /leftover uncovered leftover-only headroom \(organizer private\)/);
+  assert.doesNotMatch(leftoverOnlyUnitPrice, /leftover uncovered leftover-only remaining \(organizer private\)/);
+  assert.doesNotMatch(leftoverOnlyUnitPrice, /leftover uncovered leftover-only count \(organizer private\)/);
+  assert.doesNotMatch(leftoverOnlyUnitPrice, /leftover uncovered leftover-only minimum \(organizer private\)/);
+  assert.doesNotMatch(leftoverOnlyUnitPrice, /leftover uncovered leftover-only maximum \(organizer private\)/);
+  assert.doesNotMatch(leftoverOnlyUnitPrice, /leftover unit price \(organizer private\)/);
+  assertOmitsPrivateBuyers(leftoverOnlyUnitPrice, ["SECRET_TITLE"]);
+  const unitPriceLeft = secretNeighbourhood();
+  const unitPriceMerchantSurfaces = [
+    JSON.stringify(createMerchantReport(unitPriceLeft)),
+    JSON.stringify(createMerchantResidualReport(unitPriceLeft)),
+    createWinnerAggregatesMarkdown(unitPriceLeft),
+    createDeliveryHeatmapCsv(unitPriceLeft),
+    createOfferCsv(unitPriceLeft),
+    createVariantOverlapCsv(unitPriceLeft),
+    createVariantOverlapMarkdown(unitPriceLeft),
+    createExclusionCountsMarkdown(unitPriceLeft, unitPriceLeft.offers[1].id),
+    createWinningMerchantLabelMarkdown(unitPriceLeft),
+    createWinningFulfillmentMarkdown(unitPriceLeft),
+    createWinningRemainingCapacityMarkdown(unitPriceLeft)
+  ];
+  for (const text of unitPriceMerchantSurfaces) {
+    assert.equal(String(text).includes("leftover uncovered leftover-only unit price (organizer private)"), false);
+    assert.equal(String(text).includes("copy-leftover-uncovered-leftover-only-unit-price"), false);
     assert.equal(String(text).includes("Not a merchant export"), false);
     assertOmitsPrivateBuyers(text, ["SECRET_TITLE"]);
   }
