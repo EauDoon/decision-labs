@@ -10,14 +10,15 @@ test("1.5.35 keeps last-weekend-FX-open copy control without taking Shift+F10", 
   assert.match(html, /id="last-weekend-fx-open-copy-fallback"/);
   assert.doesNotMatch(html, /id="copy-last-weekend-fx-open"[^>]*aria-keyshortcuts="Shift\+F10"/);
   assert.doesNotMatch(html, /id="copy-first-weekend-fx-open"[^>]*aria-keyshortcuts="Shift\+F10"/);
-  assert.match(html, /id="copy-first-weekend-fx-closed"[^>]*aria-keyshortcuts="Shift\+F10"/);
+  assert.doesNotMatch(html, /id="copy-first-weekend-fx-closed"[^>]*aria-keyshortcuts="Shift\+F10"/);
+  assert.match(html, /id="copy-last-weekday-fx-open"[^>]*aria-keyshortcuts="Shift\+F10"/);
   assert.match(html, /id="copy-last-weekend-fx-closed"[^>]*aria-keyshortcuts="F7"/);
   assert.match(html, /id="copy-last-weekday-fx-closed"[^>]*aria-keyshortcuts="F10"/);
   assert.match(app, /function copyLastWeekendFxOpenHourMarkdown/);
   assert.match(app, /lastWeekendFxOpenHourToMarkdown\(scenario\)/);
   assert.match(app, /function copyFirstWeekendFxOpenHourMarkdown/);
   assert.match(app, /event\.key === "F10" && event\.shiftKey/);
-  assert.match(app, /copyFirstWeekendFxClosedHourMarkdown\(\)/);
+  assert.match(app, /copyLastWeekdayFxOpenHourMarkdown\(\)/);
   assert.match(app, /event\.key === "F7"/);
   assert.match(app, /copyLastWeekendFxClosedHourMarkdown\(\)/);
   assert.match(app, /event\.key === "F10"/);
@@ -35,7 +36,8 @@ test("1.5.35 keeps last-weekend-FX-open copy control without taking Shift+F10", 
   assert.ok(unshiftedF10 !== -1);
   assert.ok(shiftF10 < unshiftedF10);
   const shiftSlice = handler.slice(shiftF10, shiftF10 + 180);
-  assert.match(shiftSlice, /copyFirstWeekendFxClosedHourMarkdown\(\)/);
+  assert.match(shiftSlice, /copyLastWeekdayFxOpenHourMarkdown\(\)/);
+  assert.doesNotMatch(shiftSlice, /copyFirstWeekendFxClosedHourMarkdown/);
   assert.doesNotMatch(shiftSlice, /copyFirstWeekendFxOpenHourMarkdown/);
   assert.doesNotMatch(shiftSlice, /copyLastWeekendFxOpenHourMarkdown/);
   assert.doesNotMatch(shiftSlice, /copyLastWeekendFxClosedHourMarkdown/);
