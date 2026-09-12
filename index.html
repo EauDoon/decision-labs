@@ -3262,6 +3262,21 @@
           (document.getElementById('copy-first-open') || document.getElementById('catalog-heading') || document.getElementById('workbenches-title') || document.getElementById('workbenches'))?.focus();
           return;
         }
+        if (event.shiftKey && event.key === 'Home') {
+          event.preventDefault();
+          firstUnlabelledSkipTextBtn?.click();
+          return;
+        }
+        if (event.shiftKey && event.key === 'End') {
+          event.preventDefault();
+          (document.getElementById('copy-first-unlabelled-skip-text') || document.getElementById('skips') || document.getElementById('catalog-heading'))?.focus();
+          return;
+        }
+        if (event.shiftKey && event.key === 'PageDown') {
+          event.preventDefault();
+          (firstUnlabelledSkipLink() || document.getElementById('skips') || document.getElementById('catalog-heading'))?.focus();
+          return;
+        }
         if (event.key === 'Home') {
           event.preventDefault();
           lastOpenBtn?.click();
