@@ -4357,18 +4357,25 @@ test('Road cycling carnival remaining listed capacity is distinct from gravel tr
   assert.equal(lastOver.capacity - overResult.effectiveVolume, -1000);
 });
 
-test('cyclo-cross carnival first-aid keeps variable cost 1.56 while gravel stays viable', () => {
+test('cyclo-cross carnival first-aid keeps variable cost 1.56 while gravel and road stay viable', () => {
   const cycloCross = clonePreset('cycloCrossCarnivalSplit');
   const gravel = clonePreset('gravelCyclingCarnivalSplit');
+  const road = clonePreset('roadCyclingCarnivalSplit');
   assert.equal(cycloCross.participants[2].id, 'cyclo-cross-first-aid');
   assert.equal(cycloCross.participants[2].variableCostPerTransaction, 1.56);
   assert.equal(gravel.participants[2].id, 'gravel-cycling-first-aid');
   assert.equal(gravel.participants[2].variableCostPerTransaction, 1.54);
   assert.notEqual(gravel.participants[2].variableCostPerTransaction, 1.56);
+  assert.equal(road.participants[2].id, 'road-cycling-first-aid');
+  assert.equal(road.participants[2].variableCostPerTransaction, 1.52);
+  assert.notEqual(road.participants[2].variableCostPerTransaction, 1.56);
   const cycloCrossResult = calculatePartnership(cycloCross);
   const gravelResult = calculatePartnership(gravel);
+  const roadResult = calculatePartnership(road);
   assert.equal(cycloCrossResult.viable, false);
   assert.equal(cycloCrossResult.participants.find((item) => item.id === 'cyclo-cross-first-aid')?.profitPass, false);
   assert.equal(gravelResult.viable, true);
   assert.ok(gravelResult.participants.every((item) => item.profitPass));
+  assert.equal(roadResult.viable, true);
+  assert.ok(roadResult.participants.every((item) => item.profitPass));
 });
