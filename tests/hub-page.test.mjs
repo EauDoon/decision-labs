@@ -154,7 +154,6 @@ test('catalog names current workbench tools without live services', () => {
   assert.match(html, /Cycling carnival, first-over-capacity volume copy, and last-over-capacity hide jump in Partnership Breakpoint 1\.5\.31/);
   assert.match(html, /Mountain bike carnival, last-over-capacity remaining listed capacity copy, and first-over-capacity hide jump in Partnership Breakpoint 1\.5\.32/);
   assert.match(html, /BMX carnival, first-over-capacity remaining listed capacity copy, and last-over-capacity hide jump in Partnership Breakpoint 1\.5\.33/);
-  assert.match(html, /Cyclo-cross carnival, first-over-capacity volume copy, and first-over-capacity hide jump in Partnership Breakpoint 1\.5\.34/);
   assert.match(html, /Leftover fill and overlap counts in Common Cart 1\.3\.1/);
   assert.match(html, /Offer CSV, sort, and leftover headroom in Common Cart 1\.3\.2/);
   assert.match(html, /Offer export, variant filter, and empty-offer recovery in Common Cart 1\.3\.3/);
@@ -348,7 +347,6 @@ test('catalog names current workbench tools without live services', () => {
   assert.match(readme, /first-over-capacity volume copy shortcut, the Cycling carnival split start/);
   assert.match(readme, /last-over-capacity remaining listed capacity copy shortcut, the Mountain bike carnival split start/);
   assert.match(readme, /first-over-capacity remaining listed capacity copy shortcut, the BMX carnival split start/);
-  assert.match(readme, /first-over-capacity volume copy shortcut, the Cyclo-cross carnival split start/);
   assert.match(readme, /package pin, locks, and notes/);
   assert.match(readme, /facilitator pack, group CSV/);
   assert.match(readme, /clause CSV\s+import, veto-only filter/);
@@ -5683,7 +5681,6 @@ test('What\'s new and README name first What\'s new copy, intro jump, and skip-l
   assert.equal(headings.includes('Cycling carnival, first-over-capacity volume copy, and last-over-capacity hide jump in Partnership Breakpoint 1.5.31'), true);
   assert.equal(headings.includes('Mountain bike carnival, last-over-capacity remaining listed capacity copy, and first-over-capacity hide jump in Partnership Breakpoint 1.5.32'), true);
   assert.equal(headings.includes('BMX carnival, first-over-capacity remaining listed capacity copy, and last-over-capacity hide jump in Partnership Breakpoint 1.5.33'), true);
-  assert.equal(headings.includes('Cyclo-cross carnival, first-over-capacity volume copy, and first-over-capacity hide jump in Partnership Breakpoint 1.5.34'), true);
   assert.equal(headings.includes('Swimming carnival lunch, leftover-fulfillment copy, and winner-allocated hide in Common Cart 1.4.12'), true);
   assert.equal(headings.includes('Athletics carnival lunch, leftover-delivery copy, and leftover-fill hide in Common Cart 1.4.13'), true);
   assert.equal(headings.includes('Cricket carnival lunch, leftover-pickup copy, and last leftover-fill hide in Common Cart 1.4.14'), true);
@@ -5813,7 +5810,6 @@ test('What\'s new and README name first-workbench copy, first-card jump, and fir
   assert.equal(headings.includes('Cycling carnival, first-over-capacity volume copy, and last-over-capacity hide jump in Partnership Breakpoint 1.5.31'), true);
   assert.equal(headings.includes('Mountain bike carnival, last-over-capacity remaining listed capacity copy, and first-over-capacity hide jump in Partnership Breakpoint 1.5.32'), true);
   assert.equal(headings.includes('BMX carnival, first-over-capacity remaining listed capacity copy, and last-over-capacity hide jump in Partnership Breakpoint 1.5.33'), true);
-  assert.equal(headings.includes('Cyclo-cross carnival, first-over-capacity volume copy, and first-over-capacity hide jump in Partnership Breakpoint 1.5.34'), true);
   assert.equal(headings.includes('Athletics carnival lunch, leftover-delivery copy, and leftover-fill hide in Common Cart 1.4.13'), true);
   assert.equal(headings.includes('Cricket carnival lunch, leftover-pickup copy, and last leftover-fill hide in Common Cart 1.4.14'), true);
   assert.equal(headings.includes('Tennis carnival lunch, leftover-label copy, and first leftover-fill hide in Common Cart 1.4.15'), true);
