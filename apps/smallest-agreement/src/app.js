@@ -1405,6 +1405,39 @@ const presets = {
       },
     ],
   },
+  "cyclo-cross-club-hours": {
+    title: "Cyclo-cross club hours: cyclo-cross course booking, start-grid hours, and pit-box lock-up",
+    threshold: 70,
+    maxChangeCost: 8,
+    groups: [
+      { id: "students", name: "Students", weight: 11 },
+      { id: "neighbours", name: "Neighbours", weight: 10, veto: true },
+      { id: "pandc", name: "P&C", weight: 13 },
+    ],
+    clauses: [
+      {
+        id: "cyclo-cross-course-booking", title: "Cyclo-cross course booking", options: [
+          { id: "cyclo-cross-course-booking-original", original: true, label: "Keep weekday cyclo-cross course from 10:40 with no posted start-grid rota", changeCost: 0, support: { students: 2, neighbours: 89, pandc: 62 } },
+          { id: "cyclo-cross-course-booking-late", original: false, label: "Open weekday cyclo-cross course at 16:50 with a posted start-grid rota", changeCost: 2, support: { students: 91, neighbours: 29, pandc: 41 } },
+          { id: "cyclo-cross-course-booking-weekend", original: false, label: "Hold Saturday morning cyclo-cross course at 08:05 with a start-grid booking card", changeCost: 4, support: { students: 76, neighbours: 37, pandc: 49 } },
+        ],
+      },
+      {
+        id: "cyclo-cross-start-grid", title: "Start-grid hours", options: [
+          { id: "cyclo-cross-start-grid-original", original: true, label: "No posted start-grid hours", changeCost: 0, support: { students: 67, neighbours: 15, pandc: 32 } },
+          { id: "cyclo-cross-start-grid-cap", original: false, label: "Close start-grid at 18:15 and keep marshals at the cyclo-cross hut", changeCost: 1, support: { students: 40, neighbours: 85, pandc: 64 } },
+          { id: "cyclo-cross-start-grid-cut", original: false, label: "Serve marshals only after 13:30", changeCost: 5, support: { students: 22, neighbours: 89, pandc: 38 } },
+        ],
+      },
+      {
+        id: "cyclo-cross-pit-box-lockup", title: "Pit-box lock-up", options: [
+          { id: "cyclo-cross-pit-box-lockup-original", original: true, label: "Leave the pit-box door on a shared padlock after club hours", changeCost: 0, support: { students: 7, neighbours: 27, pandc: 32 } },
+          { id: "cyclo-cross-pit-box-lockup-steward", original: false, label: "Require a P&C steward to lock the pit-box store before 19:55", changeCost: 3, support: { students: 54, neighbours: 59, pandc: 79 } },
+          { id: "cyclo-cross-pit-box-lockup-timer", original: false, label: "Add a timed lock on the pit-box store after the last cyclo-cross session", changeCost: 2, support: { students: 43, neighbours: 46, pandc: 63 } },
+        ],
+      },
+    ],
+  },
 };
 
 let agreementReviewPacket = null;
