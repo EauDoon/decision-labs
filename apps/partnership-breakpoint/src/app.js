@@ -2970,7 +2970,13 @@ function handleShortcut(event) {
     target?.focus?.({ preventScroll: false });
     target?.scrollIntoView?.({ block: 'start' });
   }
-  if (event.key === 'F8') {
+  if (event.key === 'F8' && event.shiftKey) {
+    const target = document.querySelector('#copy-first-over-capacity-remaining')
+      ?? document.querySelector('#participant-inputs-title');
+    target?.focus?.({ preventScroll: false });
+    target?.scrollIntoView?.({ block: 'start' });
+  }
+  if (event.key === 'F8' && !event.shiftKey) {
     const target = document.querySelector('#copy-first-zero-share-participant')
       ?? document.querySelector('#participant-inputs-title');
     target?.focus?.({ preventScroll: false });
@@ -5894,6 +5900,7 @@ function helpDialog() {
         <li><kbd>F7</kbd> Copy first zero-share participant label as Markdown</li>
         <li><kbd>Shift+F7</kbd> Copy first over-capacity remaining listed capacity as Markdown</li>
         <li><kbd>F8</kbd> Jump to Copy first zero-share participant label, or the Participants heading if missing</li>
+        <li><kbd>Shift+F8</kbd> Jump to Copy first over-capacity remaining listed capacity, or the Participants heading if missing</li>
         <li><kbd>F9</kbd> Jump to Hide the first participant with zero revenue share, or the Participants heading if missing</li>
         <li><kbd>F10</kbd> Copy last zero-share remaining-to-hold as Markdown</li>
         <li><kbd>F11</kbd> Jump to Copy last zero-share remaining-to-hold, or the Participants heading if missing</li>
