@@ -4356,7 +4356,7 @@ test("first-without-floor cost Markdown is one line, honest 0 when none, and dis
   assert.equal(mountainAggregate.remaining, 28);
   assert.doesNotMatch(mountainAggregate.text, /First-without-floor cost/u);
   const bmx = proposal({
-    title: "BMX club hours: pump-track booking, start-gate hours, and helmet-box lock-up",
+    title: "BMX club hours: pump-track booking, start-gate hours, and pad-box lock-up",
     threshold: 70,
     groups: [
       { id: "students", name: "Students", weight: 10 },
@@ -4574,7 +4574,7 @@ test("last-without-floor cost Markdown is one line, honest 0 when none, and dist
   assert.equal(mountainFirst.cost, 9);
   assert.notEqual(mountainCopied.text, mountainFirst.text);
   const bmx = proposal({
-    title: "BMX club hours: pump-track booking, start-gate hours, and helmet-box lock-up",
+    title: "BMX club hours: pump-track booking, start-gate hours, and pad-box lock-up",
     threshold: 70,
     groups: [
       { id: "students", name: "Students", weight: 10 },

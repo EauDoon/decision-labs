@@ -182,6 +182,7 @@ test("standalone artifact is current, self-contained, and LF-normalized", async 
   assert.match(html, /cycling-club-hours/u);
   assert.match(html, /mountain-bike-club-hours/u);
   assert.match(html, /bmx-club-hours/u);
+  assert.match(html, /<option value="mountain-bike-club-hours">Mountain bike club hours<\/option>\s*<option value="bmx-club-hours">BMX club hours<\/option>/u);
   assert.match(html, /id="clause-filter"/u);
   assert.match(html, /id="clause-filter-status"/u);
   assert.match(html, /id="veto-groups-only"/u);
@@ -3144,6 +3145,7 @@ test("triathlon club hours preset loads a distinct synthetic triathlon workshop"
   assert.doesNotMatch(app.clauses(), /start-gate/u);
   assert.doesNotMatch(app.clauses(), /pump-track/u);
   assert.doesNotMatch(app.clauses(), /Start-gate hours/u);
+  assert.doesNotMatch(app.clauses(), /pad-box/u);
   assert.doesNotMatch(app.clauses(), /Dragon-boat staging booking/u);
   assert.doesNotMatch(app.clauses(), /drum-seat/u);
   assert.doesNotMatch(app.clauses(), /paddle-box/u);
@@ -3276,6 +3278,7 @@ test("cycling club hours preset loads a distinct synthetic cycling workshop", as
   assert.doesNotMatch(app.clauses(), /start-gate/u);
   assert.doesNotMatch(app.clauses(), /pump-track/u);
   assert.doesNotMatch(app.clauses(), /Start-gate hours/u);
+  assert.doesNotMatch(app.clauses(), /pad-box/u);
   assert.doesNotMatch(app.clauses(), /Surf-club staging booking/u);
   assert.doesNotMatch(app.clauses(), /board-rack/u);
   assert.doesNotMatch(app.clauses(), /board-bag/u);
@@ -3407,6 +3410,7 @@ test("mountain bike club hours preset loads a distinct synthetic mountain-bike w
   assert.doesNotMatch(app.clauses(), /start-gate/u);
   assert.doesNotMatch(app.clauses(), /pump-track/u);
   assert.doesNotMatch(app.clauses(), /Start-gate hours/u);
+  assert.doesNotMatch(app.clauses(), /pad-box/u);
   assert.doesNotMatch(app.clauses(), /Triathlon staging booking/u);
   assert.doesNotMatch(app.clauses(), /transition-rack/u);
   assert.doesNotMatch(app.clauses(), /bike-bag/u);
@@ -3447,15 +3451,22 @@ test("BMX club hours preset loads a distinct synthetic BMX workshop", async () =
   const app = await savedWorkbench(new Map());
   app.field("#preset-select", "bmx-club-hours");
   app.click("#load-preset");
-  assert.match(app.title(), /BMX club hours: pump-track booking, start-gate hours, and helmet-box lock-up/u);
+  assert.match(app.title(), /BMX club hours: pump-track booking, start-gate hours, and pad-box lock-up/u);
   assert.equal(app.disabled("#export-button"), false);
   assert.doesNotMatch(app.alert(), /Fix the proposal/u);
   assert.match(app.clauses(), /Pump-track booking/u);
   assert.match(app.clauses(), /Start-gate hours/u);
-  assert.match(app.clauses(), /Helmet-box lock-up/u);
+  assert.match(app.clauses(), /Pad-box lock-up/u);
   assert.match(app.clauses(), /pump-track/u);
   assert.match(app.clauses(), /start-gate/u);
-  assert.match(app.clauses(), /helmet-box/u);
+  assert.match(app.clauses(), /pad-box/u);
+  assert.match(app.clauses(), /11:20/u);
+  assert.match(app.clauses(), /18:05/u);
+  assert.match(app.clauses(), /09:15/u);
+  assert.match(app.clauses(), /19:50/u);
+  assert.match(app.clauses(), /14:25/u);
+  assert.match(app.clauses(), /20:05/u);
+  assert.match(app.clauses(), /marshals/u);
   assert.match(app.groups(), /Students/u);
   assert.match(app.groups(), /Neighbours/u);
   assert.match(app.groups(), /P&amp;C/u);
@@ -3537,6 +3548,8 @@ test("BMX club hours preset loads a distinct synthetic BMX workshop", async () =
   assert.doesNotMatch(app.clauses(), /Downhill staging booking/u);
   assert.doesNotMatch(app.clauses(), /trail-gate/u);
   assert.doesNotMatch(app.clauses(), /Trail cafe hours/u);
+  assert.doesNotMatch(app.clauses(), /helmet-box/u);
+  assert.doesNotMatch(app.clauses(), /Helmet-box lock-up/u);
   assert.doesNotMatch(app.clauses(), /Velodrome staging booking/u);
   assert.doesNotMatch(app.clauses(), /bike-rack/u);
   assert.doesNotMatch(app.clauses(), /bike-box/u);

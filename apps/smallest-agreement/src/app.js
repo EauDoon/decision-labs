@@ -1373,7 +1373,7 @@ const presets = {
     ],
   },
   "bmx-club-hours": {
-    title: "BMX club hours: pump-track booking, start-gate hours, and helmet-box lock-up",
+    title: "BMX club hours: pump-track booking, start-gate hours, and pad-box lock-up",
     threshold: 70,
     maxChangeCost: 8,
     groups: [
@@ -1384,23 +1384,23 @@ const presets = {
     clauses: [
       {
         id: "bmx-pump-track-booking", title: "Pump-track booking", options: [
-          { id: "bmx-pump-track-booking-original", original: true, label: "Keep weekday pump-track from 08:20 with no posted start-gate rota", changeCost: 0, support: { students: 3, neighbours: 90, pandc: 61 } },
-          { id: "bmx-pump-track-booking-late", original: false, label: "Open weekday pump-track at 15:45 with a posted start-gate rota", changeCost: 2, support: { students: 90, neighbours: 30, pandc: 42 } },
-          { id: "bmx-pump-track-booking-weekend", original: false, label: "Hold Friday evening pump-track at 18:05 with a start-gate booking card", changeCost: 4, support: { students: 75, neighbours: 38, pandc: 50 } },
+          { id: "bmx-pump-track-booking-original", original: true, label: "Keep weekday pump-track from 11:20 with no posted start-gate rota", changeCost: 0, support: { students: 3, neighbours: 90, pandc: 61 } },
+          { id: "bmx-pump-track-booking-late", original: false, label: "Open weekday pump-track at 18:05 with a posted start-gate rota", changeCost: 2, support: { students: 90, neighbours: 30, pandc: 42 } },
+          { id: "bmx-pump-track-booking-weekend", original: false, label: "Hold Sunday morning pump-track at 09:15 with a start-gate booking card", changeCost: 4, support: { students: 75, neighbours: 38, pandc: 50 } },
         ],
       },
       {
         id: "bmx-start-gate", title: "Start-gate hours", options: [
-          { id: "bmx-start-gate-original", original: true, label: "No posted BMX start-gate hours", changeCost: 0, support: { students: 68, neighbours: 16, pandc: 31 } },
-          { id: "bmx-start-gate-cap", original: false, label: "Close the start-gate hut at 17:55 and keep drinks inside the pump-track hut", changeCost: 1, support: { students: 41, neighbours: 84, pandc: 63 } },
-          { id: "bmx-start-gate-cut", original: false, label: "Serve tea only after 14:25 and retire the start-gate drinks", changeCost: 5, support: { students: 23, neighbours: 88, pandc: 39 } },
+          { id: "bmx-start-gate-original", original: true, label: "No posted start-gate hours", changeCost: 0, support: { students: 68, neighbours: 16, pandc: 31 } },
+          { id: "bmx-start-gate-cap", original: false, label: "Close start-gate at 19:50 and keep marshals at the pump-track hut", changeCost: 1, support: { students: 41, neighbours: 84, pandc: 63 } },
+          { id: "bmx-start-gate-cut", original: false, label: "Serve marshals only after 14:25", changeCost: 5, support: { students: 23, neighbours: 88, pandc: 39 } },
         ],
       },
       {
-        id: "bmx-helmet-box-lockup", title: "Helmet-box lock-up", options: [
-          { id: "bmx-helmet-box-lockup-original", original: true, label: "Leave the helmet-box door on a shared padlock after BMX club hours", changeCost: 0, support: { students: 8, neighbours: 28, pandc: 33 } },
-          { id: "bmx-helmet-box-lockup-steward", original: false, label: "Require a P&C steward to lock the helmet-box store before 18:50", changeCost: 3, support: { students: 55, neighbours: 58, pandc: 78 } },
-          { id: "bmx-helmet-box-lockup-timer", original: false, label: "Add a timed lock on the helmet-box store after the last BMX session", changeCost: 2, support: { students: 44, neighbours: 47, pandc: 64 } },
+        id: "bmx-pad-box-lockup", title: "Pad-box lock-up", options: [
+          { id: "bmx-pad-box-lockup-original", original: true, label: "Leave the pad-box door on a shared padlock after club hours", changeCost: 0, support: { students: 8, neighbours: 28, pandc: 33 } },
+          { id: "bmx-pad-box-lockup-steward", original: false, label: "Require a P&C steward to lock the pad-box store before 20:05", changeCost: 3, support: { students: 55, neighbours: 58, pandc: 78 } },
+          { id: "bmx-pad-box-lockup-timer", original: false, label: "Add a timed lock on the pad-box store after the last BMX session", changeCost: 2, support: { students: 44, neighbours: 47, pandc: 64 } },
         ],
       },
     ],
