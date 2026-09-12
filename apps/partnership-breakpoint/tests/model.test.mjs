@@ -2119,6 +2119,9 @@ test('cycling carnival split preset is a distinct committee club-hire first-aid 
   assert.notEqual(cycling.participants[1].name, 'Pool operations');
   assert.equal(cycling.participants[1].name, 'Cycling club hire');
   assert.match(cycling.participants[1].name, /Cycling club/);
+  assert.notEqual(cycling.participants[1].id, 'bmx-club-hire');
+  assert.notEqual(cycling.participants[1].name, 'BMX club hire');
+  assert.doesNotMatch(cycling.participants[1].name, /BMX/);
   assert.doesNotMatch(cycling.participants[1].name, /triathlon/i);
   assert.doesNotMatch(cycling.participants[1].name, /surf/i);
   assert.doesNotMatch(cycling.participants[1].name, /dragon/i);
