@@ -442,6 +442,26 @@ test("release 1.4.36 ships gravel cycling carnival lunch, leftover uncovered lef
 
 
 
+test("release 1.4.42 ships madison cycling carnival lunch, leftover uncovered leftover-only remaining copy and first leftover-only hide jump", async () => {
+  const html = await readFile(new URL("../standalone.html", import.meta.url), "utf8");
+  assert.match(html, /id="copy-leftover-uncovered-leftover-only-remaining"/u);
+  assert.match(html, /id="copy-leftover-uncovered-leftover-only-remaining"[^>]*aria-keyshortcuts="Shift\+F7 F10"/u);
+  assert.match(html, /id="hide-first-leftover-only-buyer"/u);
+  assert.match(html, /id="hide-last-leftover-only-buyer"/u);
+  assert.match(html, /data-preset="madisonCyclingCarnivalLunch"/u);
+  assert.match(html, /data-preset="keirinCyclingCarnivalLunch"/u);
+  assert.ok(html.indexOf('data-preset="keirinCyclingCarnivalLunch"') < html.indexOf('data-preset="madisonCyclingCarnivalLunch"'));
+  assert.ok(html.indexOf('data-preset="madisonCyclingCarnivalLunch"') < html.indexOf('data-preset="tiers"'));
+  assert.match(html, /Court-side Madison Delivery/u);
+  assert.match(html, /Hall Madison Pickup/u);
+  assert.match(html, /Madison-pair crate/u);
+  assert.match(html, /Handsling bench/u);
+  assert.match(html, /Pairing hamper/u);
+  assert.match(html, /if \(event\.shiftKey && key === "F9"\) \{\s*event\.preventDefault\(\);\s*focusHideFirstLeftoverOnlyBuyer\(\);/u);
+  assert.match(html, /if \(key === "F9"\) \{\s*event\.preventDefault\(\);\s*focusHideFirstUncoveredLeftoverBuyer\(\);/u);
+  assert.match(html, /if \(key === "ArrowUp"\) \{\s*event\.preventDefault\(\);\s*focusHideLastLeftoverOnlyBuyer\(\);/u);
+});
+
 test("release 1.4.41 ships keirin cycling carnival lunch, leftover uncovered leftover-only remaining copy and first leftover-only hide jump", async () => {
   const html = await readFile(new URL("../standalone.html", import.meta.url), "utf8");
   assert.match(html, /id="copy-leftover-uncovered-leftover-only-remaining"/u);

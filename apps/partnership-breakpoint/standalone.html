@@ -895,6 +895,15 @@ const PRESETS = Object.freeze({
       { id: 'keirin-cycling-first-aid', name: 'First-aid', revenueShare: 0.25, variableCostPerTransaction: 1.44, fixedMonthlyCost: 1710, minimumAcceptableProfit: 630, capacity: 6000, minimumCommitment: 0, riskCost: 400 },
     ],
   },
+  madisonCyclingCarnivalSplit: {
+    name: 'Madison cycling carnival split',
+    deal: { monthlyVolume: 6100, feePerTransaction: 8, addressableVolume: 7300, volumeShockPct: 0 },
+    participants: [
+      { id: 'madison-cycling-committee', name: 'Carnival committee', revenueShare: 0.37, variableCostPerTransaction: 1.94, fixedMonthlyCost: 3820, minimumAcceptableProfit: 1530, capacity: 7100, minimumCommitment: 0, riskCost: 578 },
+      { id: 'madison-cycling-club-hire', name: 'Madison cycling club hire', revenueShare: 0.38, variableCostPerTransaction: 1.83, fixedMonthlyCost: 3090, minimumAcceptableProfit: 1070, capacity: 8200, minimumCommitment: 520, riskCost: 530 },
+      { id: 'madison-cycling-first-aid', name: 'First-aid', revenueShare: 0.25, variableCostPerTransaction: 1.42, fixedMonthlyCost: 1720, minimumAcceptableProfit: 640, capacity: 6100, minimumCommitment: 0, riskCost: 410 },
+    ],
+  },
 });
 
 function isFiniteNumber(value) {
