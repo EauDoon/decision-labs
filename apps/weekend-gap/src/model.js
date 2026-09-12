@@ -702,7 +702,7 @@ function isThursdayLateFxOpenHour(hourOffset, scenario) {
   return dayIndex === 4 && localHour >= 16 && localHour < 18;
 }
 
-/** Friday 08:00-10:00 keeps weekday FX depth when Friday early FX open is on. Distinct from isFridayLateFxOpenHour (Fri 16:00-18:00), isFridayLateFxHour (Saturday 00:00 delayed Friday FX close), isFridayEarlyIssuerHour, isFridayEarlyBankHour, isFridayEarlyPayoutHour, and isThursdayLateFxOpenHour. */
+/** Friday 08:00-10:00 keeps weekday FX depth when Friday early FX open is on. Distinct from fridayLateFxOpen (Fri 16:00-18:00), fridayFxLateClose (Saturday 00:00 delayed Friday FX close), fridayEarlyIssuerOpen, fridayEarlyBankOpen, fridayEarlyPayoutOpen, and thursdayLateFxOpen. */
 function isFridayEarlyFxOpenHour(hourOffset, scenario) {
   if (scenario.fridayEarlyFxOpen !== true) return false;
   const { dayIndex, localHour } = dayAndHourAt(hourOffset);
