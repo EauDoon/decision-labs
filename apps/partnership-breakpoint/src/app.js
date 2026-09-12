@@ -3824,6 +3824,7 @@ function copyLastOverCapacityLabel() {
 }
 
 function lastOverCapacityRemainingMarkdown(result) {
+  // Distinct prefix from first over-capacity remaining, last over-capacity volume-to-hold, first over-capacity volume-to-hold, and last over-capacity label.
   if (!result) return 'Last over-capacity remaining listed capacity: none entered.';
   let participant = null;
   for (const item of state.participants) {
