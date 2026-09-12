@@ -6086,7 +6086,7 @@ document.addEventListener("keydown", (event) => {
     jumpToHideLastGroupBelowFloor();
   } else if (event.shiftKey && key === "F7") {
     event.preventDefault();
-    copyLastGroupWithoutFloorCost();
+    copyLastGroupWithoutFloorRemaining();
   } else if (event.shiftKey && key === "F8") {
     event.preventDefault();
     jumpToLastGroupWithoutFloorCostCopy();
