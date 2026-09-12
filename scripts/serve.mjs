@@ -286,6 +286,19 @@ export function catalogLastLabelledSkipTargetText() {
   return '';
 }
 
+export function catalogFirstUnlabelledSkipText() {
+  const html = readFileSync(new URL('index.html', root), 'utf8');
+  for (const link of catalogSkipLinks()) {
+    const href = link.href;
+    if (!href.startsWith('#') || href.length < 2) continue;
+    const found = catalogMarkupTag(html, href.slice(1));
+    if (!found) continue;
+    if (found.tag.match(/aria-labelledby="([^"]+)"/)) continue;
+    return link.text;
+  }
+  return '';
+}
+
 export function notFoundPage() {
   const versions = catalogVersionLine();
   const jobsList = catalogJobs().map(({ name, job }) => `<li>${escapeHtml(name)}: ${escapeHtml(job)}</li>`).join('\n      ');
