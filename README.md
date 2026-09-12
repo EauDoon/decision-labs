@@ -205,6 +205,8 @@ The catalog also names last-labelled-skip-href copy, last-labelled-skip-href jum
 That What's new entry is hub-only. It does not change workbench versions.
 The catalog also names last-labelled-skip-text copy, last-labelled-skip-text jump, and last-labelled-skip-link jump.
 That What's new entry is hub-only. It does not change workbench versions.
+The catalog also names first-unlabelled-skip-text copy, first-unlabelled-skip-text jump, and first-unlabelled-skip-link jump.
+That What's new entry is hub-only. It does not change workbench versions.
 The catalog also names first-labelled-skip-text copy, first-labelled-skip-text jump, and first-labelled-skip-link jump.
 That What's new entry is hub-only. It does not change workbench versions.
 Copy first labelled skip href copies the href of the first skip link whose target has aria-labelledby
@@ -235,6 +237,13 @@ that 404 page copies the same labelled skip-link text without adding a public pa
 Key `Shift+Delete` copies the text of the first skip href that has aria-labelledby.
 Key `Shift+ArrowUp` focuses the Copy first labelled skip text control.
 Key `Shift+ArrowRight` focuses the first labelled skip link.
+Copy first unlabelled skip text copies the text of the first skip link whose target has no aria-labelledby
+already printed on this page as one Markdown line. If that text is missing, it copies an empty string.
+Copy first unlabelled skip text on
+that 404 page copies the same unlabelled skip-link text without adding a public path.
+Key `Shift+Home` copies the text of the first skip href that has no aria-labelledby.
+Key `Shift+End` focuses the Copy first unlabelled skip text control.
+Key `Shift+PageDown` focuses the first unlabelled skip link.
 These are
 browser tools on the case you opened, not hosted APIs. Each app also ships a `MODEL.md` (formulas and
 conventions), `CONTRIBUTING.md`, `SECURITY.md`, and its own `LICENSE`. The
@@ -540,6 +549,22 @@ Press `Shift+ArrowLeft` to focus the last labelled skip link, or the skip-link r
 That key moves focus; it does not open a workbench. It does not copy. That key
 is distinct from `ArrowLeft`, which focuses the last skip link, from `Shift+F1`, which focuses the last labelled skip target, from `Shift+F9`,
 which focuses the last labelled skip label, from `t`, which focuses Trust and limits.
+Press `Shift+Home` to copy the text of the first skip link whose target has no aria-labelledby from this page as one Markdown
+line. That key uses the same Copy first unlabelled skip text control, including
+the visible text box when the clipboard API is unavailable. If that text is
+missing, it copies an empty string. This is catalog copy, not a live product
+feed. It is distinct from `Home`, which copies the last Open workbench href, from
+`Shift+Delete`, which copies the first labelled skip text, from `F3`, which copies the last skip-link text, and from
+`Delete`, which copies the first skip-link text.
+Press `Shift+End` to focus the Copy first unlabelled skip text control, or the skip-link row
+or catalog heading if that control is missing. That key moves focus; it does not
+open a workbench. It does not copy. That key is distinct from `End`, which
+focuses Copy last Open href, from `Shift+ArrowUp`, which focuses Copy first labelled skip text, from
+`F4`, which focuses Copy last skip text, and from `#`, which focuses Copy skip links.
+Press `Shift+PageDown` to focus the first unlabelled skip link, or the skip-link row or catalog heading if that link is missing.
+That key moves focus; it does not open a workbench. It does not copy. That key
+is distinct from `PageDown`, which focuses Copy first skip href, from `Shift+ArrowRight`, which focuses the first labelled skip link, from `ArrowRight`,
+which focuses the first skip link, from `n`, which focuses What's new.
 Press `Shift+Delete` to copy the text of the first skip link whose target has aria-labelledby from this page as one Markdown
 line. That key uses the same Copy first labelled skip text control, including
 the visible text box when the clipboard API is unavailable. If that text is
@@ -650,6 +675,8 @@ fetch a product feed or add another public path. Copy last labelled skip text on
 that 404 page copies the printed last labelled skip-link text as one Markdown line. It does not
 fetch a product feed or add another public path. Copy first labelled skip text on
 that 404 page copies the printed first labelled skip-link text as one Markdown line. It does not
+fetch a product feed or add another public path. Copy first unlabelled skip text on
+that 404 page copies the printed first unlabelled skip-link text as one Markdown line. It does not
 fetch a product feed or add another public path. When the catalog is served over http,
 a control copies the loopback address; it stays hidden on a file URL.
 Copy versions copies the four workbench names and versions already printed on
