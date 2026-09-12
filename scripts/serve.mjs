@@ -1921,6 +1921,52 @@ ${skipNav}
           }
         }
       });
+
+      const lastUnlabelledSkipTargetIdBtn = document.getElementById('copy-last-unlabelled-skip-target-id');
+      const lastUnlabelledSkipTargetIdStatus = document.getElementById('copy-last-unlabelled-skip-target-id-status');
+      const lastUnlabelledSkipTargetIdFallback = document.getElementById('copy-last-unlabelled-skip-target-id-fallback');
+      const lastUnlabelledSkipTargetIdMarkdown = () => {
+        const skips = document.querySelectorAll('#skips a.skip');
+        for (let i = skips.length - 1; i >= 0; i -= 1) {
+          const skip = skips[i];
+          const href = skip && skip.getAttribute ? skip.getAttribute('href') : '';
+          if (!href || href.charAt(0) !== '#' || href.length < 2) continue;
+          const target = document.getElementById(href.slice(1));
+          if (!target) continue;
+          const labelledBy = target.getAttribute ? target.getAttribute('aria-labelledby') : '';
+          if (labelledBy) continue;
+          const id = href.slice(1);
+          if (!id) return '';
+          return '- ' + id;
+        }
+        return '';
+      };
+      lastUnlabelledSkipTargetIdBtn?.addEventListener('click', async () => {
+        const markdown = lastUnlabelledSkipTargetIdMarkdown();
+        const empty = markdown === '';
+        try {
+          if (!navigator.clipboard?.writeText) throw new Error('clipboard unavailable');
+          await navigator.clipboard.writeText(markdown);
+          if (lastUnlabelledSkipTargetIdFallback) lastUnlabelledSkipTargetIdFallback.hidden = true;
+          if (lastUnlabelledSkipTargetIdStatus) {
+            lastUnlabelledSkipTargetIdStatus.textContent = empty
+              ? 'Last unlabelled skip-target id was missing. Copied an empty string. This is catalog copy, not a live product feed.'
+              : 'Copied the last unlabelled skip-target id from this page as Markdown. Not a live product feed.';
+          }
+        } catch {
+          if (lastUnlabelledSkipTargetIdFallback) {
+            lastUnlabelledSkipTargetIdFallback.hidden = false;
+            lastUnlabelledSkipTargetIdFallback.value = markdown;
+            lastUnlabelledSkipTargetIdFallback.focus();
+            lastUnlabelledSkipTargetIdFallback.select();
+          }
+          if (lastUnlabelledSkipTargetIdStatus) {
+            lastUnlabelledSkipTargetIdStatus.textContent = empty
+              ? 'Clipboard unavailable. Copy the empty string from the text box. Last unlabelled skip-target id was missing. This is catalog copy, not a live product feed.'
+              : 'Clipboard unavailable. Copy the Markdown from the text box. This is the last unlabelled skip-target id, not a live product feed.';
+          }
+        }
+      });
       const firstReviewBtn = document.getElementById('copy-first-review');
       const firstReviewStatus = document.getElementById('copy-first-review-status');
       const firstReviewFallback = document.getElementById('copy-first-review-fallback');
