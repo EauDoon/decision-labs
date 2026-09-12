@@ -185,7 +185,8 @@ test("standalone artifact is current, self-contained, and LF-normalized", async 
   assert.match(html, /cyclo-cross-club-hours/u);
   assert.match(html, /track-cycling-club-hours/u);
   assert.match(html, /gravel-cycling-club-hours/u);
-  assert.match(html, /<option value="cyclo-cross-club-hours">Cyclo-cross club hours<\/option>\s*<option value="track-cycling-club-hours">Track cycling club hours<\/option>\s*<option value="gravel-cycling-club-hours">Gravel cycling club hours<\/option>/u);
+  assert.match(html, /road-cycling-club-hours/u);
+  assert.match(html, /<option value="track-cycling-club-hours">Track cycling club hours<\/option>\s*<option value="gravel-cycling-club-hours">Gravel cycling club hours<\/option>\s*<option value="road-cycling-club-hours">Road cycling club hours<\/option>/u);
   assert.match(html, /id="clause-filter"/u);
   assert.match(html, /id="clause-filter-status"/u);
   assert.match(html, /id="veto-groups-only"/u);
