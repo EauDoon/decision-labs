@@ -3368,6 +3368,21 @@
           (firstUnlabelledSkipLink() || document.getElementById('skips') || document.getElementById('catalog-heading'))?.focus();
           return;
         }
+        if (event.shiftKey && event.key === 'PageUp') {
+          event.preventDefault();
+          lastUnlabelledSkipTextBtn?.click();
+          return;
+        }
+        if (event.shiftKey && event.key === 'Backspace') {
+          event.preventDefault();
+          (document.getElementById('copy-last-unlabelled-skip-text') || document.getElementById('skips') || document.getElementById('catalog-heading'))?.focus();
+          return;
+        }
+        if (event.shiftKey && event.key === 'Enter') {
+          event.preventDefault();
+          (lastUnlabelledSkipLink() || document.getElementById('skips') || document.getElementById('catalog-heading'))?.focus();
+          return;
+        }
         if (event.key === 'Home') {
           event.preventDefault();
           lastOpenBtn?.click();
