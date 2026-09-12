@@ -2507,6 +2507,7 @@ test('Cyclo-cross carnival split preset loads from the starting-point buttons', 
   assert.equal(app.saved().deal.monthlyVolume, 5300);
   assert.equal(app.saved().deal.addressableVolume, 6500);
   assert.deepEqual(app.saved().participants.map((item) => item.capacity), [6200, 7300, 5300]);
+  assert.equal(app.saved().participants[2].variableCostPerTransaction, 1.56);
   assert.notEqual(app.saved().participants[0].variableCostPerTransaction, app.saved().participants[1].variableCostPerTransaction);
   assert.notEqual(app.saved().participants[1].variableCostPerTransaction, app.saved().participants[2].variableCostPerTransaction);
   assert.notEqual(app.saved().participants[0].fixedMonthlyCost, app.saved().participants[1].fixedMonthlyCost);
@@ -2549,7 +2550,7 @@ test('Cyclo-cross carnival split preset loads from the starting-point buttons', 
   over.click('copy-first-over-capacity-volume');
   assert.equal(over.copied().at(-1), 'First over-capacity volume-to-hold: 5,222 txn for Carnival committee. Volume to hold. Not a forecast.');
   over.click('copy-last-over-capacity-volume');
-  assert.equal(over.copied().at(-1), 'Last over-capacity volume-to-hold: 5,196 txn for First-aid. Volume to hold. Not a forecast.');
+  assert.equal(over.copied().at(-1), 'Last over-capacity volume-to-hold: 5,432 txn for First-aid. Volume to hold. Not a forecast.');
   over.click('copy-first-over-capacity-remaining');
   assert.equal(over.copied().at(-1), 'First over-capacity remaining listed capacity: 100 txn over for Carnival committee. How far over listed capacity. Not a forecast.');
   over.click('copy-last-over-capacity-remaining');
