@@ -1603,6 +1603,39 @@ const presets = {
       },
     ],
   },
+  "hill-climb-cycling-club-hours": {
+    title: "Hill-climb cycling club hours: hill-climb course booking, summit-marshal hours, and climb-chip lock-up",
+    threshold: 70,
+    maxChangeCost: 8,
+    groups: [
+      { id: "students", name: "Students", weight: 17 },
+      { id: "neighbours", name: "Neighbours", weight: 14, veto: true },
+      { id: "pandc", name: "P&C", weight: 19 },
+    ],
+    clauses: [
+      {
+        id: "hill-climb-cycling-course-booking", title: "Hill-climb course booking", options: [
+          { id: "hill-climb-cycling-course-booking-original", original: true, label: "Keep weekday hill-climb course from 09:45 with no posted summit-marshal rota", changeCost: 0, support: { students: 7, neighbours: 83, pandc: 64 } },
+          { id: "hill-climb-cycling-course-booking-late", original: false, label: "Open weekday hill-climb course at 18:25 with a posted summit-marshal rota", changeCost: 2, support: { students: 86, neighbours: 23, pandc: 35 } },
+          { id: "hill-climb-cycling-course-booking-weekend", original: false, label: "Hold Saturday morning hill-climb course at 08:20 with a summit-marshal booking card", changeCost: 4, support: { students: 71, neighbours: 31, pandc: 43 } },
+        ],
+      },
+      {
+        id: "hill-climb-cycling-summit-marshal", title: "Summit-marshal hours", options: [
+          { id: "hill-climb-cycling-summit-marshal-original", original: true, label: "No posted summit-marshal hours", changeCost: 0, support: { students: 61, neighbours: 9, pandc: 34 } },
+          { id: "hill-climb-cycling-summit-marshal-cap", original: false, label: "Close summit-marshal hours at 19:30 and keep timekeepers at the summit-marshal hut", changeCost: 1, support: { students: 34, neighbours: 87, pandc: 66 } },
+          { id: "hill-climb-cycling-summit-marshal-cut", original: false, label: "Serve timekeepers only after 13:35", changeCost: 5, support: { students: 16, neighbours: 91, pandc: 32 } },
+        ],
+      },
+      {
+        id: "hill-climb-cycling-climb-chip-lockup", title: "Climb-chip lock-up", options: [
+          { id: "hill-climb-cycling-climb-chip-lockup-original", original: true, label: "Leave the climb-chip door on a shared padlock after club hours", changeCost: 0, support: { students: 1, neighbours: 21, pandc: 26 } },
+          { id: "hill-climb-cycling-climb-chip-lockup-steward", original: false, label: "Require a P&C steward to lock the climb-chip store before 21:05", changeCost: 3, support: { students: 48, neighbours: 65, pandc: 85 } },
+          { id: "hill-climb-cycling-climb-chip-lockup-timer", original: false, label: "Add a timed lock on the climb-chip store after the last hill-climb cycling session", changeCost: 2, support: { students: 37, neighbours: 40, pandc: 57 } },
+        ],
+      },
+    ],
+  },
 };
 
 let agreementReviewPacket = null;
