@@ -5097,7 +5097,7 @@ test('404 copy first unlabelled skip target text markdown is the target text, or
   const versionLine = {
     getAttribute() { return null; },
     tagName: 'P',
-    textContent: 'Partnership Breakpoint 1.5.38, Common Cart 1.4.38. Each workbench versions itself.',
+    textContent: 'Partnership Breakpoint 1.5.39, Common Cart 1.4.38. Each workbench versions itself.',
   };
   const extra = {
     getAttribute() { return null; },
@@ -5132,7 +5132,7 @@ test('404 copy first unlabelled skip target text markdown is the target text, or
     navigator: { clipboard: { writeText: async (text) => { copied = text; } } },
   });
   await clickFirst();
-  assert.equal(copied, '- Partnership Breakpoint 1.5.38, Common Cart 1.4.38. Each workbench versions itself.');
+  assert.equal(copied, '- Partnership Breakpoint 1.5.39, Common Cart 1.4.38. Each workbench versions itself.');
   assert.doesNotMatch(copied, /#version-line/);
   assert.doesNotMatch(copied, /Skip to catalog versions/);
   assert.doesNotMatch(copied, /Whats new labelled/);
@@ -5150,7 +5150,7 @@ test('404 copy first unlabelled skip target text markdown is the target text, or
   copied = 'stale';
   await clickFirst();
   assert.equal(copied, '- Extra target text');
-  assert.notEqual(copied, '- Partnership Breakpoint 1.5.38, Common Cart 1.4.38. Each workbench versions itself.');
+  assert.notEqual(copied, '- Partnership Breakpoint 1.5.39, Common Cart 1.4.38. Each workbench versions itself.');
   skips = [];
   copied = 'stale';
   await clickFirst();
@@ -5233,7 +5233,7 @@ test('404 copy last unlabelled skip target text markdown is the target text, or 
   const versionLine = {
     getAttribute() { return null; },
     tagName: 'P',
-    textContent: 'Partnership Breakpoint 1.5.38, Common Cart 1.4.38. Each workbench versions itself.',
+    textContent: 'Partnership Breakpoint 1.5.39, Common Cart 1.4.38. Each workbench versions itself.',
   };
   const extra = {
     getAttribute() { return null; },
@@ -5276,7 +5276,7 @@ test('404 copy last unlabelled skip target text markdown is the target text, or 
     navigator: { clipboard: { writeText: async (text) => { copied = text; } } },
   });
   await clickLast();
-  assert.equal(copied, '- Partnership Breakpoint 1.5.38, Common Cart 1.4.38. Each workbench versions itself.');
+  assert.equal(copied, '- Partnership Breakpoint 1.5.39, Common Cart 1.4.38. Each workbench versions itself.');
   assert.doesNotMatch(copied, /#version-line/);
   assert.doesNotMatch(copied, /Skip to catalog versions/);
   assert.doesNotMatch(copied, /Whats new labelled/);
@@ -5298,7 +5298,7 @@ test('404 copy last unlabelled skip target text markdown is the target text, or 
   copied = 'stale';
   await clickLast();
   assert.equal(copied, '- Extra target text');
-  assert.notEqual(copied, '- Partnership Breakpoint 1.5.38, Common Cart 1.4.38. Each workbench versions itself.');
+  assert.notEqual(copied, '- Partnership Breakpoint 1.5.39, Common Cart 1.4.38. Each workbench versions itself.');
   skips = [];
   copied = 'stale';
   await clickLast();
@@ -5369,7 +5369,7 @@ test('404 copy first unlabelled skip target id markdown is the target id, or emp
   const versionLine = {
     getAttribute() { return null; },
     tagName: 'P',
-    textContent: 'Partnership Breakpoint 1.5.38, Common Cart 1.4.38. Each workbench versions itself.',
+    textContent: 'Partnership Breakpoint 1.5.39, Common Cart 1.4.38. Each workbench versions itself.',
   };
   const extra = {
     getAttribute() { return null; },
@@ -5497,7 +5497,7 @@ test('404 copy last unlabelled skip target id markdown is the last target id, or
   const versionLine = {
     getAttribute() { return null; },
     tagName: 'P',
-    textContent: 'Partnership Breakpoint 1.5.38, Common Cart 1.4.38. Each workbench versions itself.',
+    textContent: 'Partnership Breakpoint 1.5.39, Common Cart 1.4.38. Each workbench versions itself.',
   };
   const extra = {
     getAttribute() { return null; },
