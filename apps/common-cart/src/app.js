@@ -1564,7 +1564,7 @@ function handleShortcut(event) {
   }
   if (event.shiftKey && key === "F9") {
     event.preventDefault();
-    focusHideFirstLeftoverOnlyBuyer();
+    focusHideLastLeftoverOnlyBuyer();
     return;
   }
   if (key === "F7") {
