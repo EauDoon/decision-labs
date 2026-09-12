@@ -3528,6 +3528,35 @@
         }
         return '';
       };
+      const firstUnlabelledSkipTargetIdBtn = document.getElementById('copy-first-unlabelled-skip-target-id');
+      const firstUnlabelledSkipTargetIdStatus = document.getElementById('copy-first-unlabelled-skip-target-id-status');
+      const firstUnlabelledSkipTargetIdFallback = document.getElementById('copy-first-unlabelled-skip-target-id-fallback');
+      firstUnlabelledSkipTargetIdBtn?.addEventListener('click', async () => {
+        const markdown = firstUnlabelledSkipTargetIdMarkdown();
+        const empty = markdown === '';
+        try {
+          if (!navigator.clipboard?.writeText) throw new Error('clipboard unavailable');
+          await navigator.clipboard.writeText(markdown);
+          if (firstUnlabelledSkipTargetIdFallback) firstUnlabelledSkipTargetIdFallback.hidden = true;
+          if (firstUnlabelledSkipTargetIdStatus) {
+            firstUnlabelledSkipTargetIdStatus.textContent = empty
+              ? 'First unlabelled skip-target id was missing. Copied an empty string. This is catalog copy, not a live product feed.'
+              : 'Copied the first unlabelled skip-target id from this catalog page as Markdown. Not a live product feed.';
+          }
+        } catch {
+          if (firstUnlabelledSkipTargetIdFallback) {
+            firstUnlabelledSkipTargetIdFallback.hidden = false;
+            firstUnlabelledSkipTargetIdFallback.value = markdown;
+            firstUnlabelledSkipTargetIdFallback.focus();
+            firstUnlabelledSkipTargetIdFallback.select();
+          }
+          if (firstUnlabelledSkipTargetIdStatus) {
+            firstUnlabelledSkipTargetIdStatus.textContent = empty
+              ? 'Clipboard unavailable. Copy the empty string from the text box. First unlabelled skip-target id was missing. This is catalog copy, not a live product feed.'
+              : 'Clipboard unavailable. Copy the Markdown from the text box. This is the first unlabelled skip-target id, not a live product feed.';
+          }
+        }
+      });
       document.addEventListener('keydown', (event) => {
         if (event.defaultPrevented || event.altKey || event.ctrlKey || event.metaKey) return;
         if (inEditable(event.target)) return;
