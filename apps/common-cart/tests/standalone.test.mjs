@@ -448,7 +448,7 @@ test("release 1.4.43 ships omnium cycling carnival lunch, leftover uncovered lef
   const html = await readFile(new URL("../standalone.html", import.meta.url), "utf8");
   assert.equal(pkg.version, "1.4.43");
   const firstHeading = changelog.match(/^## .+$/m)?.[0];
-  assert.equal(firstHeading, "## 1.4.43");
+  assert.equal(firstHeading, "## 1.4.43 - 2026-09-12");
   assert.match(changelog, /Omnium cycling carnival lunch, leftover-uncovered leftover-only remaining copy, and first leftover-only hide jump in Common Cart 1\.4\.43/);
   assert.match(html, /id="copy-leftover-uncovered-leftover-only-remaining"/u);
   assert.match(html, /id="copy-leftover-uncovered-leftover-only-remaining"[^>]*aria-keyshortcuts="Shift\+F7 F10"/u);
