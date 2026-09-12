@@ -2992,7 +2992,7 @@ document.addEventListener("keydown", (event) => {
   }
   if (event.key === "F11" && event.shiftKey) {
     event.preventDefault();
-    jumpToLastWeekendFxOpenCopy();
+    jumpToFirstWeekendFxOpenCopy();
     return;
   }
   if (event.key === "F11") {
