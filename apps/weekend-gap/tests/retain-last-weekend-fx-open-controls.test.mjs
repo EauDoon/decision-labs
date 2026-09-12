@@ -22,6 +22,7 @@ test("1.5.29 keeps F10 F11 F12 last-weekday-FX-closed controls, last-weekend-FX-
   assert.match(html, /data-preset="tuesdayEarlyFxOpen"/);
   assert.match(html, /data-preset="tuesdayLateFxOpen"/);
   assert.match(html, /data-preset="wednesdayEarlyFxOpen"/);
+  assert.match(html, /data-preset="wednesdayLateFxOpen"/);
   assert.match(app, /event\.key === "F10"/);
   assert.match(app, /copyLastWeekdayFxClosedHourMarkdown\(\)/);
   assert.match(app, /event\.key === "F11"/);
@@ -44,6 +45,8 @@ test("1.5.29 keeps F10 F11 F12 last-weekday-FX-closed controls, last-weekend-FX-
   assert.equal(PRESETS.tuesdayLateFxOpen.tuesdayEarlyFxOpen, false);
   assert.equal(PRESETS.wednesdayEarlyFxOpen.wednesdayEarlyFxOpen, true);
   assert.equal(PRESETS.wednesdayEarlyFxOpen.tuesdayLateFxOpen, false);
+  assert.equal(PRESETS.wednesdayLateFxOpen.wednesdayLateFxOpen, true);
+  assert.equal(PRESETS.wednesdayLateFxOpen.wednesdayEarlyFxOpen, false);
   assert.equal(PRESETS.mondayEarlyFxOpen.sundayEarlyFxOpen, false);
   assert.equal(DEFAULT_SCENARIO.sundayEarlyFxOpen, false);
   assert.equal(DEFAULT_SCENARIO.mondayEarlyFxOpen, false);
@@ -51,6 +54,7 @@ test("1.5.29 keeps F10 F11 F12 last-weekday-FX-closed controls, last-weekend-FX-
   assert.equal(DEFAULT_SCENARIO.tuesdayEarlyFxOpen, false);
   assert.equal(DEFAULT_SCENARIO.tuesdayLateFxOpen, false);
   assert.equal(DEFAULT_SCENARIO.wednesdayEarlyFxOpen, false);
+  assert.equal(DEFAULT_SCENARIO.wednesdayLateFxOpen, false);
   const handler = app.slice(app.indexOf('document.addEventListener("keydown"'));
   const unshiftedF12 = handler.lastIndexOf('event.key === "F12"');
   const f12Slice = handler.slice(unshiftedF12, unshiftedF12 + 180);
