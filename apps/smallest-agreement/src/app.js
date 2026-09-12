@@ -6089,7 +6089,7 @@ document.addEventListener("keydown", (event) => {
     copyLastGroupWithoutFloorRemaining();
   } else if (event.shiftKey && key === "F8") {
     event.preventDefault();
-    jumpToLastGroupWithoutFloorCostCopy();
+    jumpToLastGroupWithoutFloorRemainingCopy();
   } else if (event.shiftKey && key === "F9") {
     event.preventDefault();
     jumpToHideLastGroupWithoutFloor();
