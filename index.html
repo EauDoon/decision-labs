@@ -2859,6 +2859,20 @@
         }
         return '';
       };
+      const lastUnlabelledSkipTarget = () => {
+        const skips = document.querySelectorAll('#skips a.skip');
+        for (let i = skips.length - 1; i >= 0; i -= 1) {
+          const skip = skips[i];
+          const href = skip && skip.getAttribute ? skip.getAttribute('href') : '';
+          if (!href || href.charAt(0) !== '#' || href.length < 2) continue;
+          const target = document.getElementById(href.slice(1));
+          if (!target) continue;
+          const labelledBy = target.getAttribute ? target.getAttribute('aria-labelledby') : '';
+          if (labelledBy) continue;
+          return target;
+        }
+        return null;
+      };
       lastUnlabelledSkipHrefBtn?.addEventListener('click', async () => {
         const markdown = lastUnlabelledSkipHrefMarkdown();
         const empty = markdown === '';
@@ -3525,6 +3539,11 @@
         if (event.shiftKey && event.key === 'ScrollLock') {
           event.preventDefault();
           (document.getElementById('copy-last-unlabelled-skip-href') || document.getElementById('skips') || document.getElementById('catalog-heading'))?.focus();
+          return;
+        }
+        if (event.shiftKey && event.key === 'PrintScreen') {
+          event.preventDefault();
+          (lastUnlabelledSkipTarget() || document.getElementById('skips') || document.getElementById('catalog-heading'))?.focus();
           return;
         }
         if (event.shiftKey && event.key === 'Escape') {
