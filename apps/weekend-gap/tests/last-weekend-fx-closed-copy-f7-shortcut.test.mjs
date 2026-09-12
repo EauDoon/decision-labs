@@ -8,7 +8,7 @@ test("keyboard F7 is wired to copy last weekend-FX-closed hour through the new c
   assert.match(html, /id="copy-last-weekend-fx-closed"/);
   assert.match(html, /<kbd>F7<\/kbd>/u);
   assert.match(html, /Copy last weekend-FX-closed hour as Markdown/);
-  assert.match(html, /id="copy-last-weekend-fx-closed"[^>]*aria-keyshortcuts="F7 Shift\+F10"/);
+  assert.match(html, /id="copy-last-weekend-fx-closed"[^>]*aria-keyshortcuts="F7"/);
   assert.match(app, /function copyLastWeekendFxClosedHourMarkdown/);
   assert.match(app, /lastWeekendFxClosedHourToMarkdown\(scenario\)/);
   assert.match(app, /event\.key === "F7"/);

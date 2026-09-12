@@ -12,8 +12,8 @@ test("1.5.32 keeps hide-weekday-FX-closed jump without taking Shift+F12", async 
   assert.match(html, /Jump to the hide-weekend-FX-open Gantt filter/);
   assert.match(html, /id="gantt-hide-weekday-fx-closed"[^>]*aria-keyshortcuts="F9"/);
   assert.doesNotMatch(html, /id="gantt-hide-weekday-fx-closed"[^>]*aria-keyshortcuts="Shift\+F12"/);
-  assert.doesNotMatch(html, /id="gantt-hide-weekday-fx-open"[^>]*aria-keyshortcuts="Shift\+F12"/);
-  assert.match(html, /id="gantt-hide-weekend-fx-open"[^>]*aria-keyshortcuts="ArrowLeft F12 Shift\+F12"/);
+  assert.match(html, /id="gantt-hide-weekday-fx-open"[^>]*aria-keyshortcuts="Shift\+F12"/);
+  assert.match(html, /id="gantt-hide-weekend-fx-open"[^>]*aria-keyshortcuts="ArrowLeft F12"/);
   assert.match(html, /id="gantt-hide-weekend-fx-closed"[^>]*aria-keyshortcuts="Backspace"/);
   assert.match(app, /function jumpToHideWeekdayFxClosedFilter/);
   assert.match(app, /#gantt-hide-weekday-fx-closed/);
@@ -34,9 +34,9 @@ test("1.5.32 keeps hide-weekday-FX-closed jump without taking Shift+F12", async 
   assert.ok(unshiftedF12 !== -1);
   assert.ok(shiftF12 < unshiftedF12);
   const shiftSlice = handler.slice(shiftF12, shiftF12 + 180);
-  assert.match(shiftSlice, /jumpToHideWeekendFxOpenFilter\(\)/);
+  assert.match(shiftSlice, /jumpToHideWeekdayFxOpenFilter\(\)/);
   assert.doesNotMatch(shiftSlice, /jumpToHideWeekdayFxClosedFilter/);
-  assert.doesNotMatch(shiftSlice, /jumpToHideWeekdayFxOpenFilter/);
+  assert.doesNotMatch(shiftSlice, /jumpToHideWeekendFxOpenFilter/);
   const unshiftedSlice = handler.slice(unshiftedF12, unshiftedF12 + 180);
   assert.match(unshiftedSlice, /jumpToHideWeekendFxOpenFilter\(\)/);
   assert.doesNotMatch(unshiftedSlice, /jumpToHideWeekdayFxClosedFilter/);
