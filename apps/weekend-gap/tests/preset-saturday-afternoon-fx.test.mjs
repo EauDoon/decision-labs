@@ -139,7 +139,7 @@ test("Saturday afternoon FX open keeps the Normal Friday calendar with a Saturda
 test("Saturday afternoon FX open ORs into fxWeekday through isSaturdayAfternoonFxOpenHour after sundayMiddayFxOpen", async () => {
   const model = await readFile(new URL("../src/model.js", import.meta.url), "utf8");
   const helperStart = model.indexOf("function isSaturdayAfternoonFxOpenHour");
-  const helperNext = model.indexOf("\nexport function getOperationalStatus", helperStart);
+  const helperNext = model.indexOf("function isSundayAfternoonFxOpenHour", helperStart);
   const commentStart = model.lastIndexOf("/** Saturday 14:00-16:00", helperStart);
   const helper = model.slice(commentStart === -1 ? helperStart : commentStart, helperNext === -1 ? undefined : helperNext);
   assert.match(helper, /scenario\.saturdayAfternoonFxOpen !== true/);

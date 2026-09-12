@@ -2135,7 +2135,7 @@ test('404 copy first What\'s new heading is distinct from Copy last What\'s new 
   let clickLast = null;
   const headings = [
     { textContent: 'Last What\'s new copy, last-news jump, and first-news jump' },
-    { textContent: 'Saturday afternoon FX open, first-weekday-FX-open copy, and weekday-FX-closed hide in Weekend Gap 1.5.39' },
+    { textContent: 'Sunday afternoon FX open, first-weekday-FX-open copy, and weekday-FX-closed hide in Weekend Gap 1.5.40' },
   ];
   const document = {
     getElementById(id) {
@@ -2163,7 +2163,7 @@ test('404 copy first What\'s new heading is distinct from Copy last What\'s new 
   await clickLast();
   const last = lastCopied;
   assert.equal(first, '- Last What\'s new copy, last-news jump, and first-news jump');
-  assert.equal(last, '- Saturday afternoon FX open, first-weekday-FX-open copy, and weekday-FX-closed hide in Weekend Gap 1.5.39');
+  assert.equal(last, '- Sunday afternoon FX open, first-weekday-FX-open copy, and weekday-FX-closed hide in Weekend Gap 1.5.40');
   assert.notEqual(first, last);
   assert.match(page, /id="copy-first-whats-new"/);
   assert.match(page, /id="copy-last-whats-new"/);
