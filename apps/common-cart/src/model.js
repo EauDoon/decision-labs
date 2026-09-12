@@ -737,6 +737,23 @@ export const presets = Object.freeze({
       offer("O02", "Peloton Salad Run", "Road cycling lunch pack", "Peloton salad", 15, 15, 4, 42, 2),
       { ...offer("O03", "Hall Road Cycling Pickup", "Road cycling lunch pack", "Bottle water", 25, 30, 1, 60, 5), fulfillment: "pickup" }
     ]
+  },
+  criteriumCyclingCarnivalLunch: {
+    title: "Criterium cycling carnival lunch",
+    currency: "AUD",
+    buyers: [
+      buyer("B01", "Circuit-rack crate", "Criterium lunch pack", 15, 23, 4, ["Criterium pie", "Circuit salad"]),
+      buyer("B02", "Apex-bar bench", "Criterium lunch pack", 19, 19, 3, ["Criterium pie"]),
+      buyer("B03", "Pit-lane hamper", "Criterium lunch pack", 15, 26, 5, ["Circuit salad", "Circuit water"]),
+      buyer("B04", "Sideline cooler", "Criterium lunch pack", 17, 26, 2, ["Circuit water"]),
+      buyer("B05", "Scoreboard trolley", "Criterium lunch pack", 16, 22, 4, ["Criterium pie", "Circuit water"]),
+      buyer("B06", "Bench table", "Criterium lunch pack", 13, 20, 3, ["Circuit salad", "Criterium pie"])
+    ],
+    offers: [
+      offer("O01", "Court-side Criterium Delivery", "Criterium lunch pack", "Criterium pie", 17, 17, 3, 54, 3),
+      offer("O02", "Circuit Salad Run", "Criterium lunch pack", "Circuit salad", 15, 15, 4, 42, 2),
+      { ...offer("O03", "Hall Criterium Pickup", "Criterium lunch pack", "Circuit water", 26, 31, 1, 62, 5), fulfillment: "pickup" }
+    ]
   }
 });
 
