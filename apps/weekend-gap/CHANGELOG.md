@@ -1,5 +1,18 @@
 # Changelog
 
+## 1.5.33 - 2026-09-12
+
+Wednesday late FX open, last-weekend-FX-closed copy, and weekend-FX-open hide in Weekend Gap 1.5.33
+
+A workshop follow-up on 1.5.32. Weekend Gap remains a local-first decision aid, not a decision maker. Hatched Gantt rows are a local drawing. They do not connect to a bank or a live redemption queue. Timing review packets from 1.5.0 and the 1.5.1-1.5.32 review UI stay in place. Analysis JSON still has no timestamps.
+
+### Added
+
+- Keyboard `Shift+F10` copies last weekend-FX-closed hour through the existing last-weekend-FX-closed copy control, using one-line Markdown. Honest empty when none. Ignored while typing. Distinct from unshifted `F10` last-weekday-FX-closed copy, first-weekend-FX-closed copy, first-weekend-FX-open copy, first-weekday-FX-closed copy, first-weekday-FX-open copy, last-weekday-FX-open copy, last-weekend-FX-open copy, `F7` last-weekend-FX-closed copy and `Delete` last-closed-FX copy. Shift is handled before unshifted `F10`. First-weekend-FX-closed copy remains as a button without `Shift+F10`.
+- Keyboard `Shift+F11` jumps to the last-weekend-FX-closed-hour copy control, or the Gantt heading if that control is missing. Does not copy. Ignored while typing. Distinct from unshifted `F11` last-weekday-FX-closed jump and `F8` last-weekend-FX-closed jump.
+- Keyboard `Shift+F12` jumps to the existing hide-weekend-FX-open Gantt filter (`hideWeekendFxOpenGanttHours`), or the Gantt heading if that control is missing. Ignored while typing. Distinct from 1.5.32 `Shift+F12` hide-weekday-FX-open. Unshifted `F12` and `ArrowLeft` still jump to hide-weekend-FX-open. `F9` still jumps to hide-weekday-FX-closed. `Backspace` still jumps to hide-weekend-FX-closed. Hide-weekday-FX-open stays.
+- Wednesday late FX open (synthetic) preset: same 72-hour calendar as Normal Friday, Wednesday 16:00 to 18:00 treats FX as weekday-depth / open through `isWednesdayLateFxOpenHour`. Distinct from Wednesday early FX open, Tuesday late FX open, Tuesday early FX open, Monday late FX open, Monday early FX open, Friday late FX open, Sunday early FX open, and Saturday late FX open. Synthetic. Not an FX feed.
+
 ## 1.5.32 - 2026-09-12
 
 Wednesday early FX open, first-weekend-FX-closed copy, and weekday-FX-open hide in Weekend Gap 1.5.32

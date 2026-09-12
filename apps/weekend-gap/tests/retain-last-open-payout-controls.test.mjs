@@ -13,7 +13,7 @@ test("1.5.22 keeps PageUp PageDown ArrowUp last-open-payout controls and Friday 
   assert.match(html, /id="gantt-hide-weekend-payout-open"[^>]*aria-keyshortcuts="ArrowUp"/);
   assert.match(html, /data-preset="fridayEarlyBankOpen"/);
   assert.match(html, /id="copy-last-open-fx"[^>]*aria-keyshortcuts="Insert"/);
-  assert.match(html, /id="gantt-hide-weekend-fx-open"[^>]*aria-keyshortcuts="ArrowLeft F12"/);
+  assert.match(html, /id="gantt-hide-weekend-fx-open"[^>]*aria-keyshortcuts="ArrowLeft F12 Shift\+F12"/);
   assert.match(app, /event\.key === "PageUp"/);
   assert.match(app, /copyLastOpenPayoutHourMarkdown\(\)/);
   assert.match(app, /event\.key === "PageDown"/);
