@@ -476,6 +476,7 @@ textarea:focus-visible, select:focus-visible, .table-scroll:focus-visible { outl
               <button type="button" class="preset-button" data-preset="thursdayLateFxOpen">Thursday late FX open (synthetic)</button>
               <button type="button" class="preset-button" data-preset="fridayEarlyFxOpen">Friday early FX open (synthetic)</button>
               <button type="button" class="preset-button" data-preset="saturdayMiddayFxOpen">Saturday midday FX open (synthetic)</button>
+              <button type="button" class="preset-button" data-preset="sundayMiddayFxOpen">Sunday midday FX open (synthetic)</button>
             </div>
           </fieldset>
 
@@ -820,6 +821,13 @@ textarea:focus-visible, select:focus-visible, .table-scroll:focus-visible { outl
                 Keep Saturday FX open 12:00 to 14:00
               </label>
               <p>When selected, Saturday 12:00 to 14:00 treats FX as weekday-depth / open even though Saturday is not a business day. That window is a real weekday-FX-open case through isSaturdayMiddayFxOpenHour. Issuer, bank and payout stay on their Saturday midday rules those hours. Older scenario files omit this field and keep Saturday midday on ordinary weekend FX depth. Distinct from Saturday early FX open, Saturday late FX open, Friday early FX open, Friday late FX open, Sunday early FX open, Saturday early issuer open, Saturday early bank open, and Saturday early payout open. This is a synthetic calendar, not an FX feed.</p>
+            </div>
+            <div class="input-group input-group--full">
+              <label class="checkbox-label" for="sundayMiddayFxOpen">
+                <input id="sundayMiddayFxOpen" name="sundayMiddayFxOpen" data-field="sundayMiddayFxOpen" type="checkbox">
+                Keep Sunday FX open 12:00 to 14:00
+              </label>
+              <p>When selected, Sunday 12:00 to 14:00 treats FX as weekday-depth / open even though Sunday is not a business day. That window is a real weekday-FX-open case through isSundayMiddayFxOpenHour. Issuer, bank and payout stay on their Sunday midday rules those hours. Older scenario files omit this field and keep Sunday midday on ordinary weekend FX depth. Distinct from Saturday midday FX open, Sunday early FX open, Sunday late FX open, Saturday early FX open, Saturday late FX open, Friday early FX open, and Friday late FX open. This is a synthetic calendar, not an FX feed.</p>
             </div>
           </form>
 
@@ -1308,8 +1316,8 @@ textarea:focus-visible, select:focus-visible, .table-scroll:focus-visible { outl
               <button id="copy-last-weekend-fx-closed" type="button" aria-keyshortcuts="F7">Copy last weekend-FX-closed hour</button>
               <button id="copy-last-weekday-fx-closed" type="button" aria-keyshortcuts="F10">Copy last weekday-FX-closed hour</button>
               <button id="copy-last-weekend-fx-open" type="button">Copy last weekend-FX-open hour</button>
-              <button id="copy-last-weekday-fx-open" type="button" aria-keyshortcuts="Shift+F10">Copy last weekday-FX-open hour</button>
-              <button id="copy-first-weekday-fx-open" type="button">Copy first weekday-FX-open hour</button>
+              <button id="copy-last-weekday-fx-open" type="button">Copy last weekday-FX-open hour</button>
+              <button id="copy-first-weekday-fx-open" type="button" aria-keyshortcuts="Shift+F10">Copy first weekday-FX-open hour</button>
               <button id="copy-first-weekday-fx-closed" type="button">Copy first weekday-FX-closed hour</button>
               <button id="copy-first-weekend-fx-open" type="button">Copy first weekend-FX-open hour</button>
               <button id="copy-first-weekend-fx-closed" type="button">Copy first weekend-FX-closed hour</button>
@@ -1480,7 +1488,7 @@ textarea:focus-visible, select:focus-visible, .table-scroll:focus-visible { outl
           <li><kbd>F3</kbd> Copy last closed payout hour as Markdown</li>
           <li><kbd>F7</kbd> Copy last weekend-FX-closed hour as Markdown</li>
           <li><kbd>F10</kbd> Copy last weekday-FX-closed hour as Markdown</li>
-          <li><kbd>Shift+F10</kbd> Copy last weekday-FX-open hour as Markdown</li>
+          <li><kbd>Shift+F10</kbd> Copy first weekday-FX-open hour as Markdown</li>
           <li><kbd>+</kbd> Jump to the first-closed-FX-hour copy control</li>
           <li><kbd>!</kbd> Jump to the first-open-payout-hour copy control</li>
           <li><kbd>)</kbd> Jump to the first-open-FX-hour copy control</li>
@@ -1496,7 +1504,7 @@ textarea:focus-visible, select:focus-visible, .table-scroll:focus-visible { outl
           <li><kbd>F4</kbd> Jump to the last-closed-payout-hour copy control</li>
           <li><kbd>F8</kbd> Jump to the last-weekend-FX-closed-hour copy control</li>
           <li><kbd>F11</kbd> Jump to the last-weekday-FX-closed-hour copy control</li>
-          <li><kbd>Shift+F11</kbd> Jump to the last-weekday-FX-open-hour copy control</li>
+          <li><kbd>Shift+F11</kbd> Jump to the first-weekday-FX-open-hour copy control</li>
           <li><kbd>_</kbd> Jump to the first-closed-payout-hour copy control</li>
           <li><kbd>&lt;</kbd> Jump to the first-closed-bank-hour copy control</li>
           <li><kbd>-</kbd> Jump to the first-closed-issuer-hour copy control</li>
@@ -1610,7 +1618,8 @@ const DEFAULT_SCENARIO = Object.freeze({
   thursdayEarlyFxOpen: false,
   thursdayLateFxOpen: false,
   fridayEarlyFxOpen: false,
-  saturdayMiddayFxOpen: false
+  saturdayMiddayFxOpen: false,
+  sundayMiddayFxOpen: false
 });
 
 const PRESETS = Object.freeze({
@@ -1875,6 +1884,11 @@ const PRESETS = Object.freeze({
     ...DEFAULT_SCENARIO,
     name: "Saturday midday FX open (synthetic)",
     saturdayMiddayFxOpen: true
+  }),
+  sundayMiddayFxOpen: Object.freeze({
+    ...DEFAULT_SCENARIO,
+    name: "Sunday midday FX open (synthetic)",
+    sundayMiddayFxOpen: true
   })
 });
 
@@ -1930,7 +1944,8 @@ const FIELD_RULES = Object.freeze({
   thursdayEarlyFxOpen: { type: "boolean" },
   thursdayLateFxOpen: { type: "boolean" },
   fridayEarlyFxOpen: { type: "boolean" },
-  saturdayMiddayFxOpen: { type: "boolean" }
+  saturdayMiddayFxOpen: { type: "boolean" },
+  sundayMiddayFxOpen: { type: "boolean" }
 });
 
 function finiteNumber(value, fallback) {
@@ -2270,10 +2285,17 @@ function isSaturdayMiddayFxOpenHour(hourOffset, scenario) {
   return dayIndex === 6 && localHour >= 12 && localHour < 14;
 }
 
+/** Sunday 12:00-14:00 keeps weekday FX depth when Sunday midday FX open is on. Distinct from saturdayMiddayFxOpen (Sat 12:00-14:00), sundayEarlyFxOpen (Sun 08:00-10:00), sundayLateFxOpen (Sun 16:00-18:00), saturdayEarlyFxOpen (Sat 06:00-11:00), saturdayLateFxOpen (Sat 16:00-18:00), fridayEarlyFxOpen, and fridayLateFxOpen. */
+function isSundayMiddayFxOpenHour(hourOffset, scenario) {
+  if (scenario.sundayMiddayFxOpen !== true) return false;
+  const { dayIndex, localHour } = dayAndHourAt(hourOffset);
+  return dayIndex === 0 && localHour >= 12 && localHour < 14;
+}
+
 function getOperationalStatus(scenarioInput, hourOffset) {
   const { scenario } = sanitizeScenario(scenarioInput);
   const weekend = !isBusinessDay(hourOffset, scenario.mondayHoliday, scenario.saturdayHoliday);
-  const fxWeekday = !weekend || isFridayLateFxHour(hourOffset, scenario) || isSaturdayEarlyFxHour(hourOffset, scenario) || isFridayLateFxOpenHour(hourOffset, scenario) || isSaturdayLateFxOpenHour(hourOffset, scenario) || isSundayLateFxOpenHour(hourOffset, scenario) || isSundayEarlyFxOpenHour(hourOffset, scenario) || isMondayEarlyFxOpenHour(hourOffset, scenario) || isMondayLateFxOpenHour(hourOffset, scenario) || isTuesdayEarlyFxOpenHour(hourOffset, scenario) || isTuesdayLateFxOpenHour(hourOffset, scenario) || isWednesdayEarlyFxOpenHour(hourOffset, scenario) || isWednesdayLateFxOpenHour(hourOffset, scenario) || isThursdayEarlyFxOpenHour(hourOffset, scenario) || isThursdayLateFxOpenHour(hourOffset, scenario) || isFridayEarlyFxOpenHour(hourOffset, scenario) || isSaturdayMiddayFxOpenHour(hourOffset, scenario);
+  const fxWeekday = !weekend || isFridayLateFxHour(hourOffset, scenario) || isSaturdayEarlyFxHour(hourOffset, scenario) || isFridayLateFxOpenHour(hourOffset, scenario) || isSaturdayLateFxOpenHour(hourOffset, scenario) || isSundayLateFxOpenHour(hourOffset, scenario) || isSundayEarlyFxOpenHour(hourOffset, scenario) || isMondayEarlyFxOpenHour(hourOffset, scenario) || isMondayLateFxOpenHour(hourOffset, scenario) || isTuesdayEarlyFxOpenHour(hourOffset, scenario) || isTuesdayLateFxOpenHour(hourOffset, scenario) || isWednesdayEarlyFxOpenHour(hourOffset, scenario) || isWednesdayLateFxOpenHour(hourOffset, scenario) || isThursdayEarlyFxOpenHour(hourOffset, scenario) || isThursdayLateFxOpenHour(hourOffset, scenario) || isFridayEarlyFxOpenHour(hourOffset, scenario) || isSaturdayMiddayFxOpenHour(hourOffset, scenario) || isSundayMiddayFxOpenHour(hourOffset, scenario);
   const issuerOpen = isOperational(hourOffset, scenario.issuerOpenStartHour, scenario.issuerOpenEndHour, scenario.mondayHoliday, scenario.saturdayHoliday) || isSundayLateIssuerHour(hourOffset, scenario) || isSundayEarlyIssuerHour(hourOffset, scenario) || isSaturdayEarlyIssuerHour(hourOffset, scenario) || isFridayEarlyIssuerHour(hourOffset, scenario);
   const bankOpen = isOperational(hourOffset, scenario.bankOpenStartHour, scenario.bankOpenEndHour, scenario.mondayHoliday, scenario.saturdayHoliday) || isSundayLateBankHour(hourOffset, scenario) || isSaturdayEarlyBankHour(hourOffset, scenario) || isFridayEarlyBankHour(hourOffset, scenario) || isSaturdayLateBankHour(hourOffset, scenario) || isFridayLateBankHour(hourOffset, scenario);
   const payoutOpen = isOperational(hourOffset, scenario.payoutOpenStartHour, scenario.payoutOpenEndHour, scenario.mondayHoliday, scenario.saturdayHoliday) || isSundayLatePayoutHour(hourOffset, scenario) || isSaturdayEarlyPayoutHour(hourOffset, scenario) || isFridayEarlyPayoutHour(hourOffset, scenario) || isSaturdayLatePayoutHour(hourOffset, scenario) || isSundayEarlyPayoutHour(hourOffset, scenario);
@@ -7158,7 +7180,7 @@ document.addEventListener("keydown", (event) => {
   }
   if (event.key === "F10" && event.shiftKey) {
     event.preventDefault();
-    copyLastWeekdayFxOpenHourMarkdown();
+    copyFirstWeekdayFxOpenHourMarkdown();
     return;
   }
   if (event.key === "F10") {
@@ -7253,7 +7275,7 @@ document.addEventListener("keydown", (event) => {
   }
   if (event.key === "F11" && event.shiftKey) {
     event.preventDefault();
-    jumpToLastWeekdayFxOpenCopy();
+    jumpToFirstWeekdayFxOpenCopy();
     return;
   }
   if (event.key === "F11") {
