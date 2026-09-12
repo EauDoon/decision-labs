@@ -57,6 +57,7 @@ import {
   firstWeekdayFxOpenHourToMarkdown,
   firstWeekdayFxClosedHourToMarkdown,
   firstWeekendFxOpenHourToMarkdown,
+  firstWeekendFxClosedHourToMarkdown,
   arrivalCohortsToMarkdown,
   firstClosedGanttHour,
   firstClosedFxGanttHour,
@@ -1792,6 +1793,9 @@ document.querySelector("#copy-first-weekday-fx-closed").addEventListener("click"
 document.querySelector("#copy-first-weekend-fx-open").addEventListener("click", async () => {
   await copyFirstWeekendFxOpenHourMarkdown();
 });
+document.querySelector("#copy-first-weekend-fx-closed").addEventListener("click", async () => {
+  await copyFirstWeekendFxClosedHourMarkdown();
+});
 document.querySelector("#copy-last-open-bank").addEventListener("click", async () => {
   await copyLastOpenBankHourMarkdown();
 });
@@ -2177,6 +2181,10 @@ function copyFirstWeekendFxOpenHourMarkdown() {
   const text = firstWeekendFxOpenHourToMarkdown(scenario);
   return copyTextWithFallback(text, "#first-weekend-fx-open-copy-fallback", "First weekend-FX-open hour copied as one-line Markdown. This is a local drawing, not a live FX feed.");
 }
+function copyFirstWeekendFxClosedHourMarkdown() {
+  const text = firstWeekendFxClosedHourToMarkdown(scenario);
+  return copyTextWithFallback(text, "#first-weekend-fx-closed-copy-fallback", "First weekend-FX-closed hour copied as one-line Markdown. This is a local drawing, not a live FX feed.");
+}
 function jumpToFirstClosedBankCopy() {
   const control = document.querySelector("#copy-first-closed-bank");
   if (control) {
@@ -2521,6 +2529,15 @@ function jumpToFirstWeekdayFxClosedCopy() {
 }
 function jumpToFirstWeekendFxOpenCopy() {
   const control = document.querySelector("#copy-first-weekend-fx-open");
+  if (control) {
+    control.focus();
+    control.scrollIntoView?.({ block: "start" });
+    return true;
+  }
+  return jumpToGantt();
+}
+function jumpToFirstWeekendFxClosedCopy() {
+  const control = document.querySelector("#copy-first-weekend-fx-closed");
   if (control) {
     control.focus();
     control.scrollIntoView?.({ block: "start" });
@@ -2880,7 +2897,7 @@ document.addEventListener("keydown", (event) => {
   }
   if (event.key === "F10" && event.shiftKey) {
     event.preventDefault();
-    copyFirstWeekendFxOpenHourMarkdown();
+    copyFirstWeekendFxClosedHourMarkdown();
     return;
   }
   if (event.key === "F10") {
@@ -2975,7 +2992,7 @@ document.addEventListener("keydown", (event) => {
   }
   if (event.key === "F11" && event.shiftKey) {
     event.preventDefault();
-    jumpToFirstWeekendFxOpenCopy();
+    jumpToFirstWeekendFxClosedCopy();
     return;
   }
   if (event.key === "F11") {
@@ -3070,7 +3087,7 @@ document.addEventListener("keydown", (event) => {
   }
   if (event.key === "F12" && event.shiftKey) {
     event.preventDefault();
-    jumpToHideWeekdayFxClosedFilter();
+    jumpToHideWeekdayFxOpenFilter();
     return;
   }
   if (event.key === "F12") {

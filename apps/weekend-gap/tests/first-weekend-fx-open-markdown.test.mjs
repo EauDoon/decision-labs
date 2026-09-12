@@ -11,6 +11,8 @@ import {
   firstWeekdayFxOpenHourToMarkdown,
   firstWeekendFxOpenGanttHour,
   firstWeekendFxOpenHourToMarkdown,
+  firstWeekendFxClosedGanttHour,
+  firstWeekendFxClosedHourToMarkdown,
   formatTime,
   lastClosedFxGanttHour,
   lastClosedFxHourToMarkdown,
@@ -43,6 +45,7 @@ test("first weekend-FX-open hour Markdown is one synthetic line distinct from la
   assert.equal(firstWeekdayClosedHour, null);
   assert.equal(lastWeekdayClosedHour, null);
   assert.equal(weekendClosedHour, 56);
+  assert.equal(firstWeekendFxClosedGanttHour(DEFAULT_SCENARIO), 9);
   assert.equal(fxHour, 56);
   assert.equal(text, "First weekend-FX-open hour: none. Counts of modeled hours, not an FX calendar.");
   assert.match(text, /Counts of modeled hours/);
@@ -54,6 +57,7 @@ test("first weekend-FX-open hour Markdown is one synthetic line distinct from la
   assert.notEqual(text, lastWeekdayFxOpenHourToMarkdown(DEFAULT_SCENARIO));
   assert.notEqual(text, lastWeekdayFxClosedHourToMarkdown(DEFAULT_SCENARIO));
   assert.notEqual(text, lastWeekendFxClosedHourToMarkdown(DEFAULT_SCENARIO));
+  assert.notEqual(text, firstWeekendFxClosedHourToMarkdown(DEFAULT_SCENARIO));
   assert.notEqual(text, lastClosedFxHourToMarkdown(DEFAULT_SCENARIO));
   assert.notEqual(text, firstClosedFxHourToMarkdown(DEFAULT_SCENARIO));
   const early = PRESETS.sundayEarlyFxOpen;
@@ -69,6 +73,7 @@ test("first weekend-FX-open hour Markdown is one synthetic line distinct from la
   assert.notEqual(openText, firstWeekdayFxOpenHourToMarkdown(early));
   assert.notEqual(openText, lastWeekdayFxOpenHourToMarkdown(early));
   assert.notEqual(openText, lastWeekendFxClosedHourToMarkdown(early));
+  assert.notEqual(openText, firstWeekendFxClosedHourToMarkdown(early));
   assert.notEqual(openText, lastClosedFxHourToMarkdown(early));
   assert.notEqual(firstWeekendFxOpenGanttHour(early), lastWeekendFxOpenGanttHour(early));
   assert.notEqual(firstWeekendFxOpenGanttHour(early), firstWeekdayFxOpenGanttHour(early));
@@ -110,6 +115,7 @@ test("first weekend-FX-open hour Markdown uses none when no modeled hour is open
   assert.notEqual(empty, lastWeekendFxOpenHourToMarkdown(DEFAULT_SCENARIO));
   assert.notEqual(empty, lastWeekdayFxClosedHourToMarkdown(DEFAULT_SCENARIO));
   assert.notEqual(empty, lastWeekendFxClosedHourToMarkdown(DEFAULT_SCENARIO));
+  assert.notEqual(empty, firstWeekendFxClosedHourToMarkdown(DEFAULT_SCENARIO));
   assert.notEqual(empty, lastClosedFxHourToMarkdown(DEFAULT_SCENARIO));
   assert.doesNotMatch(model, /Date\.now/);
 });
@@ -120,6 +126,7 @@ test("copy first weekend-FX-open hour uses clipboard and a textarea fallback", a
   assert.match(html, /id="copy-first-weekend-fx-open"/);
   assert.match(html, /Copy first weekend-FX-open hour/);
   assert.match(html, /id="first-weekend-fx-open-copy-fallback"/);
+  assert.match(html, /id="copy-first-weekend-fx-closed"/);
   assert.match(html, /id="copy-first-weekday-fx-closed"/);
   assert.match(html, /id="copy-first-weekday-fx-open"/);
   assert.match(html, /id="copy-last-weekday-fx-open"/);
@@ -135,5 +142,6 @@ test("copy first weekend-FX-open hour uses clipboard and a textarea fallback", a
   assert.notEqual(app.match(/function copyFirstWeekendFxOpenHourMarkdown/)?.[0], app.match(/function copyFirstWeekdayFxClosedHourMarkdown/)?.[0]);
   assert.notEqual(app.match(/function copyFirstWeekendFxOpenHourMarkdown/)?.[0], app.match(/function copyFirstWeekdayFxOpenHourMarkdown/)?.[0]);
   assert.notEqual(app.match(/function copyFirstWeekendFxOpenHourMarkdown/)?.[0], app.match(/function copyLastWeekendFxOpenHourMarkdown/)?.[0]);
+  assert.notEqual(app.match(/function copyFirstWeekendFxOpenHourMarkdown/)?.[0], app.match(/function copyFirstWeekendFxClosedHourMarkdown/)?.[0]);
   assert.notEqual(app.match(/function copyFirstWeekendFxOpenHourMarkdown/)?.[0], app.match(/function copyLastWeekdayFxOpenHourMarkdown/)?.[0]);
 });
