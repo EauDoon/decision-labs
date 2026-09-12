@@ -9,7 +9,7 @@ test("keyboard F12 is wired to the existing hide-weekend-FX-open Gantt filter", 
   assert.match(html, /id="gantt-title"/);
   assert.match(html, /<kbd>F12<\/kbd>/);
   assert.match(html, /Jump to the hide-weekend-FX-open Gantt filter/);
-  assert.match(html, /id="gantt-hide-weekend-fx-open"[^>]*aria-keyshortcuts="ArrowLeft F12 Shift\+F12"/);
+  assert.match(html, /id="gantt-hide-weekend-fx-open"[^>]*aria-keyshortcuts="ArrowLeft F12"/);
   assert.match(html, /id="gantt-hide-weekday-fx-closed"[^>]*aria-keyshortcuts="F9"/);
   assert.match(app, /function jumpToHideWeekendFxOpenFilter/);
   assert.match(app, /#gantt-hide-weekend-fx-open/);
