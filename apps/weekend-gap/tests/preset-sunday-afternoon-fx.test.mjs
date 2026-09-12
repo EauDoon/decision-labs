@@ -119,7 +119,7 @@ test("Sunday afternoon FX open keeps the Normal Friday calendar with a Sunday af
 test("Sunday afternoon FX open ORs into fxWeekday through isSundayAfternoonFxOpenHour after saturdayAfternoonFxOpen", async () => {
   const model = await readFile(new URL("../src/model.js", import.meta.url), "utf8");
   const helperStart = model.indexOf("function isSundayAfternoonFxOpenHour");
-  const helperNext = model.indexOf("\nexport function getOperationalStatus", helperStart);
+  const helperNext = model.indexOf("function isSundayMorningFxOpenHour", helperStart);
   const commentStart = model.lastIndexOf("/** Sunday 14:00-16:00", helperStart);
   const helper = model.slice(commentStart === -1 ? helperStart : commentStart, helperNext === -1 ? undefined : helperNext);
   assert.match(helper, /scenario\.sundayAfternoonFxOpen !== true/);
@@ -129,6 +129,7 @@ test("Sunday afternoon FX open ORs into fxWeekday through isSundayAfternoonFxOpe
   assert.match(helper, /sundayMiddayFxOpen/);
   assert.match(helper, /sundayLateFxOpen/);
   assert.match(helper, /sundayEarlyFxOpen/);
+  assert.match(helper, /sundayMorningFxOpen/);
   assert.doesNotMatch(helper, /isSaturdayAfternoonFxOpenHour/);
   assert.doesNotMatch(helper, /isSundayMiddayFxOpenHour/);
   assert.doesNotMatch(helper, /isSundayLateFxOpenHour/);
