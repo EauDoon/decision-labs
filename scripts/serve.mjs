@@ -491,7 +491,7 @@ export function notFoundPage() {
     .copy-first-unlabelled-skip-href-tools { margin: 16px 0 0; }
     .copy-last-unlabelled-skip-href-tools { margin: 16px 0 0; }
     .copy-first-unlabelled-skip-target-text-tools { margin: 16px 0 0; }
-    .copy-last-unlabelled-skip-target-text-tools, .copy-first-unlabelled-skip-target-id-tools { margin: 16px 0 0; }
+    .copy-last-unlabelled-skip-target-text-tools, .copy-first-unlabelled-skip-target-id-tools, .copy-last-unlabelled-skip-target-id-tools { margin: 16px 0 0; }
     .copy-first-review-tools { margin: 16px 0 0; }
     .copy-last-review-tools { margin: 16px 0 0; }
     .copy-lede-tools { margin: 16px 0 0; }
@@ -700,6 +700,11 @@ ${skipNav}
       <span class="copy-first-unlabelled-skip-target-id-status" id="copy-first-unlabelled-skip-target-id-status" role="status"></span>
     </p>
     <textarea id="copy-first-unlabelled-skip-target-id-fallback" class="copy-first-unlabelled-skip-target-id-fallback" hidden readonly rows="2" aria-label="First unlabelled skip-target id as Markdown"></textarea>
+    <p class="copy-last-unlabelled-skip-target-id-tools">
+      <button type="button" class="copy-last-unlabelled-skip-target-id" id="copy-last-unlabelled-skip-target-id">Copy last unlabelled skip target id</button>
+      <span class="copy-last-unlabelled-skip-target-id-status" id="copy-last-unlabelled-skip-target-id-status" role="status"></span>
+    </p>
+    <textarea id="copy-last-unlabelled-skip-target-id-fallback" class="copy-last-unlabelled-skip-target-id-fallback" hidden readonly rows="2" aria-label="Last unlabelled skip-target id as Markdown"></textarea>
     <p class="copy-first-review-tools">
       <button type="button" class="copy-first-review" id="copy-first-review">Copy first review path</button>
       <span class="copy-first-review-status" id="copy-first-review-status" role="status"></span>
