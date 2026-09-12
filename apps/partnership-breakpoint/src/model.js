@@ -425,6 +425,15 @@ export const PRESETS = Object.freeze({
       { id: 'cycling-first-aid', name: 'First-aid', revenueShare: 0.25, variableCostPerTransaction: 1.44, fixedMonthlyCost: 1410, minimumAcceptableProfit: 530, capacity: 5000, minimumCommitment: 0, riskCost: 300 },
     ],
   },
+  mountainBikeCarnivalSplit: {
+    name: 'Mountain bike carnival split',
+    deal: { monthlyVolume: 5100, feePerTransaction: 8, addressableVolume: 6300, volumeShockPct: 0 },
+    participants: [
+      { id: 'mountainbike-committee', name: 'Carnival committee', revenueShare: 0.37, variableCostPerTransaction: 1.84, fixedMonthlyCost: 3720, minimumAcceptableProfit: 1430, capacity: 6000, minimumCommitment: 0, riskCost: 550 },
+      { id: 'mountainbike-club-hire', name: 'Mountain bike club hire', revenueShare: 0.38, variableCostPerTransaction: 2.02, fixedMonthlyCost: 2740, minimumAcceptableProfit: 970, capacity: 7100, minimumCommitment: 420, riskCost: 430 },
+      { id: 'mountainbike-first-aid', name: 'First-aid', revenueShare: 0.25, variableCostPerTransaction: 1.48, fixedMonthlyCost: 1440, minimumAcceptableProfit: 540, capacity: 5100, minimumCommitment: 0, riskCost: 310 },
+    ],
+  },
 });
 
 function isFiniteNumber(value) {
