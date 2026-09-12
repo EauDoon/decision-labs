@@ -51,6 +51,7 @@ test('release 1.5.39 ships time-trial cycling carnival, last-over-capacity remai
   assert.match(readme, /New in v1\.5\.39/);
   assert.match(readme, /Decision workflow \(v1\.5\.39\)/);
   assert.match(readme, /Time-trial cycling carnival, last-over-capacity remaining listed capacity copy, and last-over-capacity hide jump in Partnership Breakpoint 1\.5\.39/);
+  assert.match(readme, /Cyclo-cross first-aid stays variable cost 1\.56 after the Time-trial cycling carnival starting point is loaded/);
   const firstHeading = changelog.match(/^## .+$/m)?.[0];
   assert.equal(firstHeading, '## 1.5.39');
   assert.match(changelog, /Time-trial cycling carnival, last-over-capacity remaining listed capacity copy, and last-over-capacity hide jump in Partnership Breakpoint 1\.5\.39/);
