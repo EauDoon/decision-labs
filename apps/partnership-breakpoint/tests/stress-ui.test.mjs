@@ -6363,6 +6363,47 @@ test('keyboard Shift+F7 copies last over-capacity remaining listed capacity thro
   assert.doesNotMatch(JSON.stringify(gravel.saved()), /forecast/i);
 });
 
+test('keyboard last-over-capacity remaining copy shortcuts stay on road cycling carnival', async () => {
+  const road = await workbench('file:', { clipboard: 'ok' });
+  road.click('preset', { preset: 'roadCyclingCarnivalSplit' });
+  assert.match(road.markup(), /id="copy-last-over-capacity-remaining"[^>]*aria-keyshortcuts="\* Shift\+F7 Shift\+F10"/);
+  assert.match(road.markup(), /id="hide-last-over-capacity-participant"[^>]*aria-keyshortcuts="# Shift\+F9"/);
+  assert.match(road.markup(), /id="hide-first-over-capacity-participant"[^>]*aria-keyshortcuts="@"/);
+  assert.doesNotMatch(road.markup(), /id="hide-first-over-capacity-participant"[^>]*aria-keyshortcuts="Shift\+F9"/);
+  assert.match(road.markup(), /id="copy-first-over-capacity-remaining"[^>]*aria-keyshortcuts="~"/);
+  assert.doesNotMatch(road.markup(), /id="copy-first-over-capacity-remaining"[^>]*aria-keyshortcuts="Shift\+F7"/);
+  assert.doesNotMatch(road.markup(), /id="copy-first-over-capacity-volume"[^>]*aria-keyshortcuts="Shift\+F7"/);
+  assert.match(road.markup(), /id="copy-first-zero-share-participant"[^>]*aria-keyshortcuts="F7"/);
+  road.edit('deal.monthlyVolume', '6600');
+  road.keydown('F7', { shiftKey: true });
+  assert.equal(road.copied().at(-1), 'Last over-capacity remaining listed capacity: 1,000 txn over for First-aid. How far over listed capacity. Not a forecast.');
+  road.keydown('F10', { shiftKey: true });
+  assert.equal(road.copied().at(-1), 'Last over-capacity remaining listed capacity: 1,000 txn over for First-aid. How far over listed capacity. Not a forecast.');
+  road.keydown('~');
+  assert.equal(road.copied().at(-1), 'First over-capacity remaining listed capacity: 100 txn over for Carnival committee. How far over listed capacity. Not a forecast.');
+  road.keydown('F7');
+  assert.equal(road.copied().at(-1), 'First zero-share participant: none entered.');
+  road.keydown('F8', { shiftKey: true });
+  assert.ok(road.focused().includes('#copy-last-over-capacity-remaining'));
+  road.keydown('F11', { shiftKey: true });
+  assert.ok(road.focused().includes('#copy-last-over-capacity-remaining'));
+  road.keydown('F8');
+  assert.ok(road.focused().includes('#copy-first-zero-share-participant'));
+  road.keydown('F9', { shiftKey: true });
+  assert.ok(road.focused().includes('#hide-last-over-capacity-participant'));
+  road.keydown('F9');
+  assert.ok(road.focused().includes('#hide-first-zero-share-participant'));
+  road.keydown('@');
+  assert.ok(road.focused().includes('#hide-first-over-capacity-participant'));
+  road.keydown('F12', { shiftKey: true });
+  assert.ok(road.focused().includes('#hide-first-over-capacity-participant'));
+  assert.equal(road.saved().participants[2].variableCostPerTransaction, 1.52);
+  assert.doesNotMatch(JSON.stringify(road.saved()), /live roster/i);
+  assert.doesNotMatch(JSON.stringify(road.saved()), /hosted/i);
+  assert.doesNotMatch(JSON.stringify(road.saved()), /\bapi\b/i);
+  assert.doesNotMatch(JSON.stringify(road.saved()), /forecast/i);
+});
+
 test('keyboard Shift+F10 copies last over-capacity remaining listed capacity through the dedicated control', async () => {
   const fallback = await workbench();
   fallback.click('dismiss-coach');
