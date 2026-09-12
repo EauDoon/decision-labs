@@ -298,6 +298,7 @@ kbd { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; border: 1px s
             <option value="triathlon-club-hours">Triathlon club hours</option>
             <option value="cycling-club-hours">Cycling club hours</option>
             <option value="mountain-bike-club-hours">Mountain bike club hours</option>
+            <option value="bmx-club-hours">BMX club hours</option>
           </select>
         </label>
         <button class="button button-secondary" type="button" id="load-preset">Load preset</button>
@@ -349,8 +350,8 @@ kbd { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; border: 1px s
         <button class="button button-secondary" type="button" id="copy-groups-without-floor-remaining-button">Copy groups-without-floor remaining</button>
         <button class="button button-secondary" type="button" id="copy-last-group-without-floor-remaining-button">Copy last-without-floor remaining</button>
         <button class="button button-secondary" type="button" id="copy-first-group-without-floor-remaining-button">Copy first-without-floor remaining</button>
-        <button class="button button-secondary" type="button" id="copy-first-group-without-floor-cost-button" aria-keyshortcuts="Shift+F7">Copy first-without-floor cost</button>
-        <button class="button button-secondary" type="button" id="copy-last-group-without-floor-cost-button">Copy last-without-floor cost</button>
+        <button class="button button-secondary" type="button" id="copy-first-group-without-floor-cost-button">Copy first-without-floor cost</button>
+        <button class="button button-secondary" type="button" id="copy-last-group-without-floor-cost-button" aria-keyshortcuts="Shift+F7">Copy last-without-floor cost</button>
         <button class="button button-secondary" type="button" id="copy-change-cost-button">Copy change-cost table</button>
         <button class="button button-secondary" type="button" id="copy-veto-button">Copy veto blockers</button>
         <button class="button button-secondary" type="button" id="share-button">Share link</button>
@@ -839,9 +840,9 @@ kbd { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; border: 1px s
           <li><kbd>F10</kbd> Copy the first group-without-floor label as one-line Markdown</li>
           <li><kbd>F11</kbd> Jump to the first group-without-floor copy control, or the groups heading</li>
           <li><kbd>F12</kbd> Jump to the hide-first-group-without-floor control, or the groups heading</li>
-          <li><kbd>Shift+F7</kbd> Copy the first-without-floor cost as one-line Markdown</li>
-          <li><kbd>Shift+F8</kbd> Jump to the first-without-floor cost copy control, or the groups heading</li>
-          <li><kbd>Shift+F9</kbd> Jump to the hide-first-group-without-floor control, or the groups heading</li>
+          <li><kbd>Shift+F7</kbd> Copy the last-without-floor cost as one-line Markdown</li>
+          <li><kbd>Shift+F8</kbd> Jump to the last-without-floor cost copy control, or the groups heading</li>
+          <li><kbd>Shift+F9</kbd> Jump to the hide-last-group-without-floor control, or the groups heading</li>
           <li><kbd>Shift+F10</kbd> Copy the groups-without-floor count as one-line Markdown</li>
           <li><kbd>Shift+F11</kbd> Jump to the groups-without-floor count copy control, or the groups heading</li>
           <li><kbd>Shift+F12</kbd> Jump to the hide-first-group-without-floor control, or the groups heading</li>
@@ -6147,6 +6148,39 @@ const presets = {
       },
     ],
   },
+  "bmx-club-hours": {
+    title: "BMX club hours: pump-track booking, start-gate hours, and helmet-box lock-up",
+    threshold: 70,
+    maxChangeCost: 8,
+    groups: [
+      { id: "students", name: "Students", weight: 10 },
+      { id: "neighbours", name: "Neighbours", weight: 9, veto: true },
+      { id: "pandc", name: "P&C", weight: 12 },
+    ],
+    clauses: [
+      {
+        id: "bmx-pump-track-booking", title: "Pump-track booking", options: [
+          { id: "bmx-pump-track-booking-original", original: true, label: "Keep weekday pump-track from 08:20 with no posted start-gate rota", changeCost: 0, support: { students: 3, neighbours: 90, pandc: 61 } },
+          { id: "bmx-pump-track-booking-late", original: false, label: "Open weekday pump-track at 15:45 with a posted start-gate rota", changeCost: 2, support: { students: 90, neighbours: 30, pandc: 42 } },
+          { id: "bmx-pump-track-booking-weekend", original: false, label: "Hold Friday evening pump-track at 18:05 with a start-gate booking card", changeCost: 4, support: { students: 75, neighbours: 38, pandc: 50 } },
+        ],
+      },
+      {
+        id: "bmx-start-gate", title: "Start-gate hours", options: [
+          { id: "bmx-start-gate-original", original: true, label: "No posted BMX start-gate hours", changeCost: 0, support: { students: 68, neighbours: 16, pandc: 31 } },
+          { id: "bmx-start-gate-cap", original: false, label: "Close the start-gate hut at 17:55 and keep drinks inside the pump-track hut", changeCost: 1, support: { students: 41, neighbours: 84, pandc: 63 } },
+          { id: "bmx-start-gate-cut", original: false, label: "Serve tea only after 14:25 and retire the start-gate drinks", changeCost: 5, support: { students: 23, neighbours: 88, pandc: 39 } },
+        ],
+      },
+      {
+        id: "bmx-helmet-box-lockup", title: "Helmet-box lock-up", options: [
+          { id: "bmx-helmet-box-lockup-original", original: true, label: "Leave the helmet-box door on a shared padlock after BMX club hours", changeCost: 0, support: { students: 8, neighbours: 28, pandc: 33 } },
+          { id: "bmx-helmet-box-lockup-steward", original: false, label: "Require a P&C steward to lock the helmet-box store before 18:50", changeCost: 3, support: { students: 55, neighbours: 58, pandc: 78 } },
+          { id: "bmx-helmet-box-lockup-timer", original: false, label: "Add a timed lock on the helmet-box store after the last BMX session", changeCost: 2, support: { students: 44, neighbours: 47, pandc: 64 } },
+        ],
+      },
+    ],
+  },
 };
 
 let agreementReviewPacket = null;
@@ -10828,13 +10862,13 @@ document.addEventListener("keydown", (event) => {
     jumpToHideLastGroupBelowFloor();
   } else if (event.shiftKey && key === "F7") {
     event.preventDefault();
-    copyFirstGroupWithoutFloorCost();
+    copyLastGroupWithoutFloorCost();
   } else if (event.shiftKey && key === "F8") {
     event.preventDefault();
-    jumpToFirstGroupWithoutFloorCostCopy();
+    jumpToLastGroupWithoutFloorCostCopy();
   } else if (event.shiftKey && key === "F9") {
     event.preventDefault();
-    jumpToHideFirstGroupWithoutFloor();
+    jumpToHideLastGroupWithoutFloor();
   } else if (key === "F7") {
     event.preventDefault();
     copyLastGroupWithoutFloor();
