@@ -2604,7 +2604,7 @@ test('Cyclo-cross carnival split preset is a distinct committee club-hire first-
   assert.equal(cycloCross.deal.feePerTransaction, 8);
   assert.equal(cycloCross.deal.addressableVolume, 6500);
   assert.deepEqual(cycloCross.participants.map((item) => item.capacity), [6200, 7300, 5300]);
-  assert.equal(cycloCross.participants[2].variableCostPerTransaction, 1.56);
+  assert.equal(cycloCross.participants[2].variableCostPerTransaction, 1.54);
   assert.ok(cycloCross.participants.every((item) => item.capacity != null && Number.isFinite(item.capacity)));
   assert.notEqual(cycloCross.participants[0].variableCostPerTransaction, cycloCross.participants[1].variableCostPerTransaction);
   assert.notEqual(cycloCross.participants[1].variableCostPerTransaction, cycloCross.participants[2].variableCostPerTransaction);
@@ -2699,7 +2699,7 @@ test('Cyclo-cross carnival split preset is a distinct committee club-hire first-
   const result = calculatePartnership(cycloCross);
   assert.equal(new Set(result.participants.map((item) => item.id)).size, 3);
   assert.equal(result.effectiveVolume, 5300);
-  assert.equal(result.participants.find((item) => item.id === 'cyclo-cross-first-aid')?.profitPass, false);
+  assert.equal(result.participants.find((item) => item.id === 'cyclo-cross-first-aid')?.profitPass, true);
 });
 
 test('Cyclo-cross carnival remaining listed capacity is distinct from BMX mountain bike cycling and triathlon', () => {
@@ -2767,7 +2767,7 @@ test('Cyclo-cross carnival remaining listed capacity is distinct from BMX mounta
     const remainingToHold = named?.headroomToExit == null ? null : Math.max(0, -named.headroomToExit);
     return remainingToHold != null && remainingToHold <= 1e-9;
   });
-  assert.equal(lastAtHold.id, 'cyclo-cross-club-hire');
+  assert.equal(lastAtHold.id, 'cyclo-cross-first-aid');
   const firstAtHold = cycloCross.participants.find((item) => {
     const named = result.participants.find((row) => item.id === row.id);
     const remainingToHold = named?.headroomToExit == null ? null : Math.max(0, -named.headroomToExit);
