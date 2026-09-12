@@ -442,8 +442,36 @@ test("release 1.4.36 ships gravel cycling carnival lunch, leftover uncovered lef
 
 
 
-test("release 1.4.42 ships madison cycling carnival lunch, leftover uncovered leftover-only remaining copy and first leftover-only hide jump", async () => {
+test("release 1.4.43 ships omnium cycling carnival lunch, leftover uncovered leftover-only remaining copy and first leftover-only hide jump", async () => {
+  const pkg = JSON.parse(await readFile(new URL("../package.json", import.meta.url), "utf8"));
+  const changelog = await readFile(new URL("../CHANGELOG.md", import.meta.url), "utf8");
   const html = await readFile(new URL("../standalone.html", import.meta.url), "utf8");
+  assert.equal(pkg.version, "1.4.43");
+  const firstHeading = changelog.match(/^## .+$/m)?.[0];
+  assert.equal(firstHeading, "## 1.4.43");
+  assert.match(changelog, /Omnium cycling carnival lunch, leftover-uncovered leftover-only remaining copy, and first leftover-only hide jump in Common Cart 1\.4\.43/);
+  assert.match(html, /id="copy-leftover-uncovered-leftover-only-remaining"/u);
+  assert.match(html, /id="copy-leftover-uncovered-leftover-only-remaining"[^>]*aria-keyshortcuts="Shift\+F7 F10"/u);
+  assert.match(html, /id="hide-first-leftover-only-buyer"/u);
+  assert.match(html, /id="hide-last-leftover-only-buyer"/u);
+  assert.match(html, /data-preset="omniumCyclingCarnivalLunch"/u);
+  assert.match(html, /data-preset="madisonCyclingCarnivalLunch"/u);
+  assert.ok(html.indexOf('data-preset="madisonCyclingCarnivalLunch"') < html.indexOf('data-preset="omniumCyclingCarnivalLunch"'));
+  assert.ok(html.indexOf('data-preset="omniumCyclingCarnivalLunch"') < html.indexOf('data-preset="tiers"'));
+  assert.match(html, /Court-side Omnium Delivery/u);
+  assert.match(html, /Hall Omnium Pickup/u);
+  assert.match(html, /Omnium-board crate/u);
+  assert.match(html, /Flying-200 bench/u);
+  assert.match(html, /Elimination hamper/u);
+  assert.match(html, /if \(event\.shiftKey && key === "F9"\) \{\s*event\.preventDefault\(\);\s*focusHideFirstLeftoverOnlyBuyer\(\);/u);
+  assert.match(html, /if \(key === "F9"\) \{\s*event\.preventDefault\(\);\s*focusHideFirstUncoveredLeftoverBuyer\(\);/u);
+  assert.match(html, /if \(key === "ArrowUp"\) \{\s*event\.preventDefault\(\);\s*focusHideLastLeftoverOnlyBuyer\(\);/u);
+});
+
+test("release 1.4.42 ships madison cycling carnival lunch, leftover uncovered leftover-only remaining copy and first leftover-only hide jump", async () => {
+  const pkg = JSON.parse(await readFile(new URL("../package.json", import.meta.url), "utf8"));
+  const html = await readFile(new URL("../standalone.html", import.meta.url), "utf8");
+  assert.equal(pkg.version, "1.4.43");
   assert.match(html, /id="copy-leftover-uncovered-leftover-only-remaining"/u);
   assert.match(html, /id="copy-leftover-uncovered-leftover-only-remaining"[^>]*aria-keyshortcuts="Shift\+F7 F10"/u);
   assert.match(html, /id="hide-first-leftover-only-buyer"/u);
