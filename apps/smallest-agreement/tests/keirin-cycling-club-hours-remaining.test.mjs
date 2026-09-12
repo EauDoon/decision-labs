@@ -6,7 +6,8 @@ test("keirin cycling club hours keeps remaining 18 / 20 / 53 after hill-climb", 
   const app = (await readFile(new URL("../src/app.js", import.meta.url), "utf8")).replaceAll("\r\n", "\n");
   const html = (await readFile(new URL("../index.html", import.meta.url), "utf8")).replaceAll("\r\n", "\n");
   const keirinStart = app.indexOf('"keirin-cycling-club-hours"');
-  const keirinEnd = app.indexOf("let agreementReviewPacket", keirinStart);
+  const madisonStart = app.indexOf('"madison-cycling-club-hours"');
+  const keirinEnd = madisonStart === -1 ? app.indexOf("let agreementReviewPacket", keirinStart) : madisonStart;
   const keirin = app.slice(keirinStart, keirinEnd === -1 ? undefined : keirinEnd);
   const hillClimbStart = app.indexOf('"hill-climb-cycling-club-hours"');
   const hillClimb = app.slice(hillClimbStart, keirinStart);
