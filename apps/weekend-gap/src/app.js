@@ -3087,7 +3087,7 @@ document.addEventListener("keydown", (event) => {
   }
   if (event.key === "F12" && event.shiftKey) {
     event.preventDefault();
-    jumpToHideWeekendFxOpenFilter();
+    jumpToHideWeekdayFxOpenFilter();
     return;
   }
   if (event.key === "F12") {
