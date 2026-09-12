@@ -129,7 +129,7 @@ test("standalone artifact is current, self-contained, and LF-normalized", async 
   assert.match(html, /<kbd>F12<\/kbd> Jump to the hide-first-group-without-floor control, or the groups heading/u);
   assert.match(html, /<kbd>Shift\+F7<\/kbd> Copy the first-without-floor remaining as one-line Markdown/u);
   assert.match(html, /<kbd>Shift\+F8<\/kbd> Jump to the first-without-floor remaining copy control, or the groups heading/u);
-  assert.match(html, /<kbd>Shift\+F9<\/kbd> Jump to the hide-last-group-without-floor control, or the groups heading/u);
+  assert.match(html, /<kbd>Shift\+F9<\/kbd> Jump to the hide-first-group-without-floor control, or the groups heading/u);
   assert.match(html, /<kbd>Shift\+F10<\/kbd> Copy the groups-without-floor count as one-line Markdown/u);
   assert.match(html, /<kbd>Shift\+F11<\/kbd> Jump to the groups-without-floor count copy control, or the groups heading/u);
   assert.match(html, /<kbd>Shift\+F12<\/kbd> Jump to the hide-first-group-without-floor control, or the groups heading/u);
@@ -9850,22 +9850,22 @@ test("keyboard Shift+F8 jumps to the first-without-floor remaining copy control 
   assert.equal(app.focused(), "");
 });
 
-test("keyboard Shift+F9 jumps to hide-last-group-without-floor unless an input is active", async () => {
+test("keyboard Shift+F9 jumps to hide-first-group-without-floor unless an input is active", async () => {
   const html = await standaloneBytes();
-  assert.match(html, /<kbd>Shift\+F9<\/kbd> Jump to the hide-last-group-without-floor control, or the groups heading/u);
+  assert.match(html, /<kbd>Shift\+F9<\/kbd> Jump to the hide-first-group-without-floor control, or the groups heading/u);
   assert.match(html, /id="hide-last-group-without-floor"/u);
   assert.match(html, /id="hide-last-group-without-floor"[^>]*aria-keyshortcuts="F9"/u);
   assert.match(html, /id="hide-first-group-without-floor"/u);
   assert.match(html, /id="hide-first-group-without-floor"[^>]*aria-keyshortcuts="F12"/u);
   assert.match(html, /id="groups-heading"/u);
   const appSource = readFileSync(new URL("../src/app.js", import.meta.url), "utf8").replaceAll("\r\n", "\n");
-  assert.equal(appSource.includes('} else if (event.shiftKey && key === "F9") {\n    event.preventDefault();\n    jumpToHideLastGroupWithoutFloor();'), true);
+  assert.equal(appSource.includes('} else if (event.shiftKey && key === "F9") {\n    event.preventDefault();\n    jumpToHideFirstGroupWithoutFloor();'), true);
   assert.equal(appSource.includes('} else if (key === "F9") {\n    event.preventDefault();\n    jumpToHideLastGroupWithoutFloor();'), true);
   assert.equal(appSource.indexOf('event.shiftKey && key === "F9"') < appSource.indexOf('} else if (key === "F9")'), true);
   assert.equal("F9".length === 1, false);
   const app = await savedWorkbench(new Map());
   app.keydown("F9", { tagName: "BODY", isContentEditable: false }, { shiftKey: true });
-  assert.equal(app.focused(), "#hide-last-group-without-floor");
+  assert.equal(app.focused(), "#hide-first-group-without-floor");
   assert.match(app.groups(), /Residents/u);
   assert.equal(app.clipboardText(), "");
   app.clearFocus();
@@ -9882,7 +9882,7 @@ test("keyboard Shift+F9 jumps to hide-last-group-without-floor unless an input i
   assert.equal(app.focused(), "#copy-first-group-without-floor-remaining-button");
   app.clearFocus();
   app.keydown("F9", { tagName: "BODY", isContentEditable: false }, { shiftKey: true });
-  assert.equal(app.focused(), "#hide-last-group-without-floor");
+  assert.equal(app.focused(), "#hide-first-group-without-floor");
   app.clearFocus();
   app.keydown("F12", { tagName: "BODY", isContentEditable: false }, { shiftKey: true });
   assert.equal(app.focused(), "#hide-first-group-without-floor");
