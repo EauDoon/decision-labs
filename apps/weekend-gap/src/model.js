@@ -58,7 +58,8 @@ export const DEFAULT_SCENARIO = Object.freeze({
   mondayLateFxOpen: false,
   tuesdayEarlyFxOpen: false,
   tuesdayLateFxOpen: false,
-  wednesdayEarlyFxOpen: false
+  wednesdayEarlyFxOpen: false,
+  wednesdayLateFxOpen: false
 });
 
 export const PRESETS = Object.freeze({
@@ -298,6 +299,11 @@ export const PRESETS = Object.freeze({
     ...DEFAULT_SCENARIO,
     name: "Wednesday early FX open (synthetic)",
     wednesdayEarlyFxOpen: true
+  }),
+  wednesdayLateFxOpen: Object.freeze({
+    ...DEFAULT_SCENARIO,
+    name: "Wednesday late FX open (synthetic)",
+    wednesdayLateFxOpen: true
   })
 });
 
@@ -348,7 +354,8 @@ const FIELD_RULES = Object.freeze({
   mondayLateFxOpen: { type: "boolean" },
   tuesdayEarlyFxOpen: { type: "boolean" },
   tuesdayLateFxOpen: { type: "boolean" },
-  wednesdayEarlyFxOpen: { type: "boolean" }
+  wednesdayEarlyFxOpen: { type: "boolean" },
+  wednesdayLateFxOpen: { type: "boolean" }
 });
 
 export function finiteNumber(value, fallback) {
@@ -653,10 +660,17 @@ function isWednesdayEarlyFxOpenHour(hourOffset, scenario) {
   return dayIndex === 3 && localHour >= 8 && localHour < 10;
 }
 
+/** Wednesday 16:00-18:00 keeps weekday FX depth when Wednesday late FX open is on. Distinct from wednesdayEarlyFxOpen (Wed 08:00-10:00), tuesdayLateFxOpen (Tue 16:00-18:00), tuesdayEarlyFxOpen (Tue 08:00-10:00), mondayLateFxOpen, mondayEarlyFxOpen, fridayLateFxOpen, sundayEarlyFxOpen, and saturdayLateFxOpen. */
+function isWednesdayLateFxOpenHour(hourOffset, scenario) {
+  if (scenario.wednesdayLateFxOpen !== true) return false;
+  const { dayIndex, localHour } = dayAndHourAt(hourOffset);
+  return dayIndex === 3 && localHour >= 16 && localHour < 18;
+}
+
 export function getOperationalStatus(scenarioInput, hourOffset) {
   const { scenario } = sanitizeScenario(scenarioInput);
   const weekend = !isBusinessDay(hourOffset, scenario.mondayHoliday, scenario.saturdayHoliday);
-  const fxWeekday = !weekend || isFridayLateFxHour(hourOffset, scenario) || isSaturdayEarlyFxHour(hourOffset, scenario) || isFridayLateFxOpenHour(hourOffset, scenario) || isSaturdayLateFxOpenHour(hourOffset, scenario) || isSundayLateFxOpenHour(hourOffset, scenario) || isSundayEarlyFxOpenHour(hourOffset, scenario) || isMondayEarlyFxOpenHour(hourOffset, scenario) || isMondayLateFxOpenHour(hourOffset, scenario) || isTuesdayEarlyFxOpenHour(hourOffset, scenario) || isTuesdayLateFxOpenHour(hourOffset, scenario) || isWednesdayEarlyFxOpenHour(hourOffset, scenario);
+  const fxWeekday = !weekend || isFridayLateFxHour(hourOffset, scenario) || isSaturdayEarlyFxHour(hourOffset, scenario) || isFridayLateFxOpenHour(hourOffset, scenario) || isSaturdayLateFxOpenHour(hourOffset, scenario) || isSundayLateFxOpenHour(hourOffset, scenario) || isSundayEarlyFxOpenHour(hourOffset, scenario) || isMondayEarlyFxOpenHour(hourOffset, scenario) || isMondayLateFxOpenHour(hourOffset, scenario) || isTuesdayEarlyFxOpenHour(hourOffset, scenario) || isTuesdayLateFxOpenHour(hourOffset, scenario) || isWednesdayEarlyFxOpenHour(hourOffset, scenario) || isWednesdayLateFxOpenHour(hourOffset, scenario);
   const issuerOpen = isOperational(hourOffset, scenario.issuerOpenStartHour, scenario.issuerOpenEndHour, scenario.mondayHoliday, scenario.saturdayHoliday) || isSundayLateIssuerHour(hourOffset, scenario) || isSundayEarlyIssuerHour(hourOffset, scenario) || isSaturdayEarlyIssuerHour(hourOffset, scenario) || isFridayEarlyIssuerHour(hourOffset, scenario);
   const bankOpen = isOperational(hourOffset, scenario.bankOpenStartHour, scenario.bankOpenEndHour, scenario.mondayHoliday, scenario.saturdayHoliday) || isSundayLateBankHour(hourOffset, scenario) || isSaturdayEarlyBankHour(hourOffset, scenario) || isFridayEarlyBankHour(hourOffset, scenario) || isSaturdayLateBankHour(hourOffset, scenario) || isFridayLateBankHour(hourOffset, scenario);
   const payoutOpen = isOperational(hourOffset, scenario.payoutOpenStartHour, scenario.payoutOpenEndHour, scenario.mondayHoliday, scenario.saturdayHoliday) || isSundayLatePayoutHour(hourOffset, scenario) || isSaturdayEarlyPayoutHour(hourOffset, scenario) || isFridayEarlyPayoutHour(hourOffset, scenario) || isSaturdayLatePayoutHour(hourOffset, scenario) || isSundayEarlyPayoutHour(hourOffset, scenario);
