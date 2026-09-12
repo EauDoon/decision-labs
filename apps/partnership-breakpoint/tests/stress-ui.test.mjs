@@ -2412,6 +2412,22 @@ test('road cycling carnival split preset loads from the starting-point buttons',
   assert.notEqual(app.saved().participants.map((item) => item.id).join(','), 'creator,platform');
 });
 
+test('cyclo-cross carnival first-aid stays 1.56 after loading road cycling carnival', async () => {
+  const app = await workbench();
+  app.click('preset', { preset: 'roadCyclingCarnivalSplit' });
+  assert.equal(app.saved().participants[2].variableCostPerTransaction, 1.52);
+  app.click('preset', { preset: 'cycloCrossCarnivalSplit' });
+  assert.equal(app.saved().participants[2].id, 'cyclo-cross-first-aid');
+  assert.equal(app.saved().participants[2].variableCostPerTransaction, 1.56);
+  assert.equal(app.saved().deal.monthlyVolume, 5300);
+  assert.deepEqual(app.saved().participants.map((item) => item.capacity), [6200, 7300, 5300]);
+  assert.match(app.notice(), /Cyclo-cross carnival split loaded/);
+  const exported = JSON.stringify(app.saved());
+  assert.doesNotMatch(exported, /live roster/i);
+  assert.doesNotMatch(exported, /hosted/i);
+  assert.doesNotMatch(exported, /\bapi\b/i);
+});
+
 test('cycling carnival split preset loads from the starting-point buttons', async () => {
   const app = await workbench();
   assert.match(app.markup(), /data-preset="cyclingCarnivalSplit"/);
