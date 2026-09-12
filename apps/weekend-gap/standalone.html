@@ -469,6 +469,7 @@ textarea:focus-visible, select:focus-visible, .table-scroll:focus-visible { outl
               <button type="button" class="preset-button" data-preset="mondayEarlyFxOpen">Monday early FX open (synthetic)</button>
               <button type="button" class="preset-button" data-preset="mondayLateFxOpen">Monday late FX open (synthetic)</button>
               <button type="button" class="preset-button" data-preset="tuesdayEarlyFxOpen">Tuesday early FX open (synthetic)</button>
+              <button type="button" class="preset-button" data-preset="tuesdayLateFxOpen">Tuesday late FX open (synthetic)</button>
             </div>
           </fieldset>
 
@@ -764,6 +765,13 @@ textarea:focus-visible, select:focus-visible, .table-scroll:focus-visible { outl
                 Keep Tuesday FX open 08:00 to 10:00
               </label>
               <p>When selected, Tuesday 08:00 to 10:00 treats FX as weekday-depth / open. That window is a real weekday-FX-open case through isTuesdayEarlyFxOpenHour. Issuer, bank and payout stay on their Tuesday morning rules those hours. Older scenario files omit this field and keep Tuesday morning on ordinary weekday FX depth. Distinct from Monday early FX open, Monday late FX open, Friday late FX open, Sunday early FX open, and Saturday late FX open. This is a synthetic calendar, not an FX feed.</p>
+            </div>
+            <div class="input-group input-group--full">
+              <label class="checkbox-label" for="tuesdayLateFxOpen">
+                <input id="tuesdayLateFxOpen" name="tuesdayLateFxOpen" data-field="tuesdayLateFxOpen" type="checkbox">
+                Keep Tuesday FX open 16:00 to 18:00
+              </label>
+              <p>When selected, Tuesday 16:00 to 18:00 treats FX as weekday-depth / open. That window is a real weekday-FX-open case through isTuesdayLateFxOpenHour. Issuer, bank and payout stay on their Tuesday afternoon rules those hours. Older scenario files omit this field and keep Tuesday afternoon on ordinary weekday FX depth. Distinct from Tuesday early FX open, Monday late FX open, Monday early FX open, Friday late FX open, Sunday early FX open, and Saturday late FX open. This is a synthetic calendar, not an FX feed.</p>
             </div>
           </form>
 
@@ -1219,11 +1227,11 @@ textarea:focus-visible, select:focus-visible, .table-scroll:focus-visible { outl
                 Hide weekend hours where the FX gate is closed
               </label>
               <label class="checkbox-label" for="gantt-hide-weekday-fx-closed">
-                <input id="gantt-hide-weekday-fx-closed" type="checkbox" aria-keyshortcuts="F9">
+                <input id="gantt-hide-weekday-fx-closed" type="checkbox" aria-keyshortcuts="F9 Shift+F12">
                 Hide weekday hours where the FX gate is closed
               </label>
               <label class="checkbox-label" for="gantt-hide-weekday-fx-open">
-                <input id="gantt-hide-weekday-fx-open" type="checkbox" aria-keyshortcuts="Shift+F12">
+                <input id="gantt-hide-weekday-fx-open" type="checkbox">
                 Hide weekday hours where the FX gate is open
               </label>
               <button id="export-gantt" type="button">Download Gantt SVG</button>
@@ -1254,7 +1262,8 @@ textarea:focus-visible, select:focus-visible, .table-scroll:focus-visible { outl
               <button id="copy-last-weekend-fx-open" type="button">Copy last weekend-FX-open hour</button>
               <button id="copy-last-weekday-fx-open" type="button">Copy last weekday-FX-open hour</button>
               <button id="copy-first-weekday-fx-open" type="button">Copy first weekday-FX-open hour</button>
-              <button id="copy-first-weekday-fx-closed" type="button" aria-keyshortcuts="Shift+F10">Copy first weekday-FX-closed hour</button>
+              <button id="copy-first-weekday-fx-closed" type="button">Copy first weekday-FX-closed hour</button>
+              <button id="copy-first-weekend-fx-open" type="button" aria-keyshortcuts="Shift+F10">Copy first weekend-FX-open hour</button>
             </div>
             <label class="sr-only" for="gantt-hour-copy-fallback">Selected hour Markdown fallback</label>
             <textarea id="gantt-hour-copy-fallback" rows="8" hidden readonly></textarea>
@@ -1310,6 +1319,8 @@ textarea:focus-visible, select:focus-visible, .table-scroll:focus-visible { outl
             <textarea id="first-weekday-fx-open-copy-fallback" rows="2" hidden readonly></textarea>
             <label class="sr-only" for="first-weekday-fx-closed-copy-fallback">First weekday-FX-closed hour Markdown fallback</label>
             <textarea id="first-weekday-fx-closed-copy-fallback" rows="2" hidden readonly></textarea>
+            <label class="sr-only" for="first-weekend-fx-open-copy-fallback">First weekend-FX-open hour Markdown fallback</label>
+            <textarea id="first-weekend-fx-open-copy-fallback" rows="2" hidden readonly></textarea>
             <div id="gate-gantt" class="gantt-svg"></div>
             <div class="table-scroll" id="gantt-hour-row" tabindex="-1" role="region" aria-label="Gate Gantt table fallback">
               <table>
@@ -1418,7 +1429,7 @@ textarea:focus-visible, select:focus-visible, .table-scroll:focus-visible { outl
           <li><kbd>F3</kbd> Copy last closed payout hour as Markdown</li>
           <li><kbd>F7</kbd> Copy last weekend-FX-closed hour as Markdown</li>
           <li><kbd>F10</kbd> Copy last weekday-FX-closed hour as Markdown</li>
-          <li><kbd>Shift+F10</kbd> Copy first weekday-FX-closed hour as Markdown</li>
+          <li><kbd>Shift+F10</kbd> Copy first weekend-FX-open hour as Markdown</li>
           <li><kbd>+</kbd> Jump to the first-closed-FX-hour copy control</li>
           <li><kbd>!</kbd> Jump to the first-open-payout-hour copy control</li>
           <li><kbd>)</kbd> Jump to the first-open-FX-hour copy control</li>
@@ -1434,7 +1445,7 @@ textarea:focus-visible, select:focus-visible, .table-scroll:focus-visible { outl
           <li><kbd>F4</kbd> Jump to the last-closed-payout-hour copy control</li>
           <li><kbd>F8</kbd> Jump to the last-weekend-FX-closed-hour copy control</li>
           <li><kbd>F11</kbd> Jump to the last-weekday-FX-closed-hour copy control</li>
-          <li><kbd>Shift+F11</kbd> Jump to the first-weekday-FX-closed-hour copy control</li>
+          <li><kbd>Shift+F11</kbd> Jump to the first-weekend-FX-open-hour copy control</li>
           <li><kbd>_</kbd> Jump to the first-closed-payout-hour copy control</li>
           <li><kbd>&lt;</kbd> Jump to the first-closed-bank-hour copy control</li>
           <li><kbd>-</kbd> Jump to the first-closed-issuer-hour copy control</li>
@@ -1456,7 +1467,7 @@ textarea:focus-visible, select:focus-visible, .table-scroll:focus-visible { outl
           <li><kbd>Backspace</kbd> Jump to the hide-weekend-FX-closed Gantt filter</li>
           <li><kbd>F9</kbd> Jump to the hide-weekday-FX-closed Gantt filter</li>
           <li><kbd>F12</kbd> Jump to the hide-weekend-FX-open Gantt filter</li>
-          <li><kbd>Shift+F12</kbd> Jump to the hide-weekday-FX-open Gantt filter</li>
+          <li><kbd>Shift+F12</kbd> Jump to the hide-weekday-FX-closed Gantt filter</li>
           <li><kbd>N</kbd> Jump to the first-payout Gantt marker</li>
           <li><kbd>O</kbd> Jump to the Payout Gantt row</li>
           <li><kbd>A</kbd> Jump to analysis and export controls</li>
@@ -1541,7 +1552,8 @@ const DEFAULT_SCENARIO = Object.freeze({
   sundayEarlyFxOpen: false,
   mondayEarlyFxOpen: false,
   mondayLateFxOpen: false,
-  tuesdayEarlyFxOpen: false
+  tuesdayEarlyFxOpen: false,
+  tuesdayLateFxOpen: false
 });
 
 const PRESETS = Object.freeze({
@@ -1771,6 +1783,11 @@ const PRESETS = Object.freeze({
     ...DEFAULT_SCENARIO,
     name: "Tuesday early FX open (synthetic)",
     tuesdayEarlyFxOpen: true
+  }),
+  tuesdayLateFxOpen: Object.freeze({
+    ...DEFAULT_SCENARIO,
+    name: "Tuesday late FX open (synthetic)",
+    tuesdayLateFxOpen: true
   })
 });
 
@@ -1819,7 +1836,8 @@ const FIELD_RULES = Object.freeze({
   sundayEarlyFxOpen: { type: "boolean" },
   mondayEarlyFxOpen: { type: "boolean" },
   mondayLateFxOpen: { type: "boolean" },
-  tuesdayEarlyFxOpen: { type: "boolean" }
+  tuesdayEarlyFxOpen: { type: "boolean" },
+  tuesdayLateFxOpen: { type: "boolean" }
 });
 
 function finiteNumber(value, fallback) {
@@ -2110,10 +2128,17 @@ function isTuesdayEarlyFxOpenHour(hourOffset, scenario) {
   return dayIndex === 2 && localHour >= 8 && localHour < 10;
 }
 
+/** Tuesday 16:00-18:00 keeps weekday FX depth when Tuesday late FX open is on. Distinct from isTuesdayEarlyFxOpenHour (Tue 08:00-10:00), mondayLateFxOpen (Mon 16:00-18:00), mondayEarlyFxOpen, fridayLateFxOpen, sundayEarlyFxOpen, and saturdayLateFxOpen. */
+function isTuesdayLateFxOpenHour(hourOffset, scenario) {
+  if (scenario.tuesdayLateFxOpen !== true) return false;
+  const { dayIndex, localHour } = dayAndHourAt(hourOffset);
+  return dayIndex === 2 && localHour >= 16 && localHour < 18;
+}
+
 function getOperationalStatus(scenarioInput, hourOffset) {
   const { scenario } = sanitizeScenario(scenarioInput);
   const weekend = !isBusinessDay(hourOffset, scenario.mondayHoliday, scenario.saturdayHoliday);
-  const fxWeekday = !weekend || isFridayLateFxHour(hourOffset, scenario) || isSaturdayEarlyFxHour(hourOffset, scenario) || isFridayLateFxOpenHour(hourOffset, scenario) || isSaturdayLateFxOpenHour(hourOffset, scenario) || isSundayLateFxOpenHour(hourOffset, scenario) || isSundayEarlyFxOpenHour(hourOffset, scenario) || isMondayEarlyFxOpenHour(hourOffset, scenario) || isMondayLateFxOpenHour(hourOffset, scenario) || isTuesdayEarlyFxOpenHour(hourOffset, scenario);
+  const fxWeekday = !weekend || isFridayLateFxHour(hourOffset, scenario) || isSaturdayEarlyFxHour(hourOffset, scenario) || isFridayLateFxOpenHour(hourOffset, scenario) || isSaturdayLateFxOpenHour(hourOffset, scenario) || isSundayLateFxOpenHour(hourOffset, scenario) || isSundayEarlyFxOpenHour(hourOffset, scenario) || isMondayEarlyFxOpenHour(hourOffset, scenario) || isMondayLateFxOpenHour(hourOffset, scenario) || isTuesdayEarlyFxOpenHour(hourOffset, scenario) || isTuesdayLateFxOpenHour(hourOffset, scenario);
   const issuerOpen = isOperational(hourOffset, scenario.issuerOpenStartHour, scenario.issuerOpenEndHour, scenario.mondayHoliday, scenario.saturdayHoliday) || isSundayLateIssuerHour(hourOffset, scenario) || isSundayEarlyIssuerHour(hourOffset, scenario) || isSaturdayEarlyIssuerHour(hourOffset, scenario) || isFridayEarlyIssuerHour(hourOffset, scenario);
   const bankOpen = isOperational(hourOffset, scenario.bankOpenStartHour, scenario.bankOpenEndHour, scenario.mondayHoliday, scenario.saturdayHoliday) || isSundayLateBankHour(hourOffset, scenario) || isSaturdayEarlyBankHour(hourOffset, scenario) || isFridayEarlyBankHour(hourOffset, scenario) || isSaturdayLateBankHour(hourOffset, scenario) || isFridayLateBankHour(hourOffset, scenario);
   const payoutOpen = isOperational(hourOffset, scenario.payoutOpenStartHour, scenario.payoutOpenEndHour, scenario.mondayHoliday, scenario.saturdayHoliday) || isSundayLatePayoutHour(hourOffset, scenario) || isSaturdayEarlyPayoutHour(hourOffset, scenario) || isFridayEarlyPayoutHour(hourOffset, scenario) || isSaturdayLatePayoutHour(hourOffset, scenario) || isSundayEarlyPayoutHour(hourOffset, scenario);
@@ -3277,6 +3302,13 @@ function firstWeekdayFxClosedGanttHour(input) {
   return closed ? closed.hour : null;
 }
 
+/** First chart hour that is weekend and FX-open. Honest empty when none of the 72 hours matches. Distinct from first-weekday-FX-closed, first-weekday-FX-open, last-weekday-FX-open, last-weekend-FX-open, last-weekday-FX-closed, last-weekend-FX-closed and last-closed-FX. */
+function firstWeekendFxOpenGanttHour(input) {
+  const schedule = buildGateSchedule(input);
+  const open = schedule.hours.find((point) => point.hour < SIMULATION_HOURS && ganttHourWeekendFxOpen(point));
+  return open ? open.hour : null;
+}
+
 /** True when issuer, bank or payout is closed, or FX is weekend-thinned. */
 function ganttHourClosedOnAnyGate(point) {
   if (!point || typeof point !== "object") return false;
@@ -3881,6 +3913,15 @@ function firstWeekdayFxClosedHourToMarkdown(input) {
   return "First weekday-FX-closed hour: " + formatTime(hour) + " (hour " + hour + "). Counts of modeled hours, not an FX calendar.";
 }
 
+/** One-line first weekend-FX-open hour label. Honest empty when none exists. Distinct from first-weekday-FX-closed, first-weekday-FX-open, last-weekday-FX-open, last-weekend-FX-open, last-weekday-FX-closed, last-weekend-FX-closed and last-closed-FX copy. */
+function firstWeekendFxOpenHourToMarkdown(input) {
+  const hour = firstWeekendFxOpenGanttHour(input);
+  if (hour === null) {
+    return "First weekend-FX-open hour: none. Counts of modeled hours, not an FX calendar.";
+  }
+  return "First weekend-FX-open hour: " + formatTime(hour) + " (hour " + hour + "). Counts of modeled hours, not an FX calendar.";
+}
+
 /** Markdown for arrival-hour cohorts. Remaining is unfinished after 72 hours. Not a forecast. */
 function arrivalCohortsToMarkdown(input) {
   const result = runSimulation(input);
@@ -4179,11 +4220,11 @@ function replayWeekendReviewPacket(candidate) {
   return current;
 }
 
-return { SIMULATION_HOURS, START_DAY_INDEX, START_HOUR, DEFAULT_SCENARIO, PRESETS, finiteNumber, clamp, normaliseWindow, sanitizeScenario, dayAndHourAt, formatTime, isBusinessDay, weekendCloseOverlapNotice, mondaySaturdayHolidayNotice, isWithinHours, isOperational, getOperationalStatus, buildDemandSchedule, capacityForHour, estimateDiscountBps, nextPayoutTime, hoursToFirstSettlement, hoursToClearQueue, createSnapshot, runSimulation, compareScenarios, planReserve, analysisToJSON, scenarioToHash, scenarioFromHash, scenarioToJSON, scenarioFromJSON, compareScenarioFiles, compareThreeScenarioFiles, analyzeTimeline, runSensitivity, libraryFromJSON, CHART_VIEWS, workspaceToJSON, workspaceFromJSON, createScenarioHistory, timelineToCSV, queueToCSV, reportToHTML, reportToMarkdown, dashboardToMarkdown, hoursToClearQueueToMarkdown, hoursToFirstSettlementToMarkdown, dashboardToCSV, BOTTLENECK_LABELS, attributeBottlenecks, bottleneckCountsToMarkdown, WINDOW_GATES, shiftOperatingWindow, previewWindowShift, DEMAND_PROFILES, DEMAND_PROFILE_STEP_ORDER, stepDemandProfile, previewDemandProfileStep, compareDemandProfiles, GENERIC_GATE_LABELS, redactGateLabels, gateDisplayLabels, buildGateSchedule, firstClosedGanttHour, firstClosedFxGanttHour, firstClosedIssuerGanttHour, firstClosedPayoutGanttHour, firstOpenPayoutGanttHour, firstOpenFxGanttHour, firstOpenBankGanttHour, firstOpenIssuerGanttHour, lastOpenIssuerGanttHour, lastOpenBankGanttHour, lastOpenPayoutGanttHour, lastOpenFxGanttHour, lastClosedIssuerGanttHour, lastClosedBankGanttHour, lastClosedFxGanttHour, lastClosedPayoutGanttHour, lastWeekendFxClosedGanttHour, lastWeekdayFxClosedGanttHour, lastWeekendFxOpenGanttHour, lastWeekdayFxOpenGanttHour, firstWeekdayFxOpenGanttHour, firstWeekdayFxClosedGanttHour, ganttHourClosedOnAnyGate, ganttHourClosedOnEveryGate, ganttHourOpenOnEveryGate, ganttHourIsWeekend, ganttHourHasZeroQueue, ganttHourBankClosed, ganttHourIssuerClosed, ganttHourPayoutClosed, ganttHourFxClosed, ganttHourPayoutOpen, ganttHourFxOpen, ganttHourBankOpen, ganttHourIssuerOpen, ganttHourWeekendIssuerOpen, ganttHourWeekendIssuerClosed, ganttHourWeekendBankClosed, ganttHourWeekendBankOpen, ganttHourWeekendPayoutOpen, ganttHourWeekendFxOpen, ganttHourWeekdayFxOpen, ganttHourWeekendPayoutClosed, ganttHourWeekendFxClosed, ganttHourWeekdayFxClosed, GANTT_GATE_FILTERS, buildGateGanttSvg, ganttToCSV, selectedGanttHourToMarkdown, remainingReserveAtHourToMarkdown, peakQueueHourToMarkdown, selectedVersusPeakHourToMarkdown, nextPayoutHourToMarkdown, closedGanttHoursToMarkdown, fxGanttHoursToMarkdown, weekendFxHourCountsToMarkdown, firstClosedFxHourToMarkdown, firstClosedBankHourToMarkdown, firstClosedIssuerHourToMarkdown, firstClosedPayoutHourToMarkdown, firstOpenPayoutHourToMarkdown, firstOpenFxHourToMarkdown, firstOpenBankHourToMarkdown, firstOpenIssuerHourToMarkdown, lastOpenIssuerHourToMarkdown, lastOpenBankHourToMarkdown, lastOpenPayoutHourToMarkdown, lastOpenFxHourToMarkdown, lastClosedIssuerHourToMarkdown, lastClosedBankHourToMarkdown, lastClosedFxHourToMarkdown, lastClosedPayoutHourToMarkdown, lastWeekendFxClosedHourToMarkdown, lastWeekdayFxClosedHourToMarkdown, lastWeekendFxOpenHourToMarkdown, lastWeekdayFxOpenHourToMarkdown, firstWeekdayFxOpenHourToMarkdown, firstWeekdayFxClosedHourToMarkdown, arrivalCohortsToMarkdown, compareGateSchedules, buildComparisonGanttSvg, buildQueueChartSvg, buildSensitivityBarsSvg, compareSavedExperiments, WEEKEND_REVIEW_TOOLS, analyzeWeekendReview, createWeekendReviewPacket, replayWeekendReviewPacket };
+return { SIMULATION_HOURS, START_DAY_INDEX, START_HOUR, DEFAULT_SCENARIO, PRESETS, finiteNumber, clamp, normaliseWindow, sanitizeScenario, dayAndHourAt, formatTime, isBusinessDay, weekendCloseOverlapNotice, mondaySaturdayHolidayNotice, isWithinHours, isOperational, getOperationalStatus, buildDemandSchedule, capacityForHour, estimateDiscountBps, nextPayoutTime, hoursToFirstSettlement, hoursToClearQueue, createSnapshot, runSimulation, compareScenarios, planReserve, analysisToJSON, scenarioToHash, scenarioFromHash, scenarioToJSON, scenarioFromJSON, compareScenarioFiles, compareThreeScenarioFiles, analyzeTimeline, runSensitivity, libraryFromJSON, CHART_VIEWS, workspaceToJSON, workspaceFromJSON, createScenarioHistory, timelineToCSV, queueToCSV, reportToHTML, reportToMarkdown, dashboardToMarkdown, hoursToClearQueueToMarkdown, hoursToFirstSettlementToMarkdown, dashboardToCSV, BOTTLENECK_LABELS, attributeBottlenecks, bottleneckCountsToMarkdown, WINDOW_GATES, shiftOperatingWindow, previewWindowShift, DEMAND_PROFILES, DEMAND_PROFILE_STEP_ORDER, stepDemandProfile, previewDemandProfileStep, compareDemandProfiles, GENERIC_GATE_LABELS, redactGateLabels, gateDisplayLabels, buildGateSchedule, firstClosedGanttHour, firstClosedFxGanttHour, firstClosedIssuerGanttHour, firstClosedPayoutGanttHour, firstOpenPayoutGanttHour, firstOpenFxGanttHour, firstOpenBankGanttHour, firstOpenIssuerGanttHour, lastOpenIssuerGanttHour, lastOpenBankGanttHour, lastOpenPayoutGanttHour, lastOpenFxGanttHour, lastClosedIssuerGanttHour, lastClosedBankGanttHour, lastClosedFxGanttHour, lastClosedPayoutGanttHour, lastWeekendFxClosedGanttHour, lastWeekdayFxClosedGanttHour, lastWeekendFxOpenGanttHour, lastWeekdayFxOpenGanttHour, firstWeekdayFxOpenGanttHour, firstWeekdayFxClosedGanttHour, firstWeekendFxOpenGanttHour, ganttHourClosedOnAnyGate, ganttHourClosedOnEveryGate, ganttHourOpenOnEveryGate, ganttHourIsWeekend, ganttHourHasZeroQueue, ganttHourBankClosed, ganttHourIssuerClosed, ganttHourPayoutClosed, ganttHourFxClosed, ganttHourPayoutOpen, ganttHourFxOpen, ganttHourBankOpen, ganttHourIssuerOpen, ganttHourWeekendIssuerOpen, ganttHourWeekendIssuerClosed, ganttHourWeekendBankClosed, ganttHourWeekendBankOpen, ganttHourWeekendPayoutOpen, ganttHourWeekendFxOpen, ganttHourWeekdayFxOpen, ganttHourWeekendPayoutClosed, ganttHourWeekendFxClosed, ganttHourWeekdayFxClosed, GANTT_GATE_FILTERS, buildGateGanttSvg, ganttToCSV, selectedGanttHourToMarkdown, remainingReserveAtHourToMarkdown, peakQueueHourToMarkdown, selectedVersusPeakHourToMarkdown, nextPayoutHourToMarkdown, closedGanttHoursToMarkdown, fxGanttHoursToMarkdown, weekendFxHourCountsToMarkdown, firstClosedFxHourToMarkdown, firstClosedBankHourToMarkdown, firstClosedIssuerHourToMarkdown, firstClosedPayoutHourToMarkdown, firstOpenPayoutHourToMarkdown, firstOpenFxHourToMarkdown, firstOpenBankHourToMarkdown, firstOpenIssuerHourToMarkdown, lastOpenIssuerHourToMarkdown, lastOpenBankHourToMarkdown, lastOpenPayoutHourToMarkdown, lastOpenFxHourToMarkdown, lastClosedIssuerHourToMarkdown, lastClosedBankHourToMarkdown, lastClosedFxHourToMarkdown, lastClosedPayoutHourToMarkdown, lastWeekendFxClosedHourToMarkdown, lastWeekdayFxClosedHourToMarkdown, lastWeekendFxOpenHourToMarkdown, lastWeekdayFxOpenHourToMarkdown, firstWeekdayFxOpenHourToMarkdown, firstWeekdayFxClosedHourToMarkdown, firstWeekendFxOpenHourToMarkdown, arrivalCohortsToMarkdown, compareGateSchedules, buildComparisonGanttSvg, buildQueueChartSvg, buildSensitivityBarsSvg, compareSavedExperiments, WEEKEND_REVIEW_TOOLS, analyzeWeekendReview, createWeekendReviewPacket, replayWeekendReviewPacket };
 })());
 </script>
 <script>
-const { SIMULATION_HOURS, START_DAY_INDEX, START_HOUR, DEFAULT_SCENARIO, PRESETS, finiteNumber, clamp, normaliseWindow, sanitizeScenario, dayAndHourAt, formatTime, isBusinessDay, weekendCloseOverlapNotice, mondaySaturdayHolidayNotice, isWithinHours, isOperational, getOperationalStatus, buildDemandSchedule, capacityForHour, estimateDiscountBps, nextPayoutTime, hoursToFirstSettlement, hoursToClearQueue, createSnapshot, runSimulation, compareScenarios, planReserve, analysisToJSON, scenarioToHash, scenarioFromHash, scenarioToJSON, scenarioFromJSON, compareScenarioFiles, compareThreeScenarioFiles, analyzeTimeline, runSensitivity, libraryFromJSON, CHART_VIEWS, workspaceToJSON, workspaceFromJSON, createScenarioHistory, timelineToCSV, queueToCSV, reportToHTML, reportToMarkdown, dashboardToMarkdown, hoursToClearQueueToMarkdown, hoursToFirstSettlementToMarkdown, dashboardToCSV, BOTTLENECK_LABELS, attributeBottlenecks, bottleneckCountsToMarkdown, WINDOW_GATES, shiftOperatingWindow, previewWindowShift, DEMAND_PROFILES, DEMAND_PROFILE_STEP_ORDER, stepDemandProfile, previewDemandProfileStep, compareDemandProfiles, GENERIC_GATE_LABELS, redactGateLabels, gateDisplayLabels, buildGateSchedule, firstClosedGanttHour, firstClosedFxGanttHour, firstClosedIssuerGanttHour, firstClosedPayoutGanttHour, firstOpenPayoutGanttHour, firstOpenFxGanttHour, firstOpenBankGanttHour, firstOpenIssuerGanttHour, lastOpenIssuerGanttHour, lastOpenBankGanttHour, lastOpenPayoutGanttHour, lastOpenFxGanttHour, lastClosedIssuerGanttHour, lastClosedBankGanttHour, lastClosedFxGanttHour, lastClosedPayoutGanttHour, lastWeekendFxClosedGanttHour, lastWeekdayFxClosedGanttHour, lastWeekendFxOpenGanttHour, lastWeekdayFxOpenGanttHour, firstWeekdayFxOpenGanttHour, firstWeekdayFxClosedGanttHour, ganttHourClosedOnAnyGate, ganttHourClosedOnEveryGate, ganttHourOpenOnEveryGate, ganttHourIsWeekend, ganttHourHasZeroQueue, ganttHourBankClosed, ganttHourIssuerClosed, ganttHourPayoutClosed, ganttHourFxClosed, ganttHourPayoutOpen, ganttHourFxOpen, ganttHourBankOpen, ganttHourIssuerOpen, ganttHourWeekendIssuerOpen, ganttHourWeekendIssuerClosed, ganttHourWeekendBankClosed, ganttHourWeekendBankOpen, ganttHourWeekendPayoutOpen, ganttHourWeekendFxOpen, ganttHourWeekdayFxOpen, ganttHourWeekendPayoutClosed, ganttHourWeekendFxClosed, ganttHourWeekdayFxClosed, GANTT_GATE_FILTERS, buildGateGanttSvg, ganttToCSV, selectedGanttHourToMarkdown, remainingReserveAtHourToMarkdown, peakQueueHourToMarkdown, selectedVersusPeakHourToMarkdown, nextPayoutHourToMarkdown, closedGanttHoursToMarkdown, fxGanttHoursToMarkdown, weekendFxHourCountsToMarkdown, firstClosedFxHourToMarkdown, firstClosedBankHourToMarkdown, firstClosedIssuerHourToMarkdown, firstClosedPayoutHourToMarkdown, firstOpenPayoutHourToMarkdown, firstOpenFxHourToMarkdown, firstOpenBankHourToMarkdown, firstOpenIssuerHourToMarkdown, lastOpenIssuerHourToMarkdown, lastOpenBankHourToMarkdown, lastOpenPayoutHourToMarkdown, lastOpenFxHourToMarkdown, lastClosedIssuerHourToMarkdown, lastClosedBankHourToMarkdown, lastClosedFxHourToMarkdown, lastClosedPayoutHourToMarkdown, lastWeekendFxClosedHourToMarkdown, lastWeekdayFxClosedHourToMarkdown, lastWeekendFxOpenHourToMarkdown, lastWeekdayFxOpenHourToMarkdown, firstWeekdayFxOpenHourToMarkdown, firstWeekdayFxClosedHourToMarkdown, arrivalCohortsToMarkdown, compareGateSchedules, buildComparisonGanttSvg, buildQueueChartSvg, buildSensitivityBarsSvg, compareSavedExperiments, WEEKEND_REVIEW_TOOLS, analyzeWeekendReview, createWeekendReviewPacket, replayWeekendReviewPacket } = window.__WeekendGapModel;
+const { SIMULATION_HOURS, START_DAY_INDEX, START_HOUR, DEFAULT_SCENARIO, PRESETS, finiteNumber, clamp, normaliseWindow, sanitizeScenario, dayAndHourAt, formatTime, isBusinessDay, weekendCloseOverlapNotice, mondaySaturdayHolidayNotice, isWithinHours, isOperational, getOperationalStatus, buildDemandSchedule, capacityForHour, estimateDiscountBps, nextPayoutTime, hoursToFirstSettlement, hoursToClearQueue, createSnapshot, runSimulation, compareScenarios, planReserve, analysisToJSON, scenarioToHash, scenarioFromHash, scenarioToJSON, scenarioFromJSON, compareScenarioFiles, compareThreeScenarioFiles, analyzeTimeline, runSensitivity, libraryFromJSON, CHART_VIEWS, workspaceToJSON, workspaceFromJSON, createScenarioHistory, timelineToCSV, queueToCSV, reportToHTML, reportToMarkdown, dashboardToMarkdown, hoursToClearQueueToMarkdown, hoursToFirstSettlementToMarkdown, dashboardToCSV, BOTTLENECK_LABELS, attributeBottlenecks, bottleneckCountsToMarkdown, WINDOW_GATES, shiftOperatingWindow, previewWindowShift, DEMAND_PROFILES, DEMAND_PROFILE_STEP_ORDER, stepDemandProfile, previewDemandProfileStep, compareDemandProfiles, GENERIC_GATE_LABELS, redactGateLabels, gateDisplayLabels, buildGateSchedule, firstClosedGanttHour, firstClosedFxGanttHour, firstClosedIssuerGanttHour, firstClosedPayoutGanttHour, firstOpenPayoutGanttHour, firstOpenFxGanttHour, firstOpenBankGanttHour, firstOpenIssuerGanttHour, lastOpenIssuerGanttHour, lastOpenBankGanttHour, lastOpenPayoutGanttHour, lastOpenFxGanttHour, lastClosedIssuerGanttHour, lastClosedBankGanttHour, lastClosedFxGanttHour, lastClosedPayoutGanttHour, lastWeekendFxClosedGanttHour, lastWeekdayFxClosedGanttHour, lastWeekendFxOpenGanttHour, lastWeekdayFxOpenGanttHour, firstWeekdayFxOpenGanttHour, firstWeekdayFxClosedGanttHour, firstWeekendFxOpenGanttHour, ganttHourClosedOnAnyGate, ganttHourClosedOnEveryGate, ganttHourOpenOnEveryGate, ganttHourIsWeekend, ganttHourHasZeroQueue, ganttHourBankClosed, ganttHourIssuerClosed, ganttHourPayoutClosed, ganttHourFxClosed, ganttHourPayoutOpen, ganttHourFxOpen, ganttHourBankOpen, ganttHourIssuerOpen, ganttHourWeekendIssuerOpen, ganttHourWeekendIssuerClosed, ganttHourWeekendBankClosed, ganttHourWeekendBankOpen, ganttHourWeekendPayoutOpen, ganttHourWeekendFxOpen, ganttHourWeekdayFxOpen, ganttHourWeekendPayoutClosed, ganttHourWeekendFxClosed, ganttHourWeekdayFxClosed, GANTT_GATE_FILTERS, buildGateGanttSvg, ganttToCSV, selectedGanttHourToMarkdown, remainingReserveAtHourToMarkdown, peakQueueHourToMarkdown, selectedVersusPeakHourToMarkdown, nextPayoutHourToMarkdown, closedGanttHoursToMarkdown, fxGanttHoursToMarkdown, weekendFxHourCountsToMarkdown, firstClosedFxHourToMarkdown, firstClosedBankHourToMarkdown, firstClosedIssuerHourToMarkdown, firstClosedPayoutHourToMarkdown, firstOpenPayoutHourToMarkdown, firstOpenFxHourToMarkdown, firstOpenBankHourToMarkdown, firstOpenIssuerHourToMarkdown, lastOpenIssuerHourToMarkdown, lastOpenBankHourToMarkdown, lastOpenPayoutHourToMarkdown, lastOpenFxHourToMarkdown, lastClosedIssuerHourToMarkdown, lastClosedBankHourToMarkdown, lastClosedFxHourToMarkdown, lastClosedPayoutHourToMarkdown, lastWeekendFxClosedHourToMarkdown, lastWeekdayFxClosedHourToMarkdown, lastWeekendFxOpenHourToMarkdown, lastWeekdayFxOpenHourToMarkdown, firstWeekdayFxOpenHourToMarkdown, firstWeekdayFxClosedHourToMarkdown, firstWeekendFxOpenHourToMarkdown, arrivalCohortsToMarkdown, compareGateSchedules, buildComparisonGanttSvg, buildQueueChartSvg, buildSensitivityBarsSvg, compareSavedExperiments, WEEKEND_REVIEW_TOOLS, analyzeWeekendReview, createWeekendReviewPacket, replayWeekendReviewPacket } = window.__WeekendGapModel;
 
 let workspaceReady = false;
 let lastValidPlan = { targetPercent: 100, deadlineHour: 72, ganttDensity: "snapshots", selectedHour: 0, ganttHourIndex: 0, selectedChart: "queue", ganttClosedOnly: false, ganttGateFilter: "all", queueBacklogOnly: false, ganttEveryGateClosed: false, hideWeekdayGanttHours: false, hideWeekendGanttHours: false, hideOpenGanttHours: false, hideClosedGanttHours: false, hideZeroQueueGanttHours: false, hideBankClosedGanttHours: false, hideIssuerClosedGanttHours: false, hidePayoutClosedGanttHours: false, hideFxClosedGanttHours: false, hidePayoutOpenGanttHours: false, hideFxOpenGanttHours: false, hideBankOpenGanttHours: false, hideIssuerOpenGanttHours: false, hideWeekendIssuerOpenGanttHours: false, hideWeekendIssuerClosedGanttHours: false, hideWeekendBankClosedGanttHours: false, hideWeekendBankOpenGanttHours: false, hideWeekendPayoutOpenGanttHours: false, hideWeekendFxOpenGanttHours: false, hideWeekendPayoutClosedGanttHours: false, hideWeekendFxClosedGanttHours: false, hideWeekdayFxClosedGanttHours: false, hideWeekdayFxOpenGanttHours: false };
@@ -5859,6 +5900,9 @@ document.querySelector("#copy-first-weekday-fx-open").addEventListener("click", 
 document.querySelector("#copy-first-weekday-fx-closed").addEventListener("click", async () => {
   await copyFirstWeekdayFxClosedHourMarkdown();
 });
+document.querySelector("#copy-first-weekend-fx-open").addEventListener("click", async () => {
+  await copyFirstWeekendFxOpenHourMarkdown();
+});
 document.querySelector("#copy-last-open-bank").addEventListener("click", async () => {
   await copyLastOpenBankHourMarkdown();
 });
@@ -6240,6 +6284,10 @@ function copyFirstWeekdayFxClosedHourMarkdown() {
   const text = firstWeekdayFxClosedHourToMarkdown(scenario);
   return copyTextWithFallback(text, "#first-weekday-fx-closed-copy-fallback", "First weekday-FX-closed hour copied as one-line Markdown. This is a local drawing, not a live FX feed.");
 }
+function copyFirstWeekendFxOpenHourMarkdown() {
+  const text = firstWeekendFxOpenHourToMarkdown(scenario);
+  return copyTextWithFallback(text, "#first-weekend-fx-open-copy-fallback", "First weekend-FX-open hour copied as one-line Markdown. This is a local drawing, not a live FX feed.");
+}
 function jumpToFirstClosedBankCopy() {
   const control = document.querySelector("#copy-first-closed-bank");
   if (control) {
@@ -6575,6 +6623,15 @@ function jumpToFirstWeekdayFxOpenCopy() {
 }
 function jumpToFirstWeekdayFxClosedCopy() {
   const control = document.querySelector("#copy-first-weekday-fx-closed");
+  if (control) {
+    control.focus();
+    control.scrollIntoView?.({ block: "start" });
+    return true;
+  }
+  return jumpToGantt();
+}
+function jumpToFirstWeekendFxOpenCopy() {
+  const control = document.querySelector("#copy-first-weekend-fx-open");
   if (control) {
     control.focus();
     control.scrollIntoView?.({ block: "start" });
@@ -6934,7 +6991,7 @@ document.addEventListener("keydown", (event) => {
   }
   if (event.key === "F10" && event.shiftKey) {
     event.preventDefault();
-    copyFirstWeekdayFxClosedHourMarkdown();
+    copyFirstWeekendFxOpenHourMarkdown();
     return;
   }
   if (event.key === "F10") {
@@ -7029,7 +7086,7 @@ document.addEventListener("keydown", (event) => {
   }
   if (event.key === "F11" && event.shiftKey) {
     event.preventDefault();
-    jumpToFirstWeekdayFxClosedCopy();
+    jumpToFirstWeekendFxOpenCopy();
     return;
   }
   if (event.key === "F11") {
@@ -7124,7 +7181,7 @@ document.addEventListener("keydown", (event) => {
   }
   if (event.key === "F12" && event.shiftKey) {
     event.preventDefault();
-    jumpToHideWeekdayFxOpenFilter();
+    jumpToHideWeekdayFxClosedFilter();
     return;
   }
   if (event.key === "F12") {

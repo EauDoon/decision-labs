@@ -2,26 +2,29 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { readFile } from "node:fs/promises";
 
-test("1.5.31 keeps first-weekday-FX-closed copy control without taking Shift+F10", async () => {
+test("keyboard Shift+F10 is wired to copy first weekend-FX-open hour before unshifted F10", async () => {
   const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
   const app = await readFile(new URL("../src/app.js", import.meta.url), "utf8");
-  assert.match(html, /id="copy-first-weekday-fx-closed"/);
-  assert.match(html, /Copy first weekday-FX-closed hour/);
-  assert.match(html, /id="first-weekday-fx-closed-copy-fallback"/);
+  assert.match(html, /id="copy-first-weekend-fx-open"/);
+  assert.match(html, /<kbd>Shift\+F10<\/kbd>/u);
+  assert.match(html, /Copy first weekend-FX-open hour as Markdown/);
   assert.match(html, /id="copy-first-weekend-fx-open"[^>]*aria-keyshortcuts="Shift\+F10"/);
-  assert.match(html, /id="copy-last-weekday-fx-closed"[^>]*aria-keyshortcuts="F10"/);
+  assert.match(html, /id="copy-first-weekday-fx-closed"/);
   assert.doesNotMatch(html, /id="copy-first-weekday-fx-closed"[^>]*aria-keyshortcuts="Shift\+F10"/);
-  assert.match(app, /function copyFirstWeekdayFxClosedHourMarkdown/);
-  assert.match(app, /firstWeekdayFxClosedHourToMarkdown\(scenario\)/);
+  assert.match(html, /id="copy-first-weekday-fx-open"/);
+  assert.doesNotMatch(html, /id="copy-first-weekday-fx-open"[^>]*aria-keyshortcuts="Shift\+F10"/);
   assert.match(app, /function copyFirstWeekendFxOpenHourMarkdown/);
+  assert.match(app, /firstWeekendFxOpenHourToMarkdown\(scenario\)/);
   assert.match(app, /event\.key === "F10" && event\.shiftKey/);
   assert.match(app, /copyFirstWeekendFxOpenHourMarkdown\(\)/);
   assert.match(app, /event\.key === "F10"/);
   assert.match(app, /copyLastWeekdayFxClosedHourMarkdown\(\)/);
+  assert.match(app, /function copyFirstWeekdayFxClosedHourMarkdown/);
   assert.match(app, /if \(event\.defaultPrevented\) return/);
   assert.match(app, /event\.key\.length === 1 \? event\.key\.toLowerCase\(\) : event\.key/);
-  assert.notEqual(app.match(/function copyFirstWeekdayFxClosedHourMarkdown/)?.[0], app.match(/function copyFirstWeekendFxOpenHourMarkdown/)?.[0]);
-  assert.notEqual(app.match(/function copyFirstWeekdayFxClosedHourMarkdown/)?.[0], app.match(/function copyLastWeekdayFxClosedHourMarkdown/)?.[0]);
+  assert.notEqual(app.match(/function copyFirstWeekendFxOpenHourMarkdown/)?.[0], app.match(/function copyFirstWeekdayFxClosedHourMarkdown/)?.[0]);
+  assert.notEqual(app.match(/function copyFirstWeekendFxOpenHourMarkdown/)?.[0], app.match(/function copyFirstWeekdayFxOpenHourMarkdown/)?.[0]);
+  assert.notEqual(app.match(/function copyFirstWeekendFxOpenHourMarkdown/)?.[0], app.match(/function copyLastWeekdayFxClosedHourMarkdown/)?.[0]);
   const handler = app.slice(app.indexOf('document.addEventListener("keydown"'));
   const shiftF10 = handler.indexOf('event.key === "F10" && event.shiftKey');
   const unshiftedF10 = handler.lastIndexOf('event.key === "F10"');
