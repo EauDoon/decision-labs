@@ -32,6 +32,7 @@ test("Saturday midday FX open keeps the Normal Friday calendar with a Saturday m
   assert.equal(preset.saturdayMiddayFxOpen, true);
   assert.equal(DEFAULT_SCENARIO.saturdayMiddayFxOpen, false);
   assert.equal(preset.sundayMiddayFxOpen, false);
+  assert.equal(preset.saturdayAfternoonFxOpen, false);
   assert.equal(preset.saturdayEarlyFxOpen, false);
   assert.equal(preset.saturdayLateFxOpen, false);
   assert.equal(preset.fridayEarlyFxOpen, false);
@@ -48,6 +49,7 @@ test("Saturday midday FX open keeps the Normal Friday calendar with a Saturday m
   assert.notDeepEqual(preset, PRESETS.normal);
   assert.notDeepEqual(preset, PRESETS.saturdayEarlyFxOpen);
   assert.notDeepEqual(preset, PRESETS.sundayMiddayFxOpen);
+  assert.notDeepEqual(preset, PRESETS.saturdayAfternoonFxOpen);
   assert.notDeepEqual(preset, PRESETS.saturdayLateFxOpen);
   assert.notDeepEqual(preset, PRESETS.fridayEarlyFxOpen);
   assert.notDeepEqual(preset, PRESETS.fridayLateFxOpen);
@@ -171,13 +173,16 @@ test("Saturday midday FX open ORs into fxWeekday through isSaturdayMiddayFxOpenH
   assert.match(status, /isFridayEarlyFxOpenHour\(hourOffset, scenario\)/);
   assert.match(status, /isSaturdayMiddayFxOpenHour\(hourOffset, scenario\)/);
   assert.match(status, /isSundayMiddayFxOpenHour\(hourOffset, scenario\)/);
+  assert.match(status, /isSaturdayAfternoonFxOpenHour\(hourOffset, scenario\)/);
   assert.match(status, /isSaturdayEarlyFxHour\(hourOffset, scenario\)/);
   assert.match(status, /isSaturdayLateFxOpenHour\(hourOffset, scenario\)/);
   const fridayEarlyCall = status.indexOf("isFridayEarlyFxOpenHour(hourOffset, scenario)");
   const saturdayMiddayCall = status.indexOf("isSaturdayMiddayFxOpenHour(hourOffset, scenario)");
   const sundayMiddayCall = status.indexOf("isSundayMiddayFxOpenHour(hourOffset, scenario)");
+  const saturdayAfternoonCall = status.indexOf("isSaturdayAfternoonFxOpenHour(hourOffset, scenario)");
   assert.ok(fridayEarlyCall !== -1 && saturdayMiddayCall > fridayEarlyCall);
   assert.ok(saturdayMiddayCall !== -1 && sundayMiddayCall > saturdayMiddayCall);
+  assert.ok(sundayMiddayCall !== -1 && saturdayAfternoonCall > sundayMiddayCall);
   assert.doesNotMatch(model, /Date\.now/);
 });
 
@@ -192,8 +197,10 @@ test("Saturday midday FX open is available as a preset button and is not an FX f
   const fridayPreset = html.indexOf('data-preset="fridayEarlyFxOpen"');
   const middayPreset = html.indexOf('data-preset="saturdayMiddayFxOpen"');
   const sundayPreset = html.indexOf('data-preset="sundayMiddayFxOpen"');
+  const afternoonPreset = html.indexOf('data-preset="saturdayAfternoonFxOpen"');
   assert.ok(fridayPreset !== -1 && middayPreset > fridayPreset);
   assert.ok(sundayPreset > middayPreset);
+  assert.ok(afternoonPreset > sundayPreset);
   assert.match(html, /Saturday midday FX open \(synthetic\)/);
   assert.match(html, /id="saturdayMiddayFxOpen"/);
   assert.match(html, /Keep Saturday FX open 12:00 to 14:00/);
