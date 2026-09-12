@@ -1570,6 +1570,39 @@ const presets = {
       },
     ],
   },
+  "time-trial-cycling-club-hours": {
+    title: "Time-trial cycling club hours: time-trial course booking, start-ramp hours, and timing-chip lock-up",
+    threshold: 70,
+    maxChangeCost: 8,
+    groups: [
+      { id: "students", name: "Students", weight: 16 },
+      { id: "neighbours", name: "Neighbours", weight: 13, veto: true },
+      { id: "pandc", name: "P&C", weight: 18 },
+    ],
+    clauses: [
+      {
+        id: "time-trial-cycling-course-booking", title: "Time-trial course booking", options: [
+          { id: "time-trial-cycling-course-booking-original", original: true, label: "Keep weekday time-trial course from 09:40 with no posted start-ramp rota", changeCost: 0, support: { students: 6, neighbours: 84, pandc: 65 } },
+          { id: "time-trial-cycling-course-booking-late", original: false, label: "Open weekday time-trial course at 18:15 with a posted start-ramp rota", changeCost: 2, support: { students: 87, neighbours: 24, pandc: 36 } },
+          { id: "time-trial-cycling-course-booking-weekend", original: false, label: "Hold Saturday morning time-trial course at 08:15 with a start-ramp booking card", changeCost: 4, support: { students: 72, neighbours: 32, pandc: 44 } },
+        ],
+      },
+      {
+        id: "time-trial-cycling-start-ramp", title: "Start-ramp hours", options: [
+          { id: "time-trial-cycling-start-ramp-original", original: true, label: "No posted start-ramp hours", changeCost: 0, support: { students: 62, neighbours: 10, pandc: 35 } },
+          { id: "time-trial-cycling-start-ramp-cap", original: false, label: "Close start-ramp at 19:25 and keep timekeepers at the start-ramp hut", changeCost: 1, support: { students: 35, neighbours: 88, pandc: 67 } },
+          { id: "time-trial-cycling-start-ramp-cut", original: false, label: "Serve timekeepers only after 13:30", changeCost: 5, support: { students: 17, neighbours: 92, pandc: 33 } },
+        ],
+      },
+      {
+        id: "time-trial-cycling-timing-chip-lockup", title: "Timing-chip lock-up", options: [
+          { id: "time-trial-cycling-timing-chip-lockup-original", original: true, label: "Leave the timing-chip door on a shared padlock after club hours", changeCost: 0, support: { students: 2, neighbours: 22, pandc: 27 } },
+          { id: "time-trial-cycling-timing-chip-lockup-steward", original: false, label: "Require a P&C steward to lock the timing-chip store before 21:00", changeCost: 3, support: { students: 49, neighbours: 64, pandc: 84 } },
+          { id: "time-trial-cycling-timing-chip-lockup-timer", original: false, label: "Add a timed lock on the timing-chip store after the last time-trial cycling session", changeCost: 2, support: { students: 38, neighbours: 41, pandc: 58 } },
+        ],
+      },
+    ],
+  },
 };
 
 let agreementReviewPacket = null;
