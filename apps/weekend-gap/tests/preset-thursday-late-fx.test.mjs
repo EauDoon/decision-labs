@@ -32,6 +32,7 @@ test("Thursday late FX open keeps the Normal Friday calendar with a Thursday aft
   assert.equal(preset.thursdayLateFxOpen, true);
   assert.equal(DEFAULT_SCENARIO.thursdayLateFxOpen, false);
   assert.equal(preset.fridayEarlyFxOpen, false);
+  assert.equal(preset.saturdayMiddayFxOpen, false);
   assert.equal(preset.thursdayEarlyFxOpen, false);
   assert.equal(preset.wednesdayLateFxOpen, false);
   assert.equal(preset.wednesdayEarlyFxOpen, false);
@@ -48,6 +49,7 @@ test("Thursday late FX open keeps the Normal Friday calendar with a Thursday aft
   assert.equal(preset.bankOpenStartHour, DEFAULT_SCENARIO.bankOpenStartHour);
   assert.equal(preset.redemptionDemandAud, DEFAULT_SCENARIO.redemptionDemandAud);
   assert.notDeepEqual(preset, PRESETS.fridayEarlyFxOpen);
+  assert.notDeepEqual(preset, PRESETS.saturdayMiddayFxOpen);
   assert.notDeepEqual(preset, PRESETS.normal);
   assert.notDeepEqual(preset, PRESETS.thursdayEarlyFxOpen);
   assert.notDeepEqual(preset, PRESETS.wednesdayLateFxOpen);
@@ -101,6 +103,7 @@ test("Thursday late FX open keeps the Normal Friday calendar with a Thursday aft
   assert.equal(firstThursdayLateFxOpenHour(PRESETS.fridayLateFxOpen), null);
   assert.equal(firstThursdayLateFxOpenHour(PRESETS.sundayEarlyFxOpen), null);
   assert.equal(firstThursdayLateFxOpenHour(PRESETS.saturdayLateFxOpen), null);
+  assert.equal(firstThursdayLateFxOpenHour(PRESETS.saturdayMiddayFxOpen), null);
   const wednesdayAfternoon = { dayIndex: 3, localHour: 16 };
   const thursdayMorning = dayAndHourAt(137);
   const thursdayAfternoon = dayAndHourAt(145);
