@@ -8,6 +8,10 @@ It is a working research prototype for a simple question: can shared demand crea
 
 *Built-in synthetic coffee scenario.*
 
+## Supplier contingency (v1.6.0)
+
+The **Supplier contingency** panel tests one declared supplier change at a time — withdraw an offer, reduce a capacity, scale prices, or delay delivery — against identical demand, and shows which orders lose coverage, which become feasible, and how landed cost moves. Withdraw each planned merchant runs the standard dependency set. Export the experiments as organizer-private JSON or the merchant summary with aggregates only. The CLI accepts `contingency --input scenario.json --experiment '{"type":"withdraw","offerId":"O01"}'`. Editing the room clears experiment results so stale runs are never shown.
+
 ## Multi-merchant plan (v1.5.0)
 
 The **Multi-merchant plan** panel plans all merchants together on identical demand: maximum fulfilled units, then minimum landed cost, then fewest merchants, then deterministic order. It shows the single-offer winner beside the plan, per-merchant assignments with repriced tiers, and unmet demand with reasons. Export the plan as organizer-private JSON or CSV, or the merchant summary with aggregates only. The CLI accepts `plan --input scenario.json`. Rooms above the 250,000-assignment search bound return the best plan found with an explicit limit status instead of a claimed optimum.

@@ -1,5 +1,19 @@
 # Changelog
 
+## 1.6.0 - 2026-09-12
+
+Supplier contingency planning in Common Cart 1.6.0.
+
+A workshop addition on 1.5.0. Common Cart remains an offline simulator. Contingency results are planning experiments, not forecasts of supplier behavior, orders, or verified savings. Merchant summaries still receive aggregates only. Organizer contingency exports are labeled organizer-private.
+
+### Added
+
+- Supplier contingency experiments: withdraw an offer, reduce capacity, scale band prices, or delay delivery, each replanned against identical demand with lost orders, newly feasible orders, and landed-cost deltas.
+- Supplier contingency panel with an experiment builder, standard merchant-withdrawal set, organizer JSON export, and aggregates-only merchant summary. Editing the room clears experiment results.
+- Supplier withdrawal dependency review question with packet replay, CLI `contingency --input --experiment`, and merchant-report privacy tests for every new export.
+
+# Changelog
+
 ## 1.5.0 - 2026-09-12
 
 Multi-merchant procurement planning in Common Cart 1.5.0.

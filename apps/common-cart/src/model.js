@@ -3266,6 +3266,160 @@ function tierPriceForUnits(offer, units) {
 }
 
 /**
+ * Supplier contingency experiment. One declared change to one offer —
+ * withdrawal, reduced capacity, scaled prices, or delayed delivery — replanned
+ * against the same buyer demand with the same bounded exact planner.
+ * Lost and newly feasible orders compare baseline and contingency assignments
+ * buyer by buyer; landed cost and fulfillment deltas are reported alongside.
+ */
+export function planContingency(rawScenario, rawExperiment) {
+  const scenario = validateScenario(rawScenario);
+  const experiment = validateContingencyExperiment(rawExperiment, scenario);
+  const baseline = planMultiMerchant(scenario);
+  const modified = applyContingencyExperiment(scenario, experiment);
+  const contingency = planMultiMerchant(modified.scenario);
+  const baselineServed = new Set(baseline.assignments.flatMap((entry) => entry.buyerIds));
+  const contingencyServed = new Set(contingency.assignments.flatMap((entry) => entry.buyerIds));
+  const buyerById = new Map(scenario.buyers.map((buyer) => [buyer.id, buyer]));
+  const lostOrders = [...baselineServed].filter((id) => !contingencyServed.has(id)).sort(compareText)
+    .map((id) => ({ buyerId: id, quantity: buyerById.get(id).quantity }));
+  const newlyFeasible = [...contingencyServed].filter((id) => !baselineServed.has(id)).sort(compareText)
+    .map((id) => ({ buyerId: id, quantity: buyerById.get(id).quantity }));
+  return {
+    experiment,
+    description: contingencyDescription(experiment, scenario),
+    baseline: planSummary(baseline),
+    contingency: planSummary(contingency),
+    fulfilledUnitsDelta: contingency.fulfilledUnits - baseline.fulfilledUnits,
+    totalCostDelta: contingency.totalCost - baseline.totalCost,
+    lostOrders,
+    lostUnits: lostOrders.reduce((sum, entry) => sum + entry.quantity, 0),
+    newlyFeasible,
+    newlyFeasibleUnits: newlyFeasible.reduce((sum, entry) => sum + entry.quantity, 0),
+    assignments: contingency.assignments,
+    unserved: contingency.unserved,
+    note: 'One declared supplier change replanned against identical buyer demand. Lost orders were covered before and are not after; newly feasible orders are the reverse. This is a planning experiment, not a forecast of supplier behavior.',
+  };
+}
+
+function planSummary(plan) {
+  return {
+    status: plan.status, optimal: plan.optimal,
+    fulfilledUnits: plan.fulfilledUnits, unservedUnits: plan.unservedUnits,
+    totalCost: plan.totalCost, merchantCount: plan.merchantCount,
+    merchants: plan.assignments.map((entry) => entry.merchant),
+  };
+}
+
+function contingencyDescription(experiment, scenario) {
+  const offer = scenario.offers.find((item) => item.id === experiment.offerId);
+  const name = offer ? `${offer.merchant} / ${offer.id}` : experiment.offerId;
+  switch (experiment.type) {
+    case 'withdraw': return `Withdraw ${name}: the offer leaves the room.`;
+    case 'capacity': return `Reduce ${name} capacity to ${experiment.capacity} units.`;
+    case 'price': return `Scale ${name} band prices by ${experiment.priceMultiplier}.`;
+    case 'delay': return `Delay ${name} delivery to ${experiment.deliveryDays} days.`;
+    default: return 'Unknown experiment.';
+  }
+}
+
+function validateContingencyExperiment(rawExperiment, scenario) {
+  if (!rawExperiment || typeof rawExperiment !== 'object' || Array.isArray(rawExperiment)) {
+    throw new ScenarioError('Contingency experiment must be an object.');
+  }
+  const allowed = new Set(['type', 'offerId', 'capacity', 'priceMultiplier', 'deliveryDays']);
+  for (const key of Object.keys(rawExperiment)) {
+    if (!allowed.has(key)) throw new ScenarioError(`Contingency experiment has unexpected field: ${key}.`);
+  }
+  const { type, offerId } = rawExperiment;
+  if (!['withdraw', 'capacity', 'price', 'delay'].includes(type)) {
+    throw new ScenarioError('Contingency experiment type must be withdraw, capacity, price, or delay.');
+  }
+  if (typeof offerId !== 'string' || !scenario.offers.some((offer) => offer.id === offerId)) {
+    throw new ScenarioError('Contingency experiment must name an existing offer.');
+  }
+  const normalized = { type, offerId };
+  if (type === 'capacity') {
+    if (!Number.isInteger(rawExperiment.capacity) || rawExperiment.capacity < 0 || rawExperiment.capacity > MAX_UNITS) {
+      throw new ScenarioError('Contingency capacity must be a whole number from 0 through 5,000.');
+    }
+    normalized.capacity = rawExperiment.capacity;
+  }
+  if (type === 'price') {
+    if (typeof rawExperiment.priceMultiplier !== 'number' || !Number.isFinite(rawExperiment.priceMultiplier) || rawExperiment.priceMultiplier <= 0 || rawExperiment.priceMultiplier > 10) {
+      throw new ScenarioError('Contingency price multiplier must be finite, above zero, and at most 10.');
+    }
+    normalized.priceMultiplier = rawExperiment.priceMultiplier;
+  }
+  if (type === 'delay') {
+    if (!Number.isInteger(rawExperiment.deliveryDays) || rawExperiment.deliveryDays < 0 || rawExperiment.deliveryDays > 365) {
+      throw new ScenarioError('Contingency delivery days must be a whole number from 0 through 365.');
+    }
+    normalized.deliveryDays = rawExperiment.deliveryDays;
+  }
+  return normalized;
+}
+
+function applyContingencyExperiment(scenario, experiment) {
+  const offers = scenario.offers.filter((offer) => experiment.type !== 'withdraw' || offer.id !== experiment.offerId)
+    .map((offer) => {
+      if (offer.id !== experiment.offerId) return offer;
+      if (experiment.type === 'capacity') return { ...offer, capacity: experiment.capacity };
+      if (experiment.type === 'delay') return { ...offer, deliveryDays: experiment.deliveryDays };
+      if (experiment.type === 'price') {
+        const scale = (price) => Math.min(1_000_000, price * experiment.priceMultiplier);
+        return { ...offer, unitPrice: scale(offer.unitPrice), tiers: offer.tiers?.map((tier) => ({ ...tier, unitPrice: scale(tier.unitPrice) })) };
+      }
+      return offer;
+    });
+  return { scenario: validateScenario({ ...scenario, offers }), experiment };
+}
+
+/**
+ * Standard supplier-dependency set: withdraw every merchant used in the
+ * baseline plan, one merchant at a time. Deterministic from the room inputs.
+ */
+export function standardContingencySet(rawScenario) {
+  const scenario = validateScenario(rawScenario);
+  const baseline = planMultiMerchant(scenario);
+  const merchants = [...new Set(baseline.assignments.map((entry) => entry.merchant))].sort(compareText);
+  return merchants.map((merchant) => {
+    const offerIds = scenario.offers.filter((offer) => offer.merchant === merchant).map((offer) => offer.id);
+    return { merchant, experiments: offerIds.map((offerId) => ({ type: 'withdraw', offerId })) };
+  });
+}
+
+export function planContingencies(rawScenario, rawExperiments) {
+  const scenario = validateScenario(rawScenario);
+  if (!Array.isArray(rawExperiments) || rawExperiments.length < 1 || rawExperiments.length > 25) {
+    throw new ScenarioError('Contingency batch must contain 1 to 25 experiments.');
+  }
+  return rawExperiments.map((rawExperiment) => planContingency(scenario, rawExperiment));
+}
+
+/**
+ * Merchant-facing contingency summary: aggregate deltas only, never buyer records.
+ */
+export function createMerchantContingencyReport(rawScenario, rawExperiment) {
+  const scenario = validateScenario(rawScenario);
+  const result = planContingency(scenario, rawExperiment);
+  return {
+    currency: scenario.currency,
+    description: result.description,
+    baselineFulfilledUnits: result.baseline.fulfilledUnits,
+    contingencyFulfilledUnits: result.contingency.fulfilledUnits,
+    fulfilledUnitsDelta: result.fulfilledUnitsDelta,
+    baselineTotalCost: result.baseline.totalCost,
+    contingencyTotalCost: result.contingency.totalCost,
+    totalCostDelta: result.totalCostDelta,
+    lostUnits: result.lostUnits,
+    newlyFeasibleUnits: result.newlyFeasibleUnits,
+    optimal: result.contingency.optimal,
+    note: 'Aggregate contingency projection only: units and landed totals. No buyer records are included. This is a planning experiment, not an order or a verified saving.',
+  };
+}
+
+/**
  * Merchant-facing plan summary: aggregates per merchant with no buyer records.
  * Organizer detail (buyer ids and labels) never enters this contract.
  */
@@ -3677,6 +3831,7 @@ export const CART_REVIEW_TOOLS = Object.freeze([
   { id: "dependency", title: "Sole-offer dependency" },
   { id: 'coverage', title: 'Buyer option coverage' },
   { id: 'multimerchant', title: 'Multi-merchant plan' },
+  { id: 'contingency', title: 'Supplier withdrawal dependency' },
 ]);
 
 /** On-demand organizer analysis. Never changes matching inputs or places orders. */
@@ -3765,6 +3920,18 @@ export function analyzeCartReview(rawScenario, tool) {
       rows.push(['Unserved demand', '—', plan.unserved.length, plan.unservedUnits, '', '', '']);
       return report(['Merchant', 'Offer', 'Buyers', 'Units', 'Unit price', 'Shipping', 'Order total'], rows,
         `Bounded exact plan (${plan.status}; ${plan.evaluatedNodes} nodes): maximum fulfilled units, then minimum landed cost, then fewest merchants, then deterministic order. Winner comparison: ${market.winner ? `${market.winner.offer.merchant} fills ${market.winner.fulfilledUnits} of ${market.totalRequestedUnits} units at ${market.winner.totalCost}` : 'no qualified single offer'}. This is a planning projection, not an order or a verified saving.`);
+    }
+    case "contingency": {
+      const set = standardContingencySet(scenario);
+      const rows = set.map(({ merchant, experiments }) => {
+        const combined = planContingencies(scenario, experiments);
+        const lost = combined.reduce((sum, result) => sum + result.lostUnits, 0);
+        const gained = combined.reduce((sum, result) => sum + result.newlyFeasibleUnits, 0);
+        const first = combined[0];
+        return [merchant, experiments.length, first.baseline.fulfilledUnits, first.contingency.fulfilledUnits, lost, gained, first.totalCostDelta];
+      });
+      return report(['Merchant withdrawn', 'Offers removed', 'Baseline units', 'Contingency units', 'Lost units', 'Newly feasible units', 'Landed cost delta'], rows,
+        'Withdraws each planned merchant in turn and replans identical demand with the bounded exact planner. Lost units were covered before and are not after. This measures exposure in the current room, not a probability of withdrawal.');
     }
     default: throw new ScenarioError('Review is unavailable.');
   }

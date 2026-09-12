@@ -120,6 +120,12 @@ The objective is stated before the search: maximum fulfilled units, then minimum
 
 Unserved buyers explain themselves: no compatible offer (with per-offer reasons), or compatible offers blocked by capacity or minimum orders. Merchant plan summaries carry per-merchant aggregates only: no buyer records. Organizer plan exports carry buyer labels and allocations and are labeled organizer-private.
 
+## Supplier contingency (v1.6.0)
+
+One declared supplier change — withdrawal, reduced capacity, scaled band prices, or delayed delivery — is replanned against identical buyer demand with the bounded exact planner. Lost orders were covered before and are not after; newly feasible orders are the reverse. Price experiments scale every band price together so tier validation still holds. Capacity experiments accept any whole capacity including increases. Delivery experiments move the promised date; buyers past their deadline fall out through the existing compatibility rules.
+
+`standardContingencySet` withdraws each planned merchant in turn for the dependency review. Merchant contingency summaries carry aggregate deltas only: no buyer records. Organizer contingency exports carry buyer labels for lost and newly feasible orders and are labeled organizer-private. Experiments are recalculated from the room on every edit; stale results are never shown. These are planning experiments, not forecasts of supplier behavior.
+
 ## Units to the next cheaper tier
 
 For one offer, the next cheaper quantity band is the band after the selected index, or after the base band when the offer does not qualify. The model reports how many additional whole units that independent band still needs, which currently excluded buyers are compatible at the next price, and whether the band is unreachable because of packing inside capacity or insufficient compatible demand. When no cheaper band remains, the reason says so. Organizer views may name those buyers. Merchant-facing tables use counts only.
