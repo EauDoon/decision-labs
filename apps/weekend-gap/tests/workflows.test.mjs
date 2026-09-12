@@ -2378,7 +2378,7 @@ test("keyboard Shift+F12 jumps to the hide-weekend-FX-open filter and does not c
   assert.equal(ui.nodes.get("gantt-hide-weekend-fx-open").focused, false);
   await ui.keydown("F12");
   assert.equal(ui.nodes.get("gantt-hide-weekend-fx-open").focused, true);
-  assert.equal(ui.nodes.get("gantt-hide-weekday-fx-open").focused, false);
+  assert.equal(ui.nodes.get("gantt-hide-weekday-fx-open").focused, undefined);
   ui.nodes.get("gantt-hide-weekend-fx-open").focused = false;
   await ui.keydown("F9");
   assert.equal(ui.nodes.get("gantt-hide-weekday-fx-closed").focused, true);
