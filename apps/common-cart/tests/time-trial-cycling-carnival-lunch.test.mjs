@@ -32,6 +32,7 @@ test("time-trial cycling carnival lunch leftover fill is hall pickup and stays d
   assert.equal(timeTrialCycling.winner.fulfilledUnits, 50);
   assert.deepEqual(timeTrialCycling.winner.selectedBuyerIds, ["B01", "B02", "B05"]);
   assert.equal(timeTrialCycling.scenario.title, "Time-trial cycling carnival lunch");
+  assert.notEqual(timeTrialCycling.scenario.title, clonePreset("hillClimbCyclingCarnivalLunch").title);
   assert.notEqual(timeTrialCycling.scenario.title, criteriumCycling.scenario.title);
   assert.notEqual(timeTrialCycling.scenario.title, roadCycling.scenario.title);
   assert.notEqual(timeTrialCycling.scenario.title, gravelCycling.scenario.title);
@@ -46,6 +47,7 @@ test("time-trial cycling carnival lunch leftover fill is hall pickup and stays d
   assert.notEqual(timeTrialCycling.scenario.title, kayaking.scenario.title);
   assert.notEqual(timeTrialCycling.scenario.title, canoeing.scenario.title);
   assert.notEqual(timeTrialCycling.scenario.title, sailing.scenario.title);
+  assert.notDeepEqual(clonePreset("timeTrialCyclingCarnivalLunch"), clonePreset("hillClimbCyclingCarnivalLunch"));
   assert.notDeepEqual(clonePreset("timeTrialCyclingCarnivalLunch"), clonePreset("criteriumCyclingCarnivalLunch"));
   assert.notDeepEqual(clonePreset("timeTrialCyclingCarnivalLunch"), clonePreset("roadCyclingCarnivalLunch"));
   assert.notDeepEqual(clonePreset("timeTrialCyclingCarnivalLunch"), clonePreset("gravelCyclingCarnivalLunch"));
@@ -188,5 +190,6 @@ test("the example bar includes time-trial cycling carnival lunch next to criteri
   assert.ok(html.indexOf('data-preset="gravelCyclingCarnivalLunch"') < html.indexOf('data-preset="roadCyclingCarnivalLunch"'));
   assert.ok(html.indexOf('data-preset="roadCyclingCarnivalLunch"') < html.indexOf('data-preset="criteriumCyclingCarnivalLunch"'));
   assert.ok(html.indexOf('data-preset="criteriumCyclingCarnivalLunch"') < html.indexOf('data-preset="timeTrialCyclingCarnivalLunch"'));
-  assert.ok(html.indexOf('data-preset="timeTrialCyclingCarnivalLunch"') < html.indexOf('data-preset="tiers"'));
+  assert.ok(html.indexOf('data-preset="timeTrialCyclingCarnivalLunch"') < html.indexOf('data-preset="hillClimbCyclingCarnivalLunch"'));
+  assert.ok(html.indexOf('data-preset="hillClimbCyclingCarnivalLunch"') < html.indexOf('data-preset="tiers"'));
 });

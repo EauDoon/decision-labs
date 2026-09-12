@@ -771,6 +771,23 @@ export const presets = Object.freeze({
       offer("O02", "Ramp Salad Run", "Time-trial lunch pack", "Ramp salad", 15, 15, 4, 42, 2),
       { ...offer("O03", "Hall Time Trial Pickup", "Time-trial lunch pack", "Ramp water", 27, 32, 1, 64, 5), fulfillment: "pickup" }
     ]
+  },
+  hillClimbCyclingCarnivalLunch: {
+    title: "Hill-climb cycling carnival lunch",
+    currency: "AUD",
+    buyers: [
+      buyer("B01", "Hairpin crate", "Hill-climb lunch pack", 15, 23, 4, ["Hill-climb pie", "Hairpin salad"]),
+      buyer("B02", "Summit-marshal bench", "Hill-climb lunch pack", 19, 19, 3, ["Hill-climb pie"]),
+      buyer("B03", "Hairpin hamper", "Hill-climb lunch pack", 15, 28, 5, ["Hairpin salad", "Hairpin water"]),
+      buyer("B04", "Sideline cooler", "Hill-climb lunch pack", 19, 28, 2, ["Hairpin water"]),
+      buyer("B05", "Scoreboard trolley", "Hill-climb lunch pack", 16, 22, 4, ["Hill-climb pie", "Hairpin water"]),
+      buyer("B06", "Bench table", "Hill-climb lunch pack", 13, 20, 3, ["Hairpin salad", "Hill-climb pie"])
+    ],
+    offers: [
+      offer("O01", "Court-side Hill Climb Delivery", "Hill-climb lunch pack", "Hill-climb pie", 17, 17, 3, 54, 3),
+      offer("O02", "Hairpin Salad Run", "Hill-climb lunch pack", "Hairpin salad", 15, 15, 4, 42, 2),
+      { ...offer("O03", "Hall Hill Climb Pickup", "Hill-climb lunch pack", "Hairpin water", 28, 33, 1, 64, 5), fulfillment: "pickup" }
+    ]
   }
 });
 
