@@ -53,7 +53,7 @@ test('404 jobs list equals the catalog card names and jobs', () => {
 test('what&#39;s new headings come from the printed list and mention a real release', () => {
   const first = html.match(/<h3 tabindex="-1">([^<]+)<\/h3>/)?.[1] ?? '';
   assert.equal(first.length > 0, true, 'What&#39;s new has no heading');
-  assert.match(readme, /Weekend Gap 1\.6\.0/);
+  assert.match(readme, /Weekend Gap 1\.7\.0/);
 });
 
 test('README workbench table names jobs and versions without claiming live services', () => {

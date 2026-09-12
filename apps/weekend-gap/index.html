@@ -225,15 +225,25 @@ SOFTWARE.
                   </div>
                 </div>
                 <div class="input-group input-group--full">
-                  <label for="redemptionDemandAud">72-hour redemption demand</label>
+                  <label for="redemptionDemandAud">Total redemption demand</label>
                   <div class="unit-input"><span>A$</span><input id="redemptionDemandAud" name="redemptionDemandAud" data-field="redemptionDemandAud" type="number" min="0" step="10000" inputmode="decimal"></div>
                 </div>
               </div>
             </fieldset>
+            <fieldset>
+              <legend>Simulation horizon</legend>
+              <div class="input-grid">
+                <div class="input-group input-group--full">
+                  <label for="horizonHours">Horizon (whole hours)</label>
+                  <div class="unit-input unit-input--suffix"><input id="horizonHours" name="horizonHours" data-field="horizonHours" type="number" min="24" max="336" step="1" inputmode="numeric"><span>hours</span></div>
+                </div>
+              </div>
+              <p>Whole hours from 24 through 336, starting Friday 15:00 in abstract local time. The 72-hour Friday-to-Monday case is the default. Longer horizons reuse the same weekday rules, holidays, and dated presets.</p>
+            </fieldset>
             <div class="input-group input-group--full">
               <label for="demandProfile">Demand timing</label>
               <select id="demandProfile" name="demandProfile" data-field="demandProfile">
-                <option value="flat">Even across 72 hours</option>
+                <option value="flat">Even across the horizon</option>
                 <option value="fridayBurst">Friday burst (8x weight before midnight)</option>
                 <option value="saturdayBurst">Saturday burst (8x weight on Saturday)</option>
                 <option value="sundayBurst">Sunday burst (8x weight late Sunday)</option>
@@ -440,6 +450,14 @@ SOFTWARE.
               <p>When selected, Wednesday 16:00 to 18:00 treats FX as weekday-depth / open. That window is a real weekday-FX-open case through isWednesdayLateFxOpenHour. Issuer, bank and payout stay on their Wednesday afternoon rules those hours. Older scenario files omit this field and keep Wednesday afternoon on ordinary weekday FX depth. Distinct from Wednesday early FX open, Tuesday late FX open, Tuesday early FX open, Monday late FX open, Monday early FX open, Friday late FX open, Sunday early FX open, and Saturday late FX open. This is a synthetic calendar, not an FX feed.</p>
             </div>
           </form>
+
+            <fieldset>
+              <legend>Operating calendar overrides</legend>
+              <p>Dated closures, delayed reopenings, extended windows, and scheduled capacity changes. Each override names a half-open hour range inside the horizon; later entries win per field. Ranges outside the horizon are rejected.</p>
+              <div id="calendar-overrides"></div>
+              <div class="planning-actions"><button id="add-calendar-override" type="button">Add calendar override</button></div>
+              <p id="calendar-override-status" role="status"></p>
+            </fieldset>
 
           <section class="library-controls" aria-labelledby="library-title">
             <h3 id="library-title">Saved scenarios</h3><p>Keep up to 12 named copies in this browser. Edit the scenario name before saving a copy.</p>

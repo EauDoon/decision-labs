@@ -88,9 +88,10 @@ test("malformed targets and deadlines fail without coercion", () => {
   for (const target of [null, "", "50", NaN, Infinity, -1, 101, {}, []]) {
     assert.throws(() => planReserve(DEFAULT, target), RangeError);
   }
-  for (const deadline of [null, "72", NaN, Infinity, 0, -1, 73, 1.5]) {
+  for (const deadline of ["72", NaN, Infinity, 0, -1, 73, 1.5]) {
     assert.throws(() => planReserve(DEFAULT, 100, deadline), RangeError);
   }
+  assert.deepEqual(planReserve(DEFAULT, 100, null), planReserve(DEFAULT, 100));
 });
 
 test("settlement tolerance handles high values without erasing tiny positive targets", () => {

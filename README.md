@@ -30,7 +30,7 @@ Every workbench:
 | [Partnership Breakpoint](apps/partnership-breakpoint/) | 1.8.0 | Find which participant in a revenue split reaches an exit threshold first when volume, fees, or costs move. | **Balanced** starting point |
 | [Common Cart](apps/common-cart/) | 1.6.0 | Pool buyer constraints and compare conditional merchant offers without exposing individual buyer records to the merchant view. | **Coffee** scenario (Neighbourhood coffee run) |
 | [The Smallest Agreement](apps/smallest-agreement/) | 1.6.0 | Find the lowest-cost set of clause changes that still crosses an approval threshold while respecting support floors, locks, and a change budget. | **Neighbourhood Plan** |
-| [Weekend Gap](apps/weekend-gap/) | 1.6.0 | Follow synthetic AUD redemption demand from Friday to Monday and see how reserves and settlement windows change the queue when banking is closed. | **Normal Friday** (72-hour case) |
+| [Weekend Gap](apps/weekend-gap/) | 1.7.0 | Follow synthetic AUD redemption demand from Friday to Monday and see how reserves and settlement windows change the queue when banking is closed. | **Normal Friday** (72-hour case) |
 
 Open [index.html](index.html) for the product home: one-sentence jobs, Open
 workbench / How it works actions, in-page trust notes, card versions, and a
@@ -96,11 +96,11 @@ another port.
 
 ## What's new
 
-- Weekend Gap 1.6.0 consolidates the gate Gantt display filters into one Show
-  hours select, replaces the twenty-five first/last open-and-closed-hour copy
-  buttons with four gate hour evidence buttons, and trims the in-app keyboard
-  set to the list shown under `?`. The simulation math is unchanged and older
-  workspace files still open with their legacy flags mapped.
+- Weekend Gap 1.7.0 adds a configurable simulation horizon (24 to 336 whole hours
+  from Friday 15:00) and dated operating calendar overrides for closures,
+  delayed reopenings, extended windows, and scheduled capacity changes. The
+  72-hour Friday-to-Monday case stays the default with unchanged outputs, and
+  older scenarios open as the 72-hour case.
 - Earlier releases keep their own changelogs in each app folder. Each
   workbench ships its own version and release notes; this catalog does not
   version the four tools together.

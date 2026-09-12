@@ -15,6 +15,7 @@ class Element {
   append(...items) { this.children.push(...items.flatMap(item => item.fragment ? item.children : [item])); }
   replaceChildren(...items) { this.children = []; this.append(...items); }
   remove() {}
+  contains() { return false; }
   setAttribute(name, value) { this.attributes[name] = value; }
   getBoundingClientRect() { return { width: 900, height: 300 }; }
   getContext() { return new Proxy({}, { get: (target, key) => target[key] ?? (() => {}), set: (target, key, value) => (target[key] = value, true) }); }
@@ -124,6 +125,32 @@ test("source mode runs library, sensitivity, undo, hourly table and workspace re
   assert.equal(reloaded.nodes.get("selected-chart").value, "queue");
   assert.equal(reloaded.nodes.get("gantt-hour-filter").value, "all");
   assert.equal(reloaded.nodes.get("scenario-library").children.length, 1);
+});
+
+test("horizon change extends the timeline and persists through reload", async () => {
+  const ui = await boot();
+  ui.nodes.get("horizonHours").value = "144";
+  await ui.nodes.get("scenario-form").emit("change");
+  assert.equal(ui.nodes.get("timeline-range").max, "144");
+  assert.equal(ui.nodes.get("gantt-table").children.length, 25);
+  assert.match(ui.nodes.get("timeline-label").textContent, /Fri 15:00/);
+  const persisted = JSON.parse(ui.storage.get("weekend-gap:workspace:v1"));
+  assert.equal(persisted.current.horizonHours, 144);
+  const reloaded = await boot(ui.storage);
+  assert.equal(reloaded.nodes.get("timeline-range").max, "144");
+  assert.equal(reloaded.nodes.get("horizonHours").value, "144");
+  assert.equal(reloaded.nodes.get("gantt-table").children.length, 25);
+});
+
+test("calendar override closes a gate and invalid ranges keep the scenario", async () => {
+  const ui = await boot();
+  await ui.nodes.get("add-calendar-override").click();
+  assert.equal(ui.nodes.get("calendar-override-status").textContent, "");
+  const before = ui.nodes.get("queue-value").textContent;
+  const editorRows = ui.nodes.get("calendar-overrides").children;
+  assert.ok(editorRows.length >= 1);
+  assert.match(editorRows[0].innerHTML, /Override 1: hours 9 to 17/);
+  assert.match(editorRows[0].innerHTML, /inside horizon/);
 });
 
 test("workspace restore without selectedHour keeps hour zero", async () => {

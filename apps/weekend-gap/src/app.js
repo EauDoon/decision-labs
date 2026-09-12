@@ -6,6 +6,9 @@ import {
   DEFAULT_SCENARIO,
   PRESETS,
   SIMULATION_HOURS,
+  scenarioHours,
+  sanitizeCalendarOverrides,
+  svgTickHours,
   formatTime,
   weekendCloseOverlapNotice,
   mondaySaturdayHolidayNotice,
@@ -120,6 +123,10 @@ const elements = {
   inputMessage: document.querySelector("#input-message")
 };
 
+function simHours() {
+  return scenarioHours(scenario);
+}
+
 let weekendReviewPacket = null;
 let weekendReviewSequence = 0;
 let weekendReviewDraftInvalid = false;
@@ -217,7 +224,7 @@ function setScenario(nextScenario, { normaliseForm = true, message = "", preserv
   renderHistory();
   simulation = runSimulation(scenario);
   comparison = compareScenarios(baselineScenario, scenario);
-  selectedHour = Math.min(selectedHour, SIMULATION_HOURS);
+  selectedHour = Math.min(selectedHour, simHours());
   if (!preserveShareHash && window.location.hash.startsWith("#scenario=")) {
     history.replaceState(null, "", `${window.location.pathname}${window.location.search}`);
   }
@@ -274,10 +281,12 @@ function currentScenarioHashError(error) {
 }
 
 function render() {
+  renderCalendarOverrides();
   const point = simulation.timeline[selectedHour];
   elements.title.textContent = scenario.name;
+  timelineRange.max = String(simHours());
   timelineRange.value = String(selectedHour);
-  timelineRange.setAttribute("aria-valuetext", point.timeLabel + ", hour " + selectedHour + " of 72");
+  timelineRange.setAttribute("aria-valuetext", point.timeLabel + ", hour " + selectedHour + " of " + simHours());
   elements.timelineLabel.textContent = point.timeLabel;
   elements.immediate.textContent = formatAud(point.immediateAud);
   elements.immediateDetail.textContent = point.immediateAud > 0
@@ -296,7 +305,7 @@ function render() {
   elements.peakQueueHour.textContent = peakQueuedAud > 0
     ? `${formatTime(peakQueueHour)} (hour ${peakQueueHour})`
     : "No queue in 72h";
-  elements.backlogHours.textContent = `${hoursWithQueue} of ${SIMULATION_HOURS}`;
+  elements.backlogHours.textContent = `${hoursWithQueue} of ${simHours()}`;
   elements.firstSettlement.textContent = hoursToFirstSettlement === null
     ? "No settlement in 72h"
     : `${hoursToFirstSettlement} hour${hoursToFirstSettlement === 1 ? "" : "s"}`;
@@ -358,8 +367,8 @@ function render() {
     jumpPeak.disabled = !(peakQueuedAud > 0);
   }
   elements.outcomeExplanation.textContent = finalQueuedAud > 0
-    ? `${formatAud(finalQueuedAud)} remains queued at ${formatTime(SIMULATION_HOURS)}. The peak queue was ${formatAud(peakQueuedAud)} at ${formatTime(peakQueueHour)}.`
-    : `All synthetic demand settles within the 72-hour window. The peak queue was ${formatAud(peakQueuedAud)} at ${formatTime(peakQueueHour)}.`;
+    ? `${formatAud(finalQueuedAud)} remains queued at ${formatTime(simHours())}. The peak queue was ${formatAud(peakQueuedAud)} at ${formatTime(peakQueueHour)}.`
+    : `All synthetic demand settles within the ${simHours()}-hour window. The peak queue was ${formatAud(peakQueuedAud)} at ${formatTime(peakQueueHour)}.`;
   elements.gateSummary.textContent = point.immediateAud > 0
     ? `Payout chain open · limited by ${point.limitingGate}`
     : `Payout chain closed · blocked at ${point.limitingGate}`;
@@ -414,7 +423,7 @@ function renderTable() {
   const peakQueuedAud = simulation.summary.peakQueuedAud;
   const rowIndexes = new Set([selectedHour]);
   if (peakQueuedAud > 0) rowIndexes.add(peakHour);
-  for (let hour = 0; hour <= SIMULATION_HOURS; hour += 1) {
+  for (let hour = 0; hour <= simHours(); hour += 1) {
     if (backlogOnly) {
       if (simulation.timeline[hour].queuedAud > 0) rowIndexes.add(hour);
       continue;
@@ -434,7 +443,7 @@ function renderTable() {
       formatPercent(point.liquidityRatio),
       formatPercent(point.discountBps / 10000, 2),
       point.immediateAud > 0 ? "Open" : `Blocked: ${point.limitingGate}`,
-      formatAud(comparison.baseline.timeline[hour].queuedAud),
+      hour < comparison.baseline.timeline.length ? formatAud(comparison.baseline.timeline[hour].queuedAud) : "\u2014",
       formatAud(point.demandThisHour, false),
       formatAud(point.settledThisHour, false)
     ];
@@ -457,7 +466,7 @@ function renderTable() {
   if (filterNote) {
     const backlogCount = simulation.timeline.filter((point) => point.queuedAud > 0).length;
     filterNote.textContent = backlogOnly
-      ? `Showing hours with backlog (${backlogCount} of ${SIMULATION_HOURS + 1} checkpoints). Dashboard counts are unchanged.`
+      ? `Showing hours with backlog (${backlogCount} of ${simHours() + 1} checkpoints). Dashboard counts are unchanged.`
       : `All checkpoints remain available. Use the backlog filter to hide hours with no queue. Dashboard counts are unchanged.`;
   }
 }
@@ -487,9 +496,9 @@ function renderGantt() {
   const rowIndexes = new Set([selectedHour]);
   if (hourFilter === "all") {
     rowIndexes.add(0);
-    rowIndexes.add(SIMULATION_HOURS);
+    rowIndexes.add(simHours());
   }
-  for (let hour = 0; hour <= SIMULATION_HOURS; hour += 1) {
+  for (let hour = 0; hour <= simHours(); hour += 1) {
     const point = schedule.hours[hour];
     if (!ganttHourMatchesFilter(point, hourFilter, simulation.timeline[hour], selectedHour)) continue;
     if (hourFilter !== "all") {
@@ -526,10 +535,10 @@ function renderGantt() {
   const filterNote = document.querySelector("#gantt-filter-note");
   if (filterNote) {
     if (hourFilter === "all") {
-      filterNote.textContent = `All ${SIMULATION_HOURS} model hours remain available. Use the hour filter to hide hours in this local drawing. Display only. The model still contains ${SIMULATION_HOURS} hours.`;
+      filterNote.textContent = `All ${simHours()} model hours remain available. Use the hour filter to hide hours in this local drawing. Display only. The model still contains ${simHours()} hours.`;
     } else {
-      const shown = schedule.hours.filter((point) => point.hour < SIMULATION_HOURS && ganttHourMatchesFilter(point, hourFilter, simulation.timeline[point.hour], selectedHour)).length;
-      filterNote.textContent = `${GANTT_FILTER_NOTES[hourFilter]} (${shown} of ${SIMULATION_HOURS} chart hours). Display only. The model still contains ${SIMULATION_HOURS} hours. This table and chart are a local drawing.`;
+      const shown = schedule.hours.filter((point) => point.hour < simHours() && ganttHourMatchesFilter(point, hourFilter, simulation.timeline[point.hour], selectedHour)).length;
+      filterNote.textContent = `${GANTT_FILTER_NOTES[hourFilter]} (${shown} of ${simHours()} chart hours). Display only. The model still contains ${simHours()} hours. This table and chart are a local drawing.`;
     }
     if (gateFilter !== "all") {
       const gateName = GENERIC_GATE_LABELS[gateFilter] || gateFilter;
@@ -557,14 +566,14 @@ function renderCompareGantt() {
     if (hour === selectedHour) row.className = "is-current";
     for (const value of [
       point.timeLabel,
-      gateCellLabel(point.current.issuerOpen),
-      gateCellLabel(point.baseline.issuerOpen),
-      gateCellLabel(point.current.bankOpen),
-      gateCellLabel(point.baseline.bankOpen),
-      gateCellLabel(point.current.payoutOpen),
-      gateCellLabel(point.baseline.payoutOpen),
-      gateCellLabel(point.current.fxWeekday, true),
-      gateCellLabel(point.baseline.fxWeekday, true)
+      point.current === null ? "\u2014" : gateCellLabel(point.current.issuerOpen),
+      point.baseline === null ? "\u2014" : gateCellLabel(point.baseline.issuerOpen),
+      point.current === null ? "\u2014" : gateCellLabel(point.current.bankOpen),
+      point.baseline === null ? "\u2014" : gateCellLabel(point.baseline.bankOpen),
+      point.current === null ? "\u2014" : gateCellLabel(point.current.payoutOpen),
+      point.baseline === null ? "\u2014" : gateCellLabel(point.baseline.payoutOpen),
+      point.current === null ? "\u2014" : gateCellLabel(point.current.fxWeekday, true),
+      point.baseline === null ? "\u2014" : gateCellLabel(point.baseline.fxWeekday, true)
     ]) {
       const cell = document.createElement("td");
       cell.textContent = value;
@@ -575,7 +584,7 @@ function renderCompareGantt() {
   document.querySelector("#compare-gantt-table").replaceChildren(fragment);
   document.querySelector("#compare-gantt-status").textContent = comparison.differingHours === 0
     ? "Current and baseline gate hours match. The table keeps the selected hour as a text equivalent."
-    : `${comparison.differingHours} of 73 checkpoints differ between current and baseline. Matching hours are omitted except the selected hour.`;
+    : `${comparison.differingHours} of ${comparison.hours.length} checkpoints differ between current and baseline. Matching hours are omitted except the selected hour. Hours past the shorter calendar show an em dash.`;
 }
 
 function renderQueueSvg() {
@@ -628,8 +637,8 @@ function drawChart() {
     chartContext.fillText(formatAud(value), 0, y + 4);
   }
 
-  [0, 9, 33, 57, 72].forEach((hour) => {
-    const x = dimensions.left + (hour / SIMULATION_HOURS) * dimensions.width;
+  svgTickHours(simHours()).forEach((hour) => {
+    const x = dimensions.left + (hour / simHours()) * dimensions.width;
     chartContext.fillText(formatTime(hour), Math.min(x, width - 46), height - 14);
   });
 
@@ -638,7 +647,7 @@ function drawChart() {
   chartContext.setLineDash([6, 4]);
   drawLine(chartContext, comparison.baseline.timeline, (point) => point.queuedAud, "#aac7ff", dimensions, maximum);
   chartContext.setLineDash([]);
-  const selectedX = dimensions.left + (selectedHour / SIMULATION_HOURS) * dimensions.width;
+  const selectedX = dimensions.left + (selectedHour / simHours()) * dimensions.width;
   chartContext.beginPath();
   chartContext.moveTo(selectedX, dimensions.top);
   chartContext.lineTo(selectedX, dimensions.top + dimensions.height);
@@ -649,7 +658,7 @@ function drawChart() {
 
 function setPlaying(nextPlaying) {
   if (nextPlaying && reducedMotion?.matches) {
-    selectedHour = selectedHour >= SIMULATION_HOURS ? 0 : selectedHour + 1;
+    selectedHour = selectedHour >= simHours() ? 0 : selectedHour + 1;
     render(); saveWorkspace(); return;
   }
   const wasPlaying = playing;
@@ -660,9 +669,9 @@ function setPlaying(nextPlaying) {
   playTimer = null;
   if (!playing) { if (wasPlaying) saveWorkspace(); return; }
   playTimer = window.setInterval(() => {
-    selectedHour = selectedHour >= SIMULATION_HOURS ? 0 : selectedHour + 1;
+    selectedHour = selectedHour >= simHours() ? 0 : selectedHour + 1;
     render();
-    if (selectedHour >= SIMULATION_HOURS) setPlaying(false);
+    if (selectedHour >= simHours()) setPlaying(false);
   }, 700);
 }
 
@@ -693,7 +702,7 @@ function renderPlanning() {
   const rows = [
     ["Starting reserve", comparison.baseline.scenario.reserveCashAud, scenario.reserveCashAud],
     ["Total demand", comparison.baseline.summary.totalDemandAud, simulation.summary.totalDemandAud],
-    ["Settled by Monday 15:00", comparison.baseline.summary.totalSettledAud, simulation.summary.totalSettledAud],
+    ["Settled by " + formatTime(simHours()), comparison.baseline.summary.totalSettledAud, simulation.summary.totalSettledAud],
     ["Remaining queue", comparison.baseline.summary.finalQueuedAud, simulation.summary.finalQueuedAud],
     ["Peak queue", comparison.baseline.summary.peakQueuedAud, simulation.summary.peakQueuedAud]
   ];
@@ -751,7 +760,7 @@ function renderPlanning() {
       document.querySelector("#reserve-deadline").valueAsNumber);
     document.querySelector("#analysis-export").disabled = false;
     const p = reservePlan;
-    const target = `${p.targetPercent}% of total 72-hour demand (${planningAud(p.targetAud)}) by ${formatTime(p.deadlineHour)}`;
+    const target = `${p.targetPercent}% of total ${simHours()}-hour demand (${planningAud(p.targetAud)}) by ${formatTime(p.deadlineHour)}`;
     output.textContent = p.status === "reachable"
       ? `${target}: minimum starting reserve ${p.minimumReserveAud.toLocaleString("en-US", { style: "currency", currency: "AUD" })}. Change from current reserve: ${signedAud(p.reserveChangeAud)}. ${p.reason}`
       : `${target}: unreachable by reserve alone. Maximum modeled settlement: ${planningAud(p.maximumSettledAud)}. ${p.reason}`;
@@ -1038,11 +1047,150 @@ function applyFormEdit(normaliseForm) {
   weekendReviewDraftInvalid = invalid;
   if (invalid) { setMessage("Complete the highlighted numeric assumptions with finite numbers. The previous simulation is kept."); return; }
   userEdited = true;
+  const hadOverrides = Array.isArray(scenario.calendarOverrides) && scenario.calendarOverrides.length > 0;
+  if (hadOverrides) raw.calendarOverrides = scenario.calendarOverrides;
   setScenario(raw, { normaliseForm });
+  if (hadOverrides && !Array.isArray(scenario.calendarOverrides)) {
+    setMessage("The new horizon dropped calendar overrides outside its range. Re-add them inside the horizon.");
+    return;
+  }
 }
 form.addEventListener("input", () => applyFormEdit(false));
 form.addEventListener("change", () => applyFormEdit(true));
 form.addEventListener("submit", event => event.preventDefault());
+
+function overrideRowLabel(entry, index) {
+  return `Override ${index + 1}: hours ${entry.startHour} to ${entry.endHour}`;
+}
+
+let lastRenderedOverrides = null;
+function renderCalendarOverrides() {
+  const container = document.querySelector("#calendar-overrides");
+  const status = document.querySelector("#calendar-override-status");
+  if (!container) return;
+  const overrides = Array.isArray(scenario.calendarOverrides) ? scenario.calendarOverrides : [];
+  const signature = JSON.stringify(overrides);
+  if (signature === lastRenderedOverrides && container.contains(document.activeElement)) return;
+  lastRenderedOverrides = signature;
+  container.replaceChildren();
+  if (!overrides.length) {
+    const empty = document.createElement("p");
+    empty.className = "canvas-note";
+    empty.textContent = "No overrides. The weekday rules, holidays, and dated presets above apply across the whole horizon.";
+    container.append(empty);
+  }
+  overrides.forEach((entry, index) => {
+    const row = document.createElement("div");
+    row.className = "override-row";
+    const hours = scenarioHours(scenario);
+    row.innerHTML = `
+      <strong>${overrideRowLabel(entry, index)} (${entry.startHour < hours && entry.endHour <= hours ? "inside horizon" : "outside horizon"})</strong>
+      <label>Start hour <input type="number" min="0" max="${hours}" step="1" value="${entry.startHour}" data-override-field="startHour" data-override-index="${index}"></label>
+      <label>End hour <input type="number" min="1" max="${hours}" step="1" value="${entry.endHour}" data-override-field="endHour" data-override-index="${index}"></label>
+      <label>Issuer <select data-override-field="issuer" data-override-index="${index}">
+        <option value="">Weekly rules</option>
+        <option value="open"${entry.gates?.issuer === "open" ? " selected" : ""}>Open</option>
+        <option value="closed"${entry.gates?.issuer === "closed" ? " selected" : ""}>Closed</option>
+      </select></label>
+      <label>Bank <select data-override-field="bank" data-override-index="${index}">
+        <option value="">Weekly rules</option>
+        <option value="open"${entry.gates?.bank === "open" ? " selected" : ""}>Open</option>
+        <option value="closed"${entry.gates?.bank === "closed" ? " selected" : ""}>Closed</option>
+      </select></label>
+      <label>Payout <select data-override-field="payout" data-override-index="${index}">
+        <option value="">Weekly rules</option>
+        <option value="open"${entry.gates?.payout === "open" ? " selected" : ""}>Open</option>
+        <option value="closed"${entry.gates?.payout === "closed" ? " selected" : ""}>Closed</option>
+      </select></label>
+      <label>FX <select data-override-field="fx" data-override-index="${index}">
+        <option value="">Weekly rules</option>
+        <option value="weekday"${entry.fx === "weekday" ? " selected" : ""}>Weekday depth</option>
+        <option value="weekend"${entry.fx === "weekend" ? " selected" : ""}>Weekend thinned</option>
+      </select></label>
+      <label>Issuer A$/h <input type="number" min="0" step="any" value="${entry.throughput?.issuer ?? ""}" placeholder="Unchanged" data-override-field="throughputIssuer" data-override-index="${index}"></label>
+      <label>FX A$/h <input type="number" min="0" step="any" value="${entry.throughput?.fx ?? ""}" placeholder="Unchanged" data-override-field="throughputFx" data-override-index="${index}"></label>
+      <label>Payout A$/h <input type="number" min="0" step="any" value="${entry.throughput?.payout ?? ""}" placeholder="Unchanged" data-override-field="throughputPayout" data-override-index="${index}"></label>
+      <button type="button" data-remove-override="${index}">Remove override</button>`;
+    container.append(row);
+  });
+  if (status && !status.dataset.touched) status.textContent = "";
+}
+
+function readOverridesFromEditor() {
+  const container = document.querySelector("#calendar-overrides");
+  if (!container) return [];
+  const rows = [...container.querySelectorAll(".override-row")];
+  return rows.map((row) => {
+    const get = (field) => row.querySelector(`[data-override-field="${field}"]`)?.value ?? "";
+    const entry = {
+      startHour: Number(get("startHour")),
+      endHour: Number(get("endHour")),
+    };
+    const gates = {};
+    for (const gate of ["issuer", "bank", "payout"]) {
+      const value = get(gate);
+      if (value === "open" || value === "closed") gates[gate] = value;
+    }
+    if (Object.keys(gates).length) entry.gates = gates;
+    const fx = get("fx");
+    if (fx === "weekday" || fx === "weekend") entry.fx = fx;
+    const throughput = {};
+    for (const [field, key] of [["throughputIssuer", "issuer"], ["throughputFx", "fx"], ["throughputPayout", "payout"]]) {
+      const raw = get(field);
+      if (raw.trim() !== "") throughput[key] = Number(raw);
+    }
+    if (Object.keys(throughput).length) entry.throughput = throughput;
+    return entry;
+  });
+}
+
+function applyOverrideEdit() {
+  const status = document.querySelector("#calendar-override-status");
+  const parsed = readOverridesFromEditor();
+  const checked = sanitizeCalendarOverrides(parsed, simHours());
+  if (checked.errors.length) {
+    if (status) {
+      status.dataset.touched = "true";
+      status.textContent = checked.errors[0];
+    }
+    return;
+  }
+  if (status) {
+    delete status.dataset.touched;
+    status.textContent = "";
+  }
+  userEdited = true;
+  const next = { ...scenario };
+  if (checked.overrides && checked.overrides.length) next.calendarOverrides = checked.overrides;
+  else delete next.calendarOverrides;
+  lastRenderedOverrides = JSON.stringify(next.calendarOverrides ?? []);
+  setScenario(next, { normaliseForm: false });
+}
+
+document.querySelector("#calendar-overrides")?.addEventListener("input", applyOverrideEdit);
+document.querySelector("#calendar-overrides")?.addEventListener("change", applyOverrideEdit);
+document.querySelector("#add-calendar-override")?.addEventListener("click", () => {
+  userEdited = true;
+  const hours = simHours();
+  const next = { ...scenario };
+  const overrides = [...(Array.isArray(next.calendarOverrides) ? next.calendarOverrides : [])];
+  const start = Math.min(9, hours - 1);
+  overrides.push({ startHour: start, endHour: Math.min(start + 8, hours), gates: { payout: "closed" } });
+  next.calendarOverrides = overrides;
+  setScenario(next, { normaliseForm: false, message: "Calendar override added. Edit its range and gates; later entries win per field." });
+});
+document.querySelector("#calendar-overrides")?.addEventListener("click", (event) => {
+  const button = event.target.closest("[data-remove-override]");
+  if (!button) return;
+  userEdited = true;
+  const next = { ...scenario };
+  const overrides = [...(Array.isArray(next.calendarOverrides) ? next.calendarOverrides : [])];
+  overrides.splice(Number(button.dataset.removeOverride), 1);
+  if (overrides.length) next.calendarOverrides = overrides;
+  else delete next.calendarOverrides;
+  setScenario(next, { normaliseForm: false, message: "Calendar override removed." });
+  document.querySelector("#add-calendar-override")?.focus();
+});
 
 timelineRange.addEventListener("input", () => {
   selectedHour = Number(timelineRange.value);
@@ -1107,7 +1255,7 @@ if (!userEdited && !window.location.hash) saveScenario();
 
 function renderDiagnostics() {
   const d = analyzeTimeline(scenario);
-  document.querySelector("#diagnostic-summary").textContent = d.backlogIntervals + " of 72 intervals end with backlog. Longest uninterrupted run: " + d.longestBacklogRun + " hours. Queue exposure: " + formatAud(d.queueAudHours, false) + "·hours.";
+  document.querySelector("#diagnostic-summary").textContent = d.backlogIntervals + " of " + simHours() + " intervals end with backlog. Longest uninterrupted run: " + d.longestBacklogRun + " hours. Queue exposure: " + formatAud(d.queueAudHours, false) + "·hours.";
   const list = document.querySelector("#bottleneck-list");
   list.replaceChildren(...d.blockers.map(item => {
     const li = document.createElement("li"); li.textContent = item.label + ": " + item.intervals + " backlog intervals"; return li;
@@ -1128,7 +1276,7 @@ function renderDiagnostics() {
     return tr;
   }));
   document.querySelector("#bottleneck-explanation").textContent = active.length
-    ? `Of 72 hours, ${active.map((row) => `${row.hours} were limited by ${row.label}`).join(", ")}. Hours labeled none had no recorded limiter. This does not say which assumption to change.`
+    ? `Of ${simHours()} hours, ${active.map((row) => `${row.hours} were limited by ${row.label}`).join(", ")}. Hours labeled none had no recorded limiter. This does not say which assumption to change.`
     : "No limiting-gate hours were recorded for this run.";
 }
 
@@ -1301,7 +1449,7 @@ function saveWorkspace() {
 }
 function applyWorkspace(saved) {
   lastValidPlan = { targetPercent: saved.targetPercent, deadlineHour: saved.deadlineHour, ganttDensity: saved.ganttDensity || "snapshots", selectedHour: saved.ganttHourIndex ?? saved.selectedHour ?? 0, ganttHourIndex: saved.ganttHourIndex ?? saved.selectedHour ?? 0, selectedChart: saved.selectedChart || "queue", ganttClosedOnly: saved.ganttClosedOnly === true, ganttGateFilter: GANTT_GATE_FILTERS.includes(saved.ganttGateFilter) ? saved.ganttGateFilter : "all", queueBacklogOnly: saved.queueBacklogOnly === true, ganttEveryGateClosed: saved.ganttEveryGateClosed === true, ganttHourFilter: GANTT_HOUR_FILTERS.includes(saved.ganttHourFilter) ? saved.ganttHourFilter : "all" };
-  baselineScenario={...saved.baseline}; selectedHour=saved.ganttHourIndex ?? saved.selectedHour ?? 0;setPlaying(false);
+  baselineScenario={...saved.baseline}; selectedHour=Math.min(saved.ganttHourIndex ?? saved.selectedHour ?? 0, scenarioHours(saved.current));setPlaying(false);
   document.querySelector("#reserve-target").value=String(saved.targetPercent);
   document.querySelector("#reserve-deadline").value=String(saved.deadlineHour);
   document.querySelector("#workspace-notes").value=saved.notes;
@@ -1699,7 +1847,7 @@ function copyGateHourEvidenceMarkdown(gate) {
   return copyTextWithFallback(text, `#gate-${gate}-evidence-fallback`, `${gate.toUpperCase() === "FX" ? "FX" : gate.charAt(0).toUpperCase() + gate.slice(1)} hour evidence copied as Markdown. Counts of modeled hours, not a bank calendar.`);
 }
 document.querySelector("#jump-monday").addEventListener("click",()=>{
-  selectedHour=65;setPlaying(false);render();saveWorkspace();
+  selectedHour=Math.min(65,simHours());setPlaying(false);render();saveWorkspace();
 });
 document.querySelector("#export-timeline").addEventListener("click",()=>{
   downloadText(timelineToCSV(scenario,baselineScenario),"weekend-gap-timeline.csv","text/csv;charset=utf-8");
