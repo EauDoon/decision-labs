@@ -3016,6 +3016,29 @@
           }
         }
       });
+      const lastUnlabelledSkipTargetTextMarkdown = () => {
+        const skips = document.querySelectorAll('#skips a.skip');
+        for (let i = skips.length - 1; i >= 0; i -= 1) {
+          const skip = skips[i];
+          const href = skip && skip.getAttribute ? skip.getAttribute('href') : '';
+          if (!href || href.charAt(0) !== '#' || href.length < 2) continue;
+          const target = document.getElementById(href.slice(1));
+          if (!target) continue;
+          const labelledBy = target.getAttribute ? target.getAttribute('aria-labelledby') : '';
+          if (labelledBy) continue;
+          const text = target.textContent ? target.textContent.trim() : '';
+          if (!text) return '';
+          return `- ${text}`;
+        }
+        return '';
+      };
+      const lastUnlabelledSkipTargetHeading = () => {
+        const target = lastUnlabelledSkipTarget();
+        if (!target) return null;
+        if (target.tagName && /^H[1-6]$/.test(target.tagName)) return target;
+        const heading = target.querySelector ? target.querySelector('h1, h2, h3, h4, h5, h6') : null;
+        return heading || target;
+      };
       const lastLabelledSkipTargetTextBtn = document.getElementById('copy-last-labelled-skip-target-text');
       const lastLabelledSkipTargetTextStatus = document.getElementById('copy-last-labelled-skip-target-text-status');
       const lastLabelledSkipTargetTextFallback = document.getElementById('copy-last-labelled-skip-target-text-fallback');
