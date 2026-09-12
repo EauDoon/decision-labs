@@ -29,9 +29,9 @@ test("1.5.31 keeps first-weekday-FX-closed copy control without taking Shift+F10
   assert.ok(unshiftedF10 !== -1);
   assert.ok(shiftF10 < unshiftedF10);
   const shiftSlice = handler.slice(shiftF10, shiftF10 + 180);
-  assert.match(shiftSlice, /copyFirstWeekendFxOpenHourMarkdown\(\)/);
+  assert.match(shiftSlice, /copyFirstWeekendFxClosedHourMarkdown\(\)/);
+  assert.doesNotMatch(shiftSlice, /copyFirstWeekendFxOpenHourMarkdown/);
   assert.doesNotMatch(shiftSlice, /copyLastWeekendFxOpenHourMarkdown/);
-  assert.doesNotMatch(shiftSlice, /copyFirstWeekendFxClosedHourMarkdown/);
   assert.doesNotMatch(shiftSlice, /copyFirstWeekdayFxClosedHourMarkdown/);
   assert.doesNotMatch(shiftSlice, /copyLastWeekdayFxClosedHourMarkdown/);
   const unshiftedSlice = handler.slice(unshiftedF10, unshiftedF10 + 180);

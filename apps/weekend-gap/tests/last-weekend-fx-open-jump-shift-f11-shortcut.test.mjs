@@ -9,8 +9,9 @@ test("1.5.35 keeps last-weekend-FX-open jump without taking Shift+F11", async ()
   assert.match(html, /id="copy-first-weekend-fx-open"/);
   assert.match(html, /id="gantt-title"/);
   assert.match(html, /<kbd>Shift\+F11<\/kbd>/);
-  assert.match(html, /Jump to the first-weekend-FX-open-hour copy control/);
+  assert.match(html, /Jump to the first-weekend-FX-closed-hour copy control/);
   assert.doesNotMatch(html, /Jump to the last-weekend-FX-open-hour copy control/);
+  assert.doesNotMatch(html, /Jump to the first-weekend-FX-open-hour copy control/);
   assert.match(app, /function jumpToLastWeekendFxOpenCopy/);
   assert.match(app, /#copy-last-weekend-fx-open/);
   assert.match(app, /function jumpToFirstWeekendFxOpenCopy/);
@@ -34,7 +35,8 @@ test("1.5.35 keeps last-weekend-FX-open jump without taking Shift+F11", async ()
   assert.ok(unshiftedF11 !== -1);
   assert.ok(shiftF11 < unshiftedF11);
   const shiftSlice = handler.slice(shiftF11, shiftF11 + 180);
-  assert.match(shiftSlice, /jumpToFirstWeekendFxOpenCopy\(\)/);
+  assert.match(shiftSlice, /jumpToFirstWeekendFxClosedCopy\(\)/);
+  assert.doesNotMatch(shiftSlice, /jumpToFirstWeekendFxOpenCopy/);
   assert.doesNotMatch(shiftSlice, /jumpToLastWeekendFxOpenCopy/);
   assert.doesNotMatch(shiftSlice, /jumpToLastWeekendFxClosedCopy/);
   assert.doesNotMatch(shiftSlice, /jumpToLastWeekdayFxClosedCopy/);
