@@ -5,7 +5,7 @@ import { readFileSync } from 'node:fs';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import vm from 'node:vm';
-import { createLauncher, parsePort, PUBLIC_PATHS, publicFile, CONTENT_SECURITY_POLICY, notFoundPage, catalogVersionLine, catalogJobs, catalogLastWhatsNewHeading, catalogFirstWhatsNewHeading, catalogFirstWorkbenchHeading, catalogLastWorkbenchHeading, catalogLastReviewPath, catalogFirstReviewPath, catalogFirstOpenHref, catalogLastOpenHref, catalogFirstSkipHref, catalogLastSkipHref, catalogFirstSkipText, catalogLastSkipText, catalogFirstSkipTargetText, catalogLastSkipTargetText, catalogFirstLabelledSkipTargetText, catalogLastLabelledSkipTargetText, catalogFirstLabelledSkipHref, catalogLastLabelledSkipHref, catalogLastLabelledSkipText, catalogFirstLabelledSkipText, catalogFirstUnlabelledSkipText } from '../scripts/serve.mjs';
+import { createLauncher, parsePort, PUBLIC_PATHS, publicFile, CONTENT_SECURITY_POLICY, notFoundPage, catalogVersionLine, catalogJobs, catalogLastWhatsNewHeading, catalogFirstWhatsNewHeading, catalogFirstWorkbenchHeading, catalogLastWorkbenchHeading, catalogLastReviewPath, catalogFirstReviewPath, catalogFirstOpenHref, catalogLastOpenHref, catalogFirstSkipHref, catalogLastSkipHref, catalogFirstSkipText, catalogLastSkipText, catalogFirstSkipTargetText, catalogLastSkipTargetText, catalogFirstLabelledSkipTargetText, catalogLastLabelledSkipTargetText, catalogFirstLabelledSkipHref, catalogLastLabelledSkipHref, catalogLastLabelledSkipText, catalogFirstLabelledSkipText, catalogLastUnlabelledSkipText, catalogFirstUnlabelledSkipText } from '../scripts/serve.mjs';
 
 test('all analyst commands reject Windows console aliases before opening input', { skip: process.platform !== 'win32' }, () => {
   const commands = [
@@ -4628,6 +4628,127 @@ test('404 copy first unlabelled skip text markdown is the skip-link text, or emp
   skips = [];
   copied = 'stale';
   await clickFirst();
+  assert.equal(copied, '');
+  assert.equal(PUBLIC_PATHS.length, 6);
+});
+
+test('404 copy last unlabelled skip text uses the text without extra public paths', () => {
+  const page = notFoundPage();
+  const text = catalogLastUnlabelledSkipText();
+  assert.equal(text, 'Skip to catalog versions');
+  assert.equal(page.includes(text), true, '404 page should print the last unlabelled skip-link text');
+  assert.equal(text, catalogFirstUnlabelledSkipText());
+  assert.notEqual(text, catalogFirstLabelledSkipText());
+  assert.notEqual(text, catalogLastLabelledSkipText());
+  assert.notEqual(text, catalogFirstSkipText());
+  assert.match(page, /id="copy-last-unlabelled-skip-text"/);
+  assert.match(page, />Copy last unlabelled skip text</);
+  assert.match(page, /id="copy-last-unlabelled-skip-text-fallback"/);
+  assert.match(page, /textarea id="copy-last-unlabelled-skip-text-fallback"/);
+  assert.match(page, /lastUnlabelledSkipTextMarkdown/);
+  assert.match(page, /id="skips"/);
+  assert.match(page, /id="version-line"/);
+  assert.match(page, /id="whats-new"/);
+  assert.match(page, /aria-labelledby="whats-new-title"/);
+  assert.match(page, /Not a live product feed/);
+  assert.match(page, /Copied the last unlabelled skip-link text from this page/);
+  assert.match(page, /This is the last unlabelled skip-link text, not a live product feed/);
+  assert.match(page, /id="copy-first-unlabelled-skip-text"/);
+  assert.match(page, />Copy first unlabelled skip text</);
+  assert.match(page, /id="copy-last-labelled-skip-text"/);
+  assert.match(page, />Copy last labelled skip text</);
+  assert.match(page, /id="copy-last-skip-text"/);
+  assert.match(page, />Copy last skip text</);
+  assert.notEqual(page.match(/id="copy-last-unlabelled-skip-text"/)?.[0], page.match(/id="copy-first-unlabelled-skip-text"/)?.[0]);
+  assert.notEqual(page.match(/id="copy-last-unlabelled-skip-text"/)?.[0], page.match(/id="copy-last-labelled-skip-text"/)?.[0]);
+  assert.notEqual(page.match(/id="copy-last-unlabelled-skip-text"/)?.[0], page.match(/id="copy-last-skip-text"/)?.[0]);
+  assert.equal(page.indexOf('id="copy-first-unlabelled-skip-text"') < page.indexOf('id="copy-last-unlabelled-skip-text"'), true);
+  assert.doesNotMatch(page, /\bfetch\s*\(/);
+  assert.doesNotMatch(page, /XMLHttpRequest/);
+  assert.equal(PUBLIC_PATHS.length, 6);
+  assert.deepEqual([...PUBLIC_PATHS], [
+    '/',
+    '/index.html',
+    '/apps/partnership-breakpoint/standalone.html',
+    '/apps/common-cart/standalone.html',
+    '/apps/smallest-agreement/standalone.html',
+    '/apps/weekend-gap/standalone.html',
+  ]);
+  assert.equal(publicFile('/package.json'), null);
+});
+
+test('404 copy last unlabelled skip text markdown is the skip-link text, or empty if missing', async () => {
+  const page = notFoundPage();
+  const source = page.match(/<script>([\s\S]*?)<\/script>/)[1];
+  assert.match(source, /if \(labelledBy\) continue/);
+  assert.match(source, /lastUnlabelledSkipTextMarkdown = \(\) => \{[\s\S]*skips\.length - 1/);
+  assert.equal(source.indexOf('lastUnlabelledSkipTextMarkdown') < source.indexOf('firstUnlabelledSkipTextMarkdown'), true);
+  assert.doesNotMatch(source, /firstUnlabelledSkipTextMarkdown = \(\) => \{[\s\S]*links\.length - 1/);
+  let copied = '';
+  let clickLast = null;
+  let skips = [
+    {
+      getAttribute(name) { return name === 'href' ? '#whats-new' : null; },
+      textContent: "Skip to what's new",
+    },
+    {
+      getAttribute(name) { return name === 'href' ? '#version-line' : null; },
+      textContent: 'Skip to catalog versions',
+    },
+    {
+      getAttribute(name) { return name === 'href' ? '#extra' : null; },
+      textContent: 'Skip to extra',
+    },
+  ];
+  const versionLine = {
+    getAttribute() { return null; },
+    tagName: 'P',
+    textContent: 'Partnership Breakpoint 1.5.32, Common Cart 1.4.32, The Smallest Agreement 1.5.32, Weekend Gap 1.5.32',
+  };
+  const extra = {
+    getAttribute() { return null; },
+    tagName: 'P',
+    textContent: 'Extra',
+  };
+  const whatsNew = {
+    getAttribute(name) { return name === 'aria-labelledby' ? 'whats-new-title' : null; },
+    tagName: 'SECTION',
+    textContent: 'Last-unlabelled-skip-text copy',
+  };
+  const whatsLabel = { textContent: "What's new", tagName: 'H2' };
+  const document = {
+    getElementById(id) {
+      if (id === 'copy-last-unlabelled-skip-text') return { addEventListener(name, handler) { if (name === 'click') clickLast = handler; } };
+      if (id === 'copy-last-unlabelled-skip-text-status') return { textContent: '' };
+      if (id === 'copy-last-unlabelled-skip-text-fallback') return { hidden: true, value: '', focus() {}, select() {} };
+      if (id === 'whats-new') return whatsNew;
+      if (id === 'whats-new-title') return whatsLabel;
+      if (id === 'version-line') return versionLine;
+      if (id === 'extra') return extra;
+      return null;
+    },
+    querySelector: () => null,
+    querySelectorAll(selector) {
+      return selector === '#skips a.skip' ? skips : [];
+    },
+    addEventListener() {},
+  };
+  vm.runInNewContext(source, {
+    document,
+    navigator: { clipboard: { writeText: async (text) => { copied = text; } } },
+  });
+  await clickLast();
+  assert.equal(copied, '- Skip to extra');
+  assert.doesNotMatch(copied, /\n/);
+  assert.doesNotMatch(copied, /#extra/);
+  assert.doesNotMatch(copied, /What's new/);
+  assert.doesNotMatch(copied, /Skip to catalog versions/);
+  assert.doesNotMatch(copied, /Partnership Breakpoint/);
+  assert.notEqual(copied, '- Skip to catalog versions');
+  assert.notEqual(copied, "- Skip to what's new");
+  skips = [];
+  copied = 'stale';
+  await clickLast();
   assert.equal(copied, '');
   assert.equal(PUBLIC_PATHS.length, 6);
 });

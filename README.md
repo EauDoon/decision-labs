@@ -207,6 +207,8 @@ The catalog also names last-labelled-skip-text copy, last-labelled-skip-text jum
 That What's new entry is hub-only. It does not change workbench versions.
 The catalog also names first-unlabelled-skip-text copy, first-unlabelled-skip-text jump, and first-unlabelled-skip-link jump.
 That What's new entry is hub-only. It does not change workbench versions.
+The catalog also names last-unlabelled-skip-text copy, last-unlabelled-skip-text jump, and last-unlabelled-skip-link jump.
+That What's new entry is hub-only. It does not change workbench versions.
 The catalog also names first-labelled-skip-text copy, first-labelled-skip-text jump, and first-labelled-skip-link jump.
 That What's new entry is hub-only. It does not change workbench versions.
 Copy first labelled skip href copies the href of the first skip link whose target has aria-labelledby
@@ -244,6 +246,13 @@ that 404 page copies the same unlabelled skip-link text without adding a public 
 Key `Shift+Home` copies the text of the first skip href that has no aria-labelledby.
 Key `Shift+End` focuses the Copy first unlabelled skip text control.
 Key `Shift+PageDown` focuses the first unlabelled skip link.
+Copy last unlabelled skip text copies the text of the last skip link whose target has no aria-labelledby
+already printed on this page as one Markdown line. If that text is missing, it copies an empty string.
+Copy last unlabelled skip text on
+that 404 page copies the same unlabelled skip-link text without adding a public path.
+Key `Shift+PageUp` copies the text of the last skip href that has no aria-labelledby.
+Key `Shift+Backspace` focuses the Copy last unlabelled skip text control.
+Key `Shift+Enter` focuses the last unlabelled skip link.
 These are
 browser tools on the case you opened, not hosted APIs. Each app also ships a `MODEL.md` (formulas and
 conventions), `CONTRIBUTING.md`, `SECURITY.md`, and its own `LICENSE`. The
@@ -565,6 +574,22 @@ Press `Shift+PageDown` to focus the first unlabelled skip link, or the skip-link
 That key moves focus; it does not open a workbench. It does not copy. That key
 is distinct from `PageDown`, which focuses Copy first skip href, from `Shift+ArrowRight`, which focuses the first labelled skip link, from `ArrowRight`,
 which focuses the first skip link, from `n`, which focuses What's new.
+Press `Shift+PageUp` to copy the text of the last skip link whose target has no aria-labelledby from this page as one Markdown
+line. That key uses the same Copy last unlabelled skip text control, including
+the visible text box when the clipboard API is unavailable. If that text is
+missing, it copies an empty string. This is catalog copy, not a live product
+feed. It is distinct from `PageUp`, which copies the first skip-link href, from
+`Shift+Home`, which copies the first unlabelled skip text, from `F3`, which copies the last skip-link text, and from
+`Shift+Insert`, which copies the last labelled skip text.
+Press `Shift+Backspace` to focus the Copy last unlabelled skip text control, or the skip-link row
+or catalog heading if that control is missing. That key moves focus; it does not
+open a workbench. It does not copy. That key is distinct from `Shift+End`, which
+focuses Copy first unlabelled skip text, from `Shift+ArrowDown`, which focuses Copy last labelled skip text, from
+`F4`, which focuses Copy last skip text, and from `#`, which focuses Copy skip links.
+Press `Shift+Enter` to focus the last unlabelled skip link, or the skip-link row or catalog heading if that link is missing.
+That key moves focus; it does not open a workbench. It does not copy. That key
+is distinct from `Shift+PageDown`, which focuses the first unlabelled skip link, from `Shift+ArrowLeft`, which focuses the last labelled skip link, from `ArrowLeft`,
+which focuses the last skip link, from `n`, which focuses What's new.
 Press `Shift+Delete` to copy the text of the first skip link whose target has aria-labelledby from this page as one Markdown
 line. That key uses the same Copy first labelled skip text control, including
 the visible text box when the clipboard API is unavailable. If that text is
