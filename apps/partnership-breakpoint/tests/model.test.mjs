@@ -2765,7 +2765,7 @@ test('Cyclo-cross carnival remaining listed capacity is distinct from BMX mounta
     const remainingToHold = named?.headroomToExit == null ? null : Math.max(0, -named.headroomToExit);
     return remainingToHold != null && remainingToHold <= 1e-9;
   });
-  assert.equal(lastAtHold.id, 'cyclo-cross-club-hire');
+  assert.equal(lastAtHold.id, 'cyclo-cross-first-aid');
   const firstAtHold = cycloCross.participants.find((item) => {
     const named = result.participants.find((row) => item.id === row.id);
     const remainingToHold = named?.headroomToExit == null ? null : Math.max(0, -named.headroomToExit);
