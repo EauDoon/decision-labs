@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
+import { readFile } from 'node:fs/promises';
 import { isStandaloneCurrent, renderStandalone, buildStandalone } from '../scripts/build-standalone.mjs';
 
 const html = '<html><head><title>Partnership Breakpoint</title><link rel="stylesheet" href="styles.css" /></head><body><a href="MODEL.md">Read the full model</a><script type="module" src="src/app.js"></script></body></html>';
@@ -40,6 +41,34 @@ const appImport = `import {
 } from './model.js';
 
 `;
+
+test('release 1.5.34 ships cyclo-cross carnival, first-over-capacity volume copy and first-over-capacity hide jump', async () => {
+  const pkg = JSON.parse(await readFile(new URL('../package.json', import.meta.url), 'utf8'));
+  const readme = await readFile(new URL('../README.md', import.meta.url), 'utf8');
+  const changelog = await readFile(new URL('../CHANGELOG.md', import.meta.url), 'utf8');
+  const html = await buildStandalone();
+  assert.equal(pkg.version, '1.5.34');
+  assert.match(readme, /New in v1\.5\.34/);
+  assert.match(readme, /Decision workflow \(v1\.5\.34\)/);
+  assert.match(readme, /Cyclo-cross carnival, first-over-capacity volume copy, and first-over-capacity hide jump in Partnership Breakpoint 1\.5\.34/);
+  const firstHeading = changelog.match(/^## .+$/m)?.[0];
+  assert.equal(firstHeading, '## 1.5.34');
+  assert.match(changelog, /Cyclo-cross carnival, first-over-capacity volume copy, and first-over-capacity hide jump in Partnership Breakpoint 1\.5\.34/);
+  assert.match(html, /cycloCrossCarnivalSplit/);
+  assert.match(html, /Cyclo-cross carnival split/);
+  assert.match(html, /id="copy-first-over-capacity-volume"[^>]*aria-keyshortcuts="Shift\+F7"/);
+  assert.match(html, /id="copy-first-over-capacity-remaining"[^>]*aria-keyshortcuts="~"/);
+  assert.match(html, /id="hide-first-over-capacity-participant"[^>]*aria-keyshortcuts="@ Shift\+F9"/);
+  assert.match(html, /id="hide-last-over-capacity-participant"[^>]*aria-keyshortcuts="#"/);
+  assert.match(html, /event\.key === 'F7' && event\.shiftKey/);
+  assert.match(html, /copyFirstOverCapacityVolume/);
+  assert.match(html, /event\.key === 'F8' && event\.shiftKey/);
+  assert.match(html, /event\.key === 'F9' && event\.shiftKey/);
+  assert.match(html, /<kbd>Shift\+F7<\/kbd> Copy first over-capacity volume-to-hold as Markdown/);
+  assert.match(html, /<kbd>Shift\+F8<\/kbd> Jump to Copy first over-capacity volume-to-hold, or the Participants heading if missing/);
+  assert.match(html, /<kbd>Shift\+F9<\/kbd> Jump to Hide the first over-capacity participant, or the Participants heading if missing/);
+  assert.match(html, /print-only print-keep"><h2>First over-capacity volume-to-hold/);
+});
 
 test('standalone renderer inlines local assets with deterministic LF bytes', () => {
   const input = { html, css: 'body { color: black; }', model: 'export const value = 1;\n', app: `${appImport}console.log(value);\n` };
