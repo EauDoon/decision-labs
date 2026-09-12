@@ -45,6 +45,9 @@ import {
   compareScenarios,
   compareThreeRooms,
   computeResidualCoverage,
+  planMultiMerchant,
+  createMerchantPlanReport,
+  multiMerchantPlanCsv,
   createScenarioHistory,
   createMerchantReport,
   createMerchantResidualReport,
@@ -341,6 +344,24 @@ function bindStaticEvents() {
       downloadFile(`${JSON.stringify(createMerchantResidualReport(scenario), null, 2)}\n`, "common-cart-residual-coverage.json", "application/json");
       setStatus("Residual coverage exported as aggregates. Buyer IDs and labels are omitted. This is not a dual checkout.", true);
     } catch (error) { setStatus(`Report failed: ${messageOf(error)}`); }
+  });
+  document.querySelector("#export-multi-merchant-plan").addEventListener("click", () => {
+    try {
+      downloadFile(`${JSON.stringify(planMultiMerchant(scenario), null, 2)}\n`, "common-cart-multi-merchant-plan.json", "application/json");
+      setStatus("Multi-merchant plan exported (organizer private). It contains buyer IDs and allocations. This is not a merchant export.", true);
+    } catch (error) { setStatus(`Plan export failed: ${messageOf(error)}`); }
+  });
+  document.querySelector("#export-multi-merchant-csv").addEventListener("click", () => {
+    try {
+      downloadFile(multiMerchantPlanCsv(scenario), "common-cart-multi-merchant-plan.csv", "text/csv;charset=utf-8");
+      setStatus("Multi-merchant plan CSV exported (organizer private). It contains buyer labels. This is not a merchant export.", true);
+    } catch (error) { setStatus(`Plan export failed: ${messageOf(error)}`); }
+  });
+  document.querySelector("#export-merchant-plan-summary").addEventListener("click", () => {
+    try {
+      downloadFile(`${JSON.stringify(createMerchantPlanReport(planMultiMerchant(scenario), scenario), null, 2)}\n`, "common-cart-merchant-plan-summary.json", "application/json");
+      setStatus("Merchant plan summary exported. Per-merchant aggregates only; buyer IDs, labels, and allocations are omitted.", true);
+    } catch (error) { setStatus(`Plan export failed: ${messageOf(error)}`); }
   });
   document.querySelector("#compare-offer-identity").addEventListener("click", compareOfferIdentityFiles);
   document.querySelector("#heatmap-csv").addEventListener("click", () => {
@@ -2931,6 +2952,7 @@ function refresh() {
     renderInspector(market);
     applyBuyerDisplayFilters();
     renderResidualCoverage(market.scenario);
+    renderMultiMerchantPlan(market.scenario);
     renderDemand(market.scenario);
     renderOrganizerBuyerVariantCounts(market.scenario);
     renderDeliveryHeatmap(market.scenario);
@@ -2960,6 +2982,7 @@ function refresh() {
       residualEmpty.textContent = "Residual coverage will appear once every field is valid.";
       residualSummary.append(residualEmpty);
     }
+    clearMultiMerchantPlan();
     const leftoverRows = document.querySelector("#leftover-coverage-rows");
     if (leftoverRows) leftoverRows.replaceChildren();
     const leftoverBuyers = document.querySelector("#leftover-buyer-rows");
@@ -3250,6 +3273,7 @@ function renderResidualCoverage(rawScenario) {
   summary.replaceChildren(list, leftoverNote);
   renderLeftoverCoverageTable(rawScenario);
 }
+
 
 function leftoverRowCells(row) {
   const element = document.createElement("tr");
@@ -4431,6 +4455,89 @@ function appJsonSyntaxHint(error) {
   return ` (${message})`;
 }
 
+
+
+function renderMultiMerchantPlan(rawScenario) {
+  const note = document.querySelector("#multi-merchant-note");
+  const status = document.querySelector("#multi-merchant-status");
+  const compareRows = document.querySelector("#multi-merchant-compare-rows");
+  const assignmentRows = document.querySelector("#multi-merchant-assignment-rows");
+  const unservedRows = document.querySelector("#multi-merchant-unserved-rows");
+  if (!note || !status || !compareRows || !assignmentRows || !unservedRows) return;
+  const market = evaluateMarket(rawScenario);
+  const plan = planMultiMerchant(rawScenario);
+  const formatter = money(rawScenario.currency);
+  note.textContent = "Bounded exact plan on identical demand: maximum fulfilled units, then minimum landed cost, then fewest merchants, then deterministic order. This is a planning projection, not an order and not a fairness optimum.";
+  status.textContent = plan.optimal
+    ? `Optimal plan over ${plan.evaluatedNodes} searched assignments. Every used merchant meets its minimum order and capacity with tiers repriced from actual units.`
+    : `Room exceeds the ${plan.nodeBudget} assignment bound after ${plan.evaluatedNodes} searched assignments, so this is the best plan found, not a proven optimum. Narrow buyers or offers to finish the exact search.`;
+  compareRows.replaceChildren();
+  const winnerRow = document.createElement("tr");
+  for (const value of ["Single-offer winner", market.winner ? String(market.winner.fulfilledUnits) : "None",
+    market.winner ? formatter.format(market.winner.totalCost) : "None", market.winner ? "1" : "0"]) {
+    const cell = document.createElement("td");
+    cell.textContent = value;
+    winnerRow.append(cell);
+  }
+  const planRow = document.createElement("tr");
+  for (const value of ["Multi-merchant plan", String(plan.fulfilledUnits), formatter.format(plan.totalCost), String(plan.merchantCount)]) {
+    const cell = document.createElement("td");
+    cell.textContent = value;
+    planRow.append(cell);
+  }
+  compareRows.append(winnerRow, planRow);
+  assignmentRows.replaceChildren();
+  const buyerById = new Map(rawScenario.buyers.map((buyer) => [buyer.id, buyer]));
+  for (const entry of plan.assignments) {
+    const row = document.createElement("tr");
+    const buyers = entry.buyerIds.map((id) => buyerDisplayLabel(buyerById.get(id))).join(", ");
+    for (const value of [entry.merchant, entry.offerId, buyers, String(entry.units),
+      formatter.format(entry.unitPrice), formatter.format(entry.shippingCost), formatter.format(entry.totalCost)]) {
+      const cell = document.createElement("td");
+      cell.textContent = value;
+      row.append(cell);
+    }
+    assignmentRows.append(row);
+  }
+  if (!plan.assignments.length) {
+    const row = document.createElement("tr");
+    const cell = document.createElement("td");
+    cell.colSpan = 7;
+    cell.textContent = "No merchant meets its minimum order on these whole orders.";
+    row.append(cell);
+    assignmentRows.append(row);
+  }
+  unservedRows.replaceChildren();
+  for (const entry of plan.unserved) {
+    const row = document.createElement("tr");
+    const buyer = buyerById.get(entry.buyerId);
+    for (const value of [buyerDisplayLabel(buyer), String(entry.quantity), entry.note]) {
+      const cell = document.createElement("td");
+      cell.textContent = value;
+      row.append(cell);
+    }
+    unservedRows.append(row);
+  }
+  if (!plan.unserved.length) {
+    const row = document.createElement("tr");
+    const cell = document.createElement("td");
+    cell.colSpan = 3;
+    cell.textContent = "Every order is assigned.";
+    row.append(cell);
+    unservedRows.append(row);
+  }
+}
+
+function clearMultiMerchantPlan() {
+  for (const id of ["#multi-merchant-note", "#multi-merchant-status"]) {
+    const node = document.querySelector(id);
+    if (node) node.textContent = id === "#multi-merchant-note" ? "Multi-merchant plan will appear once every field is valid." : "";
+  }
+  for (const id of ["#multi-merchant-compare-rows", "#multi-merchant-assignment-rows", "#multi-merchant-unserved-rows"]) {
+    const body = document.querySelector(id);
+    if (body) body.replaceChildren();
+  }
+}
 
 function clearCartReview() {
   cartReviewSequence++;

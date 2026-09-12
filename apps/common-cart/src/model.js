@@ -1775,6 +1775,32 @@ export function createBuyerCsv(rawScenario, offerId) {
   return rows.map(row => row.map(escapeCsvCell).join(",")).join("\r\n") + "\r\n";
 }
 
+/**
+ * Organizer plan CSV: assignment rows with buyer labels, then unserved rows.
+ * Organizer-private: buyer labels are included. Merchant summaries must use
+ * createMerchantPlanReport instead.
+ */
+export function multiMerchantPlanCsv(rawScenario) {
+  const scenario = validateScenario(rawScenario);
+  const plan = planMultiMerchant(scenario);
+  const buyerById = new Map(scenario.buyers.map((buyer) => [buyer.id, buyer]));
+  const rows = [["Private buyer label", "Buyer", "Merchant", "Offer", "Currency", "Allocated quantity", "Unit price", "Items cost", "Shipping", "Order total", "Plan status"]];
+  for (const entry of plan.assignments) {
+    const offer = scenario.offers.find((item) => item.id === entry.offerId);
+    for (const buyerId of entry.buyerIds) {
+      const buyer = buyerById.get(buyerId);
+      const items = buyer.quantity * entry.unitPrice;
+      const shipping = offer.fulfillment === "pickup" ? 0 : offer.shippingPerBuyer;
+      rows.push([buyer.label, buyerId, entry.merchant, entry.offerId, scenario.currency, buyer.quantity, entry.unitPrice, items, shipping, items + shipping, plan.status]);
+    }
+  }
+  for (const entry of plan.unserved) {
+    const buyer = buyerById.get(entry.buyerId);
+    rows.push([buyer.label, entry.buyerId, "", "", scenario.currency, 0, "", "", "", "", `${plan.status}; unserved: ${entry.note}`]);
+  }
+  return rows.map(row => row.map(escapeCsvCell).join(",")).join("\r\n") + "\r\n";
+}
+
 const BUYER_CSV_HEADERS = {
   label: "label",
   "private label": "label",
@@ -3068,6 +3094,208 @@ export function computeResidualCoverage(rawScenario) {
 }
 
 /**
+ * Base-band compatibility of every buyer with one offer: category, variant,
+ * ceiling price, landed-order budget, and delivery deadline. Tier bands only
+ * lower the unit price, so base-band compatibility is exact for every band.
+ */
+export function offerBuyerCompatibility(rawScenario, rawOffer) {
+  const scenario = validateScenario(rawScenario);
+  const offerEntry = typeof rawOffer === "string"
+    ? scenario.offers.find(({ id }) => id === rawOffer)
+    : validateOffer(rawOffer, 0);
+  if (!offerEntry) throw new ScenarioError("Offer was not found.");
+  const shipping = chargedShipping(offerEntry);
+  return scenario.buyers.map((buyer) => ({
+    buyerId: buyer.id,
+    reasons: incompatibilityReasons(buyer, { ...offerEntry, unitPrice: offerEntry.unitPrice, shippingPerBuyer: shipping }),
+  }));
+}
+
+export const MAX_PLAN_NODES = 250000;
+
+/**
+ * Bounded exact multi-merchant plan. Each buyer order stays whole and goes to
+ * at most one merchant; every used merchant meets its minimum order, respects
+ * capacity, and reprices from its actual assigned units, with shipping and
+ * totals recomputed per assignment.
+ *
+ * Objective, stated before the search: maximum fulfilled units, then minimum
+ * landed cost, then fewest merchants, then the lexicographically smallest
+ * assignment. This does not maximize every possible fairness objective.
+ * Branch and bound explores buyers in id order with a node budget; rooms above
+ * the bound return status too_large with the best plan found, never a claimed
+ * optimum. Duplicate allocation is impossible by construction: each buyer is
+ * assigned once.
+ */
+export function planMultiMerchant(rawScenario, options = {}) {
+  const scenario = validateScenario(rawScenario);
+  if (options !== undefined && (typeof options !== "object" || options === null || Array.isArray(options))) {
+    throw new ScenarioError("Plan options must be an object.");
+  }
+  const nodeBudget = options.nodeBudget ?? MAX_PLAN_NODES;
+  if (!Number.isInteger(nodeBudget) || nodeBudget < 1 || nodeBudget > MAX_PLAN_NODES) {
+    throw new ScenarioError(`Plan node budget must be a whole number from 1 through ${MAX_PLAN_NODES}.`);
+  }
+  const buyers = [...scenario.buyers].sort((left, right) => compareText(left.id, right.id));
+  const offers = [...scenario.offers].sort((left, right) => compareText(left.id, right.id));
+  const buyerById = new Map(buyers.map((buyer) => [buyer.id, buyer]));
+  const compatibility = new Map();
+  for (const offer of offers) {
+    for (const { buyerId, reasons } of offerBuyerCompatibility(scenario, offer.id)) {
+      if (!compatibility.has(buyerId)) compatibility.set(buyerId, []);
+      compatibility.get(buyerId).push({ offer, reasons });
+    }
+  }
+  const remainingUnits = [];
+  let suffix = 0;
+  for (let index = buyers.length - 1; index >= 0; index -= 1) {
+    suffix += buyers[index].quantity;
+    remainingUnits[index] = suffix;
+  }
+  const assigned = new Array(offers.length).fill(0);
+  const choice = new Array(buyers.length).fill(-1);
+  let best = null;
+  let nodes = 0;
+  let exhausted = false;
+
+  const leafScore = () => {
+    const released = new Set(choice);
+    const perOffer = offers.map(() => ({ units: 0, buyers: [] }));
+    buyers.forEach((buyer, index) => {
+      if (choice[index] >= 0) {
+        perOffer[choice[index]].units += buyer.quantity;
+        perOffer[choice[index]].buyers.push(buyer.id);
+      }
+    });
+    const active = [];
+    let fulfilled = 0;
+    let cost = 0;
+    perOffer.forEach((entry, offerIndex) => {
+      if (entry.units === 0) return;
+      const offer = offers[offerIndex];
+      if (entry.units < offer.minimumUnits) return;
+      const price = tierPriceForUnits(offer, entry.units);
+      const shipping = chargedShipping(offer);
+      const items = entry.units * price;
+      const delivery = entry.buyers.length * shipping;
+      fulfilled += entry.units;
+      cost += items + delivery;
+      active.push({
+        offerId: offer.id, merchant: offer.merchant, buyerIds: [...entry.buyers].sort(compareText),
+        units: entry.units, unitPrice: price, shippingPerBuyer: shipping,
+        itemsCost: items, shippingCost: delivery, totalCost: items + delivery,
+      });
+    });
+    active.sort((left, right) => compareText(left.offerId, right.offerId));
+    return { fulfilled, cost, active };
+  };
+  const signature = (active) => JSON.stringify(active.map((entry) => [entry.offerId, entry.buyerIds]));
+  const better = (candidate) => {
+    if (!best) return true;
+    if (candidate.fulfilled !== best.fulfilled) return candidate.fulfilled > best.fulfilled;
+    if (candidate.cost !== best.cost) return candidate.cost < best.cost;
+    if (candidate.active.length !== best.active.length) return candidate.active.length < best.active.length;
+    return signature(candidate.active) < signature(best.active);
+  };
+
+  const visit = (index, fulfilledUnits, landedCost) => {
+    if (exhausted) return;
+    nodes += 1;
+    if (nodes > nodeBudget) { exhausted = true; return; }
+    if (index === buyers.length) {
+      const candidate = leafScore();
+      if (better(candidate)) best = candidate;
+      return;
+    }
+    // Sound upper bound ignoring capacity and minimums: remaining units can add at most their total.
+    if (best && fulfilledUnits + remainingUnits[index] < best.fulfilled) return;
+    if (best && fulfilledUnits + remainingUnits[index] === best.fulfilled && landedCost >= best.cost) return;
+    const buyer = buyers[index];
+    const options = (compatibility.get(buyer.id) ?? [])
+      .filter(({ reasons }) => reasons.length === 0)
+      .map(({ offer }) => offers.findIndex((entry) => entry.id === offer.id));
+    for (const offerIndex of options) {
+      if (assigned[offerIndex] + buyer.quantity > offers[offerIndex].capacity) continue;
+      assigned[offerIndex] += buyer.quantity;
+      choice[index] = offerIndex;
+      visit(index + 1, fulfilledUnits + buyer.quantity, landedCost);
+      assigned[offerIndex] -= buyer.quantity;
+      choice[index] = -1;
+      if (exhausted) return;
+    }
+    choice[index] = -1;
+    visit(index + 1, fulfilledUnits, landedCost);
+  };
+  visit(0, 0, 0);
+
+  const active = best?.active ?? [];
+  const servedIds = new Set(active.flatMap((entry) => entry.buyerIds));
+  const unserved = buyers.filter((buyer) => !servedIds.has(buyer.id)).map((buyer) => {
+    const entries = compatibility.get(buyer.id) ?? [];
+    const compatibleOfferIds = entries.filter(({ reasons }) => reasons.length === 0).map(({ offer }) => offer.id);
+    return {
+      buyerId: buyer.id, quantity: buyer.quantity, compatibleOfferIds,
+      note: compatibleOfferIds.length === 0
+        ? 'No compatible offer: ' + entries.map(({ offer, reasons }) => `${offer.id} (${reasons.join(', ') || 'unknown'})`).join('; ')
+        : 'Compatible offers exist; capacity or minimum orders prevented assignment.',
+    };
+  });
+  const fulfilledUnits = active.reduce((sum, entry) => sum + entry.units, 0);
+  const totalCost = active.reduce((sum, entry) => sum + entry.totalCost, 0);
+  return {
+    status: exhausted ? 'too_large' : 'optimal',
+    optimal: !exhausted,
+    objective: 'Maximum fulfilled units, then minimum landed cost, then fewest merchants, then deterministic assignment order. Not a fairness optimum.',
+    evaluatedNodes: nodes,
+    nodeBudget,
+    assignments: active,
+    unserved,
+    fulfilledUnits,
+    unservedUnits: unserved.reduce((sum, entry) => sum + entry.quantity, 0),
+    totalCost,
+    merchantCount: active.length,
+  };
+}
+
+function tierPriceForUnits(offer, units) {
+  let price = offer.unitPrice;
+  for (const tier of offer.tiers ?? []) {
+    if (units >= tier.minimumUnits) price = tier.unitPrice;
+  }
+  return price;
+}
+
+/**
+ * Merchant-facing plan summary: aggregates per merchant with no buyer records.
+ * Organizer detail (buyer ids and labels) never enters this contract.
+ */
+export function createMerchantPlanReport(plan, rawScenario) {
+  const scenario = validateScenario(rawScenario);
+  if (!plan || typeof plan !== 'object' || !Array.isArray(plan.assignments)) {
+    throw new ScenarioError('Multi-merchant plan is required to summarize merchant projections.');
+  }
+  const byMerchant = new Map();
+  for (const entry of plan.assignments) {
+    const current = byMerchant.get(entry.merchant) ?? { merchant: entry.merchant, offers: 0, buyers: 0, units: 0, totalCost: 0 };
+    current.offers += 1;
+    current.buyers += entry.buyerIds.length;
+    current.units += entry.units;
+    current.totalCost += entry.totalCost;
+    byMerchant.set(entry.merchant, current);
+  }
+  return {
+    currency: scenario.currency,
+    optimal: plan.optimal === true,
+    status: plan.status,
+    merchants: [...byMerchant.values()].sort((left, right) => compareText(left.merchant, right.merchant)),
+    fulfilledUnits: plan.fulfilledUnits,
+    unservedUnits: plan.unservedUnits,
+    totalCost: plan.totalCost,
+    note: 'Aggregate projections only: merchant, offer count, buyer count, units, and landed total. No buyer records are included. This is a planning projection, not an order or a verified saving.',
+  };
+}
+
+/**
  * Additional whole units needed to unlock the next cheaper quantity band
  * for one offer, or an explicit reason the band is unreachable.
  */
@@ -3448,6 +3676,7 @@ export const CART_REVIEW_TOOLS = Object.freeze([
   { id: "stranded", title: "Unserved buyer reasons" },
   { id: "dependency", title: "Sole-offer dependency" },
   { id: 'coverage', title: 'Buyer option coverage' },
+  { id: 'multimerchant', title: 'Multi-merchant plan' },
 ]);
 
 /** On-demand organizer analysis. Never changes matching inputs or places orders. */
@@ -3526,6 +3755,16 @@ export function analyzeCartReview(rawScenario, tool) {
         const result = evaluateOffer(scenario, { ...original.offer, minimumUnits: 1 });
         return [original.offer.merchant, original.offer.minimumUnits, 1, original.fulfilledUnits, result.fulfilledUnits, result.deliveredBuyers];
       }), 'Counterfactual only: set the base minimum to one unit while preserving capacity, prices, tier thresholds, shipping, and buyer constraints. This does not imply that a merchant will agree.');
+    }
+    case "multimerchant": {
+      const plan = planMultiMerchant(scenario);
+      const rows = plan.assignments.map((entry) => {
+        const offer = scenario.offers.find((item) => item.id === entry.offerId);
+        return [entry.merchant, entry.offerId, entry.buyerIds.length, entry.units, entry.unitPrice, entry.shippingCost, entry.totalCost];
+      });
+      rows.push(['Unserved demand', '—', plan.unserved.length, plan.unservedUnits, '', '', '']);
+      return report(['Merchant', 'Offer', 'Buyers', 'Units', 'Unit price', 'Shipping', 'Order total'], rows,
+        `Bounded exact plan (${plan.status}; ${plan.evaluatedNodes} nodes): maximum fulfilled units, then minimum landed cost, then fewest merchants, then deterministic order. Winner comparison: ${market.winner ? `${market.winner.offer.merchant} fills ${market.winner.fulfilledUnits} of ${market.totalRequestedUnits} units at ${market.winner.totalCost}` : 'no qualified single offer'}. This is a planning projection, not an order or a verified saving.`);
     }
     default: throw new ScenarioError('Review is unavailable.');
   }

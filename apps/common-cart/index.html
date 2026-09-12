@@ -660,6 +660,41 @@ SOFTWARE.
             <p class="canvas-note print-chrome">Uncovered leftover copy is counts and units only. Buyer identities stay out. This is not a merchant export.</p>
             <p class="canvas-note print-chrome">Uncovered leftover unit-count copy is count only. Organizer-private. This is not a merchant export.</p>
           </article>
+          <article class="panel multi-merchant-panel print-keep" aria-labelledby="multi-merchant-title">
+            <div class="panel-heading">
+              <div>
+                <p class="section-number">Planned together</p>
+                <h3 id="multi-merchant-title" tabindex="-1">Multi-merchant plan</h3>
+              </div>
+            </div>
+            <p id="multi-merchant-note" class="canvas-note"></p>
+            <p id="multi-merchant-status" class="canvas-note" role="status"></p>
+            <div id="multi-merchant-compare" class="table-shell compact print-keep">
+              <table>
+                <caption>Single-offer winner against the bounded multi-merchant plan on identical demand.</caption>
+                <thead><tr><th scope="col">Approach</th><th scope="col">Fulfilled units</th><th scope="col">Landed total</th><th scope="col">Merchants used</th></tr></thead>
+                <tbody id="multi-merchant-compare-rows"></tbody>
+              </table>
+            </div>
+            <div id="multi-merchant-assignments" class="table-shell compact print-private">
+              <table>
+                <caption>Organizer order assignments. Private labels. This table is organizer-private and is not a merchant export.</caption>
+                <thead><tr><th scope="col">Merchant</th><th scope="col">Offer</th><th scope="col">Buyers</th><th scope="col">Units</th><th scope="col">Unit price</th><th scope="col">Shipping</th><th scope="col">Order total</th></tr></thead>
+                <tbody id="multi-merchant-assignment-rows"></tbody>
+              </table>
+            </div>
+            <div id="multi-merchant-unserved" class="table-shell compact print-keep">
+              <table>
+                <caption>Unmet demand with the reason each order stays uncovered.</caption>
+                <thead><tr><th scope="col">Private label</th><th scope="col">Units</th><th scope="col">Why uncovered</th></tr></thead>
+                <tbody id="multi-merchant-unserved-rows"></tbody>
+              </table>
+            </div>
+            <button id="export-multi-merchant-plan" class="print-chrome" type="button">Export multi-merchant plan (JSON, organizer private)</button>
+            <button id="export-multi-merchant-csv" class="print-chrome" type="button">Export multi-merchant plan (CSV, organizer private)</button>
+            <button id="export-merchant-plan-summary" class="print-chrome" type="button">Export merchant plan summary (aggregates only)</button>
+            <p class="canvas-note print-chrome">Organizer exports carry buyer labels and individual allocations. The merchant summary carries per-merchant aggregates only: no buyer records. This is a planning projection, not an order.</p>
+          </article>
           <button id="buyer-report" class="print-chrome" type="button">Export private buyer report (CSV)</button>
           <button id="organizer-briefing" class="print-chrome" type="button">Export organizer briefing</button>
           <p class="canvas-note print-chrome">This export is organizer-private. It includes the inspected offer, buyer labels, exclusions, and individual costs. Keep this report private. Formula-like text is escaped for spreadsheet safety.</p>

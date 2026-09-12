@@ -1,5 +1,19 @@
 # Changelog
 
+## 1.5.0 - 2026-09-12
+
+Multi-merchant procurement planning in Common Cart 1.5.0.
+
+A workshop addition on 1.4.33. Common Cart remains an offline simulator. Plans are projections, not orders, checkouts, or verified savings. Merchant views, JSON, CSV, overlap Markdown, and plan summaries still receive aggregates, counts, merchant labels, or fulfillment modes only. Organizer plan exports are labeled organizer-private.
+
+### Added
+
+- Bounded exact multi-merchant planner: whole buyer orders to at most one merchant, minimum orders and capacities honored, tiers repriced from actual assigned units, objective maximum fulfilled units then minimum landed cost then fewest merchants then deterministic order. Rooms above the 250,000-assignment bound return the best plan found with an explicit limit status.
+- Multi-merchant plan panel with winner comparison, per-merchant assignments, unmet demand with reasons, organizer JSON and CSV exports, and an aggregates-only merchant summary.
+- Multi-merchant review question with packet replay, CLI `plan --input`, and merchant-plan privacy tests proving no buyer records in merchant outputs.
+
+# Changelog
+
 ## 1.4.33 - 2026-09-12
 
 BMX carnival lunch, leftover-uncovered leftover-only headroom copy, and first leftover-only hide jump in Common Cart 1.4.33.

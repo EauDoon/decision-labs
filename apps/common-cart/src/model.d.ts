@@ -195,6 +195,56 @@ export interface ResidualCoverage {
 
 export function computeResidualCoverage(rawScenario: unknown): ResidualCoverage;
 
+export interface PlanAssignment {
+  offerId: string;
+  merchant: string;
+  buyerIds: string[];
+  units: number;
+  unitPrice: number;
+  shippingPerBuyer: number;
+  itemsCost: number;
+  shippingCost: number;
+  totalCost: number;
+}
+
+export interface PlanUnserved {
+  buyerId: string;
+  quantity: number;
+  compatibleOfferIds: string[];
+  note: string;
+}
+
+export interface MultiMerchantPlan {
+  status: 'optimal' | 'too_large';
+  optimal: boolean;
+  objective: string;
+  evaluatedNodes: number;
+  nodeBudget: number;
+  assignments: PlanAssignment[];
+  unserved: PlanUnserved[];
+  fulfilledUnits: number;
+  unservedUnits: number;
+  totalCost: number;
+  merchantCount: number;
+}
+
+export interface MerchantPlanSummary {
+  currency: string;
+  optimal: boolean;
+  status: 'optimal' | 'too_large';
+  merchants: { merchant: string; offers: number; buyers: number; units: number; totalCost: number }[];
+  fulfilledUnits: number;
+  unservedUnits: number;
+  totalCost: number;
+  note: string;
+}
+
+export function offerBuyerCompatibility(rawScenario: unknown, rawOffer: unknown): { buyerId: string; reasons: string[] }[];
+export const MAX_PLAN_NODES: number;
+export function planMultiMerchant(rawScenario: unknown, options?: unknown): MultiMerchantPlan;
+export function createMerchantPlanReport(plan: unknown, rawScenario: unknown): MerchantPlanSummary;
+export function multiMerchantPlanCsv(rawScenario: unknown): string;
+
 export interface NextTierGap {
   offerId: string;
   merchant: string;

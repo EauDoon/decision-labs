@@ -8,6 +8,7 @@ import { CART_REVIEW_TOOLS, analyzeCartReview } from '../src/model.js';
 import { createCartReviewPacket, replayCartReviewPacket } from '../src/model.js';
 import { compareScenarios, compareRoomsByOfferIdentity } from '../src/model.js';
 import { validateScenario, validateWorkspace } from '../src/model.js';
+import { planMultiMerchant, createMerchantPlanReport } from '../src/model.js';
 import { importBuyersFromCsv, importOffersFromCsv } from '../src/model.js';
 
 const LIMIT = 1048576;
@@ -24,6 +25,7 @@ Usage: node scripts/analyze.mjs market --input scenario.json [--output result.js
        node scripts/analyze.mjs batch --input scenarios.jsonl --output results.jsonl
        node scripts/analyze.mjs import --input scenario.json --kind buyers --csv buyers.csv --output updated.json
        node scripts/analyze.mjs rooms --input workspace.json
+       node scripts/analyze.mjs plan --input scenario.json
        node scripts/analyze.mjs market --input workspace.json --room 2
        node scripts/analyze.mjs compare --input workspace.json --room 1 --against workspace.json --against-room 2
 Use --input - for piped UTF-8 JSON. Output defaults to stdout.
@@ -127,7 +129,7 @@ async function main() {
   if (Object.values(values).some(value => value === '')) throw new Error('Option values must not be empty.');
   if (values.help) { process.stdout.write(help); return; }
   const [command] = positionals;
-  const allowed = { market: [], offer: ['offer'], merchant: [], tools: [], review: ['tool'], packet: ['tool'], replay: [], compare: ['against', 'against-room'], sweep: ['offer', 'field', 'values'], batch: [], import: ['kind', 'csv'], rooms: [] };
+  const allowed = { market: [], offer: ['offer'], merchant: [], tools: [], review: ['tool'], packet: ['tool'], replay: [], compare: ['against', 'against-room'], sweep: ['offer', 'field', 'values'], batch: [], import: ['kind', 'csv'], rooms: [], plan: [] };
   if (positionals.length !== 1 || !Object.hasOwn(allowed, command)) throw new Error('Choose a supported command. Use --help for usage.');
   for (const name of names) {
     if (name === 'room' && !['tools', 'batch', 'replay', 'rooms'].includes(command)) continue;
@@ -192,6 +194,10 @@ async function main() {
       }) };
   }
   if (command === 'merchant') result = { market: createMerchantReport(scenario), residual: createMerchantResidualReport(scenario) };
+  if (command === 'plan') {
+    const multiMerchant = planMultiMerchant(scenario);
+    result = { plan: multiMerchant, merchant: createMerchantPlanReport(multiMerchant, scenario) };
+  }
   if (command === 'offer') {
     if (!values.offer) throw new Error('--offer is required.');
     result = { evaluation: evaluateOffer(scenario, values.offer), exclusions: groupExclusionReasons(scenario, values.offer), nextTier: unitsToNextTier(scenario, values.offer), capacity: capacityBar(scenario, values.offer) };
