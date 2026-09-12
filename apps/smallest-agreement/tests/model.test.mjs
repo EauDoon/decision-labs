@@ -4300,6 +4300,61 @@ test("first-without-floor cost Markdown is one line, honest 0 when none, and dis
   const triathlonAggregate = formatGroupsWithoutFloorRemainingMarkdown(triathlon, getOriginalOptions(triathlon));
   assert.equal(triathlonAggregate.remaining, 22);
   assert.doesNotMatch(triathlonAggregate.text, /First-without-floor cost/u);
+  const cycling = proposal({
+    title: "Cycling club hours: velodrome staging booking, cafe hours, and bike-box lock-up",
+    threshold: 70,
+    groups: [
+      { id: "students", name: "Students", weight: 8 },
+      { id: "neighbours", name: "Neighbours", weight: 7, veto: true },
+      { id: "pandc", name: "P&C", weight: 10 },
+    ],
+    clauses: [{ id: "cycling-staging-booking", title: "Velodrome staging booking", options: [
+      option("cycling-staging-booking-original", true, { students: 5, neighbours: 92, pandc: 59 }),
+      option("cycling-staging-booking-late", false, { students: 88, neighbours: 32, pandc: 44 }, 2),
+      option("cycling-staging-booking-weekend", false, { students: 73, neighbours: 40, pandc: 52 }, 4),
+    ] }],
+  });
+  const cyclingCopied = formatFirstGroupWithoutFloorCostMarkdown(cycling, getOriginalOptions(cycling));
+  assert.equal(cyclingCopied.status, "ok");
+  assert.equal(cyclingCopied.cost, 8);
+  assert.equal(cyclingCopied.text, "First-without-floor cost: 8. A floor is a number you entered, not a legal quorum.\n");
+  assert.doesNotMatch(cyclingCopied.text, /Last-without-floor cost/u);
+  const mountainBike = proposal({
+    title: "Mountain bike club hours: downhill staging booking, trail cafe hours, and helmet-box lock-up",
+    threshold: 70,
+    groups: [
+      { id: "students", name: "Students", weight: 9 },
+      { id: "neighbours", name: "Neighbours", weight: 8, veto: true },
+      { id: "pandc", name: "P&C", weight: 11 },
+    ],
+    clauses: [{ id: "mountain-bike-staging-booking", title: "Downhill staging booking", options: [
+      option("mountain-bike-staging-booking-original", true, { students: 4, neighbours: 91, pandc: 60 }),
+      option("mountain-bike-staging-booking-late", false, { students: 89, neighbours: 31, pandc: 43 }, 2),
+      option("mountain-bike-staging-booking-weekend", false, { students: 74, neighbours: 39, pandc: 51 }, 4),
+    ] }],
+  });
+  const mountainCopied = formatFirstGroupWithoutFloorCostMarkdown(mountainBike, getOriginalOptions(mountainBike));
+  assert.equal(mountainCopied.status, "ok");
+  assert.equal(mountainCopied.cost, 9);
+  assert.equal(mountainCopied.text, "First-without-floor cost: 9. A floor is a number you entered, not a legal quorum.\n");
+  assert.doesNotMatch(mountainCopied.text, /First-without-floor remaining/u);
+  assert.doesNotMatch(mountainCopied.text, /Last-without-floor remaining/u);
+  assert.doesNotMatch(mountainCopied.text, /Last-without-floor cost/u);
+  assert.doesNotMatch(mountainCopied.text, /Groups-without-floor remaining/u);
+  assert.doesNotMatch(mountainCopied.text, /Groups without a support floor:/u);
+  assert.doesNotMatch(mountainCopied.text, /Students/u);
+  assert.doesNotMatch(mountainCopied.text, /Neighbours/u);
+  assert.doesNotMatch(mountainCopied.text, /P&C/u);
+  const mountainRemaining = formatFirstGroupWithoutFloorRemainingMarkdown(mountainBike, getOriginalOptions(mountainBike));
+  assert.equal(mountainRemaining.remaining, 9);
+  assert.notEqual(mountainCopied.text, mountainRemaining.text);
+  assert.doesNotMatch(mountainRemaining.text, /First-without-floor cost/u);
+  const mountainLast = formatLastGroupWithoutFloorRemainingMarkdown(mountainBike, getOriginalOptions(mountainBike));
+  assert.equal(mountainLast.remaining, 11);
+  assert.doesNotMatch(mountainLast.text, /First-without-floor cost/u);
+  const mountainAggregate = formatGroupsWithoutFloorRemainingMarkdown(mountainBike, getOriginalOptions(mountainBike));
+  assert.equal(mountainAggregate.remaining, 28);
+  assert.doesNotMatch(mountainAggregate.text, /First-without-floor cost/u);
 });
 
 test("last-without-floor cost Markdown is one line, honest 0 when none, and distinct from first cost and remaining", async () => {
@@ -4461,6 +4516,31 @@ test("last-without-floor cost Markdown is one line, honest 0 when none, and dist
   const cyclingFirst = formatFirstGroupWithoutFloorCostMarkdown(cycling, getOriginalOptions(cycling));
   assert.equal(cyclingFirst.cost, 8);
   assert.notEqual(cyclingCopied.text, cyclingFirst.text);
+  const mountainBike = proposal({
+    title: "Mountain bike club hours: downhill staging booking, trail cafe hours, and helmet-box lock-up",
+    threshold: 70,
+    groups: [
+      { id: "students", name: "Students", weight: 9 },
+      { id: "neighbours", name: "Neighbours", weight: 8, veto: true },
+      { id: "pandc", name: "P&C", weight: 11 },
+    ],
+    clauses: [{ id: "mountain-bike-staging-booking", title: "Downhill staging booking", options: [
+      option("mountain-bike-staging-booking-original", true, { students: 4, neighbours: 91, pandc: 60 }),
+      option("mountain-bike-staging-booking-late", false, { students: 89, neighbours: 31, pandc: 43 }, 2),
+      option("mountain-bike-staging-booking-weekend", false, { students: 74, neighbours: 39, pandc: 51 }, 4),
+    ] }],
+  });
+  const mountainCopied = formatLastGroupWithoutFloorCostMarkdown(mountainBike, getOriginalOptions(mountainBike));
+  assert.equal(mountainCopied.status, "ok");
+  assert.equal(mountainCopied.cost, 11);
+  assert.equal(mountainCopied.text, "Last-without-floor cost: 11. A floor is a number you entered, not a legal quorum.\n");
+  assert.doesNotMatch(mountainCopied.text, /First-without-floor cost/u);
+  assert.doesNotMatch(mountainCopied.text, /Last-without-floor remaining/u);
+  assert.doesNotMatch(mountainCopied.text, /Students/u);
+  assert.doesNotMatch(mountainCopied.text, /P&C/u);
+  const mountainFirst = formatFirstGroupWithoutFloorCostMarkdown(mountainBike, getOriginalOptions(mountainBike));
+  assert.equal(mountainFirst.cost, 9);
+  assert.notEqual(mountainCopied.text, mountainFirst.text);
 });
 
 test("first veto group label Markdown escapes the group name and is not a legal right", () => {
