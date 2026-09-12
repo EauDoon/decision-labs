@@ -3434,6 +3434,11 @@
           firstUnlabelledSkipHrefBtn?.click();
           return;
         }
+        if (event.shiftKey && event.key === ' ') {
+          event.preventDefault();
+          (document.getElementById('copy-first-unlabelled-skip-href') || document.getElementById('skips') || document.getElementById('catalog-heading'))?.focus();
+          return;
+        }
         if (event.shiftKey && event.key === 'Home') {
           event.preventDefault();
           firstUnlabelledSkipTextBtn?.click();
