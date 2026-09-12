@@ -3039,6 +3039,35 @@
         const heading = target.querySelector ? target.querySelector('h1, h2, h3, h4, h5, h6') : null;
         return heading || target;
       };
+      const lastUnlabelledSkipTargetTextBtn = document.getElementById('copy-last-unlabelled-skip-target-text');
+      const lastUnlabelledSkipTargetTextStatus = document.getElementById('copy-last-unlabelled-skip-target-text-status');
+      const lastUnlabelledSkipTargetTextFallback = document.getElementById('copy-last-unlabelled-skip-target-text-fallback');
+      lastUnlabelledSkipTargetTextBtn?.addEventListener('click', async () => {
+        const markdown = lastUnlabelledSkipTargetTextMarkdown();
+        const empty = markdown === '';
+        try {
+          if (!navigator.clipboard?.writeText) throw new Error('clipboard unavailable');
+          await navigator.clipboard.writeText(markdown);
+          if (lastUnlabelledSkipTargetTextFallback) lastUnlabelledSkipTargetTextFallback.hidden = true;
+          if (lastUnlabelledSkipTargetTextStatus) {
+            lastUnlabelledSkipTargetTextStatus.textContent = empty
+              ? 'Last unlabelled skip-target text was missing. Copied an empty string. This is catalog copy, not a live product feed.'
+              : 'Copied the last unlabelled skip-target text from this catalog page as Markdown. Not a live product feed.';
+          }
+        } catch {
+          if (lastUnlabelledSkipTargetTextFallback) {
+            lastUnlabelledSkipTargetTextFallback.hidden = false;
+            lastUnlabelledSkipTargetTextFallback.value = markdown;
+            lastUnlabelledSkipTargetTextFallback.focus();
+            lastUnlabelledSkipTargetTextFallback.select();
+          }
+          if (lastUnlabelledSkipTargetTextStatus) {
+            lastUnlabelledSkipTargetTextStatus.textContent = empty
+              ? 'Clipboard unavailable. Copy the empty string from the text box. Last unlabelled skip-target text was missing. This is catalog copy, not a live product feed.'
+              : 'Clipboard unavailable. Copy the Markdown from the text box. This is the last unlabelled skip-target text, not a live product feed.';
+          }
+        }
+      });
       const lastLabelledSkipTargetTextBtn = document.getElementById('copy-last-labelled-skip-target-text');
       const lastLabelledSkipTargetTextStatus = document.getElementById('copy-last-labelled-skip-target-text-status');
       const lastLabelledSkipTargetTextFallback = document.getElementById('copy-last-labelled-skip-target-text-fallback');
