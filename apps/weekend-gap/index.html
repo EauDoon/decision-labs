@@ -120,6 +120,7 @@ SOFTWARE.
               <button type="button" class="preset-button" data-preset="mondayLateFxOpen">Monday late FX open (synthetic)</button>
               <button type="button" class="preset-button" data-preset="tuesdayEarlyFxOpen">Tuesday early FX open (synthetic)</button>
               <button type="button" class="preset-button" data-preset="tuesdayLateFxOpen">Tuesday late FX open (synthetic)</button>
+              <button type="button" class="preset-button" data-preset="wednesdayEarlyFxOpen">Wednesday early FX open (synthetic)</button>
             </div>
           </fieldset>
 
@@ -421,7 +422,14 @@ SOFTWARE.
                 <input id="tuesdayLateFxOpen" name="tuesdayLateFxOpen" data-field="tuesdayLateFxOpen" type="checkbox">
                 Keep Tuesday FX open 16:00 to 18:00
               </label>
-              <p>When selected, Tuesday 16:00 to 18:00 treats FX as weekday-depth / open. That window is a real weekday-FX-open case through isTuesdayLateFxOpenHour. Issuer, bank and payout stay on their Tuesday afternoon rules those hours. Older scenario files omit this field and keep Tuesday afternoon on ordinary weekday FX depth. Distinct from Tuesday early FX open, Monday late FX open, Monday early FX open, Friday late FX open, Sunday early FX open, and Saturday late FX open. This is a synthetic calendar, not an FX feed.</p>
+              <p>When selected, Tuesday 16:00 to 18:00 treats FX as weekday-depth / open. That window is a real weekday-FX-open case through isTuesdayLateFxOpenHour. Issuer, bank and payout stay on their Tuesday afternoon rules those hours. Older scenario files omit this field and keep Tuesday afternoon on ordinary weekday FX depth. Distinct from Tuesday early FX open, Monday late FX open, Monday early FX open, Friday late FX open, Sunday early FX open, Saturday late FX open, and Wednesday early FX open. This is a synthetic calendar, not an FX feed.</p>
+            </div>
+            <div class="input-group input-group--full">
+              <label class="checkbox-label" for="wednesdayEarlyFxOpen">
+                <input id="wednesdayEarlyFxOpen" name="wednesdayEarlyFxOpen" data-field="wednesdayEarlyFxOpen" type="checkbox">
+                Keep Wednesday FX open 08:00 to 10:00
+              </label>
+              <p>When selected, Wednesday 08:00 to 10:00 treats FX as weekday-depth / open. That window is a real weekday-FX-open case through isWednesdayEarlyFxOpenHour. Issuer, bank and payout stay on their Wednesday morning rules those hours. Older scenario files omit this field and keep Wednesday morning on ordinary weekday FX depth. Distinct from Tuesday late FX open, Tuesday early FX open, Monday late FX open, Monday early FX open, Friday late FX open, Sunday early FX open, and Saturday late FX open. This is a synthetic calendar, not an FX feed.</p>
             </div>
           </form>
 
@@ -877,11 +885,11 @@ SOFTWARE.
                 Hide weekend hours where the FX gate is closed
               </label>
               <label class="checkbox-label" for="gantt-hide-weekday-fx-closed">
-                <input id="gantt-hide-weekday-fx-closed" type="checkbox" aria-keyshortcuts="F9 Shift+F12">
+                <input id="gantt-hide-weekday-fx-closed" type="checkbox" aria-keyshortcuts="F9">
                 Hide weekday hours where the FX gate is closed
               </label>
               <label class="checkbox-label" for="gantt-hide-weekday-fx-open">
-                <input id="gantt-hide-weekday-fx-open" type="checkbox">
+                <input id="gantt-hide-weekday-fx-open" type="checkbox" aria-keyshortcuts="Shift+F12">
                 Hide weekday hours where the FX gate is open
               </label>
               <button id="export-gantt" type="button">Download Gantt SVG</button>
@@ -913,7 +921,8 @@ SOFTWARE.
               <button id="copy-last-weekday-fx-open" type="button">Copy last weekday-FX-open hour</button>
               <button id="copy-first-weekday-fx-open" type="button">Copy first weekday-FX-open hour</button>
               <button id="copy-first-weekday-fx-closed" type="button">Copy first weekday-FX-closed hour</button>
-              <button id="copy-first-weekend-fx-open" type="button" aria-keyshortcuts="Shift+F10">Copy first weekend-FX-open hour</button>
+              <button id="copy-first-weekend-fx-open" type="button">Copy first weekend-FX-open hour</button>
+              <button id="copy-first-weekend-fx-closed" type="button" aria-keyshortcuts="Shift+F10">Copy first weekend-FX-closed hour</button>
             </div>
             <label class="sr-only" for="gantt-hour-copy-fallback">Selected hour Markdown fallback</label>
             <textarea id="gantt-hour-copy-fallback" rows="8" hidden readonly></textarea>
@@ -971,6 +980,8 @@ SOFTWARE.
             <textarea id="first-weekday-fx-closed-copy-fallback" rows="2" hidden readonly></textarea>
             <label class="sr-only" for="first-weekend-fx-open-copy-fallback">First weekend-FX-open hour Markdown fallback</label>
             <textarea id="first-weekend-fx-open-copy-fallback" rows="2" hidden readonly></textarea>
+            <label class="sr-only" for="first-weekend-fx-closed-copy-fallback">First weekend-FX-closed hour Markdown fallback</label>
+            <textarea id="first-weekend-fx-closed-copy-fallback" rows="2" hidden readonly></textarea>
             <div id="gate-gantt" class="gantt-svg"></div>
             <div class="table-scroll" id="gantt-hour-row" tabindex="-1" role="region" aria-label="Gate Gantt table fallback">
               <table>
@@ -1079,7 +1090,7 @@ SOFTWARE.
           <li><kbd>F3</kbd> Copy last closed payout hour as Markdown</li>
           <li><kbd>F7</kbd> Copy last weekend-FX-closed hour as Markdown</li>
           <li><kbd>F10</kbd> Copy last weekday-FX-closed hour as Markdown</li>
-          <li><kbd>Shift+F10</kbd> Copy first weekend-FX-open hour as Markdown</li>
+          <li><kbd>Shift+F10</kbd> Copy first weekend-FX-closed hour as Markdown</li>
           <li><kbd>+</kbd> Jump to the first-closed-FX-hour copy control</li>
           <li><kbd>!</kbd> Jump to the first-open-payout-hour copy control</li>
           <li><kbd>)</kbd> Jump to the first-open-FX-hour copy control</li>
@@ -1095,7 +1106,7 @@ SOFTWARE.
           <li><kbd>F4</kbd> Jump to the last-closed-payout-hour copy control</li>
           <li><kbd>F8</kbd> Jump to the last-weekend-FX-closed-hour copy control</li>
           <li><kbd>F11</kbd> Jump to the last-weekday-FX-closed-hour copy control</li>
-          <li><kbd>Shift+F11</kbd> Jump to the first-weekend-FX-open-hour copy control</li>
+          <li><kbd>Shift+F11</kbd> Jump to the first-weekend-FX-closed-hour copy control</li>
           <li><kbd>_</kbd> Jump to the first-closed-payout-hour copy control</li>
           <li><kbd>&lt;</kbd> Jump to the first-closed-bank-hour copy control</li>
           <li><kbd>-</kbd> Jump to the first-closed-issuer-hour copy control</li>
@@ -1117,7 +1128,7 @@ SOFTWARE.
           <li><kbd>Backspace</kbd> Jump to the hide-weekend-FX-closed Gantt filter</li>
           <li><kbd>F9</kbd> Jump to the hide-weekday-FX-closed Gantt filter</li>
           <li><kbd>F12</kbd> Jump to the hide-weekend-FX-open Gantt filter</li>
-          <li><kbd>Shift+F12</kbd> Jump to the hide-weekday-FX-closed Gantt filter</li>
+          <li><kbd>Shift+F12</kbd> Jump to the hide-weekday-FX-open Gantt filter</li>
           <li><kbd>N</kbd> Jump to the first-payout Gantt marker</li>
           <li><kbd>O</kbd> Jump to the Payout Gantt row</li>
           <li><kbd>A</kbd> Jump to analysis and export controls</li>
