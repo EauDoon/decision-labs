@@ -35,6 +35,7 @@ test("Saturday late FX open keeps the Normal Friday calendar with a Saturday eve
   assert.equal(preset.saturdayLatePayoutOpen, false);
   assert.equal(preset.saturdayEarlyFxOpen, false);
   assert.equal(preset.saturdayMiddayFxOpen, false);
+  assert.equal(preset.saturdayAfternoonFxOpen, false);
   assert.equal(preset.fridayLateFxOpen, false);
   assert.equal(preset.fridayFxLateClose, false);
   assert.equal(preset.saturdayEarlyBankOpen, false);
@@ -53,6 +54,7 @@ test("Saturday late FX open keeps the Normal Friday calendar with a Saturday eve
   assert.notDeepEqual(preset, PRESETS.saturdayLatePayoutOpen);
   assert.notDeepEqual(preset, PRESETS.saturdayEarlyFxOpen);
   assert.notDeepEqual(preset, PRESETS.saturdayMiddayFxOpen);
+  assert.notDeepEqual(preset, PRESETS.saturdayAfternoonFxOpen);
   assert.notDeepEqual(preset, PRESETS.fridayLateFxOpen);
   assert.notDeepEqual(preset, PRESETS.fridayLateFxClose);
   const late = runSimulation(preset);

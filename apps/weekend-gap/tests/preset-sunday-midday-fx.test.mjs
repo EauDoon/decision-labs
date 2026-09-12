@@ -32,6 +32,7 @@ test("Sunday midday FX open keeps the Normal Friday calendar with a Sunday midda
   assert.equal(preset.sundayMiddayFxOpen, true);
   assert.equal(DEFAULT_SCENARIO.sundayMiddayFxOpen, false);
   assert.equal(preset.saturdayMiddayFxOpen, false);
+  assert.equal(preset.saturdayAfternoonFxOpen, false);
   assert.equal(preset.sundayEarlyFxOpen, false);
   assert.equal(preset.sundayLateFxOpen, false);
   assert.equal(preset.saturdayEarlyFxOpen, false);
@@ -48,6 +49,7 @@ test("Sunday midday FX open keeps the Normal Friday calendar with a Sunday midda
   assert.equal(preset.redemptionDemandAud, DEFAULT_SCENARIO.redemptionDemandAud);
   assert.notDeepEqual(preset, PRESETS.normal);
   assert.notDeepEqual(preset, PRESETS.saturdayMiddayFxOpen);
+  assert.notDeepEqual(preset, PRESETS.saturdayAfternoonFxOpen);
   assert.notDeepEqual(preset, PRESETS.sundayEarlyFxOpen);
   assert.notDeepEqual(preset, PRESETS.sundayLateFxOpen);
   assert.notDeepEqual(preset, PRESETS.saturdayEarlyFxOpen);
@@ -107,6 +109,7 @@ test("Sunday midday FX open keeps the Normal Friday calendar with a Sunday midda
   assert.equal(middayOpen, 45);
   assert.equal(firstSundayMiddayFxOpenHour(DEFAULT_SCENARIO), null);
   assert.equal(firstSundayMiddayFxOpenHour(PRESETS.saturdayMiddayFxOpen), null);
+  assert.equal(firstSundayMiddayFxOpenHour(PRESETS.saturdayAfternoonFxOpen), null);
   assert.equal(firstSundayMiddayFxOpenHour(PRESETS.sundayEarlyFxOpen), null);
   assert.equal(firstSundayMiddayFxOpenHour(PRESETS.sundayLateFxOpen), null);
   assert.equal(firstSundayMiddayFxOpenHour(PRESETS.saturdayEarlyFxOpen), null);
@@ -134,13 +137,14 @@ test("Sunday midday FX open keeps the Normal Friday calendar with a Sunday midda
 test("Sunday midday FX open ORs into fxWeekday through isSundayMiddayFxOpenHour after saturdayMiddayFxOpen", async () => {
   const model = await readFile(new URL("../src/model.js", import.meta.url), "utf8");
   const helperStart = model.indexOf("function isSundayMiddayFxOpenHour");
-  const helperNext = model.indexOf("\nexport function getOperationalStatus", helperStart);
+  const helperNext = model.indexOf("function isSaturdayAfternoonFxOpenHour", helperStart);
   const commentStart = model.lastIndexOf("/** Sunday 12:00-14:00", helperStart);
   const helper = model.slice(commentStart === -1 ? helperStart : commentStart, helperNext === -1 ? undefined : helperNext);
   assert.match(helper, /scenario\.sundayMiddayFxOpen !== true/);
   assert.match(helper, /localHour >= 12 && localHour < 14/);
   assert.match(helper, /dayIndex === 0/);
   assert.match(helper, /saturdayMiddayFxOpen/);
+  assert.match(helper, /saturdayAfternoonFxOpen/);
   assert.match(helper, /sundayEarlyFxOpen/);
   assert.match(helper, /sundayLateFxOpen/);
   assert.match(helper, /saturdayEarlyFxOpen/);
@@ -167,9 +171,12 @@ test("Sunday midday FX open ORs into fxWeekday through isSundayMiddayFxOpenHour 
   const status = model.slice(statusStart, statusNext === -1 ? undefined : statusNext);
   assert.match(status, /isSaturdayMiddayFxOpenHour\(hourOffset, scenario\)/);
   assert.match(status, /isSundayMiddayFxOpenHour\(hourOffset, scenario\)/);
+  assert.match(status, /isSaturdayAfternoonFxOpenHour\(hourOffset, scenario\)/);
   const saturdayMiddayCall = status.indexOf("isSaturdayMiddayFxOpenHour(hourOffset, scenario)");
   const sundayMiddayCall = status.indexOf("isSundayMiddayFxOpenHour(hourOffset, scenario)");
+  const saturdayAfternoonCall = status.indexOf("isSaturdayAfternoonFxOpenHour(hourOffset, scenario)");
   assert.ok(saturdayMiddayCall !== -1 && sundayMiddayCall > saturdayMiddayCall);
+  assert.ok(sundayMiddayCall !== -1 && saturdayAfternoonCall > sundayMiddayCall);
   assert.doesNotMatch(model, /Date\.now/);
 });
 
@@ -183,7 +190,9 @@ test("Sunday midday FX open is available as a preset button and is not an FX fee
   const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
   const saturdayPreset = html.indexOf('data-preset="saturdayMiddayFxOpen"');
   const sundayPreset = html.indexOf('data-preset="sundayMiddayFxOpen"');
+  const afternoonPreset = html.indexOf('data-preset="saturdayAfternoonFxOpen"');
   assert.ok(saturdayPreset !== -1 && sundayPreset > saturdayPreset);
+  assert.ok(afternoonPreset > sundayPreset);
   assert.match(html, /Sunday midday FX open \(synthetic\)/);
   assert.match(html, /id="sundayMiddayFxOpen"/);
   assert.match(html, /Keep Sunday FX open 12:00 to 14:00/);

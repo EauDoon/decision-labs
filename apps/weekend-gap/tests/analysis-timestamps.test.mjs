@@ -64,6 +64,8 @@ test("analysis JSON remains timestamp-free for identical inputs", () => {
   assert.equal(saturdayMiddayFx, analysisToJSON(DEFAULT_SCENARIO, PRESETS.saturdayMiddayFxOpen, 80, 70));
   const sundayMiddayFx = analysisToJSON(DEFAULT_SCENARIO, PRESETS.sundayMiddayFxOpen, 80, 70);
   assert.equal(sundayMiddayFx, analysisToJSON(DEFAULT_SCENARIO, PRESETS.sundayMiddayFxOpen, 80, 70));
+  const saturdayAfternoonFx = analysisToJSON(DEFAULT_SCENARIO, PRESETS.saturdayAfternoonFxOpen, 80, 70);
+  assert.equal(saturdayAfternoonFx, analysisToJSON(DEFAULT_SCENARIO, PRESETS.saturdayAfternoonFxOpen, 80, 70));
   const report = JSON.parse(output);
   const payoutReport = JSON.parse(payout);
   const saturdayReport = JSON.parse(saturday);
