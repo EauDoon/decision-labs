@@ -839,6 +839,8 @@ test("import failures name JSON syntax, the first invalid field, and oversize fi
   await app.importJson("{}", { size: 250_001 });
   assert.match(app.message(), /Import failed: files must be 250 KB or smaller/u);
   assert.equal(app.title(), "Neighbourhood Plan: the shared green");
+  assert.doesNotMatch(app.title(), /Track cycling club hours/u);
+  assert.doesNotMatch(app.title(), /Gravel cycling club hours/u);
 });
 
 test("newer imports and edits supersede slower file reads", async () => {
@@ -3374,6 +3376,7 @@ test("mountain bike club hours preset loads a distinct synthetic mountain-bike w
   assert.doesNotMatch(app.title(), /BMX club hours/u);
   assert.doesNotMatch(app.title(), /Cyclo-cross club hours/u);
   assert.doesNotMatch(app.title(), /Track cycling club hours/u);
+  assert.doesNotMatch(app.title(), /Gravel cycling club hours/u);
   assert.doesNotMatch(app.title(), /Cycling club hours/u);
   assert.doesNotMatch(app.title(), /Triathlon club hours/u);
   assert.doesNotMatch(app.title(), /Surf club hours/u);
@@ -3521,6 +3524,7 @@ test("BMX club hours preset loads a distinct synthetic BMX workshop", async () =
   assert.doesNotMatch(app.title(), /Mountain bike club hours/u);
   assert.doesNotMatch(app.title(), /Cyclo-cross club hours/u);
   assert.doesNotMatch(app.title(), /Track cycling club hours/u);
+  assert.doesNotMatch(app.title(), /Gravel cycling club hours/u);
   assert.doesNotMatch(app.title(), /Cycling club hours/u);
   assert.doesNotMatch(app.title(), /Triathlon club hours/u);
   assert.doesNotMatch(app.title(), /Surf club hours/u);
@@ -3604,7 +3608,7 @@ test("BMX club hours preset loads a distinct synthetic BMX workshop", async () =
 
 test("cyclo-cross club hours preset loads a distinct synthetic cyclo-cross workshop", async () => {
   const pkg = JSON.parse(readFileSync(new URL("../package.json", import.meta.url), "utf8"));
-  assert.equal(pkg.version, "1.5.35");
+  assert.equal(pkg.version, "1.5.36");
   const app = await savedWorkbench(new Map());
   app.field("#preset-select", "cyclo-cross-club-hours");
   app.click("#load-preset");
@@ -3668,6 +3672,7 @@ test("cyclo-cross club hours preset loads a distinct synthetic cyclo-cross works
   assert.doesNotMatch(app.firstGroupWithoutFloor(), /Last group without a support floor/u);
   assert.doesNotMatch(app.lastGroupWithoutFloor(), /First group without a support floor/u);
   assert.doesNotMatch(app.title(), /Track cycling club hours/u);
+  assert.doesNotMatch(app.title(), /Gravel cycling club hours/u);
   assert.doesNotMatch(app.title(), /BMX club hours/u);
   assert.doesNotMatch(app.title(), /Mountain bike club hours/u);
   assert.doesNotMatch(app.title(), /Cycling club hours/u);
@@ -3759,7 +3764,7 @@ test("cyclo-cross club hours preset loads a distinct synthetic cyclo-cross works
 
 test("track cycling club hours preset loads a distinct synthetic track-cycling workshop", async () => {
   const pkg = JSON.parse(readFileSync(new URL("../package.json", import.meta.url), "utf8"));
-  assert.equal(pkg.version, "1.5.35");
+  assert.equal(pkg.version, "1.5.36");
   const app = await savedWorkbench(new Map());
   app.field("#preset-select", "track-cycling-club-hours");
   app.click("#load-preset");
@@ -3824,6 +3829,7 @@ test("track cycling club hours preset loads a distinct synthetic track-cycling w
   assert.doesNotMatch(app.firstGroupWithoutFloor(), /Last group without a support floor/u);
   assert.doesNotMatch(app.lastGroupWithoutFloor(), /First group without a support floor/u);
   assert.doesNotMatch(app.title(), /Cyclo-cross club hours/u);
+  assert.doesNotMatch(app.title(), /Gravel cycling club hours/u);
   assert.doesNotMatch(app.title(), /BMX club hours/u);
   assert.doesNotMatch(app.title(), /Mountain bike club hours/u);
   assert.doesNotMatch(app.title(), /Cycling club hours/u);
@@ -9526,7 +9532,7 @@ test("keyboard Shift+F12 jumps to hide-first-group-without-floor unless an input
 test("keyboard Shift+F7 copies the first-without-floor remaining unless an input is active", async () => {
   const html = await standaloneBytes();
   const pkg = JSON.parse(readFileSync(new URL("../package.json", import.meta.url), "utf8"));
-  assert.equal(pkg.version, "1.5.35");
+  assert.equal(pkg.version, "1.5.36");
   assert.match(html, /<kbd>Shift\+F7<\/kbd> Copy the first-without-floor remaining as one-line Markdown/u);
   assert.match(html, /id="copy-first-group-without-floor-remaining-button"/u);
   assert.match(html, /id="copy-first-group-without-floor-remaining-button"[^>]*aria-keyshortcuts="Shift\+F7"/u);
