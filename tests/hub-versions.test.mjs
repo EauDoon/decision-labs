@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 
-import { catalogVersionLine, notFoundPage, catalogJobs, catalogLastWhatsNewHeading, catalogFirstWhatsNewHeading, catalogFirstWorkbenchHeading, catalogLastWorkbenchHeading, catalogLastReviewPath, catalogFirstReviewPath, catalogFirstOpenHref, catalogLastOpenHref, catalogFirstSkipHref, catalogLastSkipHref, catalogFirstSkipText, catalogLastSkipText, catalogFirstSkipTargetText, catalogLastSkipTargetText, catalogFirstLabelledSkipTargetText, catalogLastLabelledSkipTargetText, catalogFirstLabelledSkipHref, catalogLastLabelledSkipHref, catalogLastLabelledSkipText, catalogFirstLabelledSkipText, catalogFirstUnlabelledSkipText } from '../scripts/serve.mjs';
+import { catalogVersionLine, notFoundPage, catalogJobs, catalogLastWhatsNewHeading, catalogFirstWhatsNewHeading, catalogFirstWorkbenchHeading, catalogLastWorkbenchHeading, catalogLastReviewPath, catalogFirstReviewPath, catalogFirstOpenHref, catalogLastOpenHref, catalogFirstSkipHref, catalogLastSkipHref, catalogFirstSkipText, catalogLastSkipText, catalogFirstSkipTargetText, catalogLastSkipTargetText, catalogFirstLabelledSkipTargetText, catalogLastLabelledSkipTargetText, catalogFirstLabelledSkipHref, catalogLastLabelledSkipHref, catalogLastLabelledSkipText, catalogFirstLabelledSkipText, catalogLastUnlabelledSkipText, catalogFirstUnlabelledSkipText } from '../scripts/serve.mjs';
 
 const html = readFileSync(new URL('../index.html', import.meta.url), 'utf8');
 const readme = readFileSync(new URL('../README.md', import.meta.url), 'utf8');
@@ -525,6 +525,44 @@ test('404 first unlabelled skip text matches the first skip text whose target ha
   assert.match(page, /aria-labelledby="how-title"/);
   assert.match(page, /id="copy-first-skip-text"/);
   assert.match(page, />Copy first skip text</);
+});
+
+test('404 last unlabelled skip text matches the last skip text whose target has no aria-labelledby', () => {
+  const text = catalogLastUnlabelledSkipText();
+  assert.equal(text, 'Skip to catalog versions');
+  assert.equal(html.includes(text), true, 'last unlabelled skip text missing from catalog');
+  assert.equal(text, catalogLastSkipText());
+  assert.equal(text, catalogFirstUnlabelledSkipText());
+  assert.notEqual(text, catalogFirstLabelledSkipText());
+  assert.notEqual(text, catalogLastLabelledSkipText());
+  assert.notEqual(text, catalogFirstSkipText());
+  assert.notEqual(text, catalogLastLabelledSkipHref());
+  const serve = readFileSync(new URL('../scripts/serve.mjs', import.meta.url), 'utf8');
+  const start = serve.indexOf('export function catalogLastUnlabelledSkipText');
+  const end = serve.indexOf('export function catalogFirstUnlabelledSkipText');
+  const body = serve.slice(start, end);
+  assert.match(body, /aria-labelledby/);
+  assert.match(body, /continue/);
+  assert.match(body, /links\.length - 1/);
+  assert.match(body, /return links\[i\]\.text/);
+  assert.doesNotMatch(body, /catalogLastSkipText/);
+  assert.doesNotMatch(body, /catalogMarkupText/);
+  assert.doesNotMatch(body, /return href/);
+  const page = notFoundPage();
+  assert.equal(page.includes(text), true, 'last unlabelled skip text missing from 404 page');
+  assert.match(page, /id="copy-last-unlabelled-skip-text"/);
+  assert.match(page, />Copy last unlabelled skip text</);
+  assert.match(page, /lastUnlabelledSkipTextMarkdown/);
+  assert.match(page, /id="copy-first-unlabelled-skip-text"/);
+  assert.match(page, />Copy first unlabelled skip text</);
+  assert.match(page, /id="copy-last-labelled-skip-text"/);
+  assert.match(page, />Copy last labelled skip text</);
+  assert.match(page, /id="version-line"/);
+  assert.match(page, /id="skips"/);
+  assert.match(page, /id="whats-new"/);
+  assert.match(page, /aria-labelledby="whats-new-title"/);
+  assert.match(page, /id="copy-last-skip-text"/);
+  assert.match(page, />Copy last skip text</);
 });
 
 test('404 first Open href matches the first catalog Open workbench href', () => {
