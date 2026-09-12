@@ -198,7 +198,7 @@ Buyer CSV import accepts a header row of label, category, quantity, max unit pri
 
 `restoreRemovedBuyer` inserts one previously removed buyer when that id is free. The app keeps one session slot; the model does not store the slot.
 
-`restoreExampleOffers` replaces offers with a named preset's offers and keeps the current buyers, title, and currency.
+`restoreExampleOffers` replaces offers with a named preset's offers and keeps the current buyers, title, and currency. Named lunch presets include Road cycling carnival lunch after Gravel cycling carnival lunch.
 
 Compared rooms that use different currencies set `currencyWarning` and omit landed totals. The model does not convert currencies.
 
