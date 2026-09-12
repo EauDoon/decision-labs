@@ -2897,7 +2897,7 @@ document.addEventListener("keydown", (event) => {
   }
   if (event.key === "F10" && event.shiftKey) {
     event.preventDefault();
-    copyLastWeekendFxOpenHourMarkdown();
+    copyFirstWeekendFxOpenHourMarkdown();
     return;
   }
   if (event.key === "F10") {
@@ -2992,7 +2992,7 @@ document.addEventListener("keydown", (event) => {
   }
   if (event.key === "F11" && event.shiftKey) {
     event.preventDefault();
-    jumpToLastWeekendFxOpenCopy();
+    jumpToFirstWeekendFxOpenCopy();
     return;
   }
   if (event.key === "F11") {
@@ -3087,7 +3087,7 @@ document.addEventListener("keydown", (event) => {
   }
   if (event.key === "F12" && event.shiftKey) {
     event.preventDefault();
-    jumpToHideWeekdayFxOpenFilter();
+    jumpToHideWeekdayFxClosedFilter();
     return;
   }
   if (event.key === "F12") {

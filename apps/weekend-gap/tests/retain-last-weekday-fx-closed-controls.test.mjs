@@ -12,7 +12,7 @@ test("1.5.27 keeps F10 F11 F12 last-weekday-FX-closed controls and F7 F8 F9", as
   assert.match(html, /<kbd>F12<\/kbd>/);
   assert.match(html, /id="gantt-hide-weekend-fx-open"[^>]*aria-keyshortcuts="ArrowLeft F12"/);
   assert.match(html, /id="copy-last-weekend-fx-closed"[^>]*aria-keyshortcuts="F7"/);
-  assert.match(html, /id="gantt-hide-weekday-fx-closed"[^>]*aria-keyshortcuts="F9"/);
+  assert.match(html, /id="gantt-hide-weekday-fx-closed"[^>]*aria-keyshortcuts="F9 Shift\+F12"/);
   assert.match(html, /data-preset="sundayLateFxOpen"/);
   assert.match(html, /data-preset="sundayEarlyFxOpen"/);
   assert.match(app, /event\.key === "F10"/);

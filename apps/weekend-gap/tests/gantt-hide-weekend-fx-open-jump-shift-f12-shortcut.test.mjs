@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { readFile } from "node:fs/promises";
 
-test("1.5.34 keeps hide-weekend-FX-open jump without taking Shift+F12", async () => {
+test("1.5.35 keeps hide-weekend-FX-open jump without taking Shift+F12", async () => {
   const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
   const app = await readFile(new URL("../src/app.js", import.meta.url), "utf8");
   assert.match(html, /id="gantt-hide-weekend-fx-open"/);
@@ -10,13 +10,12 @@ test("1.5.34 keeps hide-weekend-FX-open jump without taking Shift+F12", async ()
   assert.match(html, /id="gantt-hide-weekday-fx-closed"/);
   assert.match(html, /id="gantt-title"/);
   assert.match(html, /<kbd>Shift\+F12<\/kbd>/);
-  assert.match(html, /Jump to the hide-weekday-FX-open Gantt filter/);
+  assert.match(html, /Jump to the hide-weekday-FX-closed Gantt filter/);
   assert.match(html, /Jump to the hide-weekend-FX-open Gantt filter/);
   assert.match(html, /id="gantt-hide-weekend-fx-open"[^>]*aria-keyshortcuts="ArrowLeft F12"/);
   assert.doesNotMatch(html, /id="gantt-hide-weekend-fx-open"[^>]*aria-keyshortcuts="Shift\+F12"/);
-  assert.match(html, /id="gantt-hide-weekday-fx-open"[^>]*aria-keyshortcuts="Shift\+F12"/);
-  assert.match(html, /id="gantt-hide-weekday-fx-closed"[^>]*aria-keyshortcuts="F9"/);
-  assert.doesNotMatch(html, /id="gantt-hide-weekday-fx-closed"[^>]*aria-keyshortcuts="Shift\+F12"/);
+  assert.doesNotMatch(html, /id="gantt-hide-weekday-fx-open"[^>]*aria-keyshortcuts="Shift\+F12"/);
+  assert.match(html, /id="gantt-hide-weekday-fx-closed"[^>]*aria-keyshortcuts="F9 Shift\+F12"/);
   assert.match(html, /id="gantt-hide-weekend-fx-closed"[^>]*aria-keyshortcuts="Backspace"/);
   assert.match(app, /function jumpToHideWeekendFxOpenFilter/);
   assert.match(app, /#gantt-hide-weekend-fx-open/);
@@ -37,13 +36,13 @@ test("1.5.34 keeps hide-weekend-FX-open jump without taking Shift+F12", async ()
   assert.ok(unshiftedF12 !== -1);
   assert.ok(shiftF12 < unshiftedF12);
   const shiftSlice = handler.slice(shiftF12, shiftF12 + 180);
-  assert.match(shiftSlice, /jumpToHideWeekdayFxOpenFilter\(\)/);
+  assert.match(shiftSlice, /jumpToHideWeekdayFxClosedFilter\(\)/);
   assert.doesNotMatch(shiftSlice, /jumpToHideWeekendFxOpenFilter/);
-  assert.doesNotMatch(shiftSlice, /jumpToHideWeekdayFxClosedFilter/);
+  assert.doesNotMatch(shiftSlice, /jumpToHideWeekdayFxOpenFilter/);
   assert.doesNotMatch(shiftSlice, /jumpToHideWeekendFxClosedFilter/);
   const unshiftedSlice = handler.slice(unshiftedF12, unshiftedF12 + 180);
   assert.match(unshiftedSlice, /jumpToHideWeekendFxOpenFilter\(\)/);
-  assert.doesNotMatch(unshiftedSlice, /jumpToHideWeekdayFxOpenFilter/);
+  assert.doesNotMatch(unshiftedSlice, /jumpToHideWeekdayFxClosedFilter/);
   const f9Slice = handler.slice(handler.indexOf('event.key === "F9"'), handler.indexOf('event.key === "F9"') + 180);
   assert.match(f9Slice, /jumpToHideWeekdayFxClosedFilter\(\)/);
 });
