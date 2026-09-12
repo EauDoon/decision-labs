@@ -3512,6 +3512,22 @@
         if (id === 'shortcuts') setOpen(true, { focus: false });
         document.getElementById(id)?.focus();
       }
+      const firstUnlabelledSkipTargetIdMarkdown = () => {
+        const skips = document.querySelectorAll('#skips a.skip');
+        for (let i = 0; i < skips.length; i += 1) {
+          const skip = skips[i];
+          const href = skip && skip.getAttribute ? skip.getAttribute('href') : '';
+          if (!href || href.charAt(0) !== '#' || href.length < 2) continue;
+          const target = document.getElementById(href.slice(1));
+          if (!target) continue;
+          const labelledBy = target.getAttribute ? target.getAttribute('aria-labelledby') : '';
+          if (labelledBy) continue;
+          const id = href.slice(1);
+          if (!id) return '';
+          return `- ${id}`;
+        }
+        return '';
+      };
       document.addEventListener('keydown', (event) => {
         if (event.defaultPrevented || event.altKey || event.ctrlKey || event.metaKey) return;
         if (inEditable(event.target)) return;
