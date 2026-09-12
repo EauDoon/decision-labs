@@ -1,5 +1,16 @@
 # Changelog
 
+## 1.6.0
+
+Least-headroom versus first-breakpoint ranking explanation in Partnership Breakpoint 1.6.0
+
+- `calculatePartnership` now returns `rankingDisagreement`, a deterministic comparison of the two existing rankings: the participant with the least volume headroom and the participant ranked first by smallest relative adverse shock. When the two names differ, the reason states which participant is closest to its own limit in transaction distance, which shock kind is smallest as a percentage move, and why the two measures can disagree (absolute distance versus relative change across volume, fee and cost shocks).
+- The First breakpoint panel prints that reason under a "Not the least-headroom participant" heading when the rankings disagree, and notes the agreement in the same panel when they do not. No ranking logic changed: `weakestParticipant` keeps the volume-distance ordering and `firstBreakpoint` keeps the relative-change ordering.
+- Growth at a Cost is the built-in case that demonstrates the disagreement (least headroom: Liquidity Partner; first breakpoint: a Distributor fee shock). All other built-in starting points agree.
+- Review packets, solvers, stress grid, CSV roster and exports keep their documented formats. Analysis JSON has no timestamps. The ranking is not a forecast of who will exit.
+
+# Changelog
+
 ## 1.5.33
 
 BMX carnival, first-over-capacity remaining listed capacity copy, and last-over-capacity hide jump in Partnership Breakpoint 1.5.33

@@ -620,7 +620,10 @@ function breakpointSection(result) {
   const threshold = units === 'txn'
     ? `${formatNumber(shock.breakpoint)} txn`
     : `${formatNumber(shock.breakpoint, 4)} units / txn`;
-  return `<section class="panel breakpoint-summary" id="first-breakpoint"><div class="panel-heading"><h2 id="first-breakpoint-title" tabindex="-1">First breakpoint</h2><span class="optional">relative adverse movement</span></div><div class="panel-body"><p><strong>Protect ${participantName} first.</strong> A ${label} of <strong>${compactShock(shock, units)}</strong> reaches the boundary at ${threshold}.</p><p class="output-note">This ranks the smallest percentage movement from the current scenario. It is a comparison aid, not a probability forecast.</p>${copyFirstBreakpointButton()}</div></section>`;
+  const disagreement = result.rankingDisagreement?.differs
+    ? `<p class="output-note ranking-disagreement"><strong>Not the least-headroom participant.</strong> ${escapeAttribute(result.rankingDisagreement.reason)}</p>`
+    : `<p class="output-note">Same participant as the least-volume-headroom ranking in this case.</p>`;
+  return `<section class="panel breakpoint-summary" id="first-breakpoint"><div class="panel-heading"><h2 id="first-breakpoint-title" tabindex="-1">First breakpoint</h2><span class="optional">relative adverse movement</span></div><div class="panel-body"><p><strong>Protect ${participantName} first.</strong> A ${label} of <strong>${compactShock(shock, units)}</strong> reaches the boundary at ${threshold}.</p>${disagreement}<p class="output-note">This ranks the smallest percentage movement from the current scenario. It is a comparison aid, not a probability forecast.</p>${copyFirstBreakpointButton()}</div></section>`;
 }
 
 function participantDetailsOpen(index) {

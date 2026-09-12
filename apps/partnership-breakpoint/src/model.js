@@ -949,6 +949,9 @@ export function firstBreakpoint(result) {
  * Baseline monthly partnership evaluation for a valid configuration.
  * `weakestParticipant` is the smallest volume-headroom ranking.
  * `firstBreakpoint` is a separate ranking of bounded shocks by percentage movement.
+ * `rankingDisagreement` explains, when the two rankings name different
+ * participants, why the answers differ: absolute volume distance versus
+ * relative percentage movement across all shock kinds.
  * @param {PartnershipConfig} config
  */
 export function calculatePartnership(config) {
@@ -967,7 +970,7 @@ export function calculatePartnership(config) {
   const capacityCeiling = participants.reduce((ceiling, participant) => (
     participant.capacity == null ? ceiling : Math.min(ceiling, participant.capacity)
   ), config.deal.addressableVolume);
-  const result = {
+  const base = {
     deal: { ...config.deal },
     effectiveVolume: volume,
     volumeCappedByAddressableDemand: volume < config.deal.monthlyVolume * (1 - (config.deal.volumeShockPct ?? 0) / 100) - EPSILON,
@@ -978,7 +981,37 @@ export function calculatePartnership(config) {
     weakestParticipant,
     capacityCeiling,
   };
-  return { ...result, firstBreakpoint: firstBreakpoint(result) };
+  const breakpoint = firstBreakpoint(base);
+  return { ...base, firstBreakpoint: breakpoint, rankingDisagreement: rankingDisagreement(base, breakpoint) };
+}
+
+/**
+ * Compares the least-volume-headroom ranking with the first-relative-shock
+ * ranking. Both rankings are deterministic comparisons of declared inputs;
+ * they can disagree because one asks "who is closest to their own exit in
+ * transaction volume?" and the other asks "which single bounded shock, as a
+ * percentage of its current value, is smallest anywhere in the deal?".
+ * A fee or variable-cost shock on a well-capitalized participant can rank
+ * first while a volume-limited participant still has the least headroom.
+ */
+export function rankingDisagreement(result, breakpoint = result.firstBreakpoint) {
+  const weakest = result.weakestParticipant;
+  if (!weakest) return null;
+  if (!breakpoint?.participant) {
+    return { differs: false, weakestId: weakest.id, breakpointId: null, reason: 'No bounded adverse shock exists for comparison.' };
+  }
+  const differs = weakest.id !== breakpoint.participant.id;
+  if (!differs) {
+    return { differs: false, weakestId: weakest.id, breakpointId: breakpoint.participant.id, reason: 'Both rankings name the same participant for this case.' };
+  }
+  const weakestKind = weakest.bindingConstraint?.label ?? 'exit threshold';
+  const shockKind = breakpoint.kind === 'volume' || breakpoint.kind === 'volumeIncrease'
+    ? 'volume'
+    : breakpoint.kind === 'fee'
+      ? 'fee'
+      : 'variable cost';
+  const reason = `${weakest.name} is closest to its ${weakestKind} limit in transaction distance, but the smallest percentage move in the current inputs is a ${shockKind} shock on ${breakpoint.participant.name}. Volume headroom measures absolute distance; the shock ranking measures relative change and can consider fee and cost moves as well as volume.`
+  return { differs: true, weakestId: weakest.id, breakpointId: breakpoint.participant.id, reason };
 }
 
 // Exact fractions are used only to verify a proposed split. Display calculations
