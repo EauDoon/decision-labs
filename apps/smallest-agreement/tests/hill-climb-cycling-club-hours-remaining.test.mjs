@@ -6,7 +6,8 @@ test("hill-climb cycling club hours keeps remaining 17 / 19 / 50 after time-tria
   const app = (await readFile(new URL("../src/app.js", import.meta.url), "utf8")).replaceAll("\r\n", "\n");
   const html = (await readFile(new URL("../index.html", import.meta.url), "utf8")).replaceAll("\r\n", "\n");
   const hillClimbStart = app.indexOf('"hill-climb-cycling-club-hours"');
-  const hillClimbEnd = app.indexOf("let agreementReviewPacket", hillClimbStart);
+  const keirinStart = app.indexOf('"keirin-cycling-club-hours"');
+  const hillClimbEnd = keirinStart === -1 ? app.indexOf("let agreementReviewPacket", hillClimbStart) : keirinStart;
   const hillClimb = app.slice(hillClimbStart, hillClimbEnd === -1 ? undefined : hillClimbEnd);
   const timeTrialStart = app.indexOf('"time-trial-cycling-club-hours"');
   const timeTrial = app.slice(timeTrialStart, hillClimbStart);
@@ -23,6 +24,8 @@ test("hill-climb cycling club hours keeps remaining 17 / 19 / 50 after time-tria
   assert.doesNotMatch(hillClimb, /commissaires/);
   assert.doesNotMatch(hillClimb, /sealed-road/);
   assert.doesNotMatch(hillClimb, /circuit/);
+  assert.doesNotMatch(hillClimb, /derny-pacer/);
+  assert.doesNotMatch(hillClimb, /keirin-chip/);
   assert.match(timeTrial, /weight: 16/);
   assert.match(timeTrial, /weight: 18/);
   assert.match(timeTrial, /Start-ramp hours/);

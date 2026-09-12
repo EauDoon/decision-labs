@@ -306,6 +306,7 @@ kbd { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; border: 1px s
             <option value="criterium-cycling-club-hours">Criterium cycling club hours</option>
             <option value="time-trial-cycling-club-hours">Time-trial cycling club hours</option>
             <option value="hill-climb-cycling-club-hours">Hill-climb cycling club hours</option>
+            <option value="keirin-cycling-club-hours">Keirin cycling club hours</option>
           </select>
         </label>
         <button class="button button-secondary" type="button" id="load-preset">Load preset</button>
@@ -6415,6 +6416,39 @@ const presets = {
           { id: "hill-climb-cycling-climb-chip-lockup-original", original: true, label: "Leave the climb-chip door on a shared padlock after club hours", changeCost: 0, support: { students: 1, neighbours: 21, pandc: 26 } },
           { id: "hill-climb-cycling-climb-chip-lockup-steward", original: false, label: "Require a P&C steward to lock the climb-chip store before 21:05", changeCost: 3, support: { students: 48, neighbours: 65, pandc: 85 } },
           { id: "hill-climb-cycling-climb-chip-lockup-timer", original: false, label: "Add a timed lock on the climb-chip store after the last hill-climb cycling session", changeCost: 2, support: { students: 37, neighbours: 40, pandc: 57 } },
+        ],
+      },
+    ],
+  },
+  "keirin-cycling-club-hours": {
+    title: "Keirin cycling club hours: keirin course booking, derny-pacer hours, and keirin-chip lock-up",
+    threshold: 70,
+    maxChangeCost: 8,
+    groups: [
+      { id: "students", name: "Students", weight: 18 },
+      { id: "neighbours", name: "Neighbours", weight: 15, veto: true },
+      { id: "pandc", name: "P&C", weight: 20 },
+    ],
+    clauses: [
+      {
+        id: "keirin-cycling-course-booking", title: "Keirin course booking", options: [
+          { id: "keirin-cycling-course-booking-original", original: true, label: "Keep weekday keirin course from 09:50 with no posted derny-pacer rota", changeCost: 0, support: { students: 8, neighbours: 82, pandc: 63 } },
+          { id: "keirin-cycling-course-booking-late", original: false, label: "Open weekday keirin course at 18:35 with a posted derny-pacer rota", changeCost: 2, support: { students: 85, neighbours: 22, pandc: 34 } },
+          { id: "keirin-cycling-course-booking-weekend", original: false, label: "Hold Saturday morning keirin course at 08:25 with a derny-pacer booking card", changeCost: 4, support: { students: 70, neighbours: 30, pandc: 42 } },
+        ],
+      },
+      {
+        id: "keirin-cycling-derny-pacer", title: "Derny-pacer hours", options: [
+          { id: "keirin-cycling-derny-pacer-original", original: true, label: "No posted derny-pacer hours", changeCost: 0, support: { students: 60, neighbours: 8, pandc: 33 } },
+          { id: "keirin-cycling-derny-pacer-cap", original: false, label: "Close derny-pacer hours at 19:40 and keep pacer crew at the derny-pacer shed", changeCost: 1, support: { students: 33, neighbours: 86, pandc: 65 } },
+          { id: "keirin-cycling-derny-pacer-cut", original: false, label: "Serve pacer crew only after 13:45", changeCost: 5, support: { students: 15, neighbours: 90, pandc: 31 } },
+        ],
+      },
+      {
+        id: "keirin-cycling-keirin-chip-lockup", title: "Keirin-chip lock-up", options: [
+          { id: "keirin-cycling-keirin-chip-lockup-original", original: true, label: "Leave the keirin-chip door on a shared padlock after club hours", changeCost: 0, support: { students: 1, neighbours: 20, pandc: 25 } },
+          { id: "keirin-cycling-keirin-chip-lockup-steward", original: false, label: "Require a P&C steward to lock the keirin-chip store before 21:15", changeCost: 3, support: { students: 47, neighbours: 66, pandc: 86 } },
+          { id: "keirin-cycling-keirin-chip-lockup-timer", original: false, label: "Add a timed lock on the keirin-chip store after the last keirin cycling session", changeCost: 2, support: { students: 36, neighbours: 39, pandc: 56 } },
         ],
       },
     ],

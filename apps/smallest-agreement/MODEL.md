@@ -2,7 +2,7 @@
 
 ## Purpose
 
-The model compares explicitly supplied structured options. It finds the smallest calculated change that crosses a configurable approval threshold. It makes no claim that the result is a collective decision. Version 1.5.40 keeps the 1.5.0 review packet contract. Workshop display filters, print redaction, pasted tables, lock copy, unique group copies, and `moveClause` do not change search math. A veto is a number, not a legal right. Locks are draft choices, not a legal hold. Hill-climb cycling club hours is a summit-marshal / climb-chip workshop, distinct from time-trial cycling club hours (start-ramp / time-check / timing-chip), criterium cycling club hours (closed-circuit / pit-lane / number-board) and road cycling club hours (sealed-road / feed-station / wheel-bag).
+The model compares explicitly supplied structured options. It finds the smallest calculated change that crosses a configurable approval threshold. It makes no claim that the result is a collective decision. Version 1.5.41 keeps the 1.5.0 review packet contract. Workshop display filters, print redaction, pasted tables, lock copy, unique group copies, and `moveClause` do not change search math. A veto is a number, not a legal right. Locks are draft choices, not a legal hold. Keirin cycling club hours is a derny-pacer / keirin-chip workshop, distinct from hill-climb cycling club hours (summit-marshal / climb-chip), time-trial cycling club hours (start-ramp / time-check / timing-chip), criterium cycling club hours (closed-circuit / pit-lane / number-board) and road cycling club hours (sealed-road / feed-station / wheel-bag).
 
 ## Inputs
 
