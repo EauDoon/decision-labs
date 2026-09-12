@@ -805,6 +805,23 @@ export const presets = Object.freeze({
       offer("O02", "Derny Salad Run", "Keirin lunch pack", "Derny salad", 15, 15, 4, 42, 2),
       { ...offer("O03", "Hall Keirin Pickup", "Keirin lunch pack", "Derny water", 30, 34, 1, 64, 5), fulfillment: "pickup" }
     ]
+  },
+  madisonCyclingCarnivalLunch: {
+    title: "Madison cycling carnival lunch",
+    currency: "AUD",
+    buyers: [
+      buyer("B01", "Madison-pair crate", "Madison lunch pack", 15, 23, 4, ["Madison pie", "Handsling salad"]),
+      buyer("B02", "Handsling bench", "Madison lunch pack", 19, 19, 3, ["Madison pie"]),
+      buyer("B03", "Pairing hamper", "Madison lunch pack", 15, 31, 5, ["Handsling salad", "Handsling water"]),
+      buyer("B04", "Sideline cooler", "Madison lunch pack", 21, 31, 2, ["Handsling water"]),
+      buyer("B05", "Scoreboard trolley", "Madison lunch pack", 16, 22, 4, ["Madison pie", "Handsling water"]),
+      buyer("B06", "Bench table", "Madison lunch pack", 13, 20, 3, ["Handsling salad", "Madison pie"])
+    ],
+    offers: [
+      offer("O01", "Court-side Madison Delivery", "Madison lunch pack", "Madison pie", 17, 17, 3, 54, 3),
+      offer("O02", "Handsling Salad Run", "Madison lunch pack", "Handsling salad", 15, 15, 4, 42, 2),
+      { ...offer("O03", "Hall Madison Pickup", "Madison lunch pack", "Handsling water", 31, 35, 1, 64, 5), fulfillment: "pickup" }
+    ]
   }
 });
 
