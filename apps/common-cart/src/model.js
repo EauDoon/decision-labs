@@ -788,6 +788,23 @@ export const presets = Object.freeze({
       offer("O02", "Hairpin Salad Run", "Hill-climb lunch pack", "Hairpin salad", 15, 15, 4, 42, 2),
       { ...offer("O03", "Hall Hill Climb Pickup", "Hill-climb lunch pack", "Hairpin water", 28, 33, 1, 64, 5), fulfillment: "pickup" }
     ]
+  },
+  keirinCyclingCarnivalLunch: {
+    title: "Keirin cycling carnival lunch",
+    currency: "AUD",
+    buyers: [
+      buyer("B01", "Derny crate", "Keirin lunch pack", 15, 23, 4, ["Keirin pie", "Derny salad"]),
+      buyer("B02", "Keirin-gate bench", "Keirin lunch pack", 19, 19, 3, ["Keirin pie"]),
+      buyer("B03", "Pacer hamper", "Keirin lunch pack", 15, 30, 5, ["Derny salad", "Derny water"]),
+      buyer("B04", "Sideline cooler", "Keirin lunch pack", 20, 30, 2, ["Derny water"]),
+      buyer("B05", "Scoreboard trolley", "Keirin lunch pack", 16, 22, 4, ["Keirin pie", "Derny water"]),
+      buyer("B06", "Bench table", "Keirin lunch pack", 13, 20, 3, ["Derny salad", "Keirin pie"])
+    ],
+    offers: [
+      offer("O01", "Court-side Keirin Delivery", "Keirin lunch pack", "Keirin pie", 17, 17, 3, 54, 3),
+      offer("O02", "Derny Salad Run", "Keirin lunch pack", "Derny salad", 15, 15, 4, 42, 2),
+      { ...offer("O03", "Hall Keirin Pickup", "Keirin lunch pack", "Derny water", 30, 34, 1, 64, 5), fulfillment: "pickup" }
+    ]
   }
 });
 
