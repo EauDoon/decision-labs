@@ -1125,9 +1125,9 @@ function inputPanel(result) {
           <p class="notice">${firstBreakpointFilterNote}</p>
           <div class="button-row"><button type="button" id="hide-last-breakpoint-participant" data-action="hide-last-breakpoint-participant" aria-pressed="${hideLastBreakpointParticipant}" ${result ? '' : 'disabled title="Resolve invalid inputs before filtering the roster"'}>Hide the last first-breakpoint participant</button><button type="button" data-action="show-last-breakpoint-participant" ${hideLastBreakpointParticipant ? '' : 'disabled'}>Show the last first-breakpoint participant</button><button type="button" id="copy-last-breakpoint-label" data-action="copy-last-breakpoint-label">Copy last first-breakpoint participant label</button></div>
           <p class="notice">${lastBreakpointFilterNote}</p>
-          <div class="button-row"><button type="button" id="hide-first-over-capacity-participant" data-action="hide-first-over-capacity-participant" aria-keyshortcuts="@" aria-pressed="${hideFirstOverCapacityParticipant}" ${result ? '' : 'disabled title="Resolve invalid inputs before filtering the roster"'}>Hide the first over-capacity participant</button><button type="button" data-action="show-first-over-capacity-participant" ${hideFirstOverCapacityParticipant ? '' : 'disabled'}>Show the first over-capacity participant</button></div>
+          <div class="button-row"><button type="button" id="hide-first-over-capacity-participant" data-action="hide-first-over-capacity-participant" aria-keyshortcuts="@ Shift+F9" aria-pressed="${hideFirstOverCapacityParticipant}" ${result ? '' : 'disabled title="Resolve invalid inputs before filtering the roster"'}>Hide the first over-capacity participant</button><button type="button" data-action="show-first-over-capacity-participant" ${hideFirstOverCapacityParticipant ? '' : 'disabled'}>Show the first over-capacity participant</button></div>
           <p class="notice">${firstOverCapacityFilterNote}</p>
-          <div class="button-row"><button type="button" id="hide-last-over-capacity-participant" data-action="hide-last-over-capacity-participant" aria-keyshortcuts="# Shift+F9" aria-pressed="${hideLastOverCapacityParticipant}" ${result ? '' : 'disabled title="Resolve invalid inputs before filtering the roster"'}>Hide the last over-capacity participant</button><button type="button" data-action="show-last-over-capacity-participant" ${hideLastOverCapacityParticipant ? '' : 'disabled'}>Show the last over-capacity participant</button></div>
+          <div class="button-row"><button type="button" id="hide-last-over-capacity-participant" data-action="hide-last-over-capacity-participant" aria-keyshortcuts="#" aria-pressed="${hideLastOverCapacityParticipant}" ${result ? '' : 'disabled title="Resolve invalid inputs before filtering the roster"'}>Hide the last over-capacity participant</button><button type="button" data-action="show-last-over-capacity-participant" ${hideLastOverCapacityParticipant ? '' : 'disabled'}>Show the last over-capacity participant</button></div>
           <p class="notice">${lastOverCapacityFilterNote}</p>
           ${participantForms || rosterEmptyNotice}
           <div class="button-row"><button type="button" id="add-participant" data-action="add-participant" ${state.participants.length >= MAX_PARTICIPANTS ? 'disabled title="Participant limit reached"' : ''}>Add participant</button></div>
@@ -2983,7 +2983,7 @@ function handleShortcut(event) {
     target?.scrollIntoView?.({ block: 'start' });
   }
   if (event.key === 'F9' && event.shiftKey) {
-    const target = document.querySelector('#hide-last-over-capacity-participant')
+    const target = document.querySelector('#hide-first-over-capacity-participant')
       ?? document.querySelector('#participant-inputs-title');
     target?.focus?.({ preventScroll: false });
     target?.scrollIntoView?.({ block: 'start' });
@@ -5911,7 +5911,7 @@ function helpDialog() {
         <li><kbd>F12</kbd> Jump to Hide the last participant with zero revenue share, or the Participants heading if missing</li>
         <li><kbd>Shift+F7</kbd> Copy first over-capacity volume-to-hold as Markdown</li>
         <li><kbd>Shift+F8</kbd> Jump to Copy first over-capacity volume-to-hold, or the Participants heading if missing</li>
-        <li><kbd>Shift+F9</kbd> Jump to Hide the last over-capacity participant, or the Participants heading if missing</li>
+        <li><kbd>Shift+F9</kbd> Jump to Hide the first over-capacity participant, or the Participants heading if missing</li>
         <li><kbd>Shift+F10</kbd> Copy last over-capacity remaining listed capacity as Markdown</li>
         <li><kbd>Shift+F11</kbd> Jump to Copy last over-capacity remaining listed capacity, or the Participants heading if missing</li>
         <li><kbd>Shift+F12</kbd> Jump to Hide the first over-capacity participant, or the Participants heading if missing</li>
