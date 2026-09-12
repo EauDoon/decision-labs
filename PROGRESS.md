@@ -50,6 +50,21 @@ Started 2026-09-12. Branch: `improve/consolidation-and-depth-20260912`.
   every handled key is listed; banned browser keys unbound; 404 copy derives from
   printed content; PUBLIC_PATHS/CSP/host/method boundary preserved.
 
+### 3. Partnership Breakpoint 1.6.0 (commit 2f627239)
+- `calculatePartnership` returns `rankingDisagreement`: a deterministic comparison of
+  the least-volume-headroom ranking and the first-relative-shock ranking, with honest
+  reasons for agreement, disagreement, and unbounded cases. The First breakpoint panel
+  prints "Not the least-headroom participant" plus the reason when they differ.
+  Growth at a Cost preset demonstrates the disagreement; verified in-browser via a
+  share link (note renders naming both participants, 0 resource requests).
+
+### 4. The Smallest Agreement 1.5.34 (commit 319147f3)
+- New tests cross-check `findSmallestAgreement` against an independent exhaustive
+  brute-force reference on fixed small cases (thresholds, budgets, single clause,
+  locked clause). Status and change cost agree everywhere; infeasible cases proven
+  genuine; the already_passing / found / infeasible boundaries pinned. No model code
+  changed; the standing evidence that the reported minimum is exact within the bound.
+
 ## Verification actually performed
 
 - Root `npm test`: 37 (hub) + 485 + 887 + 418 + 421, all pass, 0 fail.
@@ -64,23 +79,24 @@ Started 2026-09-12. Branch: `improve/consolidation-and-depth-20260912`.
     0 resource requests; no console errors on any app or hub (served + file://).
 - partnership/common-cart/smallest-agreement standalones: render, accept edits,
   review panels present, 0 resource requests, no console errors.
+- partnership disagreement note verified in-browser on the Balanced (agreement)
+  and Growth-at-a-Cost (disagreement, via share link) cases.
 - file:// standalone operation verified via headless Chrome on all four apps.
 
 ## Remaining limitations and next actions
 
-1. Common Cart and The Smallest Agreement retain their own hide-first/last
-   checkbox clusters and copy controls (17 buyer filters, ~15 leftover copies).
-   Same consolidation recipe applies; not done this session.
-2. Partnership Breakpoint depth item (least-volume-headroom vs
-   first-by-adverse-shock side-by-side) not started.
-3. Smallest-agreement outcome taxonomy display not started.
-4. Weekend-gap bottleneck card: reserve vs timing vs throughput distinction is
+1. Common Cart retains its own hide-first/last checkbox clusters and copy
+   controls (17 buyer filters, ~15 leftover copies). Same consolidation recipe
+   applies; not done this session.
+2. Weekend-gap bottleneck card: reserve vs timing vs throughput distinction is
    documented but could get a dedicated constraint analysis card.
-5. App-local keyboard sets in partnership/smallest-agreement still have some
+3. App-local keyboard sets in partnership/smallest-agreement still have some
    legacy single-letter bindings (checked by their own tests, unchanged).
+4. Smallest-agreement outcome taxonomy is covered by copy-level alert text and
+   now by reference tests; a dedicated status chip in the result header is an
+   optional polish.
 
 ## Next concrete action
 
 Run the same consolidation recipe on Common Cart's buyer filters and leftover
-copy controls (tests first: replace markup mirrors with outcome tests), then
-Partnership Breakpoint depth work.
+copy controls (tests first: replace markup mirrors with outcome tests).
