@@ -13719,7 +13719,6 @@ test('What\'s new and README name first-unlabelled-skip-href copy, first-unlabel
   assert.equal(headings.includes('Last-unlabelled-skip-href copy, last-unlabelled-skip-href jump, and last-unlabelled-skip-target jump'), true);
   assert.equal(headings.includes('Last-unlabelled-skip-text copy, last-unlabelled-skip-text jump, and last-unlabelled-skip-link jump'), true);
   assert.equal(headings.includes('First-unlabelled-skip-href copy, first-unlabelled-skip-href jump, and first-unlabelled-skip-target jump'), true);
-  assert.equal(headings.includes('Last-unlabelled-skip-href copy, last-unlabelled-skip-href jump, and last-unlabelled-skip-target jump'), true);
   assert.equal(headings.includes('First-unlabelled-skip-text copy, first-unlabelled-skip-text jump, and first-unlabelled-skip-link jump'), true);
   assert.equal(headings.includes('First-labelled-skip-href copy, first-labelled-skip-href jump, and first-labelled-skip-target jump'), true);
   assert.equal(headings[headings.length - 1], 'Thursday early FX open, last-weekend-FX-open copy, and weekday-FX-open hide in Weekend Gap 1.5.34');
@@ -14768,8 +14767,8 @@ test('copy last unlabelled skip href markdown is the href of the last skip whose
       textContent: 'Skip to catalog versions',
     },
     {
-      getAttribute(name) { return name === 'href' ? '#extra' : null; },
-      textContent: 'Skip to extra',
+      getAttribute(name) { return name === 'href' ? '#trust' : null; },
+      textContent: 'Skip to Trust and limits',
     },
   ];
   const versionLine = {
@@ -14787,7 +14786,13 @@ test('copy last unlabelled skip href markdown is the href of the last skip whose
     tagName: 'SECTION',
     textContent: 'Last-unlabelled-skip-href copy, last-unlabelled-skip-href jump, and last-unlabelled-skip-target jump',
   };
+  const trust = {
+    getAttribute(name) { return name === 'aria-labelledby' ? 'trust-title' : null; },
+    tagName: 'SECTION',
+    textContent: 'Trust and limits',
+  };
   const whatsLabel = { textContent: "What's new", tagName: 'H2' };
+  const trustLabel = { textContent: 'Trust and limits', tagName: 'H2' };
   const document = {
     getElementById(id) {
       if (id === 'copy-last-unlabelled-skip-href') return { addEventListener(name, handler) { if (name === 'click') clickLast = handler; } };
@@ -14795,6 +14800,8 @@ test('copy last unlabelled skip href markdown is the href of the last skip whose
       if (id === 'copy-last-unlabelled-skip-href-fallback') return { hidden: true, value: '', focus() {}, select() {} };
       if (id === 'whats-new') return whatsNew;
       if (id === 'whats-new-title') return whatsLabel;
+      if (id === 'trust') return trust;
+      if (id === 'trust-title') return trustLabel;
       if (id === 'version-line') return versionLine;
       if (id === 'extra') return extra;
       return null;
@@ -14813,15 +14820,34 @@ test('copy last unlabelled skip href markdown is the href of the last skip whose
     navigator: { clipboard: { writeText: async (text) => { copied = text; } } },
   });
   await clickLast();
-  assert.equal(copied, '- #extra');
+  assert.equal(copied, '- #version-line');
   assert.doesNotMatch(copied, /\n/);
   assert.doesNotMatch(copied, /What's new/);
-  assert.doesNotMatch(copied, /Skip to extra/);
   assert.doesNotMatch(copied, /Skip to catalog versions/);
+  assert.doesNotMatch(copied, /Skip to what's new/);
   assert.doesNotMatch(copied, /Partnership Breakpoint/);
-  assert.notEqual(copied, '- #version-line');
   assert.notEqual(copied, '- #whats-new');
-  assert.notEqual(copied, '- Skip to extra');
+  assert.notEqual(copied, '- Skip to catalog versions');
+  assert.notEqual(copied, '- #trust');
+  skips = [
+    {
+      getAttribute(name) { return name === 'href' ? '#whats-new' : null; },
+      textContent: "Skip to what's new",
+    },
+    {
+      getAttribute(name) { return name === 'href' ? '#version-line' : null; },
+      textContent: 'Skip to catalog versions',
+    },
+    {
+      getAttribute(name) { return name === 'href' ? '#extra' : null; },
+      textContent: 'Skip to extra',
+    },
+  ];
+  copied = 'stale';
+  await clickLast();
+  assert.equal(copied, '- #extra');
+  assert.notEqual(copied, '- #version-line');
+  assert.doesNotMatch(copied, /Skip to extra/);
   skips = [];
   copied = 'stale';
   await clickLast();
@@ -14998,12 +15024,14 @@ test('keyboard Shift+ScrollLock focuses Copy last unlabelled skip href and Shift
   assert.equal(clicks.lastUnlabelledSkipText, 0);
   assert.equal(clicks.lastSkip, 0);
   assert.deepEqual(focused, ['copy-last-unlabelled-skip-href', 'extra']);
+  fire('Enter', true);
+  assert.deepEqual(focused, ['copy-last-unlabelled-skip-href', 'extra', 'skip-extra']);
   fire(' ', true);
   fire('Pause', true);
   fire('Backspace', true);
-  assert.deepEqual(focused, ['copy-last-unlabelled-skip-href', 'extra', 'copy-first-unlabelled-skip-href', 'version-line', 'copy-last-unlabelled-skip-text']);
+  assert.deepEqual(focused, ['copy-last-unlabelled-skip-href', 'extra', 'skip-extra', 'copy-first-unlabelled-skip-href', 'version-line', 'copy-last-unlabelled-skip-text']);
   skips = [];
   fire('PrintScreen', true);
-  assert.deepEqual(focused, ['copy-last-unlabelled-skip-href', 'extra', 'copy-first-unlabelled-skip-href', 'version-line', 'copy-last-unlabelled-skip-text', 'skips']);
+  assert.deepEqual(focused, ['copy-last-unlabelled-skip-href', 'extra', 'skip-extra', 'copy-first-unlabelled-skip-href', 'version-line', 'copy-last-unlabelled-skip-text', 'skips']);
   assert.deepEqual(assigned, []);
 });
