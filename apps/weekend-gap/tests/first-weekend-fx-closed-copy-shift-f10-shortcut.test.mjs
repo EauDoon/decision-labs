@@ -2,20 +2,23 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { readFile } from "node:fs/promises";
 
-test("1.5.33 keeps first-weekend-FX-closed copy control without taking Shift+F10", async () => {
+test("keyboard Shift+F10 is wired to copy first weekend-FX-closed hour before unshifted F10", async () => {
   const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
   const app = await readFile(new URL("../src/app.js", import.meta.url), "utf8");
   assert.match(html, /id="copy-first-weekend-fx-closed"/);
-  assert.match(html, /Copy first weekend-FX-closed hour/);
+  assert.match(html, /<kbd>Shift\+F10<\/kbd>/u);
+  assert.match(html, /Copy first weekend-FX-closed hour as Markdown/);
+  assert.match(html, /id="copy-first-weekend-fx-closed"[^>]*aria-keyshortcuts="Shift\+F10"/);
   assert.match(html, /id="first-weekend-fx-closed-copy-fallback"/);
   assert.match(html, /id="copy-last-weekend-fx-closed"[^>]*aria-keyshortcuts="F7"/);
+  assert.doesNotMatch(html, /id="copy-first-weekend-fx-open"[^>]*aria-keyshortcuts="Shift\+F10"/);
+  assert.doesNotMatch(html, /id="copy-last-weekend-fx-closed"[^>]*aria-keyshortcuts="Shift\+F10"/);
   assert.match(html, /id="copy-last-weekday-fx-closed"[^>]*aria-keyshortcuts="F10"/);
-  assert.doesNotMatch(html, /id="copy-first-weekend-fx-closed"[^>]*aria-keyshortcuts="Shift\+F10"/);
   assert.match(app, /function copyFirstWeekendFxClosedHourMarkdown/);
   assert.match(app, /firstWeekendFxClosedHourToMarkdown\(scenario\)/);
   assert.match(app, /function copyLastWeekendFxClosedHourMarkdown/);
   assert.match(app, /event\.key === "F10" && event\.shiftKey/);
-  assert.match(app, /copyLastWeekendFxClosedHourMarkdown\(\)/);
+  assert.match(app, /copyFirstWeekendFxClosedHourMarkdown\(\)/);
   assert.match(app, /event\.key === "F10"/);
   assert.match(app, /copyLastWeekdayFxClosedHourMarkdown\(\)/);
   assert.match(app, /if \(event\.defaultPrevented\) return/);
@@ -29,9 +32,9 @@ test("1.5.33 keeps first-weekend-FX-closed copy control without taking Shift+F10
   assert.ok(unshiftedF10 !== -1);
   assert.ok(shiftF10 < unshiftedF10);
   const shiftSlice = handler.slice(shiftF10, shiftF10 + 180);
-  assert.match(shiftSlice, /copyFirstWeekendFxOpenHourMarkdown\(\)/);
+  assert.match(shiftSlice, /copyFirstWeekendFxClosedHourMarkdown\(\)/);
+  assert.doesNotMatch(shiftSlice, /copyFirstWeekendFxOpenHourMarkdown/);
   assert.doesNotMatch(shiftSlice, /copyLastWeekendFxOpenHourMarkdown/);
-  assert.doesNotMatch(shiftSlice, /copyFirstWeekendFxClosedHourMarkdown/);
   assert.doesNotMatch(shiftSlice, /copyLastWeekdayFxClosedHourMarkdown/);
   const unshiftedSlice = handler.slice(unshiftedF10, unshiftedF10 + 180);
   assert.match(unshiftedSlice, /copyLastWeekdayFxClosedHourMarkdown\(\)/);

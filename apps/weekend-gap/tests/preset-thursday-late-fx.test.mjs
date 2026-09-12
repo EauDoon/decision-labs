@@ -31,6 +31,7 @@ test("Thursday late FX open keeps the Normal Friday calendar with a Thursday aft
   assert.match(preset.name, /Thursday late FX open/i);
   assert.equal(preset.thursdayLateFxOpen, true);
   assert.equal(DEFAULT_SCENARIO.thursdayLateFxOpen, false);
+  assert.equal(preset.fridayEarlyFxOpen, false);
   assert.equal(preset.thursdayEarlyFxOpen, false);
   assert.equal(preset.wednesdayLateFxOpen, false);
   assert.equal(preset.wednesdayEarlyFxOpen, false);
@@ -46,6 +47,7 @@ test("Thursday late FX open keeps the Normal Friday calendar with a Thursday aft
   assert.equal(preset.issuerOpenStartHour, DEFAULT_SCENARIO.issuerOpenStartHour);
   assert.equal(preset.bankOpenStartHour, DEFAULT_SCENARIO.bankOpenStartHour);
   assert.equal(preset.redemptionDemandAud, DEFAULT_SCENARIO.redemptionDemandAud);
+  assert.notDeepEqual(preset, PRESETS.fridayEarlyFxOpen);
   assert.notDeepEqual(preset, PRESETS.normal);
   assert.notDeepEqual(preset, PRESETS.thursdayEarlyFxOpen);
   assert.notDeepEqual(preset, PRESETS.wednesdayLateFxOpen);
@@ -116,7 +118,7 @@ test("Thursday late FX open keeps the Normal Friday calendar with a Thursday aft
 test("Thursday late FX open ORs into fxWeekday through isThursdayLateFxOpenHour, not the Thursday early or Wednesday late helpers", async () => {
   const model = await readFile(new URL("../src/model.js", import.meta.url), "utf8");
   const helperStart = model.indexOf("function isThursdayLateFxOpenHour");
-  const helperNext = model.indexOf("\nexport function getOperationalStatus", helperStart);
+  const helperNext = model.indexOf("\n/** Friday 08:00-10:00", helperStart);
   const helper = model.slice(helperStart, helperNext === -1 ? undefined : helperNext);
   assert.match(helper, /scenario\.thursdayLateFxOpen !== true/);
   assert.match(helper, /localHour >= 16 && localHour < 18/);

@@ -111,7 +111,7 @@ test("Thursday early FX open keeps the Normal Friday calendar with a Thursday mo
 test("Thursday early FX open ORs into fxWeekday through isThursdayEarlyFxOpenHour, not Wednesday late or Wednesday early helpers", async () => {
   const model = await readFile(new URL("../src/model.js", import.meta.url), "utf8");
   const helperStart = model.indexOf("function isThursdayEarlyFxOpenHour");
-  const helperNext = model.indexOf("\nexport function getOperationalStatus", helperStart);
+  const helperNext = model.indexOf("\n/** Thursday 16:00-18:00", helperStart);
   const helper = model.slice(helperStart, helperNext === -1 ? undefined : helperNext);
   assert.match(helper, /scenario\.thursdayEarlyFxOpen !== true/);
   assert.match(helper, /localHour >= 8 && localHour < 10/);

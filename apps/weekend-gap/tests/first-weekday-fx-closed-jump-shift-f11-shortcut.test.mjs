@@ -33,10 +33,10 @@ test("1.5.31 keeps first-weekday-FX-closed jump without taking Shift+F11", async
   assert.ok(unshiftedF11 !== -1);
   assert.ok(shiftF11 < unshiftedF11);
   const shiftSlice = handler.slice(shiftF11, shiftF11 + 180);
-  assert.match(shiftSlice, /jumpToFirstWeekendFxOpenCopy\(\)/);
+  assert.match(shiftSlice, /jumpToFirstWeekendFxClosedCopy\(\)/);
+  assert.doesNotMatch(shiftSlice, /jumpToFirstWeekendFxOpenCopy/);
   assert.doesNotMatch(shiftSlice, /jumpToLastWeekendFxOpenCopy/);
   assert.doesNotMatch(shiftSlice, /jumpToFirstWeekdayFxClosedCopy/);
-  assert.doesNotMatch(shiftSlice, /jumpToFirstWeekendFxClosedCopy/);
   assert.doesNotMatch(shiftSlice, /jumpToLastWeekdayFxClosedCopy/);
   assert.doesNotMatch(shiftSlice, /copyFirstWeekdayFxClosedHourMarkdown/);
   const unshiftedSlice = handler.slice(unshiftedF11, unshiftedF11 + 180);
