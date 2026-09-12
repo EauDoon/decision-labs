@@ -27,6 +27,7 @@ test("1.5.29 keeps F10 F11 F12 last-weekday-FX-closed controls, last-weekend-FX-
   assert.match(html, /data-preset="thursdayLateFxOpen"/);
   assert.match(html, /data-preset="fridayEarlyFxOpen"/);
   assert.match(html, /data-preset="saturdayMiddayFxOpen"/);
+  assert.match(html, /data-preset="sundayMiddayFxOpen"/);
   assert.match(app, /event\.key === "F10"/);
   assert.match(app, /copyLastWeekdayFxClosedHourMarkdown\(\)/);
   assert.match(app, /event\.key === "F11"/);
@@ -62,6 +63,11 @@ test("1.5.29 keeps F10 F11 F12 last-weekday-FX-closed controls, last-weekend-FX-
   assert.equal(PRESETS.saturdayMiddayFxOpen.saturdayEarlyFxOpen, false);
   assert.equal(PRESETS.saturdayMiddayFxOpen.saturdayLateFxOpen, false);
   assert.equal(PRESETS.saturdayMiddayFxOpen.fridayEarlyFxOpen, false);
+  assert.equal(PRESETS.saturdayMiddayFxOpen.sundayMiddayFxOpen, false);
+  assert.equal(PRESETS.sundayMiddayFxOpen.sundayMiddayFxOpen, true);
+  assert.equal(PRESETS.sundayMiddayFxOpen.saturdayMiddayFxOpen, false);
+  assert.equal(PRESETS.sundayMiddayFxOpen.sundayEarlyFxOpen, false);
+  assert.equal(PRESETS.sundayMiddayFxOpen.sundayLateFxOpen, false);
   assert.equal(PRESETS.mondayEarlyFxOpen.sundayEarlyFxOpen, false);
   assert.equal(DEFAULT_SCENARIO.sundayEarlyFxOpen, false);
   assert.equal(DEFAULT_SCENARIO.mondayEarlyFxOpen, false);
@@ -74,6 +80,7 @@ test("1.5.29 keeps F10 F11 F12 last-weekday-FX-closed controls, last-weekend-FX-
   assert.equal(DEFAULT_SCENARIO.thursdayLateFxOpen, false);
   assert.equal(DEFAULT_SCENARIO.fridayEarlyFxOpen, false);
   assert.equal(DEFAULT_SCENARIO.saturdayMiddayFxOpen, false);
+  assert.equal(DEFAULT_SCENARIO.sundayMiddayFxOpen, false);
   const handler = app.slice(app.indexOf('document.addEventListener("keydown"'));
   const unshiftedF12 = handler.lastIndexOf('event.key === "F12"');
   const f12Slice = handler.slice(unshiftedF12, unshiftedF12 + 180);
