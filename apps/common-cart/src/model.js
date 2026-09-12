@@ -669,6 +669,23 @@ export const presets = Object.freeze({
       offer("O02", "Pump Salad Run", "BMX lunch pack", "Pump salad", 15, 15, 4, 42, 2),
       { ...offer("O03", "Hall BMX Pickup", "BMX lunch pack", "Pump water", 21, 26, 1, 52, 5), fulfillment: "pickup" }
     ]
+  },
+  cycloCrossCarnivalLunch: {
+    title: "Cyclo-cross carnival lunch",
+    currency: "AUD",
+    buyers: [
+      buyer("B01", "Pit-rack crate", "Cyclo-cross lunch pack", 15, 23, 4, ["Cyclo-cross pie", "Barrier salad"]),
+      buyer("B02", "Board-bag bench", "Cyclo-cross lunch pack", 19, 19, 3, ["Cyclo-cross pie"]),
+      buyer("B03", "Break hamper", "Cyclo-cross lunch pack", 15, 22, 5, ["Barrier salad", "Pit water"]),
+      buyer("B04", "Sideline cooler", "Cyclo-cross lunch pack", 13, 22, 2, ["Pit water"]),
+      buyer("B05", "Scoreboard trolley", "Cyclo-cross lunch pack", 16, 22, 4, ["Cyclo-cross pie", "Pit water"]),
+      buyer("B06", "Bench table", "Cyclo-cross lunch pack", 14, 20, 3, ["Barrier salad", "Cyclo-cross pie"])
+    ],
+    offers: [
+      offer("O01", "Court-side Cyclo-cross Delivery", "Cyclo-cross lunch pack", "Cyclo-cross pie", 17, 17, 3, 54, 3),
+      offer("O02", "Barrier Salad Run", "Cyclo-cross lunch pack", "Barrier salad", 15, 15, 4, 42, 2),
+      { ...offer("O03", "Hall Cyclo-cross Pickup", "Cyclo-cross lunch pack", "Pit water", 22, 27, 1, 54, 5), fulfillment: "pickup" }
+    ]
   }
 });
 

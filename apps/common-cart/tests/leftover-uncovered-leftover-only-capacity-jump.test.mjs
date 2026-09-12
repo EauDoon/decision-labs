@@ -19,7 +19,7 @@ test("leftover uncovered leftover-only capacity copy jump stays on the organizer
   assert.doesNotMatch(app, /if \(event\.shiftKey && key === "F8"\) \{\s*event\.preventDefault\(\);\s*focusLeftoverUncoveredLeftoverOnlyCapacityCopy/u);
   assert.doesNotMatch(app, /if \(event\.shiftKey && key === "F8"\) \{\s*event\.preventDefault\(\);\s*copyLeftoverUncoveredLeftoverOnlyCapacity/u);
   assert.doesNotMatch(app, /if \(key === "F8"\) \{\s*event\.preventDefault\(\);\s*focusLeftoverUncoveredLeftoverOnlyCapacityCopy/u);
-  assert.match(app, /if \(event\.shiftKey && key === "F8"\) \{\s*event\.preventDefault\(\);\s*focusLeftoverUncoveredLeftoverOnlyHeadroomCopy\(\);/u);
+  assert.match(app, /if \(event\.shiftKey && key === "F8"\) \{\s*event\.preventDefault\(\);\s*focusLeftoverUncoveredLeftoverOnlyAllocatedCopy\(\);/u);
   assert.match(app, /if \(key === "F8"\) \{\s*event\.preventDefault\(\);\s*focusLeftoverUncoveredLeftoverOnlyCountCopy\(\);/u);
   assert.match(app, /if \(event\.defaultPrevented/u);
 });
@@ -37,8 +37,8 @@ test("ArrowUp still jumps to hide last leftover-only buyer", async () => {
   assert.match(app, /function focusHideLastLeftoverOnlyBuyer\(/u);
   assert.match(app, /#hide-last-leftover-only-buyer/u);
   assert.match(app, /#buyers-list/u);
-  assert.doesNotMatch(app, /if \(event\.shiftKey && key === "F9"\) \{\s*event\.preventDefault\(\);\s*focusHideLastLeftoverOnlyBuyer/u);
-  assert.match(app, /if \(event\.shiftKey && key === "F9"\) \{\s*event\.preventDefault\(\);\s*focusHideFirstLeftoverOnlyBuyer\(\);/u);
+  assert.match(app, /if \(event\.shiftKey && key === "F9"\) \{\s*event\.preventDefault\(\);\s*focusHideLastLeftoverOnlyBuyer\(\);/u);
+  assert.doesNotMatch(app, /if \(event\.shiftKey && key === "F9"\) \{\s*event\.preventDefault\(\);\s*focusHideFirstLeftoverOnlyBuyer/u);
   assert.match(app, /if \(key === "F9"\) \{\s*event\.preventDefault\(\);\s*focusHideFirstUncoveredLeftoverBuyer\(\);/u);
   assert.match(app, /if \(event\.shiftKey && key === "F12"\) \{\s*event\.preventDefault\(\);\s*focusHideFirstUncoveredLeftoverBuyer\(\);/u);
   assert.match(app, /if \(key === "F12"\) \{\s*event\.preventDefault\(\);\s*focusHideLastUncoveredLeftoverBuyer\(\);/u);
