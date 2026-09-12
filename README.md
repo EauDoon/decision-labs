@@ -29,7 +29,7 @@ Every workbench:
 | --- | --- | --- | --- |
 | [Partnership Breakpoint](apps/partnership-breakpoint/) | 1.5.42 | Find which participant in a revenue split reaches an exit threshold first when volume, fees, or costs move. | **Balanced** starting point |
 | [Common Cart](apps/common-cart/) | 1.4.42 | Pool buyer constraints and compare conditional merchant offers without exposing individual buyer records to the merchant view. | **Coffee** scenario (Neighbourhood coffee run) |
-| [The Smallest Agreement](apps/smallest-agreement/) | 1.5.41 | Find the lowest-cost set of clause changes that still crosses an approval threshold while respecting support floors, locks, and a change budget. | **Neighbourhood Plan** |
+| [The Smallest Agreement](apps/smallest-agreement/) | 1.5.42 | Find the lowest-cost set of clause changes that still crosses an approval threshold while respecting support floors, locks, and a change budget. | **Neighbourhood Plan** |
 | [Weekend Gap](apps/weekend-gap/) | 1.5.41 | Follow synthetic AUD redemption demand from Friday to Monday when reserves and settlement windows do not fully overlap. | **Normal Friday** (72-hour case) |
 
 Open [index.html](index.html) for the product home: one-sentence jobs, Open
@@ -142,6 +142,7 @@ The Smallest Agreement 1.5.38 also names the Criterium cycling club hours start,
 The Smallest Agreement 1.5.39 also names the Time-trial cycling club hours start, first-without-floor-remaining group copy shortcut, and the last-without-floor hide jump.
 The Smallest Agreement 1.5.40 also names the Hill-climb cycling club hours start, first-without-floor-remaining group copy shortcut, and the last-without-floor hide jump.
 The Smallest Agreement 1.5.41 also names the Keirin cycling club hours start, first-without-floor-remaining group copy shortcut, and the last-without-floor hide jump.
+The Smallest Agreement 1.5.42 also names the Madison cycling club hours start, first-without-floor-remaining group copy shortcut, and the last-without-floor hide jump.
 Common Cart 1.4.1 also names organizer buyer
 CSV, leftover jump, and the community garden start. Common Cart 1.4.2 also names
 organizer leftover copy, school fete catering, and overlap Markdown. Common Cart 1.4.3 also names
