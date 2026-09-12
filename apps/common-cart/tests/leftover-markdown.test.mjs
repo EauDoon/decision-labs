@@ -2235,8 +2235,9 @@ test("the buyer room copies leftover uncovered leftover-only headroom with a tex
   assert.match(app, /organizer-private Markdown/u);
   assert.match(app, /This is not a merchant export/u);
   assert.match(app, /Count only\. This is not a merchant export/u);
-  assert.match(app, /if \(event\.shiftKey && key === "F7"\) \{\s*event\.preventDefault\(\);\s*copyLeftoverUncoveredLeftoverOnlyHeadroom\(\);/u);
-  assert.match(html, /id="copy-leftover-uncovered-leftover-only-headroom"[^>]*aria-keyshortcuts="Shift\+F7"/u);
+  assert.match(app, /if \(event\.shiftKey && key === "F7"\) \{\s*event\.preventDefault\(\);\s*copyLeftoverUncoveredLeftoverOnlyAllocated\(\);/u);
+  assert.match(html, /id="copy-leftover-uncovered-leftover-only-allocated"[^>]*aria-keyshortcuts="Shift\+F7"/u);
+  assert.doesNotMatch(html, /id="copy-leftover-uncovered-leftover-only-headroom"[^>]*aria-keyshortcuts="Shift\+F7"/u);
 });
 
 test("leftover uncovered leftover-only allocated Markdown is organizer-private leftover-only units assigned onto leftover-fill", () => {
@@ -2358,8 +2359,8 @@ test("the buyer room copies leftover uncovered leftover-only allocated with a te
   assert.match(app, /organizer-private Markdown/u);
   assert.match(app, /This is not a merchant export/u);
   assert.match(app, /Count only\. This is not a merchant export/u);
-  assert.doesNotMatch(app, /if \(event\.shiftKey && key === "F7"\) \{\s*event\.preventDefault\(\);\s*copyLeftoverUncoveredLeftoverOnlyAllocated\(\);/u);
-  assert.doesNotMatch(html, /id="copy-leftover-uncovered-leftover-only-allocated"[^>]*aria-keyshortcuts="Shift\+F7"/u);
+  assert.match(app, /if \(event\.shiftKey && key === "F7"\) \{\s*event\.preventDefault\(\);\s*copyLeftoverUncoveredLeftoverOnlyAllocated\(\);/u);
+  assert.match(html, /id="copy-leftover-uncovered-leftover-only-allocated"[^>]*aria-keyshortcuts="Shift\+F7"/u);
 });
 
 test("leftover uncovered leftover-only capacity Markdown is organizer-private leftover-fill offer capacity", () => {
@@ -2773,6 +2774,75 @@ test("bmx carnival leftover uncovered leftover-only headroom stays distinct from
   assert.notEqual(createLeftoverUncoveredLeftoverOnlyCapacityMarkdown(bmx), createLeftoverUncoveredLeftoverOnlyCapacityMarkdown(mountainBike));
 });
 
+test("cyclo-cross carnival leftover uncovered leftover-only allocated stays distinct from leftover-only unit price, leftover-only capacity, leftover-only remaining, leftover-only headroom, leftover-only minimum, leftover unit price, and leftover fill remaining", () => {
+  const cycloCross = clonePreset("cycloCrossCarnivalLunch");
+  const leftoverOnlyUnitPrice = createLeftoverUncoveredLeftoverOnlyUnitPriceMarkdown(cycloCross);
+  const leftoverOnlyCapacity = createLeftoverUncoveredLeftoverOnlyCapacityMarkdown(cycloCross);
+  const leftoverOnlyAllocated = createLeftoverUncoveredLeftoverOnlyAllocatedMarkdown(cycloCross);
+  const leftoverOnlyHeadroom = createLeftoverUncoveredLeftoverOnlyHeadroomMarkdown(cycloCross);
+  const leftoverOnlyMinimum = createLeftoverUncoveredLeftoverOnlyMinimumMarkdown(cycloCross);
+  const leftoverOnlyMaximum = createLeftoverUncoveredLeftoverOnlyMaximumMarkdown(cycloCross);
+  const leftoverOnlyRemaining = createLeftoverUncoveredLeftoverOnlyRemainingMarkdown(cycloCross);
+  const leftoverOnlyCount = createLeftoverUncoveredLeftoverOnlyCountMarkdown(cycloCross);
+  const leftoverOffer = cycloCross.offers.find((offer) => offer.id === computeResidualCoverage(cycloCross).secondary.offerId);
+  assert.equal(leftoverOffer.minimumUnits, 27);
+  assert.equal(leftoverOffer.unitPrice, 22);
+  assert.equal(leftoverOffer.capacity, 54);
+  assert.match(leftoverOnlyAllocated, /leftover uncovered leftover-only allocated \(organizer private\): 28\./);
+  assert.match(leftoverOnlyHeadroom, /leftover uncovered leftover-only headroom \(organizer private\): 26\./);
+  assert.match(leftoverOnlyMinimum, /leftover uncovered leftover-only minimum \(organizer private\): 13\./);
+  assert.match(leftoverOnlyUnitPrice, /leftover uncovered leftover-only unit price \(organizer private\): 22\./);
+  assert.match(leftoverOnlyCapacity, /leftover uncovered leftover-only capacity \(organizer private\): 54\./);
+  assert.match(leftoverOnlyRemaining, /leftover uncovered leftover-only remaining \(organizer private\): 28\./);
+  assert.notEqual(28, leftoverOffer.minimumUnits);
+  assert.notEqual(28, leftoverOffer.unitPrice);
+  assert.notEqual(28, leftoverOffer.capacity);
+  assert.notEqual(28, 26);
+  assert.notEqual(28, 13);
+  assert.notEqual(22, leftoverOffer.minimumUnits);
+  assert.notEqual(22, leftoverOffer.capacity);
+  assert.notEqual(22, 26);
+  assert.notEqual(22, 13);
+  assert.notEqual(54, leftoverOffer.unitPrice);
+  assert.notEqual(54, leftoverOffer.minimumUnits);
+  assert.notEqual(54, 28);
+  assert.notEqual(54, 26);
+  assert.notEqual(leftoverOnlyAllocated, leftoverOnlyUnitPrice);
+  assert.notEqual(leftoverOnlyAllocated, leftoverOnlyCapacity);
+  assert.notEqual(leftoverOnlyAllocated, leftoverOnlyHeadroom);
+  assert.notEqual(leftoverOnlyAllocated, leftoverOnlyMinimum);
+  assert.notEqual(leftoverOnlyAllocated, leftoverOnlyRemaining);
+  assert.notEqual(leftoverOnlyAllocated, leftoverOnlyMaximum);
+  assert.notEqual(leftoverOnlyAllocated, leftoverOnlyCount);
+  assert.notEqual(leftoverOnlyHeadroom, leftoverOnlyUnitPrice);
+  assert.notEqual(leftoverOnlyHeadroom, leftoverOnlyCapacity);
+  assert.notEqual(leftoverOnlyCapacity, leftoverOnlyAllocated);
+  assert.notEqual(leftoverOnlyCapacity, leftoverOnlyHeadroom);
+  const bmx = clonePreset("bmxCarnivalLunch");
+  const bmxOffer = bmx.offers.find((offer) => offer.id === computeResidualCoverage(bmx).secondary.offerId);
+  assert.equal(bmxOffer.minimumUnits, 26);
+  assert.equal(bmxOffer.unitPrice, 21);
+  assert.equal(bmxOffer.capacity, 52);
+  assert.match(createLeftoverUncoveredLeftoverOnlyAllocatedMarkdown(bmx), /leftover uncovered leftover-only allocated \(organizer private\): 27\./);
+  assert.match(createLeftoverUncoveredLeftoverOnlyHeadroomMarkdown(bmx), /leftover uncovered leftover-only headroom \(organizer private\): 25\./);
+  assert.match(createLeftoverUncoveredLeftoverOnlyMinimumMarkdown(bmx), /leftover uncovered leftover-only minimum \(organizer private\): 12\./);
+  assert.match(createLeftoverUncoveredLeftoverOnlyCapacityMarkdown(bmx), /leftover uncovered leftover-only capacity \(organizer private\): 52\./);
+  const mountainBike = clonePreset("mountainBikeCarnivalLunch");
+  const mountainBikeOffer = mountainBike.offers.find((offer) => offer.id === computeResidualCoverage(mountainBike).secondary.offerId);
+  assert.equal(mountainBikeOffer.minimumUnits, 25);
+  assert.equal(mountainBikeOffer.unitPrice, 20);
+  assert.equal(mountainBikeOffer.capacity, 50);
+  assert.match(createLeftoverUncoveredLeftoverOnlyAllocatedMarkdown(mountainBike), /leftover uncovered leftover-only allocated \(organizer private\): 26\./);
+  assert.match(createLeftoverUncoveredLeftoverOnlyHeadroomMarkdown(mountainBike), /leftover uncovered leftover-only headroom \(organizer private\): 24\./);
+  assert.notEqual(createLeftoverUncoveredLeftoverOnlyAllocatedMarkdown(cycloCross), createLeftoverUncoveredLeftoverOnlyAllocatedMarkdown(bmx));
+  assert.notEqual(createLeftoverUncoveredLeftoverOnlyAllocatedMarkdown(cycloCross), createLeftoverUncoveredLeftoverOnlyAllocatedMarkdown(mountainBike));
+  assert.notEqual(createLeftoverUncoveredLeftoverOnlyHeadroomMarkdown(cycloCross), createLeftoverUncoveredLeftoverOnlyHeadroomMarkdown(bmx));
+  assert.notEqual(createLeftoverUncoveredLeftoverOnlyHeadroomMarkdown(cycloCross), createLeftoverUncoveredLeftoverOnlyHeadroomMarkdown(mountainBike));
+  assert.notEqual(createLeftoverUncoveredLeftoverOnlyMinimumMarkdown(cycloCross), createLeftoverUncoveredLeftoverOnlyMinimumMarkdown(bmx));
+  assert.notEqual(createLeftoverUncoveredLeftoverOnlyUnitPriceMarkdown(cycloCross), createLeftoverUncoveredLeftoverOnlyUnitPriceMarkdown(bmx));
+  assert.notEqual(createLeftoverUncoveredLeftoverOnlyCapacityMarkdown(cycloCross), createLeftoverUncoveredLeftoverOnlyCapacityMarkdown(bmx));
+});
+
 test("the buyer room copies leftover uncovered leftover-only unit price with a textarea fallback", async () => {
   const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
   const app = await readFile(new URL("../src/app.js", import.meta.url), "utf8");
@@ -2793,7 +2863,7 @@ test("the buyer room copies leftover uncovered leftover-only unit price with a t
   assert.match(app, /Count only\. This is not a merchant export/u);
   assert.doesNotMatch(app, /if \(event\.shiftKey && key === "F7"\) \{\s*event\.preventDefault\(\);\s*copyLeftoverUncoveredLeftoverOnlyUnitPrice\(\);/u);
   assert.doesNotMatch(html, /id="copy-leftover-uncovered-leftover-only-unit-price"[^>]*aria-keyshortcuts="Shift\+F7"/u);
-  assert.match(html, /id="copy-leftover-uncovered-leftover-only-headroom"[^>]*aria-keyshortcuts="Shift\+F7"/u);
+  assert.match(html, /id="copy-leftover-uncovered-leftover-only-allocated"[^>]*aria-keyshortcuts="Shift\+F7"/u);
 });
 
 test("winning remaining capacity Markdown is remaining units only", () => {
