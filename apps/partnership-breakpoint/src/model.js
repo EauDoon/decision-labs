@@ -452,6 +452,15 @@ export const PRESETS = Object.freeze({
       { id: 'cyclo-cross-first-aid', name: 'First-aid', revenueShare: 0.25, variableCostPerTransaction: 1.56, fixedMonthlyCost: 1500, minimumAcceptableProfit: 560, capacity: 5300, minimumCommitment: 0, riskCost: 330 },
     ],
   },
+  trackCyclingCarnivalSplit: {
+    name: 'Track cycling carnival split',
+    deal: { monthlyVolume: 5400, feePerTransaction: 8, addressableVolume: 6600, volumeShockPct: 0 },
+    participants: [
+      { id: 'track-cycling-committee', name: 'Carnival committee', revenueShare: 0.37, variableCostPerTransaction: 1.87, fixedMonthlyCost: 3750, minimumAcceptableProfit: 1460, capacity: 6300, minimumCommitment: 0, riskCost: 556 },
+      { id: 'track-cycling-club-hire', name: 'Track cycling club hire', revenueShare: 0.38, variableCostPerTransaction: 1.96, fixedMonthlyCost: 2920, minimumAcceptableProfit: 1000, capacity: 7400, minimumCommitment: 450, riskCost: 460 },
+      { id: 'track-cycling-first-aid', name: 'First-aid', revenueShare: 0.25, variableCostPerTransaction: 1.50, fixedMonthlyCost: 1530, minimumAcceptableProfit: 570, capacity: 5400, minimumCommitment: 0, riskCost: 340 },
+    ],
+  },
 });
 
 function isFiniteNumber(value) {
