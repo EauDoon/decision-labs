@@ -226,7 +226,7 @@ test("release 1.4.24 ships rowing carnival lunch, leftover uncovered leftover-on
 test("release 1.4.25 ships sailing carnival lunch, leftover uncovered leftover-only remaining copy and last uncovered leftover hide", async () => {
   const html = await readFile(new URL("../standalone.html", import.meta.url), "utf8");
   assert.match(html, /id="copy-leftover-uncovered-leftover-only-remaining"/u);
-  assert.match(html, /id="copy-leftover-uncovered-leftover-only-remaining"[^>]*aria-keyshortcuts="F10"/u);
+  assert.match(html, /id="copy-leftover-uncovered-leftover-only-remaining"[^>]*aria-keyshortcuts="Shift\+F7 F10"/u);
   assert.match(html, /id="hide-last-uncovered-leftover-buyer"/u);
   assert.match(html, /data-preset="sailingCarnivalLunch"/u);
   assert.match(html, /function copyLeftoverUncoveredLeftoverOnlyRemaining\(/u);
