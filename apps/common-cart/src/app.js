@@ -1559,7 +1559,7 @@ function handleShortcut(event) {
   }
   if (event.shiftKey && key === "F8") {
     event.preventDefault();
-    focusLeftoverUncoveredLeftoverOnlyUnitPriceCopy();
+    focusLeftoverUncoveredLeftoverOnlyMinimumCopy();
     return;
   }
   if (event.shiftKey && key === "F9") {
