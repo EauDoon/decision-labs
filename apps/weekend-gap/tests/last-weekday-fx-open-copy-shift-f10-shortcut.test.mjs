@@ -8,13 +8,13 @@ test("1.5.29 keeps last-weekday-FX-open copy control without taking unshifted F1
   assert.match(html, /id="copy-last-weekday-fx-open"/);
   assert.match(html, /Copy last weekday-FX-open hour/);
   assert.match(html, /id="last-weekday-fx-open-copy-fallback"/);
-  assert.match(html, /id="copy-first-weekend-fx-open"[^>]*aria-keyshortcuts="Shift\+F10"/);
+  assert.match(html, /id="copy-first-weekend-fx-closed"[^>]*aria-keyshortcuts="Shift\+F10"/);
   assert.match(html, /id="copy-last-weekday-fx-closed"[^>]*aria-keyshortcuts="F10"/);
   assert.match(app, /function copyLastWeekdayFxOpenHourMarkdown/);
   assert.match(app, /lastWeekdayFxOpenHourToMarkdown\(scenario\)/);
   assert.match(app, /function copyFirstWeekdayFxClosedHourMarkdown/);
   assert.match(app, /event\.key === "F10" && event\.shiftKey/);
-  assert.match(app, /copyFirstWeekendFxOpenHourMarkdown\(\)/);
+  assert.match(app, /copyFirstWeekendFxClosedHourMarkdown\(\)/);
   assert.match(app, /event\.key === "F10"/);
   assert.match(app, /copyLastWeekdayFxClosedHourMarkdown\(\)/);
   assert.match(app, /if \(event\.defaultPrevented\) return/);
@@ -27,7 +27,7 @@ test("1.5.29 keeps last-weekday-FX-open copy control without taking unshifted F1
   assert.ok(unshiftedF10 !== -1);
   assert.ok(shiftF10 < unshiftedF10);
   const shiftSlice = handler.slice(shiftF10, shiftF10 + 180);
-  assert.match(shiftSlice, /copyFirstWeekendFxOpenHourMarkdown\(\)/);
+  assert.match(shiftSlice, /copyFirstWeekendFxClosedHourMarkdown\(\)/);
   assert.doesNotMatch(shiftSlice, /copyLastWeekdayFxOpenHourMarkdown/);
   assert.doesNotMatch(shiftSlice, /copyLastWeekdayFxClosedHourMarkdown/);
 });
