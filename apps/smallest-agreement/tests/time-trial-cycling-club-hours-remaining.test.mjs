@@ -6,7 +6,8 @@ test("time-trial cycling club hours keeps remaining 16 / 18 / 47 after criterium
   const app = (await readFile(new URL("../src/app.js", import.meta.url), "utf8")).replaceAll("\r\n", "\n");
   const html = (await readFile(new URL("../index.html", import.meta.url), "utf8")).replaceAll("\r\n", "\n");
   const timeTrialStart = app.indexOf('"time-trial-cycling-club-hours"');
-  const timeTrialEnd = app.indexOf("let agreementReviewPacket", timeTrialStart);
+  const hillClimbStart = app.indexOf('"hill-climb-cycling-club-hours"');
+  const timeTrialEnd = hillClimbStart === -1 ? app.indexOf("let agreementReviewPacket", timeTrialStart) : hillClimbStart;
   const timeTrial = app.slice(timeTrialStart, timeTrialEnd === -1 ? undefined : timeTrialEnd);
   const criteriumStart = app.indexOf('"criterium-cycling-club-hours"');
   const criterium = app.slice(criteriumStart, timeTrialStart);
