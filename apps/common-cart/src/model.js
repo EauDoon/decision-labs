@@ -735,7 +735,7 @@ export const presets = Object.freeze({
     offers: [
       offer("O01", "Court-side Road Cycling Delivery", "Road cycling lunch pack", "Road pie", 17, 17, 3, 54, 3),
       offer("O02", "Peloton Salad Run", "Road cycling lunch pack", "Peloton salad", 15, 15, 4, 42, 2),
-      { ...offer("O03", "Hall Road Cycling Pickup", "Road cycling lunch pack", "Bottle water", 25, 30, 1, 59, 5), fulfillment: "pickup" }
+      { ...offer("O03", "Hall Road Cycling Pickup", "Road cycling lunch pack", "Bottle water", 25, 30, 1, 60, 5), fulfillment: "pickup" }
     ]
   }
 });
