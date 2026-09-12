@@ -173,6 +173,7 @@ export const presets: Readonly<{
   cycloCrossCarnivalLunch: Scenario;
   trackCyclingCarnivalLunch: Scenario;
   gravelCyclingCarnivalLunch: Scenario;
+  roadCyclingCarnivalLunch: Scenario;
 }>;
 
 export function clonePreset(name?: keyof typeof presets): Scenario;
