@@ -4355,6 +4355,38 @@ test("first-without-floor cost Markdown is one line, honest 0 when none, and dis
   const mountainAggregate = formatGroupsWithoutFloorRemainingMarkdown(mountainBike, getOriginalOptions(mountainBike));
   assert.equal(mountainAggregate.remaining, 28);
   assert.doesNotMatch(mountainAggregate.text, /First-without-floor cost/u);
+  const bmx = proposal({
+    title: "BMX club hours: pump-track booking, start-gate hours, and pad-box lock-up",
+    threshold: 70,
+    groups: [
+      { id: "students", name: "Students", weight: 10 },
+      { id: "neighbours", name: "Neighbours", weight: 9, veto: true },
+      { id: "pandc", name: "P&C", weight: 12 },
+    ],
+    clauses: [{ id: "bmx-pump-track-booking", title: "Pump-track booking", options: [
+      option("bmx-pump-track-booking-original", true, { students: 3, neighbours: 90, pandc: 61 }),
+      option("bmx-pump-track-booking-late", false, { students: 90, neighbours: 30, pandc: 42 }, 2),
+      option("bmx-pump-track-booking-weekend", false, { students: 75, neighbours: 38, pandc: 50 }, 4),
+    ] }],
+  });
+  const bmxCopied = formatFirstGroupWithoutFloorCostMarkdown(bmx, getOriginalOptions(bmx));
+  assert.equal(bmxCopied.status, "ok");
+  assert.equal(bmxCopied.cost, 10);
+  assert.equal(bmxCopied.text, "First-without-floor cost: 10. A floor is a number you entered, not a legal quorum.\n");
+  assert.doesNotMatch(bmxCopied.text, /Last-without-floor cost/u);
+  assert.doesNotMatch(bmxCopied.text, /First-without-floor remaining/u);
+  assert.doesNotMatch(bmxCopied.text, /Last-without-floor remaining/u);
+  assert.doesNotMatch(bmxCopied.text, /Groups-without-floor remaining/u);
+  assert.doesNotMatch(bmxCopied.text, /Students/u);
+  const bmxRemaining = formatFirstGroupWithoutFloorRemainingMarkdown(bmx, getOriginalOptions(bmx));
+  assert.equal(bmxRemaining.remaining, 10);
+  assert.notEqual(bmxCopied.text, bmxRemaining.text);
+  const bmxLast = formatLastGroupWithoutFloorRemainingMarkdown(bmx, getOriginalOptions(bmx));
+  assert.equal(bmxLast.remaining, 12);
+  assert.doesNotMatch(bmxLast.text, /First-without-floor cost/u);
+  const bmxAggregate = formatGroupsWithoutFloorRemainingMarkdown(bmx, getOriginalOptions(bmx));
+  assert.equal(bmxAggregate.remaining, 31);
+  assert.doesNotMatch(bmxAggregate.text, /First-without-floor cost/u);
 });
 
 test("last-without-floor cost Markdown is one line, honest 0 when none, and distinct from first cost and remaining", async () => {
@@ -4541,6 +4573,31 @@ test("last-without-floor cost Markdown is one line, honest 0 when none, and dist
   const mountainFirst = formatFirstGroupWithoutFloorCostMarkdown(mountainBike, getOriginalOptions(mountainBike));
   assert.equal(mountainFirst.cost, 9);
   assert.notEqual(mountainCopied.text, mountainFirst.text);
+  const bmx = proposal({
+    title: "BMX club hours: pump-track booking, start-gate hours, and pad-box lock-up",
+    threshold: 70,
+    groups: [
+      { id: "students", name: "Students", weight: 10 },
+      { id: "neighbours", name: "Neighbours", weight: 9, veto: true },
+      { id: "pandc", name: "P&C", weight: 12 },
+    ],
+    clauses: [{ id: "bmx-pump-track-booking", title: "Pump-track booking", options: [
+      option("bmx-pump-track-booking-original", true, { students: 3, neighbours: 90, pandc: 61 }),
+      option("bmx-pump-track-booking-late", false, { students: 90, neighbours: 30, pandc: 42 }, 2),
+      option("bmx-pump-track-booking-weekend", false, { students: 75, neighbours: 38, pandc: 50 }, 4),
+    ] }],
+  });
+  const bmxCopied = formatLastGroupWithoutFloorCostMarkdown(bmx, getOriginalOptions(bmx));
+  assert.equal(bmxCopied.status, "ok");
+  assert.equal(bmxCopied.cost, 12);
+  assert.equal(bmxCopied.text, "Last-without-floor cost: 12. A floor is a number you entered, not a legal quorum.\n");
+  assert.doesNotMatch(bmxCopied.text, /First-without-floor cost/u);
+  assert.doesNotMatch(bmxCopied.text, /Last-without-floor remaining/u);
+  assert.doesNotMatch(bmxCopied.text, /Students/u);
+  assert.doesNotMatch(bmxCopied.text, /P&C/u);
+  const bmxFirst = formatFirstGroupWithoutFloorCostMarkdown(bmx, getOriginalOptions(bmx));
+  assert.equal(bmxFirst.cost, 10);
+  assert.notEqual(bmxCopied.text, bmxFirst.text);
 });
 
 test("first veto group label Markdown escapes the group name and is not a legal right", () => {
