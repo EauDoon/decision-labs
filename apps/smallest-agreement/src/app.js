@@ -6122,7 +6122,7 @@ document.addEventListener("keydown", (event) => {
     copyFirstGroupWithoutFloorRemaining();
   } else if (event.shiftKey && key === "F8") {
     event.preventDefault();
-    jumpToLastGroupWithoutFloorRemainingCopy();
+    jumpToFirstGroupWithoutFloorRemainingCopy();
   } else if (event.shiftKey && key === "F9") {
     event.preventDefault();
     jumpToHideFirstGroupWithoutFloor();
