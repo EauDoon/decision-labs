@@ -823,3 +823,32 @@ test('404 Copy first labelled skip href does not expand PUBLIC_PATHS or connect-
   assert.doesNotMatch(html, /const launchKeys = \{ 1: 0, 2: 1, 3: 2, 4: 3, F4:/);
   assert.doesNotMatch(html, /const keys = \{ 1: 0, 2: 1, 3: 2, 4: 3, F2:/);
 });
+
+test('404 Copy first labelled skip target id does not expand PUBLIC_PATHS or connect-src', () => {
+  assert.equal(PUBLIC_PATHS.length, 6);
+  assert.deepEqual([...PUBLIC_PATHS], [
+    '/',
+    '/index.html',
+    '/apps/partnership-breakpoint/standalone.html',
+    '/apps/common-cart/standalone.html',
+    '/apps/smallest-agreement/standalone.html',
+    '/apps/weekend-gap/standalone.html',
+  ]);
+  assert.match(CONTENT_SECURITY_POLICY, /connect-src 'none'/);
+  assert.match(serve, /request\.method !== 'GET' && request\.method !== 'HEAD'/);
+  const page = notFoundPage();
+  assert.match(page, /id="copy-first-labelled-skip-target-id"/);
+  assert.match(page, />Copy first labelled skip target id</);
+  assert.match(page, /firstLabelledSkipTargetIdMarkdown/);
+  assert.match(page, /id="copy-first-unlabelled-skip-target-id"/);
+  assert.match(page, />Copy first unlabelled skip target id</);
+  assert.match(page, /id="copy-first-labelled-skip-href"/);
+  assert.match(page, />Copy first labelled skip href</);
+  assert.match(page, /id="skips"/);
+  assert.match(page, /#whats-new/);
+  assert.match(page, /aria-labelledby="whats-new-title"/);
+  assert.doesNotMatch(page, /\bfetch\s*\(/);
+  assert.doesNotMatch(serve, /hosted API/i);
+  assert.match(html, /const launchKeys = \{ 1: 0, 2: 1, 3: 2, 4: 3 \}/);
+  assert.doesNotMatch(html, /const launchKeys = \{ 1: 0, 2: 1, 3: 2, 4: 3, NumLock:/);
+});
