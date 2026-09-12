@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 
-import { catalogVersionLine, notFoundPage, catalogJobs, catalogLastWhatsNewHeading, catalogFirstWhatsNewHeading, catalogFirstWorkbenchHeading, catalogLastWorkbenchHeading, catalogLastReviewPath, catalogFirstReviewPath, catalogFirstOpenHref, catalogLastOpenHref, catalogFirstSkipHref, catalogLastSkipHref, catalogFirstSkipText, catalogLastSkipText, catalogFirstSkipTargetText, catalogLastSkipTargetText, catalogFirstLabelledSkipTargetText, catalogLastLabelledSkipTargetText, catalogFirstLabelledSkipHref, catalogLastLabelledSkipHref, catalogLastLabelledSkipText, catalogFirstLabelledSkipText, catalogLastUnlabelledSkipText, catalogFirstUnlabelledSkipText, catalogFirstUnlabelledSkipHref, catalogLastUnlabelledSkipHref, catalogFirstUnlabelledSkipTargetText, catalogLastUnlabelledSkipTargetText, catalogFirstUnlabelledSkipTargetId } from '../scripts/serve.mjs';
+import { catalogVersionLine, notFoundPage, catalogJobs, catalogLastWhatsNewHeading, catalogFirstWhatsNewHeading, catalogFirstWorkbenchHeading, catalogLastWorkbenchHeading, catalogLastReviewPath, catalogFirstReviewPath, catalogFirstOpenHref, catalogLastOpenHref, catalogFirstSkipHref, catalogLastSkipHref, catalogFirstSkipText, catalogLastSkipText, catalogFirstSkipTargetText, catalogLastSkipTargetText, catalogFirstLabelledSkipTargetText, catalogLastLabelledSkipTargetText, catalogFirstLabelledSkipHref, catalogLastLabelledSkipHref, catalogLastLabelledSkipText, catalogFirstLabelledSkipText, catalogLastUnlabelledSkipText, catalogFirstUnlabelledSkipText, catalogFirstUnlabelledSkipHref, catalogLastUnlabelledSkipHref, catalogFirstUnlabelledSkipTargetText, catalogLastUnlabelledSkipTargetText, catalogFirstUnlabelledSkipTargetId, catalogLastUnlabelledSkipTargetId } from '../scripts/serve.mjs';
 
 const html = readFileSync(new URL('../index.html', import.meta.url), 'utf8');
 const readme = readFileSync(new URL('../README.md', import.meta.url), 'utf8');
@@ -733,7 +733,7 @@ test('404 first unlabelled skip target id matches the first skip target that has
   assert.notEqual(id, catalogLastUnlabelledSkipTargetText());
   const serveSrc = readFileSync(new URL('../scripts/serve.mjs', import.meta.url), 'utf8');
   const start = serveSrc.indexOf('export function catalogFirstUnlabelledSkipTargetId');
-  const end = serveSrc.indexOf('export function notFoundPage');
+  const end = serveSrc.indexOf('export function catalogLastUnlabelledSkipTargetId');
   const body = serveSrc.slice(start, end);
   assert.match(body, /aria-labelledby/);
   assert.match(body, /continue/);
@@ -752,6 +752,40 @@ test('404 first unlabelled skip target id matches the first skip target that has
   assert.match(page, /id="version-line"/);
   assert.match(page, /id="skips"/);
   assert.equal(page.indexOf('id="copy-last-unlabelled-skip-target-text"') < page.indexOf('id="copy-first-unlabelled-skip-target-id"'), true);
+});
+
+test('404 last unlabelled skip target id matches the last skip target that has no aria-labelledby', () => {
+  const id = catalogLastUnlabelledSkipTargetId();
+  assert.equal(id, 'version-line');
+  assert.equal(html.includes(`id="${id}"`), true, 'last unlabelled skip target id missing from catalog');
+  assert.equal(id, catalogFirstUnlabelledSkipTargetId());
+  assert.notEqual(id, catalogLastUnlabelledSkipHref());
+  assert.notEqual(id, catalogLastUnlabelledSkipTargetText());
+  assert.notEqual(id, catalogLastUnlabelledSkipText());
+  assert.notEqual(id, catalogLastSkipTargetText());
+  const serveSrc = readFileSync(new URL('../scripts/serve.mjs', import.meta.url), 'utf8');
+  const start = serveSrc.indexOf('export function catalogLastUnlabelledSkipTargetId');
+  const end = serveSrc.indexOf('export function notFoundPage');
+  const body = serveSrc.slice(start, end);
+  assert.match(body, /aria-labelledby/);
+  assert.match(body, /continue/);
+  assert.match(body, /return href\.slice\(1\)/);
+  assert.match(body, /links\.length - 1/);
+  assert.doesNotMatch(body, /catalogMarkupText/);
+  assert.doesNotMatch(body, /return link\.text/);
+  const page = notFoundPage();
+  assert.match(page, /id="copy-last-unlabelled-skip-target-id"/);
+  assert.match(page, />Copy last unlabelled skip target id</);
+  assert.match(page, /lastUnlabelledSkipTargetIdMarkdown/);
+  assert.match(page, /id="copy-first-unlabelled-skip-target-id"/);
+  assert.match(page, />Copy first unlabelled skip target id</);
+  assert.match(page, /id="copy-last-unlabelled-skip-target-text"/);
+  assert.match(page, />Copy last unlabelled skip target text</);
+  assert.match(page, /id="copy-last-unlabelled-skip-href"/);
+  assert.match(page, />Copy last unlabelled skip href</);
+  assert.match(page, /id="version-line"/);
+  assert.match(page, /id="skips"/);
+  assert.equal(page.indexOf('id="copy-first-unlabelled-skip-target-id"') < page.indexOf('id="copy-last-unlabelled-skip-target-id"'), true);
 });
 
 test('404 first Open href matches the first catalog Open workbench href', () => {
