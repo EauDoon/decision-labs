@@ -570,7 +570,7 @@ test("budget and floors jointly produce honest infeasibility without unsafe near
   assert.equal(result.agreement, null);
   assert.equal(result.eligibleCombinations, 0);
   assert.deepEqual(result.nearMisses, []);
-  assert.deepEqual(result.rejected, { budget: 1, floors: 2, vetoes: 0, anyConstraint: 3 });
+  assert.deepEqual(result.rejected, { budget: 1, floors: 2, vetoes: 0, relationships: 0, anyConstraint: 3 });
   const brief = formatDecisionBrief(input, result);
   assert.match(brief, /No permitted combination meets both/u);
   assert.match(brief, /Maximum total change cost: 2/u);
@@ -635,7 +635,7 @@ test("near misses honor all constraints and rejection counts disclose overlap", 
   input.groups[1].minSupport = 20;
   input.maxChangeCost = 0;
   const result = findSmallestAgreement(input);
-  assert.deepEqual(result.rejected, { budget: 2, floors: 1, vetoes: 0, anyConstraint: 3 });
+  assert.deepEqual(result.rejected, { budget: 2, floors: 1, vetoes: 0, relationships: 0, anyConstraint: 3 });
   input.maxChangeCost = 2;
   input.groups[1].minSupport = 60;
   const overlapping = findSmallestAgreement(input);

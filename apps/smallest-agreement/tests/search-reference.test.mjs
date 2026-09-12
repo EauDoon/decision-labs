@@ -20,6 +20,7 @@ function bruteForceMinimumCost(proposal) {
   for (const optionIds of cartesian(proposal.clauses)) {
     const evaluated = evaluatePackage(proposal, optionIds);
     if (evaluated.status !== "passing") continue;
+    if (!evaluated.summary.constraints.relationships.met) continue;
     if (best === null || evaluated.summary.changeCost < best.changeCost - 1e-9
       || (Math.abs(evaluated.summary.changeCost - best.changeCost) <= 1e-9 && evaluated.summary.changedClauseCount < best.changedClauseCount)) {
       best = evaluated.summary;
@@ -80,6 +81,58 @@ test("search agrees with an independent exhaustive reference on fixed small case
     } else {
       assert.fail(`unexpected status ${searched.status}`);
     }
+  }
+});
+
+test("search and reference agree when requires, excludes, and linked rules apply", () => {
+  const base = smallProposal();
+  const rename = (proposal) => ({
+    ...proposal,
+    clauses: proposal.clauses.map((clause, clauseIndex) => ({
+      ...clause,
+      options: clause.options.map((option) => ({ ...option, id: `${clause.id}-${option.id}` })),
+    })),
+  });
+  const unique = rename(base);
+  const withRules = {
+    ...unique,
+    relationships: [
+      { id: "r1", kind: "requires", option: "c2-o2", requires: "c1-o2" },
+      { id: "r2", kind: "excludes", options: ["c1-o3", "c2-o2b"] },
+    ],
+  };
+  const searched = findSmallestAgreement(withRules);
+  const reference = bruteForceMinimumCost(withRules);
+  if (searched.status === "found" || searched.status === "already_passing") {
+    assert.equal(reference.changeCost, searched.agreement.changeCost);
+  } else {
+    assert.equal(searched.status, "infeasible");
+    assert.equal(reference, null);
+  }
+  const linked = {
+    ...unique,
+    relationships: [{ id: "r1", kind: "linked", options: ["c1-o2", "c2-o2b"] }],
+  };
+  const searchedLinked = findSmallestAgreement(linked);
+  const referenceLinked = bruteForceMinimumCost(linked);
+  if (searchedLinked.status === "found" || searchedLinked.status === "already_passing") {
+    assert.equal(referenceLinked.changeCost, searchedLinked.agreement.changeCost);
+  } else {
+    assert.equal(referenceLinked, null);
+  }
+  const cyclic = {
+    ...unique,
+    relationships: [
+      { id: "r1", kind: "requires", option: "c1-o2", requires: "c2-o2b" },
+      { id: "r2", kind: "requires", option: "c2-o2b", requires: "c1-o2" },
+    ],
+  };
+  const searchedCyclic = findSmallestAgreement(cyclic);
+  const referenceCyclic = bruteForceMinimumCost(cyclic);
+  if (searchedCyclic.status === "found" || searchedCyclic.status === "already_passing") {
+    assert.equal(referenceCyclic.changeCost, searchedCyclic.agreement.changeCost);
+  } else {
+    assert.equal(referenceCyclic, null);
   }
 });
 

@@ -1715,9 +1715,20 @@ function makeId(prefix) {
   const used = new Set([
     ...state.proposal.groups.map((group) => group.id),
     ...state.proposal.clauses.flatMap((clause) => [clause.id, ...clause.options.map((option) => option.id)]),
+    ...(state.proposal.relationships ?? []).map((rule) => rule.id),
   ]);
   do { idNumber += 1; } while (used.has(`${prefix}-${idNumber}`));
   return `${prefix}-${idNumber}`;
+}
+
+function firstOptionOutside(clauseId, excludeId = null) {
+  for (const clause of state.proposal.clauses) {
+    if (clause.id === clauseId) continue;
+    const match = clause.options.find((option) => option.id !== excludeId);
+    if (match) return match.id;
+  }
+  const fallback = state.proposal.clauses.flatMap((clause) => clause.options).find((option) => option.id !== excludeId);
+  return fallback?.id ?? null;
 }
 
 function defaultSupport(groups, value = 50) {
@@ -1860,6 +1871,7 @@ function render() {
   const result = currentResult();
   const vetoBlocks = blockingVetoIds(result);
   renderGroups(vetoBlocks);
+  renderRelationships();
   renderWeightPreview();
   $("#clause-filter").value = clauseFilter;
   renderClauses();
@@ -2221,6 +2233,37 @@ function renderGroups(vetoBlocks = new Set()) {
     return;
   }
   $("#weight-shares").innerHTML = `<p class="field-note">Each share is that group's weight divided by the total (${total}). Shares are mixing weights in the approval formula, not voting rights.</p><div class="options-table-wrap"><table class="coalition-table"><thead><tr><th scope="col">Group</th><th scope="col">Weight</th><th scope="col">Share of total</th></tr></thead><tbody>${state.proposal.groups.map((group) => `<tr><th scope="row">${escapeHtml(group.name)}</th><td>${group.weight}</td><td>${Number.isFinite(group.weight) && group.weight > 0 ? `${((group.weight / total) * 100).toFixed(1)}%` : "Invalid"}</td></tr>`).join("")}</tbody></table></div>`;
+}
+
+function renderRelationships() {
+  const rules = state.proposal.relationships ?? [];
+  const editor = $("#relationships-editor");
+  const status = $("#relationships-status");
+  if (!editor) return;
+  if (!rules.length) {
+    editor.innerHTML = `<p class="empty-state">No relationships. Every combination of one option per clause stays eligible.</p>`;
+    if (status) status.textContent = "";
+    return;
+  }
+  const optionChoices = (selectedId, slotLabel) => `<select data-field="relationship-option" data-rule-id="${escapeHtml(selectedId.ruleId)}" data-slot="${slotLabel}" aria-label="${escapeHtml(slotLabel)} option for rule ${escapeHtml(selectedId.ruleId)}">${state.proposal.clauses.map((clause) => `<optgroup label="${escapeHtml(clause.title)}">${clause.options.map((option) => `<option value="${escapeHtml(option.id)}" ${option.id === selectedId.optionId ? "selected" : ""}>${escapeHtml(option.label)}</option>`).join("")}</optgroup>`).join("")}</select>`;
+  editor.innerHTML = rules.map((rule) => {
+    const head = rule.kind === "requires" ? "Prerequisite" : rule.kind === "excludes" ? "Incompatible pair" : "Linked set";
+    let body = "";
+    if (rule.kind === "requires") {
+      body = `<label>Option ${optionChoices({ ruleId: rule.id, optionId: rule.option }, "option")}</label><span aria-hidden="true">requires</span><label>Required option ${optionChoices({ ruleId: rule.id, optionId: rule.requires }, "requires")}</label>`;
+    } else if (rule.kind === "excludes") {
+      body = rule.options.map((optionId, index) => `<label>Option ${index + 1} ${optionChoices({ ruleId: rule.id, optionId }, `option-${index}`)}</label>`).join(`<span aria-hidden="true">excludes</span>`);
+    } else {
+      body = rule.options.map((optionId, index) => `<label>Option ${index + 1} ${optionChoices({ ruleId: rule.id, optionId }, `option-${index}`)}</label>`).join("") + (rule.options.length < 8 ? `<button class="text-button" type="button" data-action="add-linked-option" data-rule-id="${escapeHtml(rule.id)}">Add option</button>` : "");
+    }
+    return `<div class="group-row"><strong>${head}</strong> ${body} <button class="text-button danger" type="button" data-action="remove-relationship" data-rule-id="${escapeHtml(rule.id)}">Remove</button></div>`;
+  }).join("");
+  if (status) {
+    const result = currentResult();
+    status.textContent = result.status === "invalid"
+      ? "Resolve the invalid rule before searching; the message names the problem."
+      : `${rules.length} relationship${rules.length === 1 ? "" : "s"} in force. The search honors every rule.`;
+  }
 }
 
 function currentWeightKey() {
@@ -2841,8 +2884,10 @@ function renderConstraints(result, vetoBlocks = new Set()) {
   for (const floor of checks.floors) rows.push(`<tr><th scope="row">${escapeHtml(groupDisplayName(floor))} support</th><td>At least ${floor.minimum}%</td><td>${formatPercent(floor.actual)}</td><td>${mark(floor.met)}</td></tr>`);
   for (const veto of checks.vetoes ?? []) rows.push(`<tr class="${vetoBlocks.has(veto.id) ? "veto-blocking" : ""}"><th scope="row">${escapeHtml(groupDisplayName(veto))} veto</th><td>At least ${veto.required}%</td><td>${formatPercent(veto.actual)}</td><td>${mark(veto.met)}</td></tr>`);
   for (const lock of checks.locks) rows.push(`<tr><th scope="row">${escapeHtml(lock.clauseTitle)}</th><td>${escapeHtml(lock.label)}</td><td>Locked option</td><td>${mark(lock.met)}</td></tr>`);
+  for (const violation of checks.relationships?.violations ?? []) rows.push(`<tr><th scope="row">Option relationship ${escapeHtml(violation.ruleId)}</th><td>${escapeHtml(violation.kind)}</td><td>${escapeAttribute(violation.reason)}</td><td>${mark(false)}</td></tr>`);
+  if ((checks.relationships?.violations ?? []).length === 0 && (state.proposal.relationships ?? []).length > 0) rows.push(`<tr><th scope="row">Option relationships</th><td>All declared rules hold</td><td>${(state.proposal.relationships ?? []).length} rules checked</td><td>${mark(true)}</td></tr>`);
   const inspected = result.agreement ? "Recommended combination" : "Original proposal, no recommendation found";
-  const counts = result.checkedCombinations === 1 && result.status === "already_passing" ? "The original proposal meets every requirement with zero changes. No further enumeration is needed." : `${result.eligibleCombinations.toLocaleString()} combinations meet all constraints. ${result.rejected.anyConstraint.toLocaleString()} rejected: ${result.rejected.budget.toLocaleString()} over budget, ${result.rejected.floors.toLocaleString()} below a group floor, and ${result.rejected.vetoes.toLocaleString()} below a veto. These counts can overlap. Locks exclude other options before enumeration.`;
+  const counts = result.checkedCombinations === 1 && result.status === "already_passing" ? "The original proposal meets every requirement with zero changes. No further enumeration is needed." : `${result.eligibleCombinations.toLocaleString()} combinations meet all constraints. ${result.rejected.anyConstraint.toLocaleString()} rejected: ${result.rejected.budget.toLocaleString()} over budget, ${result.rejected.floors.toLocaleString()} below a group floor, ${result.rejected.vetoes.toLocaleString()} below a veto, and ${result.rejected.relationships.toLocaleString()} breaking an option relationship. These counts can overlap. Locks exclude other options before enumeration.`;
   const blockingNote = vetoBlocks.size
     ? `<p class="veto-blocking-note">Highlighted veto rows failed on the inspected package. That is a numerical constraint, not a legal right or a legitimacy claim.</p>`
     : "";
@@ -3422,7 +3467,24 @@ document.addEventListener("change", (event) => {
     [...document.querySelectorAll('[data-field="manual-option"]')].find((element) => element.dataset.clauseId === target.dataset.clauseId)?.focus();
     return;
   }
-  if (target.dataset.field !== "clause-lock") return;
+  if (target.dataset.field !== "clause-lock") {
+    if (target.dataset.field === "relationship-option") {
+      changeAndRender(() => {
+        const rule = (state.proposal.relationships ?? []).find((entry) => entry.id === target.dataset.ruleId);
+        if (!rule) return;
+        if (rule.kind === "requires") {
+          if (target.dataset.slot === "option") rule.option = target.value;
+          else rule.requires = target.value;
+        } else if (Array.isArray(rule.options)) {
+          const index = Number(target.dataset.slot.replace("option-", ""));
+          if (Number.isInteger(index) && index >= 0 && index < rule.options.length) rule.options[index] = target.value;
+        }
+      });
+      const restored = [...document.querySelectorAll('[data-field="relationship-option"]')].find((element) => element.dataset.ruleId === target.dataset.ruleId && element.dataset.slot === target.dataset.slot);
+      restored?.focus();
+    }
+    return;
+  }
   changeAndRender(() => {
     const clause = clauseById(target.dataset.clauseId);
     if (target.value === "") delete clause.lockedOptionId;
@@ -3548,6 +3610,55 @@ document.addEventListener("click", (event) => {
     }
     changeAndRender(() => { state.proposal = reset.proposal; });
     notifyDraft(`Cleared ${group.name} support scores to blank. Fill every cell. Undo restores the previous scores.`);
+    return;
+  }
+  if (action === "add-requires") {
+    changeAndRender(() => {
+      const first = state.proposal.clauses[0]?.options[0]?.id;
+      const second = first === undefined ? null : firstOptionOutside(state.proposal.clauses[0].id, first);
+      const rules = (state.proposal.relationships ??= []);
+      rules.push({ id: makeId("rule"), kind: "requires", option: first, requires: second ?? first });
+    });
+    notifyDraft("Prerequisite added. Choose both options; same-clause pairs are rejected with a reason.");
+    return;
+  }
+  if (action === "add-excludes") {
+    changeAndRender(() => {
+      const first = state.proposal.clauses[0]?.options[0]?.id;
+      const second = first === undefined ? null : firstOptionOutside(state.proposal.clauses[0].id, first);
+      const rules = (state.proposal.relationships ??= []);
+      rules.push({ id: makeId("rule"), kind: "excludes", options: [first, second ?? first] });
+    });
+    notifyDraft("Incompatible pair added. Choose both options.");
+    return;
+  }
+  if (action === "add-linked") {
+    changeAndRender(() => {
+      const first = state.proposal.clauses[0]?.options[0]?.id;
+      const second = first === undefined ? null : firstOptionOutside(state.proposal.clauses[0].id, first);
+      const rules = (state.proposal.relationships ??= []);
+      rules.push({ id: makeId("rule"), kind: "linked", options: [first, second ?? first] });
+    });
+    notifyDraft("Linked set added. All selected options must be chosen together or not at all.");
+    return;
+  }
+  if (action === "add-linked-option") {
+    changeAndRender(() => {
+      const rule = (state.proposal.relationships ?? []).find((entry) => entry.id === button.dataset.ruleId);
+      if (!rule || rule.kind !== "linked" || rule.options.length >= 8) return;
+      const existing = new Set(rule.options);
+      const next = state.proposal.clauses.flatMap((clause) => clause.options).find((option) => !existing.has(option.id))?.id;
+      if (next !== undefined) rule.options.push(next);
+    });
+    notifyDraft("Linked option added.");
+    return;
+  }
+  if (action === "remove-relationship") {
+    changeAndRender(() => {
+      state.proposal.relationships = (state.proposal.relationships ?? []).filter((rule) => rule.id !== button.dataset.ruleId);
+      if (state.proposal.relationships.length === 0) delete state.proposal.relationships;
+    });
+    notifyDraft("Relationship removed. Undo restores it.");
     return;
   }
   if (action === "add-clause") changeAndRender(() => {

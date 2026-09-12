@@ -248,6 +248,17 @@ SOFTWARE.
           <div id="weight-shares"></div>
           <div id="weight-renorm" tabindex="-1"></div>
         </section>
+        <section class="panel-section">
+          <div class="section-heading"><h2 id="relationships-heading" tabindex="-1">Option relationships</h2></div>
+          <p class="field-note">Prerequisites, incompatible pairs, and all-or-nothing sets across clauses. A requires cycle must be selected together. Contradictory and dangling rules are rejected with reasons. Relationships never relax a floor, veto, lock, or budget.</p>
+          <div class="scenario-actions">
+            <button class="text-button" type="button" data-action="add-requires">Add prerequisite</button>
+            <button class="text-button" type="button" data-action="add-excludes">Add incompatible pair</button>
+            <button class="text-button" type="button" data-action="add-linked">Add linked set</button>
+          </div>
+          <div id="relationships-editor" class="groups-editor"></div>
+          <p id="relationships-status" class="field-note" role="status"></p>
+        </section>
       </aside>
 
       <section class="workbench" aria-label="Clause workshop">

@@ -6,6 +6,7 @@
 export const MAX_COMBINATIONS = 50000;
 export const MAX_GROUPS = 24;
 export const MAX_CLAUSES = 20;
+export const MAX_RELATIONSHIPS = 64;
 export const MAX_OPTIONS_PER_CLAUSE = 24;
 export const MAX_NEAR_MISSES = 5;
 export const MAX_WEIGHT = 1_000_000;
@@ -122,7 +123,154 @@ export function validateProposal(proposal) {
       }
     });
   }
+  validateRelationships(proposal, errors);
   return { valid: errors.length === 0, errors };
+}
+
+/**
+ * Validates explicit option relationships: prerequisites (requires), incompatible
+ * pairs (excludes), and all-or-nothing sets (linked). Rules use stable option
+ * ids; dangling references are rejected. Same-clause requires can never hold,
+ * same-clause excludes restate the existing one-option-per-clause rule, linked
+ * sets with two options in one clause can never hold, and a requires rule
+ * contradicted by an excludes rule on the same pair is rejected. Requires
+ * cycles are allowed: the involved options must then be selected together.
+ */
+export function validateRelationships(proposal, errors) {
+  if (!Object.hasOwn(proposal, "relationships")) return;
+  const relationships = proposal.relationships;
+  if (!Array.isArray(relationships) || relationships.length > MAX_RELATIONSHIPS) {
+    errors.push(`relationships must contain at most ${MAX_RELATIONSHIPS} rules, or be omitted.`);
+    return;
+  }
+  const optionClause = new Map();
+  const optionCounts = new Map();
+  if (Array.isArray(proposal.clauses)) {
+    for (const clause of proposal.clauses) {
+      if (!isPlainObject(clause) || !Array.isArray(clause.options)) continue;
+      for (const option of clause.options) {
+        if (isPlainObject(option) && typeof option.id === "string") {
+          optionCounts.set(option.id, (optionCounts.get(option.id) ?? 0) + 1);
+          if (!optionClause.has(option.id)) optionClause.set(option.id, clause.id);
+        }
+      }
+    }
+  }
+  for (const [optionId, count] of optionCounts) {
+    if (count > 1) {
+      errors.push(`Option id ${optionId} appears in more than one clause; option ids must be unique across clauses when relationships are declared.`);
+    }
+  }
+  const kinds = new Set(["requires", "excludes", "linked"]);
+  const seenIds = new Set();
+  const requiresPairs = [];
+  const excludesPairs = [];
+  relationships.forEach((rule, index) => {
+    const path = `relationships[${index}]`;
+    if (!isPlainObject(rule)) {
+      errors.push(`${path} must be an object.`);
+      return;
+    }
+    if (typeof rule.id !== "string" || !ID_PATTERN.test(rule.id) || RESERVED_IDS.has(rule.id)) {
+      errors.push(`${path}.id must be 1 to 64 safe identifier characters.`);
+    } else {
+      if (seenIds.has(rule.id)) errors.push(`${path}.id must be unique.`);
+      seenIds.add(rule.id);
+    }
+    if (!kinds.has(rule.kind)) {
+      errors.push(`${path}.kind must be requires, excludes, or linked.`);
+      return;
+    }
+    const allowed = rule.kind === "requires"
+      ? new Set(["id", "kind", "option", "requires"])
+      : new Set(["id", "kind", "options"]);
+    for (const key of Object.keys(rule)) {
+      if (!allowed.has(key)) errors.push(`${path} has unexpected field: ${key}.`);
+    }
+    const describe = (optionId) => {
+      const clause = optionClause.get(optionId);
+      const clauseTitle = Array.isArray(proposal.clauses)
+        ? proposal.clauses.find((entry) => isPlainObject(entry) && entry.id === clause)?.title
+        : undefined;
+      return clauseTitle ? `${optionId} (${clauseTitle})` : optionId;
+    };
+    if (rule.kind === "requires") {
+      for (const field of ["option", "requires"]) {
+        if (typeof rule[field] !== "string") errors.push(`${path}.${field} must be an option id.`);
+        else if (!optionClause.has(rule[field])) errors.push(`${path}.${field} names no declared option: ${rule[field]}.`);
+      }
+      if (typeof rule.option === "string" && typeof rule.requires === "string") {
+        if (rule.option === rule.requires) {
+          errors.push(`${path} requires itself; a prerequisite must name a different option.`);
+        } else if (optionClause.has(rule.option) && optionClause.get(rule.option) === optionClause.get(rule.requires)) {
+          errors.push(`${path} can never hold: ${describe(rule.option)} and ${describe(rule.requires)} are in the same clause, which selects one option.`);
+        } else {
+          requiresPairs.push({ rule: rule.id, from: rule.option, to: rule.requires });
+        }
+      }
+      return;
+    }
+    if (!Array.isArray(rule.options)) {
+      errors.push(`${path}.options must be an array of option ids.`);
+      return;
+    }
+    if (rule.kind === "excludes" && rule.options.length !== 2) {
+      errors.push(`${path}.options must name exactly two options.`);
+      return;
+    }
+    if (rule.kind === "linked" && (rule.options.length < 2 || rule.options.length > 8)) {
+      errors.push(`${path}.options must name 2 to 8 options.`);
+      return;
+    }
+    const refs = [];
+    rule.options.forEach((optionId, optionIndex) => {
+      if (typeof optionId !== "string") {
+        errors.push(`${path}.options[${optionIndex}] must be an option id.`);
+        return;
+      }
+      if (!optionClause.has(optionId)) {
+        errors.push(`${path}.options[${optionIndex}] names no declared option: ${optionId}.`);
+        return;
+      }
+      refs.push(optionId);
+    });
+    if (new Set(refs).size !== refs.length) {
+      errors.push(`${path}.options must not repeat an option.`);
+      return;
+    }
+    if (rule.kind === "excludes") {
+      const [first, second] = refs;
+      if (first !== undefined && second !== undefined) {
+        if (first === second) {
+          errors.push(`${path} excludes an option from itself.`);
+        } else if (optionClause.get(first) === optionClause.get(second)) {
+          errors.push(`${path} restates the existing rule: ${describe(first)} and ${describe(second)} are in the same clause, which already selects one option.`);
+        } else {
+          excludesPairs.push({ rule: rule.id, first, second });
+        }
+      }
+      return;
+    }
+    const byClause = new Map();
+    for (const optionId of refs) {
+      const clause = optionClause.get(optionId);
+      byClause.set(clause, [...(byClause.get(clause) ?? []), optionId]);
+    }
+    for (const [clause, members] of byClause) {
+      if (members.length > 1) {
+        errors.push(`${path} can never hold: ${members.map(describe).join(" and ")} are in the same clause, which selects one option.`);
+      }
+    }
+  });
+  for (const required of requiresPairs) {
+    for (const excluded of excludesPairs) {
+      const clash = (required.from === excluded.first && required.to === excluded.second)
+        || (required.from === excluded.second && required.to === excluded.first);
+      if (clash) {
+        errors.push(`relationships ${required.rule} and ${excluded.rule} contradict: ${required.from} cannot both require and exclude ${required.to}.`);
+      }
+    }
+  }
 }
 
 /** Return only the validated fields that the application understands. */
@@ -154,6 +302,9 @@ export function canonicalProposal(proposal) {
         support: Object.fromEntries(groupIds.map((groupId) => [groupId, option.support[groupId]])),
       })),
     })),
+    ...(Object.hasOwn(proposal, "relationships")
+      ? { relationships: proposal.relationships.map((rule) => JSON.parse(JSON.stringify(rule))) }
+      : {}),
   };
 }
 
@@ -266,18 +417,59 @@ export function selectionSummary(proposal, options, baselineOptions = getOrigina
     met: options[index].id === clause.lockedOptionId,
   }]);
   const budget = proposal.maxChangeCost === undefined ? null : { maximum: proposal.maxChangeCost, actual: changeCost, met: changeCost <= proposal.maxChangeCost + EPSILON };
+  const relationships = checkRelationships(proposal, options);
   return {
     options,
     approval: approvalForOptions(proposal.groups, options),
     byGroup,
     changes,
     changeCost,
-    constraints: { floors, locks, budget, vetoes, met: floors.every((floor) => floor.met) && locks.every((lock) => lock.met) && (!budget || budget.met) && vetoes.every((veto) => veto.met) },
+    constraints: { floors, locks, budget, vetoes, relationships, met: floors.every((floor) => floor.met) && locks.every((lock) => lock.met) && (!budget || budget.met) && vetoes.every((veto) => veto.met) && relationships.met },
     changedClauseCount: changes.length,
     groupDeltas,
     supportersGained: groupDeltas.filter((group) => group.delta > EPSILON),
     supportersLost: groupDeltas.filter((group) => group.delta < -EPSILON),
   };
+}
+
+/**
+ * Checks explicit option relationships against one complete selection.
+ * Requires cycles are satisfiable: the involved options must be selected
+ * together, exactly like a linked set. Returns each violated rule with a
+ * human-readable reason so competing combinations explain themselves.
+ */
+export function checkRelationships(proposal, selected) {
+  const rules = Array.isArray(proposal.relationships) ? proposal.relationships : [];
+  const chosen = new Set(selected.map((option) => option.id));
+  const optionLabel = (optionId) => {
+    for (const clause of proposal.clauses) {
+      const match = clause.options.find((option) => option.id === optionId);
+      if (match) return `${match.label} (${clause.title})`;
+    }
+    return optionId;
+  };
+  const violations = [];
+  for (const rule of rules) {
+    if (!isPlainObject(rule) || typeof rule.kind !== "string") continue;
+    if (rule.kind === "requires") {
+      if (chosen.has(rule.option) && !chosen.has(rule.requires)) {
+        violations.push({ ruleId: rule.id, kind: rule.kind, reason: `${optionLabel(rule.option)} requires ${optionLabel(rule.requires)}, which is not selected.` });
+      }
+    } else if (rule.kind === "excludes") {
+      const [first, second] = Array.isArray(rule.options) ? rule.options : [];
+      if (first !== undefined && chosen.has(first) && chosen.has(second)) {
+        violations.push({ ruleId: rule.id, kind: rule.kind, reason: `${optionLabel(first)} and ${optionLabel(second)} cannot be selected together.` });
+      }
+    } else if (rule.kind === "linked") {
+      const members = Array.isArray(rule.options) ? rule.options : [];
+      const selected = members.filter((optionId) => chosen.has(optionId));
+      if (selected.length > 0 && selected.length < members.length) {
+        const missing = members.filter((optionId) => !chosen.has(optionId));
+        violations.push({ ruleId: rule.id, kind: rule.kind, reason: `${selected.map(optionLabel).join(", ")} ${selected.length === 1 ? "is" : "are"} selected without linked ${missing.map(optionLabel).join(", ")}.` });
+      }
+    }
+  }
+  return { met: violations.length === 0, violations };
 }
 
 function compareText(a, b) {
@@ -421,14 +613,14 @@ export function findSmallestAgreement(proposal, options = {}) {
 
   const baseline = selectionSummary(proposal, getOriginalOptions(proposal));
   if (baseline.approval + EPSILON >= proposal.threshold && baseline.constraints.met && alternativesLimit === 0) {
-    return { status: "already_passing", possibleCombinations, checkedCombinations: 1, baseline, agreement: baseline, nearMisses: [], rejected: { budget: 0, floors: 0, vetoes: 0, anyConstraint: 0 }, eligibleCombinations: 1 };
+    return { status: "already_passing", possibleCombinations, checkedCombinations: 1, baseline, agreement: baseline, nearMisses: [], rejected: { budget: 0, floors: 0, vetoes: 0, relationships: 0, anyConstraint: 0 }, eligibleCombinations: 1 };
   }
 
   let best = null;
   const alternatives = [];
   let passingCombinations = 0;
   const nearMisses = [];
-  const rejected = { budget: 0, floors: 0, vetoes: 0, anyConstraint: 0 };
+  const rejected = { budget: 0, floors: 0, vetoes: 0, relationships: 0, anyConstraint: 0 };
   let eligibleCombinations = 0;
   const selected = [];
   const visit = (clauseIndex) => {
@@ -439,6 +631,7 @@ export function findSmallestAgreement(proposal, options = {}) {
         if (summary.constraints.budget && !summary.constraints.budget.met) rejected.budget += 1;
         if (summary.constraints.floors.some((floor) => !floor.met)) rejected.floors += 1;
         if (summary.constraints.vetoes.some((veto) => !veto.met)) rejected.vetoes += 1;
+        if (!summary.constraints.relationships.met) rejected.relationships += 1;
         return;
       }
       eligibleCombinations += 1;
@@ -548,7 +741,7 @@ export function formatDecisionBrief(proposal, result) {
   else if (result.status === "found") lines.push("A lowest-cost passing combination was found.", "Every configured constraint is met.", "");
   else lines.push("No permitted combination meets both the threshold and every configured constraint.", "");
   lines.push(`Search combinations checked: ${Number(result.checkedCombinations).toLocaleString("en-US")}`, `Lock-permitted search space: ${Number(result.possibleCombinations).toLocaleString("en-US")}`);
-  if (result.checkedCombinations !== 1 || result.status !== "already_passing") lines.push(`Constraint-compliant combinations: ${result.eligibleCombinations}`, `Rejected by budget: ${result.rejected.budget}; by group floors: ${result.rejected.floors}; by veto groups: ${result.rejected.vetoes}. Rejection counts may overlap.`);
+  if (result.checkedCombinations !== 1 || result.status !== "already_passing") lines.push(`Constraint-compliant combinations: ${result.eligibleCombinations}`, `Rejected by budget: ${result.rejected.budget}; by group floors: ${result.rejected.floors}; by veto groups: ${result.rejected.vetoes}; by option relationships: ${result.rejected.relationships}. Rejection counts may overlap.`);
   lines.push(`Current approval: ${formatPercent(current.approval)}`, `Original proposal meets constraints: ${current.constraints.met ? "yes" : "no"}`);
 
   if (agreement) {
@@ -3937,7 +4130,7 @@ export function analyzeAgreementReview(rawProposal,tool){
  switch(tool){
  case 'margin':{
 
- return report(['Package','Approval %','Threshold %','Margin points','Change cost','Other constraints'],[[context,selected.approval,proposal.threshold,selected.approval-proposal.threshold,selected.changeCost,selected.constraints.met?'Met':'Not met']],'A positive aggregate margin alone does not pass floors, vetoes, locks or budget. Support scores and weights are declared inputs, not measured votes.');
+ return report(['Package','Approval %','Threshold %','Margin points','Change cost','Other constraints'],[[context,selected.approval,proposal.threshold,selected.approval-proposal.threshold,selected.changeCost,selected.constraints.met?'Met':'Not met']],'A positive aggregate margin alone does not pass floors, vetoes, locks, budget, or option relationships. Support scores and weights are declared inputs, not measured votes.');
 
  }
  case 'floors':{

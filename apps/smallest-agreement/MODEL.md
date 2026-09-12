@@ -64,12 +64,25 @@ An agreement passes when overall approval is at least the threshold and every co
 | `maxChangeCost` | Finite number from 0 to 20,000,000,000 | Sum of selected alternatives' change costs cannot exceed this budget. |
 | `clauses[].lockedOptionId` | An option ID belonging to that clause | The search must select this option. Other choices stay in the draft but are excluded from search. |
 | `clauses[].note` | String of 1 to 240 characters | Facilitator reminder shown on the worksheet. The solver ignores it. |
+| `relationships` | Array of at most 64 rules, or omitted | Prerequisites, incompatible pairs, and all-or-nothing option sets. See below. |
 
 Omit an optional field to disable it. `null`, numeric strings, unknown option references, and out-of-range values are invalid. `groups[].veto` must be a boolean if present; `false` and omitted are equivalent and are dropped from canonical JSON. In the GUI, a blank budget or floor omits the field; zero remains a real constraint. Locks may select originals or alternatives. A locked alternative still contributes its full cost and counts as a changed clause. Removing a locked option requires unlocking it first. Locks are draft choices, not recorded votes.
 
-All constraints apply together. No priority rule silently relaxes a budget, floor, veto, or lock to make a proposal pass. A group floor or veto applies to an average, not to every individual clause and not to semantic consent or a legal right. JSON canonicalization preserves understood constraints and drops unrelated fields. Unconstrained v1 drafts remain valid and retain their original field shape. Drafts without `veto` stay valid; the field is not added during canonicalization.
+All constraints apply together. No priority rule silently relaxes a budget, floor, veto, lock, or relationship to make a proposal pass. A group floor or veto applies to an average, not to every individual clause and not to semantic consent or a legal right. JSON canonicalization preserves understood constraints and drops unrelated fields. Unconstrained v1 drafts remain valid and retain their original field shape. Drafts without `veto` stay valid; the field is not added during canonicalization.
 
 Calculations use JavaScript floating-point numbers. Comparisons use an absolute tolerance of `1e-9` for approval, support floors, costs, and numeric tie breakers. Display rounding never decides feasibility.
+
+## Option relationships
+
+The optional `relationships` array carries at most 64 rules with stable unique ids:
+
+- `requires`: `{ id, kind: "requires", option, requires }`. Selecting `option` requires `requires` to be selected too.
+- `excludes`: `{ id, kind: "excludes", options: [first, second] }`. The two options cannot both be selected.
+- `linked`: `{ id, kind: "linked", options: [first, second, ...] }` (2 to 8 options). Either all are selected or none is.
+
+Rules reference option ids, which must be unique across clauses when relationships are declared. Dangling references, unknown kinds, unknown fields, duplicate rule ids, and self references are rejected. A requires rule inside one clause can never hold, an excludes rule inside one clause restates the existing one-option-per-clause rule, a linked set with two options in one clause can never hold, and a requires rule contradicted by an excludes rule on the same pair is rejected; each rejection names the rule and the reason.
+
+Requires cycles are allowed: the involved options must then be selected together, exactly like a linked set. Every search, custom-package evaluation, near miss, alternative, explanation, and export honors the same rules. Violations are counted in `rejected.relationships` and named per rule in inspected packages. Locks exclude options before enumeration; relationships constrain the remaining combinations.
 
 ## Search and ordering
 
@@ -86,7 +99,7 @@ This final option-ID rule makes otherwise equal choices reproducible. It does no
 
 Constraint-compliant combinations below the approval threshold are ordered as near misses by smallest approval gap, then by the same ordering above. At most five are returned. Over-budget, below-floor, and below-veto combinations are excluded rather than presented as adoptable alternatives.
 
-For an enumerated result, `eligibleCombinations` counts combinations meeting every constraint, whether or not they meet the approval threshold. `rejected.anyConstraint` counts rejected combinations once each; `rejected.budget`, `rejected.floors`, and `rejected.vetoes` can overlap. A floor rejection means one or more groups miss their floor. A veto rejection means one or more veto groups miss the required average. Locks remove options before enumeration, so excluded options are not counted as rejected candidates. Near misses still exclude over-budget, below-floor, and below-veto combinations.
+For an enumerated result, `eligibleCombinations` counts combinations meeting every constraint, whether or not they meet the approval threshold. `rejected.anyConstraint` counts rejected combinations once each; `rejected.budget`, `rejected.floors`, `rejected.vetoes`, and `rejected.relationships` can overlap. A floor rejection means one or more groups miss their floor. A veto rejection means one or more veto groups miss the required average. A relationship rejection means one or more declared rules fail. Locks remove options before enumeration, so excluded options are not counted as rejected candidates. Near misses still exclude over-budget, below-floor, below-veto, and relationship-breaking combinations.
 
 ## Bound and outcomes
 

@@ -1,5 +1,16 @@
 # Changelog
 
+## 1.5.35
+
+Option relationships in The Smallest Agreement 1.5.35
+
+- Optional `relationships` rules with stable unique ids: `requires` prerequisites, `excludes` incompatible pairs, and `linked` all-or-nothing sets across clauses. Option ids must be unique across clauses when relationships are declared.
+- Dangling references, unknown kinds and fields, duplicate rule ids, self references, same-clause requires, same-clause excludes, same-clause linked pairs, and requires rules contradicted by excludes rules on the same pair are rejected with named reasons. Requires cycles are allowed and must be selected together.
+- Search, custom-package evaluation, near misses, alternatives, explanations, briefs, CSVs, and review packets honor the same rules. Relationship rejections are counted separately and named per rule on inspected packages. The rejected-tally contract gains a `relationships` counter.
+- New Option relationships editor with add, edit, and remove actions; all edits are undoable. No model code path relaxes a relationship to make a proposal pass.
+
+# Changelog
+
 ## 1.5.34
 
 Exhaustive-reference cross-check for the search in The Smallest Agreement 1.5.34
