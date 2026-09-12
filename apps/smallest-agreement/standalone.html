@@ -303,6 +303,7 @@ kbd { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; border: 1px s
             <option value="track-cycling-club-hours">Track cycling club hours</option>
             <option value="gravel-cycling-club-hours">Gravel cycling club hours</option>
             <option value="road-cycling-club-hours">Road cycling club hours</option>
+            <option value="criterium-cycling-club-hours">Criterium cycling club hours</option>
           </select>
         </label>
         <button class="button button-secondary" type="button" id="load-preset">Load preset</button>
@@ -846,7 +847,7 @@ kbd { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; border: 1px s
           <li><kbd>F12</kbd> Jump to the hide-first-group-without-floor control, or the groups heading</li>
           <li><kbd>Shift+F7</kbd> Copy the first-without-floor remaining as one-line Markdown</li>
           <li><kbd>Shift+F8</kbd> Jump to the first-without-floor remaining copy control, or the groups heading</li>
-          <li><kbd>Shift+F9</kbd> Jump to the hide-first-group-without-floor control, or the groups heading</li>
+          <li><kbd>Shift+F9</kbd> Jump to the hide-last-group-without-floor control, or the groups heading</li>
           <li><kbd>Shift+F10</kbd> Copy the groups-without-floor count as one-line Markdown</li>
           <li><kbd>Shift+F11</kbd> Jump to the groups-without-floor count copy control, or the groups heading</li>
           <li><kbd>Shift+F12</kbd> Jump to the hide-first-group-without-floor control, or the groups heading</li>
@@ -6317,6 +6318,39 @@ const presets = {
       },
     ],
   },
+  "criterium-cycling-club-hours": {
+    title: "Criterium cycling club hours: criterium course booking, pit-lane hours, and number-board lock-up",
+    threshold: 70,
+    maxChangeCost: 8,
+    groups: [
+      { id: "students", name: "Students", weight: 15 },
+      { id: "neighbours", name: "Neighbours", weight: 14, veto: true },
+      { id: "pandc", name: "P&C", weight: 17 },
+    ],
+    clauses: [
+      {
+        id: "criterium-cycling-course-booking", title: "Criterium course booking", options: [
+          { id: "criterium-cycling-course-booking-original", original: true, label: "Keep weekday criterium course from 09:35 with no posted pit-lane rota", changeCost: 0, support: { students: 5, neighbours: 85, pandc: 66 } },
+          { id: "criterium-cycling-course-booking-late", original: false, label: "Open weekday criterium course at 18:05 with a posted pit-lane rota", changeCost: 2, support: { students: 88, neighbours: 25, pandc: 37 } },
+          { id: "criterium-cycling-course-booking-weekend", original: false, label: "Hold Saturday morning criterium course at 08:10 with a pit-lane booking card", changeCost: 4, support: { students: 73, neighbours: 33, pandc: 45 } },
+        ],
+      },
+      {
+        id: "criterium-cycling-pit-lane", title: "Pit-lane hours", options: [
+          { id: "criterium-cycling-pit-lane-original", original: true, label: "No posted pit-lane hours", changeCost: 0, support: { students: 63, neighbours: 11, pandc: 36 } },
+          { id: "criterium-cycling-pit-lane-cap", original: false, label: "Close pit-lane at 19:20 and keep commissaires at the circuit hut", changeCost: 1, support: { students: 36, neighbours: 89, pandc: 68 } },
+          { id: "criterium-cycling-pit-lane-cut", original: false, label: "Serve commissaires only after 13:25", changeCost: 5, support: { students: 18, neighbours: 93, pandc: 34 } },
+        ],
+      },
+      {
+        id: "criterium-cycling-number-board-lockup", title: "Number-board lock-up", options: [
+          { id: "criterium-cycling-number-board-lockup-original", original: true, label: "Leave the number-board door on a shared padlock after club hours", changeCost: 0, support: { students: 3, neighbours: 23, pandc: 28 } },
+          { id: "criterium-cycling-number-board-lockup-steward", original: false, label: "Require a P&C steward to lock the number-board store before 20:55", changeCost: 3, support: { students: 50, neighbours: 63, pandc: 83 } },
+          { id: "criterium-cycling-number-board-lockup-timer", original: false, label: "Add a timed lock on the number-board store after the last criterium cycling session", changeCost: 2, support: { students: 39, neighbours: 42, pandc: 59 } },
+        ],
+      },
+    ],
+  },
 };
 
 let agreementReviewPacket = null;
@@ -11004,7 +11038,7 @@ document.addEventListener("keydown", (event) => {
     jumpToFirstGroupWithoutFloorRemainingCopy();
   } else if (event.shiftKey && key === "F9") {
     event.preventDefault();
-    jumpToHideFirstGroupWithoutFloor();
+    jumpToHideLastGroupWithoutFloor();
   } else if (key === "F7") {
     event.preventDefault();
     copyLastGroupWithoutFloor();

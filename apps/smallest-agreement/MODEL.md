@@ -2,7 +2,7 @@
 
 ## Purpose
 
-The model compares explicitly supplied structured options. It finds the smallest calculated change that crosses a configurable approval threshold. It makes no claim that the result is a collective decision. Version 1.5.37 keeps the 1.5.0 review packet contract. Workshop display filters, print redaction, pasted tables, lock copy, unique group copies, and `moveClause` do not change search math. A veto is a number, not a legal right. Locks are draft choices, not a legal hold.
+The model compares explicitly supplied structured options. It finds the smallest calculated change that crosses a configurable approval threshold. It makes no claim that the result is a collective decision. Version 1.5.38 keeps the 1.5.0 review packet contract. Workshop display filters, print redaction, pasted tables, lock copy, unique group copies, and `moveClause` do not change search math. A veto is a number, not a legal right. Locks are draft choices, not a legal hold. Criterium cycling club hours is a closed-circuit / pit-lane workshop, distinct from road cycling club hours (sealed-road / feed-station / wheel-bag).
 
 ## Inputs
 
