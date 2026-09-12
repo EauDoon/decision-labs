@@ -221,6 +221,8 @@ The catalog also names first-unlabelled-skip-href copy, first-unlabelled-skip-hr
 That What's new entry is hub-only. It does not change workbench versions.
 The catalog also names first-unlabelled-skip-target-text copy, first-unlabelled-skip-target-text jump, and first-unlabelled-skip-target-heading jump.
 That What's new entry is hub-only. It does not change workbench versions.
+The catalog also names last-unlabelled-skip-target-id copy, last-unlabelled-skip-target-id jump, and last-unlabelled-skip-target-heading jump.
+That What's new entry is hub-only. It does not change workbench versions.
 The catalog also names first-unlabelled-skip-target-id copy, first-unlabelled-skip-target-id jump, and first-unlabelled-skip-target-heading jump.
 That What's new entry is hub-only. It does not change workbench versions.
 The catalog also names last-unlabelled-skip-target-text copy, last-unlabelled-skip-target-text jump, and last-unlabelled-skip-target-heading jump.
@@ -292,6 +294,13 @@ that 404 page copies the same unlabelled skip-target id without adding a public 
 Key `Shift+F19` copies the id of the first skip target that has no aria-labelledby.
 Key `Shift+F20` focuses the Copy first unlabelled skip target id control.
 Key `Shift+F21` focuses the first unlabelled skip target heading.
+Copy last unlabelled skip target id copies the id of the last skip target that has no aria-labelledby
+already printed on this page as one Markdown line. If that id is missing, it copies an empty string.
+Copy last unlabelled skip target id on
+that 404 page copies the same unlabelled skip-target id without adding a public path.
+Key `Shift+F22` copies the id of the last skip target that has no aria-labelledby.
+Key `Shift+F23` focuses the Copy last unlabelled skip target id control.
+Key `Shift+F24` focuses the last unlabelled skip target heading.
 Copy last unlabelled skip target text copies the text of the last skip target that has no aria-labelledby
 already printed on this page as one Markdown line. If that text is missing, it copies an empty string.
 Copy last unlabelled skip target text on
@@ -675,6 +684,22 @@ Press `Shift+F21` to focus the heading inside the first unlabelled skip target, 
 That key moves focus; it does not open a workbench. It does not copy. That key
 is distinct from `Shift+F15`, which focuses the first unlabelled skip target heading, from `Shift+F18`, which focuses the last unlabelled skip target heading, from `Shift+Pause`,
 which focuses the first unlabelled skip target, from `n`, which focuses What's new.
+Press `Shift+F22` to copy the id of the last skip target that has no aria-labelledby from this page as one Markdown
+line. That key uses the same Copy last unlabelled skip target id control, including
+the visible text box when the clipboard API is unavailable. If that id is
+missing, it copies an empty string. This is catalog copy, not a live product
+feed. It is distinct from `Shift+F19`, which copies the first unlabelled skip target id, from
+`Shift+F16`, which copies the last unlabelled skip target text, from `Shift+ContextMenu`, which copies the last unlabelled skip href, and from
+`F10`, which copies the last skip-target text.
+Press `Shift+F23` to focus the Copy last unlabelled skip target id control, or the skip-link row
+or catalog heading if that control is missing. That key moves focus; it does not
+open a workbench. It does not copy. That key is distinct from `Shift+F20`, which
+focuses Copy first unlabelled skip target id, from `Shift+F17`, which focuses Copy last unlabelled skip target text, from
+`Shift+ScrollLock`, which focuses Copy last unlabelled skip href, and from `#`, which focuses Copy skip links.
+Press `Shift+F24` to focus the heading inside the last unlabelled skip target, or that target, the skip-link row, or catalog heading if that heading is missing.
+That key moves focus; it does not open a workbench. It does not copy. That key
+is distinct from `Shift+F18`, which focuses the last unlabelled skip target heading, from `Shift+F21`, which focuses the first unlabelled skip target heading, from `Shift+PrintScreen`,
+which focuses the last unlabelled skip target, from `n`, which focuses What's new.
 Press `Shift+ContextMenu` to copy the href of the last skip link whose target has no aria-labelledby from this page as one Markdown
 line. That key uses the same Copy last unlabelled skip href control, including
 the visible text box when the clipboard API is unavailable. If that href is
