@@ -308,6 +308,7 @@ kbd { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; border: 1px s
             <option value="hill-climb-cycling-club-hours">Hill-climb cycling club hours</option>
             <option value="keirin-cycling-club-hours">Keirin cycling club hours</option>
             <option value="madison-cycling-club-hours">Madison cycling club hours</option>
+            <option value="omnium-cycling-club-hours">Omnium cycling club hours</option>
           </select>
         </label>
         <button class="button button-secondary" type="button" id="load-preset">Load preset</button>
@@ -6483,6 +6484,39 @@ const presets = {
           { id: "madison-cycling-pairing-board-lockup-original", original: true, label: "Leave the pairing-board door on a shared padlock after club hours", changeCost: 0, support: { students: 1, neighbours: 19, pandc: 24 } },
           { id: "madison-cycling-pairing-board-lockup-steward", original: false, label: "Require a P&C steward to lock the pairing-board store before 21:30", changeCost: 3, support: { students: 46, neighbours: 67, pandc: 87 } },
           { id: "madison-cycling-pairing-board-lockup-timer", original: false, label: "Add a timed lock on the pairing-board store after the last madison cycling session", changeCost: 2, support: { students: 35, neighbours: 38, pandc: 55 } },
+        ],
+      },
+    ],
+  },
+  "omnium-cycling-club-hours": {
+    title: "Omnium cycling club hours: omnium course booking, flying-200 hours, and tempo-board lock-up",
+    threshold: 70,
+    maxChangeCost: 8,
+    groups: [
+      { id: "students", name: "Students", weight: 20 },
+      { id: "neighbours", name: "Neighbours", weight: 17, veto: true },
+      { id: "pandc", name: "P&C", weight: 22 },
+    ],
+    clauses: [
+      {
+        id: "omnium-cycling-course-booking", title: "Omnium course booking", options: [
+          { id: "omnium-cycling-course-booking-original", original: true, label: "Keep weekday omnium course from 10:20 with no posted flying-200 rota", changeCost: 0, support: { students: 10, neighbours: 80, pandc: 61 } },
+          { id: "omnium-cycling-course-booking-late", original: false, label: "Open weekday omnium course at 19:05 with a posted flying-200 rota", changeCost: 2, support: { students: 83, neighbours: 20, pandc: 32 } },
+          { id: "omnium-cycling-course-booking-weekend", original: false, label: "Hold Saturday morning omnium course at 08:55 with a flying-200 booking card", changeCost: 4, support: { students: 68, neighbours: 28, pandc: 40 } },
+        ],
+      },
+      {
+        id: "omnium-cycling-flying-200", title: "Flying-200 hours", options: [
+          { id: "omnium-cycling-flying-200-original", original: true, label: "No posted flying-200 hours", changeCost: 0, support: { students: 58, neighbours: 6, pandc: 31 } },
+          { id: "omnium-cycling-flying-200-cap", original: false, label: "Close flying-200 hours at 20:10 and keep tempo crew at the flying-200 shed", changeCost: 1, support: { students: 31, neighbours: 84, pandc: 63 } },
+          { id: "omnium-cycling-flying-200-cut", original: false, label: "Serve tempo crew only after 14:15", changeCost: 5, support: { students: 13, neighbours: 88, pandc: 29 } },
+        ],
+      },
+      {
+        id: "omnium-cycling-tempo-board-lockup", title: "Tempo-board lock-up", options: [
+          { id: "omnium-cycling-tempo-board-lockup-original", original: true, label: "Leave the tempo-board door on a shared padlock after club hours", changeCost: 0, support: { students: 1, neighbours: 18, pandc: 23 } },
+          { id: "omnium-cycling-tempo-board-lockup-steward", original: false, label: "Require a P&C steward to lock the tempo-board store before 21:45", changeCost: 3, support: { students: 45, neighbours: 68, pandc: 88 } },
+          { id: "omnium-cycling-tempo-board-lockup-timer", original: false, label: "Add a timed lock on the tempo-board store after the last omnium cycling session", changeCost: 2, support: { students: 34, neighbours: 37, pandc: 54 } },
         ],
       },
     ],

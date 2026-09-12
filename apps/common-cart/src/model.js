@@ -822,6 +822,23 @@ export const presets = Object.freeze({
       offer("O02", "Handsling Salad Run", "Madison lunch pack", "Handsling salad", 15, 15, 4, 42, 2),
       { ...offer("O03", "Hall Madison Pickup", "Madison lunch pack", "Handsling water", 31, 35, 1, 64, 5), fulfillment: "pickup" }
     ]
+  },
+  omniumCyclingCarnivalLunch: {
+    title: "Omnium cycling carnival lunch",
+    currency: "AUD",
+    buyers: [
+      buyer("B01", "Omnium-board crate", "Omnium lunch pack", 15, 23, 4, ["Omnium pie", "Tempo salad"]),
+      buyer("B02", "Flying-200 bench", "Omnium lunch pack", 19, 19, 3, ["Omnium pie"]),
+      buyer("B03", "Elimination hamper", "Omnium lunch pack", 15, 32, 5, ["Tempo salad", "Tempo water"]),
+      buyer("B04", "Sideline cooler", "Omnium lunch pack", 22, 32, 2, ["Tempo water"]),
+      buyer("B05", "Scoreboard trolley", "Omnium lunch pack", 16, 22, 4, ["Omnium pie", "Tempo water"]),
+      buyer("B06", "Bench table", "Omnium lunch pack", 13, 20, 3, ["Tempo salad", "Omnium pie"])
+    ],
+    offers: [
+      offer("O01", "Court-side Omnium Delivery", "Omnium lunch pack", "Omnium pie", 17, 17, 3, 54, 3),
+      offer("O02", "Tempo Salad Run", "Omnium lunch pack", "Tempo salad", 15, 15, 4, 42, 2),
+      { ...offer("O03", "Hall Omnium Pickup", "Omnium lunch pack", "Tempo water", 32, 36, 1, 64, 5), fulfillment: "pickup" }
+    ]
   }
 });
 
