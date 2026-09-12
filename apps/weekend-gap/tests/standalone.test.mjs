@@ -30,7 +30,7 @@ test("release 1.5.43 ships Sunday evening FX open, first-weekday-FX-open copy an
   assert.match(changelog, /1\.5\.43/);
   assert.match(changelog, /Sunday evening FX open, first-weekday-FX-open copy, and weekday-FX-closed hide in Weekend Gap 1\.5\.43/);
   const firstHeading = changelog.match(/^## .+$/m)?.[0];
-  assert.equal(firstHeading, "## 1.5.43");
+  assert.equal(firstHeading, "## 1.5.43 - 2026-09-12");
   assert.ok(html.includes('event.key === "F10" && event.shiftKey'));
   assert.match(html, /id="copy-first-weekday-fx-open"/);
   assert.match(html, /id="copy-first-weekday-fx-open"[^>]*aria-keyshortcuts="Shift\+F10"/);
