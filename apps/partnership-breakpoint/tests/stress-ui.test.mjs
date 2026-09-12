@@ -6284,6 +6284,27 @@ test('keyboard Shift+F7 copies last over-capacity remaining listed capacity thro
   assert.doesNotMatch(JSON.stringify(track.saved()), /hosted/i);
   assert.doesNotMatch(JSON.stringify(track.saved()), /\bapi\b/i);
   assert.doesNotMatch(JSON.stringify(track.saved()), /forecast/i);
+
+  const gravel = await workbench('file:', { clipboard: 'ok' });
+  gravel.click('preset', { preset: 'gravelCyclingCarnivalSplit' });
+  assert.match(gravel.markup(), /id="copy-last-over-capacity-remaining"[^>]*aria-keyshortcuts="\* Shift\+F7 Shift\+F10"/);
+  assert.match(gravel.markup(), /id="hide-last-over-capacity-participant"[^>]*aria-keyshortcuts="# Shift\+F9"/);
+  assert.match(gravel.markup(), /id="hide-first-over-capacity-participant"[^>]*aria-keyshortcuts="@"/);
+  assert.doesNotMatch(gravel.markup(), /id="hide-first-over-capacity-participant"[^>]*aria-keyshortcuts="Shift\+F9"/);
+  assert.match(gravel.markup(), /id="copy-first-over-capacity-remaining"[^>]*aria-keyshortcuts="~"/);
+  gravel.edit('deal.monthlyVolume', '6500');
+  gravel.keydown('F7', { shiftKey: true });
+  assert.equal(gravel.copied().at(-1), 'Last over-capacity remaining listed capacity: 1,000 txn over for First-aid. How far over listed capacity. Not a forecast.');
+  gravel.keydown('F10', { shiftKey: true });
+  assert.equal(gravel.copied().at(-1), 'Last over-capacity remaining listed capacity: 1,000 txn over for First-aid. How far over listed capacity. Not a forecast.');
+  gravel.keydown('~');
+  assert.equal(gravel.copied().at(-1), 'First over-capacity remaining listed capacity: 100 txn over for Carnival committee. How far over listed capacity. Not a forecast.');
+  gravel.keydown('F7');
+  assert.equal(gravel.copied().at(-1), 'First zero-share participant: none entered.');
+  assert.doesNotMatch(JSON.stringify(gravel.saved()), /live roster/i);
+  assert.doesNotMatch(JSON.stringify(gravel.saved()), /hosted/i);
+  assert.doesNotMatch(JSON.stringify(gravel.saved()), /\bapi\b/i);
+  assert.doesNotMatch(JSON.stringify(gravel.saved()), /forecast/i);
 });
 
 test('keyboard Shift+F10 copies last over-capacity remaining listed capacity through the dedicated control', async () => {
