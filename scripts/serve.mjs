@@ -299,6 +299,20 @@ export function catalogFirstUnlabelledSkipHref() {
   return '';
 }
 
+export function catalogLastUnlabelledSkipHref() {
+  const html = readFileSync(new URL('index.html', root), 'utf8');
+  const links = catalogSkipLinks();
+  for (let i = links.length - 1; i >= 0; i -= 1) {
+    const href = links[i].href;
+    if (!href.startsWith('#') || href.length < 2) continue;
+    const found = catalogMarkupTag(html, href.slice(1));
+    if (!found) continue;
+    if (found.tag.match(/aria-labelledby="([^"]+)"/)) continue;
+    return href;
+  }
+  return '';
+}
+
 export function catalogLastUnlabelledSkipText() {
   const html = readFileSync(new URL('index.html', root), 'utf8');
   const links = catalogSkipLinks();

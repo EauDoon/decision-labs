@@ -576,7 +576,7 @@ test('404 first unlabelled skip href matches the first skip href whose target ha
   assert.notEqual(href, catalogFirstLabelledSkipTargetText());
   const serve = readFileSync(new URL('../scripts/serve.mjs', import.meta.url), 'utf8');
   const start = serve.indexOf('export function catalogFirstUnlabelledSkipHref');
-  const end = serve.indexOf('export function catalogLastUnlabelledSkipText');
+  const end = serve.indexOf('export function catalogLastUnlabelledSkipHref');
   const body = serve.slice(start, end);
   assert.match(body, /aria-labelledby/);
   assert.match(body, /continue/);
