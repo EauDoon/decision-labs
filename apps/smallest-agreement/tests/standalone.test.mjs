@@ -12398,7 +12398,7 @@ test("standalone builder appImport still lists first and last without-floor cost
   assert.match(app, added);
   assert.equal(app.includes('} else if (event.shiftKey && key === "F7") {\n    event.preventDefault();\n    copyFirstGroupWithoutFloorRemaining();'), true);
   assert.equal(app.includes('} else if (event.shiftKey && key === "F8") {\n    event.preventDefault();\n    jumpToFirstGroupWithoutFloorRemainingCopy();'), true);
-  assert.equal(app.includes('} else if (event.shiftKey && key === "F9") {\n    event.preventDefault();\n    jumpToHideLastGroupWithoutFloor();'), true);
+  assert.equal(app.includes('} else if (event.shiftKey && key === "F9") {\n    event.preventDefault();\n    jumpToHideFirstGroupWithoutFloor();'), true);
   assert.equal(app.includes('} else if (key === "F7") {\n    event.preventDefault();\n    copyLastGroupWithoutFloor();'), true);
   assert.equal(app.includes('} else if (key === "F8") {\n    event.preventDefault();\n    jumpToLastGroupWithoutFloorCopy();'), true);
   assert.equal(app.includes('} else if (key === "F9") {\n    event.preventDefault();\n    jumpToHideLastGroupWithoutFloor();'), true);
