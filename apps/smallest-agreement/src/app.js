@@ -1471,6 +1471,39 @@ const presets = {
       },
     ],
   },
+  "gravel-cycling-club-hours": {
+    title: "Gravel cycling club hours: gravel course booking, feed-zone hours, and drop-bag lock-up",
+    threshold: 70,
+    maxChangeCost: 8,
+    groups: [
+      { id: "students", name: "Students", weight: 13 },
+      { id: "neighbours", name: "Neighbours", weight: 12, veto: true },
+      { id: "pandc", name: "P&C", weight: 15 },
+    ],
+    clauses: [
+      {
+        id: "gravel-cycling-course-booking", title: "Gravel course booking", options: [
+          { id: "gravel-cycling-course-booking-original", original: true, label: "Keep weekday gravel course from 09:10 with no posted feed-zone rota", changeCost: 0, support: { students: 3, neighbours: 87, pandc: 64 } },
+          { id: "gravel-cycling-course-booking-late", original: false, label: "Open weekday gravel course at 16:20 with a posted feed-zone rota", changeCost: 2, support: { students: 90, neighbours: 27, pandc: 39 } },
+          { id: "gravel-cycling-course-booking-weekend", original: false, label: "Hold Saturday morning gravel course at 08:40 with a feed-zone booking card", changeCost: 4, support: { students: 75, neighbours: 35, pandc: 47 } },
+        ],
+      },
+      {
+        id: "gravel-cycling-feed-zone", title: "Feed-zone hours", options: [
+          { id: "gravel-cycling-feed-zone-original", original: true, label: "No posted feed-zone hours", changeCost: 0, support: { students: 65, neighbours: 13, pandc: 34 } },
+          { id: "gravel-cycling-feed-zone-cap", original: false, label: "Close feed-zone at 19:05 and keep marshals at the gravel hut", changeCost: 1, support: { students: 38, neighbours: 87, pandc: 66 } },
+          { id: "gravel-cycling-feed-zone-cut", original: false, label: "Serve marshals only after 13:10", changeCost: 5, support: { students: 20, neighbours: 91, pandc: 36 } },
+        ],
+      },
+      {
+        id: "gravel-cycling-drop-bag-lockup", title: "Drop-bag lock-up", options: [
+          { id: "gravel-cycling-drop-bag-lockup-original", original: true, label: "Leave the drop-bag door on a shared padlock after club hours", changeCost: 0, support: { students: 5, neighbours: 25, pandc: 30 } },
+          { id: "gravel-cycling-drop-bag-lockup-steward", original: false, label: "Require a P&C steward to lock the drop-bag store before 20:40", changeCost: 3, support: { students: 52, neighbours: 61, pandc: 81 } },
+          { id: "gravel-cycling-drop-bag-lockup-timer", original: false, label: "Add a timed lock on the drop-bag store after the last gravel cycling session", changeCost: 2, support: { students: 41, neighbours: 44, pandc: 61 } },
+        ],
+      },
+    ],
+  },
 };
 
 let agreementReviewPacket = null;
