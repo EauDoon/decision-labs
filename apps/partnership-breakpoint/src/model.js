@@ -443,6 +443,15 @@ export const PRESETS = Object.freeze({
       { id: 'bmx-first-aid', name: 'First-aid', revenueShare: 0.25, variableCostPerTransaction: 1.52, fixedMonthlyCost: 1470, minimumAcceptableProfit: 550, capacity: 5200, minimumCommitment: 0, riskCost: 320 },
     ],
   },
+  cycloCrossCarnivalSplit: {
+    name: 'Cyclo-cross carnival split',
+    deal: { monthlyVolume: 5300, feePerTransaction: 8, addressableVolume: 6500, volumeShockPct: 0 },
+    participants: [
+      { id: 'cyclo-cross-committee', name: 'Carnival committee', revenueShare: 0.37, variableCostPerTransaction: 1.86, fixedMonthlyCost: 3740, minimumAcceptableProfit: 1450, capacity: 6200, minimumCommitment: 0, riskCost: 554 },
+      { id: 'cyclo-cross-club-hire', name: 'Cyclo-cross club hire', revenueShare: 0.38, variableCostPerTransaction: 1.98, fixedMonthlyCost: 2860, minimumAcceptableProfit: 990, capacity: 7300, minimumCommitment: 440, riskCost: 450 },
+      { id: 'cyclo-cross-first-aid', name: 'First-aid', revenueShare: 0.25, variableCostPerTransaction: 1.56, fixedMonthlyCost: 1500, minimumAcceptableProfit: 560, capacity: 5300, minimumCommitment: 0, riskCost: 330 },
+    ],
+  },
 });
 
 function isFiniteNumber(value) {
