@@ -12416,3 +12416,81 @@ test('copy share URL is http-only and names clipboard failure without a network 
   assert.match(httpApp.notice(), /Resolve invalid inputs before copying a share URL/);
 });
 
+
+test('keirin cycling carnival split preset loads from the starting-point buttons', async () => {
+  const app = await workbench();
+  assert.match(app.markup(), /data-preset="keirinCyclingCarnivalSplit"/);
+  assert.match(app.markup(), /Keirin cycling carnival split/);
+  assert.match(app.markup(), /data-preset="hillClimbCyclingCarnivalSplit"/);
+  assert.match(app.markup(), /Hill-climb cycling carnival split/);
+  const markup = app.markup();
+  assert.ok(markup.indexOf('data-preset="timeTrialCyclingCarnivalSplit"') < markup.indexOf('data-preset="hillClimbCyclingCarnivalSplit"'));
+  assert.ok(markup.indexOf('data-preset="hillClimbCyclingCarnivalSplit"') < markup.indexOf('data-preset="keirinCyclingCarnivalSplit"'));
+  app.click('preset', { preset: 'keirinCyclingCarnivalSplit' });
+  assert.equal(app.saved().participants.length, 3);
+  assert.deepEqual(app.saved().participants.map((item) => item.id), ['keirin-cycling-committee', 'keirin-cycling-club-hire', 'keirin-cycling-first-aid']);
+  assert.deepEqual(app.saved().participants.map((item) => item.name), ['Carnival committee', 'Keirin cycling club hire', 'First-aid']);
+  assert.equal(app.saved().deal.feePerTransaction, 8);
+  assert.equal(app.saved().deal.monthlyVolume, 6000);
+  assert.equal(app.saved().deal.addressableVolume, 7200);
+  assert.deepEqual(app.saved().participants.map((item) => item.capacity), [7000, 8100, 6000]);
+  assert.notEqual(app.saved().participants[0].variableCostPerTransaction, app.saved().participants[1].variableCostPerTransaction);
+  assert.notEqual(app.saved().participants[1].variableCostPerTransaction, app.saved().participants[2].variableCostPerTransaction);
+  assert.equal(app.saved().participants[2].variableCostPerTransaction, 1.44);
+  assert.match(app.notice(), /Keirin cycling carnival split loaded/);
+  assert.match(app.markup(), /Operating region holds/);
+  const exported = JSON.stringify(app.saved());
+  assert.doesNotMatch(exported, /live roster/i);
+  assert.doesNotMatch(exported, /hosted/i);
+  assert.doesNotMatch(exported, /\bapi\b/i);
+  assert.doesNotMatch(exported, /forecast/i);
+  assert.doesNotMatch(exported, /start-ramp/i);
+  assert.doesNotMatch(exported, /summit-marshal/i);
+  assert.doesNotMatch(exported, /hairpin/i);
+  assert.doesNotMatch(exported, /climb-chip/i);
+});
+
+test('cyclo-cross carnival first-aid stays 1.56 after loading keirin cycling carnival', async () => {
+  const app = await workbench();
+  app.click('preset', { preset: 'keirinCyclingCarnivalSplit' });
+  assert.equal(app.saved().participants[2].variableCostPerTransaction, 1.44);
+  app.click('preset', { preset: 'cycloCrossCarnivalSplit' });
+  assert.equal(app.saved().participants[2].id, 'cyclo-cross-first-aid');
+  assert.equal(app.saved().participants[2].variableCostPerTransaction, 1.56);
+  assert.equal(app.saved().deal.monthlyVolume, 5300);
+  assert.deepEqual(app.saved().participants.map((item) => item.capacity), [6200, 7300, 5300]);
+  assert.match(app.notice(), /Cyclo-cross carnival split loaded/);
+});
+
+test('keyboard last-over-capacity remaining copy shortcuts stay on keirin cycling carnival', async () => {
+  const keirin = await workbench('file:', { clipboard: 'ok' });
+  keirin.click('preset', { preset: 'keirinCyclingCarnivalSplit' });
+  assert.match(keirin.markup(), /id="copy-last-over-capacity-remaining"[^>]*aria-keyshortcuts="\* Shift\+F7 Shift\+F10"/);
+  assert.match(keirin.markup(), /id="hide-last-over-capacity-participant"[^>]*aria-keyshortcuts="# Shift\+F9"/);
+  assert.match(keirin.markup(), /id="hide-first-over-capacity-participant"[^>]*aria-keyshortcuts="@"/);
+  assert.doesNotMatch(keirin.markup(), /id="hide-first-over-capacity-participant"[^>]*aria-keyshortcuts="Shift\+F9"/);
+  assert.match(keirin.markup(), /id="copy-first-over-capacity-remaining"[^>]*aria-keyshortcuts="~"/);
+  keirin.edit('deal.monthlyVolume', '7100');
+  keirin.keydown('F7', { shiftKey: true });
+  assert.equal(keirin.copied().at(-1), 'Last over-capacity remaining listed capacity: 1,100 txn over for First-aid. How far over listed capacity. Not a forecast.');
+  keirin.keydown('F10', { shiftKey: true });
+  assert.equal(keirin.copied().at(-1), 'Last over-capacity remaining listed capacity: 1,100 txn over for First-aid. How far over listed capacity. Not a forecast.');
+  keirin.keydown('~');
+  assert.equal(keirin.copied().at(-1), 'First over-capacity remaining listed capacity: 100 txn over for Carnival committee. How far over listed capacity. Not a forecast.');
+  keirin.keydown('F7');
+  assert.equal(keirin.copied().at(-1), 'First zero-share participant: none entered.');
+  keirin.keydown('F8', { shiftKey: true });
+  assert.ok(keirin.focused().includes('#copy-last-over-capacity-remaining'));
+  keirin.keydown('F9', { shiftKey: true });
+  assert.ok(keirin.focused().includes('#hide-last-over-capacity-participant'));
+  keirin.keydown('F9');
+  assert.ok(keirin.focused().includes('#hide-first-zero-share-participant'));
+  keirin.keydown('@');
+  assert.ok(keirin.focused().includes('#hide-first-over-capacity-participant'));
+  keirin.keydown('F12', { shiftKey: true });
+  assert.ok(keirin.focused().includes('#hide-first-over-capacity-participant'));
+  assert.equal(keirin.saved().participants[2].variableCostPerTransaction, 1.44);
+  assert.doesNotMatch(JSON.stringify(keirin.saved()), /live roster/i);
+  assert.doesNotMatch(JSON.stringify(keirin.saved()), /hosted/i);
+  assert.doesNotMatch(JSON.stringify(keirin.saved()), /\bapi\b/i);
+});
