@@ -126,6 +126,7 @@ SOFTWARE.
               <button type="button" class="preset-button" data-preset="thursdayLateFxOpen">Thursday late FX open (synthetic)</button>
               <button type="button" class="preset-button" data-preset="fridayEarlyFxOpen">Friday early FX open (synthetic)</button>
               <button type="button" class="preset-button" data-preset="saturdayMiddayFxOpen">Saturday midday FX open (synthetic)</button>
+              <button type="button" class="preset-button" data-preset="sundayMiddayFxOpen">Sunday midday FX open (synthetic)</button>
             </div>
           </fieldset>
 
@@ -470,6 +471,13 @@ SOFTWARE.
                 Keep Saturday FX open 12:00 to 14:00
               </label>
               <p>When selected, Saturday 12:00 to 14:00 treats FX as weekday-depth / open even though Saturday is not a business day. That window is a real weekday-FX-open case through isSaturdayMiddayFxOpenHour. Issuer, bank and payout stay on their Saturday midday rules those hours. Older scenario files omit this field and keep Saturday midday on ordinary weekend FX depth. Distinct from Saturday early FX open, Saturday late FX open, Friday early FX open, Friday late FX open, Sunday early FX open, Saturday early issuer open, Saturday early bank open, and Saturday early payout open. This is a synthetic calendar, not an FX feed.</p>
+            </div>
+            <div class="input-group input-group--full">
+              <label class="checkbox-label" for="sundayMiddayFxOpen">
+                <input id="sundayMiddayFxOpen" name="sundayMiddayFxOpen" data-field="sundayMiddayFxOpen" type="checkbox">
+                Keep Sunday FX open 12:00 to 14:00
+              </label>
+              <p>When selected, Sunday 12:00 to 14:00 treats FX as weekday-depth / open even though Sunday is not a business day. That window is a real weekday-FX-open case through isSundayMiddayFxOpenHour. Issuer, bank and payout stay on their Sunday midday rules those hours. Older scenario files omit this field and keep Sunday midday on ordinary weekend FX depth. Distinct from Saturday midday FX open, Sunday early FX open, Sunday late FX open, Saturday early FX open, Saturday late FX open, Friday early FX open, and Friday late FX open. This is a synthetic calendar, not an FX feed.</p>
             </div>
           </form>
 
@@ -958,8 +966,8 @@ SOFTWARE.
               <button id="copy-last-weekend-fx-closed" type="button" aria-keyshortcuts="F7">Copy last weekend-FX-closed hour</button>
               <button id="copy-last-weekday-fx-closed" type="button" aria-keyshortcuts="F10">Copy last weekday-FX-closed hour</button>
               <button id="copy-last-weekend-fx-open" type="button">Copy last weekend-FX-open hour</button>
-              <button id="copy-last-weekday-fx-open" type="button" aria-keyshortcuts="Shift+F10">Copy last weekday-FX-open hour</button>
-              <button id="copy-first-weekday-fx-open" type="button">Copy first weekday-FX-open hour</button>
+              <button id="copy-last-weekday-fx-open" type="button">Copy last weekday-FX-open hour</button>
+              <button id="copy-first-weekday-fx-open" type="button" aria-keyshortcuts="Shift+F10">Copy first weekday-FX-open hour</button>
               <button id="copy-first-weekday-fx-closed" type="button">Copy first weekday-FX-closed hour</button>
               <button id="copy-first-weekend-fx-open" type="button">Copy first weekend-FX-open hour</button>
               <button id="copy-first-weekend-fx-closed" type="button">Copy first weekend-FX-closed hour</button>
@@ -1130,7 +1138,7 @@ SOFTWARE.
           <li><kbd>F3</kbd> Copy last closed payout hour as Markdown</li>
           <li><kbd>F7</kbd> Copy last weekend-FX-closed hour as Markdown</li>
           <li><kbd>F10</kbd> Copy last weekday-FX-closed hour as Markdown</li>
-          <li><kbd>Shift+F10</kbd> Copy last weekday-FX-open hour as Markdown</li>
+          <li><kbd>Shift+F10</kbd> Copy first weekday-FX-open hour as Markdown</li>
           <li><kbd>+</kbd> Jump to the first-closed-FX-hour copy control</li>
           <li><kbd>!</kbd> Jump to the first-open-payout-hour copy control</li>
           <li><kbd>)</kbd> Jump to the first-open-FX-hour copy control</li>
@@ -1146,7 +1154,7 @@ SOFTWARE.
           <li><kbd>F4</kbd> Jump to the last-closed-payout-hour copy control</li>
           <li><kbd>F8</kbd> Jump to the last-weekend-FX-closed-hour copy control</li>
           <li><kbd>F11</kbd> Jump to the last-weekday-FX-closed-hour copy control</li>
-          <li><kbd>Shift+F11</kbd> Jump to the last-weekday-FX-open-hour copy control</li>
+          <li><kbd>Shift+F11</kbd> Jump to the first-weekday-FX-open-hour copy control</li>
           <li><kbd>_</kbd> Jump to the first-closed-payout-hour copy control</li>
           <li><kbd>&lt;</kbd> Jump to the first-closed-bank-hour copy control</li>
           <li><kbd>-</kbd> Jump to the first-closed-issuer-hour copy control</li>
