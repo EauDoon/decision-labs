@@ -2994,7 +2994,7 @@ function handleShortcut(event) {
     target?.scrollIntoView?.({ block: 'start' });
   }
   if (event.key === 'F12' && event.shiftKey) {
-    const target = document.querySelector('#hide-last-over-capacity-participant')
+    const target = document.querySelector('#hide-first-over-capacity-participant')
       ?? document.querySelector('#participant-inputs-title');
     target?.focus?.({ preventScroll: false });
     target?.scrollIntoView?.({ block: 'start' });
@@ -5898,7 +5898,7 @@ function helpDialog() {
         <li><kbd>F12</kbd> Jump to Hide the last participant with zero revenue share, or the Participants heading if missing</li>
         <li><kbd>Shift+F10</kbd> Copy last over-capacity remaining listed capacity as Markdown</li>
         <li><kbd>Shift+F11</kbd> Jump to Copy last over-capacity remaining listed capacity, or the Participants heading if missing</li>
-        <li><kbd>Shift+F12</kbd> Jump to Hide the last over-capacity participant, or the Participants heading if missing</li>
+        <li><kbd>Shift+F12</kbd> Jump to Hide the first over-capacity participant, or the Participants heading if missing</li>
         <li><kbd>+</kbd> Jump to Copy first over-capacity participant label, or the First breakpoint or Participants heading if missing</li>
         <li><kbd>!</kbd> Jump to Copy first over-capacity remaining listed capacity, or the First breakpoint or Participants heading if missing</li>
         <li><kbd>|</kbd> Jump to Hide the first-breakpoint participant, or the Participants heading if missing</li>
