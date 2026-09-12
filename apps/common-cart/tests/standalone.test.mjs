@@ -491,7 +491,9 @@ test("release 1.4.42 ships madison cycling carnival lunch, leftover uncovered le
 });
 
 test("release 1.4.41 ships keirin cycling carnival lunch, leftover uncovered leftover-only remaining copy and first leftover-only hide jump", async () => {
+  const pkg = JSON.parse(await readFile(new URL("../package.json", import.meta.url), "utf8"));
   const html = await readFile(new URL("../standalone.html", import.meta.url), "utf8");
+  assert.equal(pkg.version, "1.4.43");
   assert.match(html, /id="copy-leftover-uncovered-leftover-only-remaining"/u);
   assert.match(html, /id="copy-leftover-uncovered-leftover-only-remaining"[^>]*aria-keyshortcuts="Shift\+F7 F10"/u);
   assert.match(html, /id="hide-first-leftover-only-buyer"/u);

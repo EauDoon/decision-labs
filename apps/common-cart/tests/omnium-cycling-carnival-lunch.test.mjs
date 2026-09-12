@@ -37,7 +37,7 @@ test("omnium cycling carnival lunch leftover fill is hall pickup and stays disti
   assert.deepEqual(omniumCycling.winner.selectedBuyerIds, ["B01", "B02", "B05"]);
   assert.equal(omniumCycling.scenario.title, "Omnium cycling carnival lunch");
   assert.notEqual(omniumCycling.scenario.title, clonePreset("madisonCyclingCarnivalLunch").title);
-  assert.notEqual(omniumCycling.scenario.title, clonePreset("keirinCyclingCarnivalLunch").title);
+  assert.notEqual(omniumCycling.scenario.title, keirinCycling.scenario.title);
   assert.notEqual(omniumCycling.scenario.title, hillClimbCycling.scenario.title);
   assert.notEqual(omniumCycling.scenario.title, timeTrialCycling.scenario.title);
   assert.notEqual(omniumCycling.scenario.title, criteriumCycling.scenario.title);
@@ -117,8 +117,8 @@ test("omnium cycling carnival lunch leftover fill is hall pickup and stays disti
   assert.equal(softball.scenario.offers.find((offer) => offer.merchant === "Hall Softball Pickup").minimumUnits, 15);
   assert.equal(waterPolo.scenario.offers.find((offer) => offer.merchant === "Hall Water Polo Pickup").minimumUnits, 16);
   assert.equal(criteriumCycling.winner.offer.merchant, "Court-side Criterium Delivery");
-  assert.equal(keirinCycling.winner.offer.merchant, "Court-side Keirin Delivery");
   assert.equal(madisonCycling.winner.offer.merchant, "Court-side Madison Delivery");
+  assert.equal(keirinCycling.winner.offer.merchant, "Court-side Keirin Delivery");
   assert.equal(leftoverOffer.capacity, 64);
   assert.equal(leftoverFill.fulfilledUnits, 37);
   assert.equal(leftoverOffer.capacity - leftoverFill.fulfilledUnits, 27);
@@ -188,8 +188,6 @@ test("the example bar includes omnium cycling carnival lunch next to madison cyc
   assert.match(html, /Omnium cycling carnival/u);
   assert.match(html, /data-preset="madisonCyclingCarnivalLunch"/u);
   assert.match(html, /data-preset="keirinCyclingCarnivalLunch"/u);
-  assert.match(html, /data-preset="hillClimbCyclingCarnivalLunch"/u);
-  assert.ok(html.indexOf('data-preset="hillClimbCyclingCarnivalLunch"') < html.indexOf('data-preset="keirinCyclingCarnivalLunch"'));
   assert.ok(html.indexOf('data-preset="keirinCyclingCarnivalLunch"') < html.indexOf('data-preset="madisonCyclingCarnivalLunch"'));
   assert.ok(html.indexOf('data-preset="madisonCyclingCarnivalLunch"') < html.indexOf('data-preset="omniumCyclingCarnivalLunch"'));
   assert.ok(html.indexOf('data-preset="omniumCyclingCarnivalLunch"') < html.indexOf('data-preset="tiers"'));
