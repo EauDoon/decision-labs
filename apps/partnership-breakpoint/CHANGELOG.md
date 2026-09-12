@@ -1,5 +1,17 @@
 # Changelog
 
+## 1.8.0
+
+Negotiation alternatives on a declared grid in Partnership Breakpoint 1.8.0
+
+- Optional `alternatives` exploration names fee levels, share modes (current, equal, stress-funded), an optional commitment-relief dimension, up to three single capacity investments, and a ranking objective (stress-holds or profit). Grids above 120 candidates are rejected with the count so the bound stays explicit.
+- `exploreNegotiationAlternatives` evaluates every grid point on the monthly model and the full stress grid under identical assumptions, reporting viability, stress holds, total profit, weakest binding, and per-participant gains and losses against the current case. Unfundable share modes are skipped with reasons, never invented. Ranking is explicit and deterministic; it is not an optimum over continuous terms.
+- The Negotiation alternatives panel edits the grid, ranks candidates, and applies one viable candidate at a time with undo support; pin a snapshot first to keep the baseline. Only fee, shares, commitments, capacity, and fixed costs change on apply.
+- Review constraints and negotiation room gains a Negotiation alternatives question under the same packet replay contract. CLI gains `alternatives [--csv]` and `apply-alternative`. Alternatives CSV separates candidates, skipped points, and the objective memo.
+- Tradeoffs are comparisons of declared inputs, not forecasts of negotiated outcomes.
+
+# Changelog
+
 ## 1.7.0
 
 Multi-period commercial planning in Partnership Breakpoint 1.7.0

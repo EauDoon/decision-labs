@@ -112,6 +112,22 @@ The First breakpoint card compares bounded volume decreases, volume increases, f
 
 Capacity remains an independent operational constraint rather than a fee or cost shock. Its reachable, bounded volume-increase threshold participates directly in the First breakpoint ranking. The fee-volume operating-region grid tests the current participant data over a finite range from zero to the greater of addressable and planned volume, and from zero to 150 percent of the current fee.
 
+## Negotiation alternatives (v1.8.0)
+
+The optional `alternatives` object declares a bounded exploration grid:
+
+```text
+feeLevels: 1 to 6 finite non-negative fees
+shareModes: any of current, equal, funded (no repeats)
+commitmentRelief: optional boolean adding a zero-commitment dimension
+capacityInvestments: 0 to 3 single { participantId, addedCapacity, investmentCost } entries
+objective: stress-holds (default) or profit
+```
+
+Grids above 120 candidates are rejected with their count. Each candidate changes only fee, shares, commitments, or one capacity investment; volume, shock, demand, costs, floors, and stress settings stay fixed. Equal shares split revenue evenly. Funded shares give each participant the share that funds its profit floor at the candidate volume and fee, distributing leftover revenue in proportion to current shares, and are skipped with a reason when no finite split funds every floor.
+
+Ranking is explicit: `stress-holds` orders by stress cases held, then monthly total profit; `profit` orders by monthly total profit, then stress cases held; deterministic candidate order breaks remaining ties. Per-participant profit deltas compare against the current monthly case. This ranks the declared grid only. It is not an optimum over continuous terms, a probability, or a forecast of negotiated outcomes.
+
 ## Compound stress grid and fixed-share negotiation
 
 The optional `stress` object accepts exactly four finite percentages:

@@ -103,6 +103,10 @@ The first visit shows a three-step coach. Dismiss it with Got it or Escape; dism
 
 Undo and Redo retain up to 50 edits during this tab session. Reset, imports, snapshot loads and applied proposals can be undone. The last removed snapshot can be restored during the session. Browser storage is optional; failures are displayed and JSON export remains available. New edits cancel pending imports. Local snapshots and undo history are not synced or backed up elsewhere. No requests are sent to a server.
 
+## Negotiation alternatives (v1.8.0)
+
+Open the **Negotiation alternatives** panel and choose Create exploration from current case. Declare up to six fee levels, any of the current, equal, and stress-funded share modes, an optional commitment-relief dimension, up to three single capacity investments (participant, added capacity, and cost), and the ranking objective. Candidates that fail monthly viability stay listed with their failure reasons; unfundable share modes are skipped with reasons. Each viable candidate shows stress holds, total profit, weakest binding, and per-participant gains and losses against the current case, with an Apply button. Applying replaces only fee, shares, commitments, capacity, and fixed costs; volume, costs, floors, stress, plan, and display preferences stay fixed. Undo restores the previous case, and pinned snapshots keep the baseline for comparison. Export candidates CSV for the full table. The ranking covers the declared grid only and is not an optimum.
+
 ## Commercial plan (v1.7.0)
 
 Open the **Commercial plan** panel and choose Create commercial plan from current case. Each period is one planning interval in the same units as the monthly model: volume, fee per transaction, demand cap, and any one-time setup expense. Revenue shares stay fixed. Per-participant overrides for variable cost, fixed cost, minimum profit, minimum commitment, and capacity are optional; blank fields inherit the base case, and an explicit blank capacity inherits too.

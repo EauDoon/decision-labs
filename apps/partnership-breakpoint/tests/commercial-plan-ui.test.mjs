@@ -25,7 +25,7 @@ function harness(state) {
   const src = readFileSync(new URL('../src/app.js', import.meta.url), 'utf8');
   const helpers = sliceLines(src, 'function inputValue(value) {', 'function formatVolume(value) {');
   const sections = sliceLines(src, 'function defaultPlanFromCase() {', 'function participantTable(result) {');
-  const actions = sliceLines(src, 'function createCommercialPlan() {', 'function exportStressCsv(visibleOnly = false) {');
+  const actions = sliceLines(src, 'function createNegotiationExploration() {', 'function exportStressCsv(visibleOnly = false) {');
   const context = vm.createContext({
     ...model, document, Intl, JSON, state,
     activePreset: '',
@@ -41,6 +41,18 @@ function harness(state) {
   vm.runInContext(helpers + sections + actions, context);
   return { nodes, context, calls };
 }
+function stateWithExploration() {
+  const state = fixture();
+  state.alternatives = {
+    feeLevels: [10, 12],
+    shareModes: ['current', 'equal'],
+    commitmentRelief: false,
+    capacityInvestments: [],
+    objective: 'stress-holds',
+  };
+  return state;
+}
+
 function stateWithPlan() {
   const state = fixture();
   state.plan = {
@@ -85,6 +97,46 @@ test('commercial plan create, add-period, and remove actions checkpoint for undo
   assert.equal(vm.runInContext('state.plan.periods.length', context), 3);
   vm.runInContext('removeCommercialPlan()', context);
   assert.equal(vm.runInContext('typeof state.plan', context), 'undefined');
+});
+
+test('negotiation alternatives panel offers creation when no exploration exists', () => {
+  const { context } = harness(fixture());
+  const html = vm.runInContext('negotiationAlternativesSection()', context);
+  assert.match(html, /Create exploration from current case/);
+  assert.match(html, /data-action="alternatives-create"/);
+  assert.doesNotMatch(html, /Candidate structures/);
+});
+
+test('negotiation alternatives panel renders grid editor and ranked candidates', () => {
+  const { context } = harness(stateWithExploration());
+  const html = vm.runInContext('negotiationAlternativesSection()', context);
+  assert.match(html, /data-action="alternative-fees"/);
+  assert.match(html, /data-action="alternatives-mode"/);
+  assert.match(html, /data-action="alternatives-apply"/);
+  assert.match(html, /Gains \/ losses vs current/);
+  assert.match(html, /data-action="alternatives-export-csv"/);
+  assert.match(html, /Candidate structures, ranked/);
+  assert.match(html, /not an optimum/);
+  assert.match(html, /print-only print-keep/);
+});
+
+test('negotiation alternatives create, mode toggle, and apply flow checkpoints', () => {
+  const { context, calls } = harness(fixture());
+  assert.equal(vm.runInContext('typeof state.alternatives', context), 'undefined');
+  vm.runInContext('createNegotiationExploration()', context);
+  vm.runInContext('state.alternatives = JSON.parse(JSON.stringify(state.alternatives))', context);
+  assert.equal(JSON.stringify(vm.runInContext('state.alternatives.shareModes', context)), JSON.stringify(['current', 'equal', 'funded']));
+  const before = calls.checkpoints;
+  vm.runInContext(`toggleAlternativeShareMode('equal')`, context);
+  assert.equal(JSON.stringify(vm.runInContext('state.alternatives.shareModes', context)), JSON.stringify(['current', 'funded']));
+  assert.ok(calls.checkpoints > before);
+  vm.runInContext(`toggleAlternativeShareMode('equal')`, context);
+  assert.equal(JSON.stringify(vm.runInContext('state.alternatives.shareModes', context)), JSON.stringify(['current', 'equal', 'funded']));
+  const explored = vm.runInContext(`exploreNegotiationAlternatives(state)`, context);
+  const feasible = explored.candidates.find((c) => c.feasible);
+  assert.ok(feasible);
+  vm.runInContext(`applyNegotiationCandidate('${feasible.id}')`, context);
+  assert.equal(vm.runInContext('state.deal.feePerTransaction', context), feasible.fee);
 });
 
 test('commercial plan override inputs inherit blank fields from the base case', () => {

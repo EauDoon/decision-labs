@@ -1298,6 +1298,7 @@ function resultsPanel(result) {
     ${waterfallSection(result)}
     ${stressSection()}
     ${commercialPlanSection()}
+    ${negotiationAlternativesSection()}
     ${result.volumeCappedByAddressableDemand ? '<p class="error-box">Addressable demand limits realized volume below the post-shock monthly-volume input.</p>' : ''}
     ${participantTable(result)}
     ${shockSection(result)}
@@ -1490,6 +1491,86 @@ function commercialPlanResults(plan) {
     <div class="table-wrap" tabindex="0" role="region" aria-label="Cash schedule"><table><caption>Cash movements with collection and payment lags</caption><thead><tr><th scope="col">Period</th><th scope="col">Opening</th><th scope="col">In</th><th scope="col">Out</th><th scope="col">Closing</th></tr></thead><tbody>${cashRows}</tbody></table></div>
     <p>Minimum closing cash ${formatMoney(plan.cash.minClosingCash)}. Receivables after horizon ${formatMoney(plan.cash.receivablesAfterHorizon)}. Payables after horizon ${formatMoney(plan.cash.payablesAfterHorizon)}.</p>
     <section class="print-only print-keep"><h2>Commercial plan brief</h2><p>${escapeAttribute(brief)} Horizon operating contribution ${escapeAttribute(formatMoney(plan.horizonOperatingContribution))}; setup ${escapeAttribute(formatMoney(plan.totalSetupExpense))}.</p></section>`;
+}
+
+function defaultExplorationFromCase() {
+  const fee = state.deal.feePerTransaction ?? 0;
+  return {
+    feeLevels: [fee, fee, fee].map((value, index) => (index === 0 ? Math.max(0, value * 0.9) : index === 1 ? value : value * 1.1)),
+    shareModes: ['current', 'equal', 'funded'],
+    commitmentRelief: false,
+    capacityInvestments: [],
+    objective: 'stress-holds',
+  };
+}
+
+function formatSignedMoney(value) {
+  if (!Number.isFinite(value)) return 'Impossible';
+  const sign = value > 0 ? '+' : value < 0 ? '−' : '';
+  const currency = currencyPrefix();
+  const amount = formatNumber(Math.abs(value), 2);
+  return `${sign}${currency ? `${currency} ${amount}` : `${amount} units`}`;
+}
+
+function negotiationAlternativesSection() {
+  const exploration = state.alternatives ?? null;
+  if (!exploration) {
+    return `<section class="panel print-keep" id="negotiation-alternatives"><div class="panel-heading"><h2 id="negotiation-alternatives-title" tabindex="-1">Negotiation alternatives</h2><span class="optional">bounded grid</span></div><div class="panel-body"><p>Compare fee levels, share structures, commitment relief, and single capacity investments on one explicit grid. Nothing is applied until you choose a candidate.</p><div class="button-row"><button type="button" data-action="alternatives-create">Create exploration from current case</button></div></div></section>`;
+  }
+  const modes = exploration.shareModes ?? [];
+  const modeButton = (mode, label) => `<button type="button" data-action="alternatives-mode" data-mode="${mode}" aria-pressed="${modes.includes(mode)}">${label}</button>`;
+  const investmentRows = (exploration.capacityInvestments ?? []).map((investment, index) => `<tr>
+      <td><select data-alt-invest-participant="${index}" aria-label="Investment ${index + 1} participant">${state.participants.map((item) => `<option value="${escapeAttribute(item.id)}" ${item.id === investment.participantId ? 'selected' : ''}>${escapeAttribute(item.name)}</option>`).join('')}</select></td>
+      <td><input type="number" data-alt-invest-capacity="${index}" min="0" step="any" value="${inputValue(investment.addedCapacity)}" aria-label="Investment ${index + 1} added capacity" /></td>
+      <td><input type="number" data-alt-invest-cost="${index}" min="0" step="any" value="${inputValue(investment.investmentCost)}" aria-label="Investment ${index + 1} cost" /></td>
+      <td><button type="button" data-action="alternatives-remove-investment" data-index="${index}">Remove</button></td>
+    </tr>`).join('');
+  let explored = null;
+  let exploredError = '';
+  try {
+    explored = exploreNegotiationAlternatives(state);
+  } catch (error) {
+    exploredError = error instanceof ValidationError ? error.errors.join(' ') : String(error?.message ?? error);
+  }
+  const results = explored ? negotiationAlternativesResults(explored) : `<p class="error-box">${escapeAttribute(exploredError || 'Resolve invalid exploration inputs.')}</p>`;
+  return `<section class="panel print-keep" id="negotiation-alternatives"><div class="panel-heading"><h2 id="negotiation-alternatives-title" tabindex="-1">Negotiation alternatives</h2><span class="optional">bounded grid</span></div><div class="panel-body">
+    <p>Each candidate changes only fee, shares, commitments, or one capacity investment. Volume, costs, floors, and stress settings stay fixed. Pin a snapshot first to keep the baseline; applying a candidate can be undone.</p>
+    <div class="field"><label>Fee levels, comma-separated <input type="text" data-action="alternative-fees" value="${escapeAttribute((exploration.feeLevels ?? []).join(', '))}" title="One through six finite non-negative fee levels." /></label></div>
+    <div class="button-row" role="group" aria-label="Share modes">${modeButton('current', 'Current shares')}${modeButton('equal', 'Equal shares')}${modeButton('funded', 'Stress-funded shares')}</div>
+    <div class="button-row"><button type="button" data-action="alternatives-relief" aria-pressed="${exploration.commitmentRelief === true}">Include commitment relief</button><button type="button" data-action="alternatives-objective" data-objective="stress-holds" aria-pressed="${(exploration.objective ?? 'stress-holds') === 'stress-holds'}">Rank by stress holds</button><button type="button" data-action="alternatives-objective" data-objective="profit" aria-pressed="${exploration.objective === 'profit'}">Rank by profit</button></div>
+    <h3>Capacity investments</h3><p>Tested one at a time, never combined. Each raises one participant's capacity and adds its cost to fixed cost.</p>
+    <div class="table-wrap" tabindex="0" role="region" aria-label="Capacity investments"><table><caption>Single capacity investments, at most three</caption><thead><tr><th scope="col">Participant</th><th scope="col">Added capacity</th><th scope="col">Investment cost</th><th scope="col">Row</th></tr></thead><tbody>${investmentRows || '<tr><td colspan="4">No capacity investments. Every candidate keeps current capacities.</td></tr>'}</tbody></table></div>
+    <div class="button-row"><button type="button" data-action="alternatives-add-investment" ${(exploration.capacityInvestments ?? []).length >= 3 ? 'disabled title="Investment limit reached"' : ''}>Add investment</button><button type="button" data-action="alternatives-remove">Remove exploration</button><button type="button" data-action="alternatives-export-csv">Export candidates CSV</button></div>
+    ${results}
+  </div></section>`;
+}
+
+function negotiationAlternativesResults(explored) {
+  const rows = explored.candidates.map((candidate) => {
+    const gains = candidate.participantProfits
+      .filter((entry) => Math.abs(entry.profitDelta) > 1e-9)
+      .map((entry) => `${entry.name} ${formatSignedMoney(entry.profitDelta)}`)
+      .join('; ') || 'no change';
+    return `<tr${candidate.id === explored.bestFeasibleId ? ' class="is-best"' : ''}>
+      <td>${candidate.rank}</td><th scope="row">${escapeAttribute(candidate.id)}</th>
+      <td>${formatNumber(candidate.fee, 4)}</td><td>${escapeAttribute(candidate.shareMode)}</td>
+      <td>${candidate.commitmentRelief ? 'relieved' : 'kept'}</td>
+      <td>${candidate.investment ? `+${formatNumber(candidate.investment.addedCapacity)} ${escapeAttribute(candidate.investment.participantId)} at ${formatMoney(candidate.investment.investmentCost)}` : 'none'}</td>
+      <td>${candidate.feasible ? 'Viable' : `<span class="failure-text">Fails: ${escapeAttribute(candidate.failureSummary)}</span>`}</td>
+      <td>${candidate.stressHolds} of ${candidate.stressCases}</td>
+      <td>${formatMoney(candidate.monthlyTotalProfit)}</td>
+      <td>${escapeAttribute(candidate.weakestBinding)}</td>
+      <td>${escapeAttribute(gains)}</td>
+      <td>${candidate.feasible ? `<button type="button" data-action="alternatives-apply" data-candidate="${candidate.id}">Apply</button>` : ''}</td>
+    </tr>`;
+  }).join('');
+  const skipped = explored.skipped.length
+    ? `<p>Skipped grid points: ${explored.skipped.map((item) => `${escapeAttribute(item.id)} (${escapeAttribute(item.reason)})`).join('; ')}</p>`
+    : '';
+  return `<h3>Candidates</h3><p>Objective ${escapeAttribute(explored.objective)} on a declared grid of ${explored.candidateCount} (${explored.feasibleCount} viable). This ranks the grid only; it is not an optimum over continuous terms. Held constant: ${escapeAttribute(explored.assumptionsHeldConstant.join(', '))}.</p>
+    <div class="table-wrap" tabindex="0" role="region" aria-label="Negotiation alternative candidates"><table><caption>Candidate structures, ranked by the stated objective</caption><thead><tr><th scope="col">Rank</th><th scope="col">Candidate</th><th scope="col">Fee</th><th scope="col">Shares</th><th scope="col">Commitments</th><th scope="col">Investment</th><th scope="col">Monthly</th><th scope="col">Stress</th><th scope="col">Total profit</th><th scope="col">Weakest binding</th><th scope="col">Gains / losses vs current</th><th scope="col">Apply</th></tr></thead><tbody>${rows}</tbody></table></div>
+    ${skipped}
+    <section class="print-only print-keep"><h2>Negotiation alternatives</h2><p>Objective ${escapeAttribute(explored.objective)}; ${explored.feasibleCount} of ${explored.candidateCount} candidates viable${explored.bestFeasibleId ? `; best feasible ${escapeAttribute(explored.bestFeasibleId)}` : '; none viable'}.</p></section>`;
 }
 
 function participantTable(result) {
@@ -1808,6 +1889,40 @@ function attachEvents() {
       const validation = validateConfiguration(state);
       refresh(validation.valid
         ? (standaloneFileMode ? 'Saved locally. Export JSON to transfer this standalone case.' : 'Saved locally and updated the shareable URL.')
+        : `Invalid inputs are not saved. ${summarizeErrors(validation.errors)}`);
+      return;
+    }
+    if (input.dataset.action === 'alternative-fees') {
+      const exploration = state.alternatives;
+      if (!exploration) return;
+      checkpoint();
+      const fees = input.value.split(',').map((part) => part.trim()).filter((part) => part !== '').map(Number);
+      exploration.feeLevels = fees;
+      activePreset = '';
+      const validation = validateConfiguration(state);
+      refresh(validation.valid
+        ? 'Fee levels updated.'
+        : `Invalid inputs are not saved. ${summarizeErrors(validation.errors)}`);
+      return;
+    }
+    if (input.dataset.altInvestParticipant !== undefined || input.dataset.altInvestCapacity !== undefined || input.dataset.altInvestCost !== undefined) {
+      const exploration = state.alternatives;
+      const rawIndex = input.dataset.altInvestParticipant ?? input.dataset.altInvestCapacity ?? input.dataset.altInvestCost;
+      const index = Number(rawIndex);
+      const investments = exploration?.capacityInvestments;
+      if (!exploration || !Array.isArray(investments) || !Number.isInteger(index) || index < 0 || index >= investments.length) return;
+      checkpoint();
+      if (input.dataset.altInvestParticipant !== undefined) {
+        investments[index].participantId = input.value;
+      } else if (input.dataset.altInvestCapacity !== undefined) {
+        investments[index].addedCapacity = numberFromInput(input.value, false);
+      } else {
+        investments[index].investmentCost = numberFromInput(input.value, false);
+      }
+      activePreset = '';
+      const validation = validateConfiguration(state);
+      refresh(validation.valid
+        ? 'Capacity investment updated.'
         : `Invalid inputs are not saved. ${summarizeErrors(validation.errors)}`);
       return;
     }
@@ -2501,6 +2616,15 @@ function attachEvents() {
     if (action === 'plan-remove-period') removeCommercialPlanPeriod(Number(button.dataset.period));
     if (action === 'plan-export-brief') exportCommercialPlanBrief();
     if (action === 'plan-export-csv') exportCommercialPlanCsv();
+    if (action === 'alternatives-create') createNegotiationExploration();
+    if (action === 'alternatives-remove') removeNegotiationExploration();
+    if (action === 'alternatives-mode') toggleAlternativeShareMode(button.dataset.mode);
+    if (action === 'alternatives-relief') toggleAlternativeRelief();
+    if (action === 'alternatives-objective') setAlternativeObjective(button.dataset.objective);
+    if (action === 'alternatives-add-investment') addAlternativeInvestment();
+    if (action === 'alternatives-remove-investment') removeAlternativeInvestment(Number(button.dataset.index));
+    if (action === 'alternatives-apply') applyNegotiationCandidate(button.dataset.candidate);
+    if (action === 'alternatives-export-csv') exportNegotiationCandidatesCsv();
     if (action === 'export-visible-csv') exportStressCsv(true);
     if (action === 'copy-visible-csv') copyVisibleStressCsv();
     if (action === 'export-participants-csv') exportParticipantsCsv();
@@ -5717,6 +5841,95 @@ function exportParticipantsCsv() {
   }
   downloadText(participantsToCsv(state), 'text/csv;charset=utf-8', exportDownloadName('participants', caseExportTitle()));
   setNotice('Participant CSV exported. Columns match import. Formula-like names are stored as text.');
+}
+
+function createNegotiationExploration() {
+  checkpoint();
+  state.alternatives = defaultExplorationFromCase();
+  activePreset = '';
+  refresh('Exploration created from the current case. Edit the grid, then apply one viable candidate at a time.');
+}
+
+function removeNegotiationExploration() {
+  checkpoint();
+  delete state.alternatives;
+  activePreset = '';
+  refresh('Exploration removed. The monthly case is unchanged.');
+}
+
+function withExploration() {
+  if (!state.alternatives) return null;
+  return state.alternatives;
+}
+
+function toggleAlternativeShareMode(mode) {
+  const exploration = withExploration();
+  if (!exploration || !['current', 'equal', 'funded'].includes(mode)) return;
+  checkpoint();
+  const modes = (exploration.shareModes ?? []).filter((item) => item !== mode);
+  if (!exploration.shareModes?.includes(mode)) modes.push(mode);
+  exploration.shareModes = ['current', 'equal', 'funded'].filter((item) => modes.includes(item));
+  activePreset = '';
+  refresh(validateConfiguration(state).valid ? 'Share modes updated.' : `Invalid inputs are not saved. ${summarizeErrors(validateConfiguration(state).errors)}`);
+}
+
+function toggleAlternativeRelief() {
+  const exploration = withExploration();
+  if (!exploration) return;
+  checkpoint();
+  exploration.commitmentRelief = exploration.commitmentRelief !== true;
+  activePreset = '';
+  refresh('Commitment-relief dimension updated.');
+}
+
+function setAlternativeObjective(objective) {
+  const exploration = withExploration();
+  if (!exploration || !['stress-holds', 'profit'].includes(objective)) return;
+  checkpoint();
+  exploration.objective = objective;
+  activePreset = '';
+  refresh('Ranking objective updated.');
+}
+
+function addAlternativeInvestment() {
+  const exploration = withExploration();
+  if (!exploration || (exploration.capacityInvestments ?? []).length >= 3 || !state.participants.length) return;
+  checkpoint();
+  exploration.capacityInvestments = [...(exploration.capacityInvestments ?? []),
+    { participantId: state.participants[0].id, addedCapacity: 0, investmentCost: 0 }];
+  activePreset = '';
+  refresh('Capacity investment added. Choose the participant, added capacity, and cost.');
+}
+
+function removeAlternativeInvestment(index) {
+  const exploration = withExploration();
+  if (!exploration || !Number.isInteger(index) || index < 0 || index >= (exploration.capacityInvestments ?? []).length) return;
+  checkpoint();
+  exploration.capacityInvestments.splice(index, 1);
+  activePreset = '';
+  refresh('Capacity investment removed.');
+}
+
+function applyNegotiationCandidate(candidateId) {
+  try {
+    checkpoint();
+    const next = applyNegotiationAlternative(state, candidateId);
+    state.deal = next.deal;
+    state.participants = next.participants;
+    activePreset = '';
+    refresh(`Applied ${candidateId}. The previous case is on the undo stack; pin a snapshot to keep the baseline.`);
+  } catch (error) {
+    setNotice(error instanceof ValidationError ? summarizeErrors(error.errors) : String(error?.message ?? error));
+  }
+}
+
+function exportNegotiationCandidatesCsv() {
+  try {
+    downloadText(negotiationAlternativesCsv(state), 'text/csv;charset=utf-8', exportDownloadName('participants', `${caseExportTitle()}-alternatives`));
+    setNotice('Candidates CSV exported. One row per explored alternative; skipped grid points follow as memo rows.');
+  } catch (error) {
+    setNotice(error instanceof ValidationError ? `Resolve invalid inputs before exporting CSV. ${summarizeErrors(error.errors)}` : String(error?.message ?? error));
+  }
 }
 
 function createCommercialPlan() {

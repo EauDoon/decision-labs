@@ -6,6 +6,7 @@ import { PARTNERSHIP_REVIEW_TOOLS, createPartnershipReviewPacket, replayPartners
 import { materializeStressCase, applyStressProposal } from '../src/model.js';
 import { participantsFromRosterText, participantsToCsv } from '../src/model.js';
 import { evaluateCommercialPlan, commercialPlanCsv, createCommercialBrief } from '../src/model.js';
+import { exploreNegotiationAlternatives, applyNegotiationAlternative, negotiationAlternativesCsv } from '../src/model.js';
 import { redactConfiguration } from '../src/model.js';
 
 const HELP = `Offline Partnership Breakpoint analysis (Node.js 20+)
@@ -17,6 +18,8 @@ Usage: node scripts/analyze.mjs COMMAND INPUT [ARGUMENTS]
   compare CURRENT FIRST [SECOND]  Align two or three scenarios by participant ID
   review INPUT TOOL             Create a replayable constraint review packet
   plan INPUT [--csv|--brief]    Evaluate the multi-period commercial plan
+  alternatives INPUT [--csv]    Compare negotiated structures on the declared grid
+  apply-alternative INPUT ID    Apply one explored alternative as the new case
   replay INPUT                  Verify an existing review packet
   case INPUT CASE_ID            Export a compound case as new baseline inputs
   proposal INPUT                Export a rechecked fixed-share scenario
@@ -139,6 +142,21 @@ function run(command, args) {
     case 'review':
       arity(args, 2);
       return createPartnershipReviewPacket(readJSON(args[0]), args[1]);
+    case 'alternatives': {
+      arity(args, 1, 2);
+      const flags = args.slice(1);
+      if (new Set(flags).size !== flags.length || flags.some(flag => !['--csv'].includes(flag))) {
+        throw new Error('Alternatives accepts only --csv, once.');
+      }
+      const config = assertValidConfiguration(readJSON(args[0]));
+      if (flags.includes('--csv')) return negotiationAlternativesCsv(config);
+      return exploreNegotiationAlternatives(config);
+    }
+    case 'apply-alternative': {
+      arity(args, 2);
+      const config = assertValidConfiguration(readJSON(args[0]));
+      return applyNegotiationAlternative(config, args[1]);
+    }
     case 'plan': {
       arity(args, 1, 2);
       const flags = args.slice(1);

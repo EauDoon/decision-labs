@@ -69,7 +69,7 @@
 export const EPSILON = 1e-9;
 export const MAX_PARTICIPANTS = 24;
 export const MAX_NUMERIC_INPUT = 1_000_000_000_000_000;
-const CONFIG_KEYS = new Set(['deal', 'participants', 'stress', 'plan', 'collapseAllHoldCases', 'hideHoldingParticipants', 'hideAllHoldLedger', 'hideZeroShareParticipants', 'hideParticipantsOverCapacity', 'hideParticipantsAtHold', 'hideParticipantsWithoutCapacity', 'hideParticipantsWithSpareCapacity', 'hideParticipantsAtLeastHeadroom', 'hideParticipantsWithinCapacity', 'hideFirstBreakpointParticipant', 'hideFirstOverCapacityParticipant', 'hideLastOverCapacityParticipant', 'hideLastBreakpointParticipant', 'hideLastWithinCapacityParticipant', 'hideFirstWithinCapacityParticipant', 'hideLastSpareCapacityParticipant', 'hideFirstSpareCapacityParticipant', 'hideLastParticipantWithoutCapacity', 'hideFirstParticipantWithoutCapacity', 'hideLastParticipantAtHold', 'hideFirstParticipantAtHold', 'hideFirstZeroShareParticipant', 'hideLastZeroShareParticipant']);
+const CONFIG_KEYS = new Set(['deal', 'participants', 'stress', 'plan', 'alternatives', 'collapseAllHoldCases', 'hideHoldingParticipants', 'hideAllHoldLedger', 'hideZeroShareParticipants', 'hideParticipantsOverCapacity', 'hideParticipantsAtHold', 'hideParticipantsWithoutCapacity', 'hideParticipantsWithSpareCapacity', 'hideParticipantsAtLeastHeadroom', 'hideParticipantsWithinCapacity', 'hideFirstBreakpointParticipant', 'hideFirstOverCapacityParticipant', 'hideLastOverCapacityParticipant', 'hideLastBreakpointParticipant', 'hideLastWithinCapacityParticipant', 'hideFirstWithinCapacityParticipant', 'hideLastSpareCapacityParticipant', 'hideFirstSpareCapacityParticipant', 'hideLastParticipantWithoutCapacity', 'hideFirstParticipantWithoutCapacity', 'hideLastParticipantAtHold', 'hideFirstParticipantAtHold', 'hideFirstZeroShareParticipant', 'hideLastZeroShareParticipant']);
 const DEAL_KEYS = new Set(['monthlyVolume', 'feePerTransaction', 'addressableVolume', 'volumeShockPct', 'title', 'currency', 'notes']);
 const PARTICIPANT_KEYS = new Set(['id', 'name', 'revenueShare', 'variableCostPerTransaction', 'fixedMonthlyCost', 'minimumAcceptableProfit', 'capacity', 'minimumCommitment', 'riskCost']);
 const RESERVED_KEYS = new Set(['__proto__', 'constructor', 'prototype']);
@@ -77,6 +77,11 @@ const RESERVED_KEYS = new Set(['__proto__', 'constructor', 'prototype']);
 export const DEFAULT_STRESS = Object.freeze({ volumeDropPct: 20, volumeGrowthPct: 20, feeDropPct: 10, variableCostRisePct: 20 });
 const STRESS_LIMITS = Object.freeze({ volumeDropPct: 100, volumeGrowthPct: 100, feeDropPct: 100, variableCostRisePct: 200 });
 export const MAX_PLAN_PERIODS = 24;
+export const MAX_ALTERNATIVE_CANDIDATES = 120;
+export const MAX_ALTERNATIVE_FEES = 6;
+export const MAX_CAPACITY_INVESTMENTS = 3;
+const ALTERNATIVE_SHARE_MODES = Object.freeze(['current', 'equal', 'funded']);
+const ALTERNATIVE_OBJECTIVES = Object.freeze(['stress-holds', 'profit']);
 const PLAN_PERIOD_KEYS = new Set(['volume', 'feePerTransaction', 'addressableVolume', 'setupExpense', 'participants']);
 const PLAN_OVERRIDE_KEYS = new Set(['variableCostPerTransaction', 'fixedMonthlyCost', 'minimumAcceptableProfit', 'capacity', 'minimumCommitment']);
 
@@ -659,6 +664,9 @@ export function validateConfiguration(config) {
   if (Object.hasOwn(config, 'plan')) {
     validateCommercialPlan(own(config, 'plan'), own(config, 'participants'), errors);
   }
+  if (Object.hasOwn(config, 'alternatives')) {
+    validateNegotiationExploration(own(config, 'alternatives'), own(config, 'participants'), errors);
+  }
 
   const deal = own(config, 'deal');
   if (!isPlainObject(deal)) {
@@ -800,6 +808,71 @@ export function validateCommercialPlan(plan, rawParticipants, errors) {
         errors.push(`Commercial plan ${key} must be a whole number of periods from 0 through ${Math.max(count, 1)}.`);
       }
     }
+  }
+}
+
+/**
+ * Validates the optional negotiation-alternatives exploration. The exploration
+ * names a small explicit grid: fee levels, share modes, an optional
+ * commitment-relief dimension, and up to three single capacity investments.
+ * Anything outside the grid is out of scope by construction.
+ */
+export function validateNegotiationExploration(exploration, rawParticipants, errors) {
+  if (!isPlainObject(exploration)) {
+    errors.push('Negotiation exploration must be an object.');
+    return;
+  }
+  rejectUnknownKeys(exploration, new Set(['feeLevels', 'shareModes', 'commitmentRelief', 'capacityInvestments', 'objective']), 'Negotiation exploration', errors);
+  const ids = new Set();
+  if (Array.isArray(rawParticipants)) {
+    for (const entry of rawParticipants) {
+      if (isPlainObject(entry) && typeof entry.id === 'string') ids.add(entry.id);
+    }
+  }
+  const fees = own(exploration, 'feeLevels');
+  if (!Array.isArray(fees) || fees.length < 1 || fees.length > MAX_ALTERNATIVE_FEES || fees.some((fee) => !isFiniteNumber(fee) || fee < 0 || fee > MAX_NUMERIC_INPUT)) {
+    errors.push(`Negotiation exploration needs 1 through ${MAX_ALTERNATIVE_FEES} finite non-negative fee levels.`);
+  }
+  const modes = own(exploration, 'shareModes');
+  if (!Array.isArray(modes) || modes.length < 1 || modes.length > ALTERNATIVE_SHARE_MODES.length || new Set(modes).size !== modes.length || modes.some((mode) => !ALTERNATIVE_SHARE_MODES.includes(mode))) {
+    errors.push('Negotiation exploration share modes must list current, equal, and funded without repeats.');
+  }
+  if (Object.hasOwn(exploration, 'commitmentRelief') && typeof own(exploration, 'commitmentRelief') !== 'boolean') {
+    errors.push('Negotiation exploration commitment relief must be a boolean.');
+  }
+  const investments = own(exploration, 'capacityInvestments');
+  if (investments !== undefined) {
+    if (!Array.isArray(investments) || investments.length > MAX_CAPACITY_INVESTMENTS) {
+      errors.push(`Negotiation exploration allows at most ${MAX_CAPACITY_INVESTMENTS} capacity investments.`);
+    } else {
+      investments.forEach((investment, index) => {
+        const prefix = `Negotiation exploration capacity investment ${index + 1}`;
+        if (!isPlainObject(investment)) {
+          errors.push(`${prefix} must be an object.`);
+          return;
+        }
+        rejectUnknownKeys(investment, new Set(['participantId', 'addedCapacity', 'investmentCost']), prefix, errors);
+        if (typeof investment.participantId !== 'string' || !ids.has(investment.participantId)) {
+          errors.push(`${prefix} must name a current participant.`);
+        }
+        if (!isFiniteNumber(investment.addedCapacity) || investment.addedCapacity < 0 || investment.addedCapacity > MAX_NUMERIC_INPUT) {
+          errors.push(`${prefix} added capacity must be finite and non-negative.`);
+        }
+        if (!isFiniteNumber(investment.investmentCost) || investment.investmentCost < 0 || investment.investmentCost > MAX_NUMERIC_INPUT) {
+          errors.push(`${prefix} investment cost must be finite and non-negative.`);
+        }
+      });
+    }
+  }
+  if (Object.hasOwn(exploration, 'objective') && !ALTERNATIVE_OBJECTIVES.includes(own(exploration, 'objective'))) {
+    errors.push('Negotiation exploration objective must be stress-holds or profit.');
+  }
+  const feeCount = Array.isArray(fees) ? fees.length : 0;
+  const modeCount = Array.isArray(modes) ? modes.length : 0;
+  const reliefCount = own(exploration, 'commitmentRelief') === true ? 2 : 1;
+  const investmentCount = 1 + (Array.isArray(investments) ? investments.length : 0);
+  if (feeCount * modeCount * reliefCount * investmentCount > MAX_ALTERNATIVE_CANDIDATES) {
+    errors.push(`Negotiation exploration grid holds ${feeCount * modeCount * reliefCount * investmentCount} candidates, above the ${MAX_ALTERNATIVE_CANDIDATES} supported bound. Narrow the fee levels, share modes, or investments.`);
   }
 }
 
@@ -1269,6 +1342,210 @@ export function applyStressProposal(config) {
   if (!proposal) throw new ValidationError(['No verified fixed-share proposal is available for these stress cases.']);
   return { ...config, deal: { ...config.deal }, ...(config.stress ? { stress: { ...config.stress } } : {}),
     participants: config.participants.map((participant, index) => ({ ...participant, revenueShare: proposal[index].revenueShare })) };
+}
+
+/**
+ * Compares alternative commercial structures on one explicit grid: declared fee
+ * levels, share modes (current, equal, or stress-funded), an optional
+ * commitment-relief dimension, and single capacity investments tested one at a
+ * time. Every candidate is evaluated on the monthly model and the full
+ * compound stress grid under identical volume, cost, and stress assumptions.
+ *
+ * The ranking is explicit and bounded, not an optimum. `stress-holds` ranks by
+ * stress cases held, then monthly total profit; `profit` ranks by monthly total
+ * profit, then stress cases held. Deterministic candidate order breaks
+ * remaining ties. Skipped modes name their reason instead of inventing a
+ * candidate.
+ */
+export function exploreNegotiationAlternatives(config) {
+  const valid = assertValidConfiguration(config);
+  if (!valid.alternatives) {
+    throw new ValidationError(['Negotiation exploration is absent. Declare fee levels, share modes, and an objective before exploring.']);
+  }
+  const exploration = valid.alternatives;
+  const objective = exploration.objective ?? 'stress-holds';
+  const baseMonthly = calculatePartnership(valid);
+  const baseDeltas = new Map(baseMonthly.participants.map((participant) => [participant.id, participant.monthlyProfit]));
+  const investments = exploration.capacityInvestments ?? [];
+  const investmentOptions = [null, ...investments];
+  const reliefOptions = exploration.commitmentRelief === true ? [false, true] : [false];
+  const candidates = [];
+  const skipped = [];
+  let sequence = 0;
+  for (const fee of exploration.feeLevels) {
+    for (const shareMode of exploration.shareModes) {
+      for (const relief of reliefOptions) {
+        for (const investment of investmentOptions) {
+          sequence += 1;
+          const candidate = buildAlternativeCandidate(valid, baseDeltas, {
+            sequence, fee, shareMode, relief, investment, objective,
+          });
+          if (candidate.skipped) skipped.push(candidate.skipped);
+          else candidates.push(candidate.record);
+        }
+      }
+    }
+  }
+  const feasible = candidates.filter((candidate) => candidate.feasible);
+  const rank = (left, right) => objective === 'profit'
+    ? (right.monthlyTotalProfit - left.monthlyTotalProfit) || (right.stressHolds - left.stressHolds) || (left.sequence - right.sequence)
+    : (right.stressHolds - left.stressHolds) || (right.monthlyTotalProfit - left.monthlyTotalProfit) || (left.sequence - right.sequence);
+  const ordered = [...candidates].sort(rank);
+  ordered.forEach((candidate, index) => { candidate.rank = index + 1; });
+  const bestFeasible = ordered.find((candidate) => candidate.feasible) ?? null;
+  return {
+    searchMode: 'grid',
+    objective,
+    candidateCount: candidates.length,
+    feasibleCount: feasible.length,
+    bounds: {
+      feeLevels: [...exploration.feeLevels],
+      shareModes: [...exploration.shareModes],
+      commitmentRelief: exploration.commitmentRelief === true,
+      capacityInvestments: investments.map((item) => ({ ...item })),
+      maxCandidates: MAX_ALTERNATIVE_CANDIDATES,
+    },
+    assumptionsHeldConstant: ['planned volume', 'volume shock', 'addressable demand', 'variable costs', 'fixed costs', 'risk costs', 'profit floors', 'stress settings'],
+    candidates: ordered,
+    skipped,
+    bestFeasibleId: bestFeasible?.id ?? null,
+  };
+}
+
+function buildAlternativeCandidate(valid, baseDeltas, { sequence, fee, shareMode, relief, investment, objective }) {
+  const id = `alt-${sequence}`;
+  const label = [
+    `fee ${fee}`,
+    shareMode === 'current' ? 'current shares' : shareMode === 'equal' ? 'equal shares' : 'stress-funded shares',
+    relief ? 'commitments relieved' : 'commitments kept',
+    investment ? `capacity +${investment.addedCapacity} for ${investment.participantId} at ${investment.investmentCost}` : 'no capacity investment',
+  ].join('; ');
+  const deal = { ...valid.deal, feePerTransaction: fee };
+  let participants = valid.participants.map((item) => ({ ...item }));
+  if (relief) participants = participants.map((item) => ({ ...item, minimumCommitment: 0 }));
+  if (investment) {
+    participants = participants.map((item) => item.id === investment.participantId
+      ? { ...item, capacity: (item.capacity ?? 0) + investment.addedCapacity, fixedMonthlyCost: item.fixedMonthlyCost + investment.investmentCost }
+      : item);
+  }
+  if (shareMode === 'equal') {
+    const share = 1 / participants.length;
+    participants = participants.map((item) => ({ ...item, revenueShare: share }));
+  }
+  if (shareMode === 'funded') {
+    const funded = fundedSharesAtTerms(valid, deal, participants);
+    if (!funded) {
+      return { skipped: { id, label, reason: 'No finite share split funds every profit floor at this fee; the funded mode is skipped rather than invented.' } };
+    }
+    participants = participants.map((item, index) => ({ ...item, revenueShare: funded[index] }));
+  }
+  const monthly = calculatePartnership({ ...valid, deal, participants });
+  const feasible = monthly.viable;
+  const stress = evaluateStressGrid({ ...valid, deal, participants });
+  const participantProfits = monthly.participants.map((item) => ({
+    id: item.id, name: item.name, monthlyProfit: item.monthlyProfit, viable: item.viable,
+    profitDelta: item.monthlyProfit - (baseDeltas.get(item.id) ?? 0),
+    failureReasons: item.failureReasons,
+  }));
+  return {
+    skipped: null,
+    record: {
+      id, sequence, label, objective,
+      fee, shareMode, commitmentRelief: relief,
+      investment: investment ? { ...investment } : null,
+      deal: JSON.parse(JSON.stringify(deal)),
+      participants: JSON.parse(JSON.stringify(participants)),
+      feasible,
+      failureSummary: feasible ? '' : monthly.participants.filter((item) => !item.viable).map((item) => `${item.name}: ${item.failureReasons.join('; ')}`).join(' | '),
+      monthlyTotalProfit: monthly.totalProfit,
+      stressHolds: stress.passCount,
+      stressCases: stress.caseCount,
+      weakestBinding: monthly.weakestParticipant.bindingConstraint.label,
+      weakestParticipant: monthly.weakestParticipant.name,
+      participantProfits,
+      rank: null,
+    },
+  };
+}
+
+/**
+ * Stress-funded shares at explicit terms: each participant receives the share
+ * that funds its profit floor at the candidate volume and fee, with leftover
+ * revenue distributed in proportion to current shares. Returns null when no
+ * finite split funds every floor, mirroring the stress-grid negotiation.
+ */
+function fundedSharesAtTerms(valid, deal, participants) {
+  const volume = Math.min(deal.monthlyVolume * (1 - (deal.volumeShockPct ?? 0) / 100), deal.addressableVolume);
+  const gross = volume * deal.feePerTransaction;
+  const required = participants.map((item) => {
+    const needs = volume * item.variableCostPerTransaction + item.fixedMonthlyCost + item.riskCost + item.minimumAcceptableProfit;
+    if (gross <= 0) return needs === 0 ? 0 : null;
+    const share = needs / gross;
+    return Number.isFinite(share) ? share : null;
+  });
+  if (required.some((share) => share === null)) return null;
+  const total = required.reduce((sum, share) => sum + share, 0);
+  const tolerance = Number.EPSILON * Math.max(1, total) * participants.length * 4;
+  if (total - 1 > tolerance) return null;
+  const residual = Math.max(0, 1 - total);
+  const currentTotal = participants.reduce((sum, item) => sum + item.revenueShare, 0);
+  const shares = required.map((share, index) => share + (currentTotal > 0 ? residual * (participants[index].revenueShare / currentTotal) : residual / participants.length));
+  const reconciled = shares.reduce((sum, share) => sum + share, 0);
+  const largest = shares.reduce((best, share, index) => share > shares[best] ? index : best, 0);
+  shares[largest] += 1 - reconciled;
+  const candidate = { ...valid, deal, participants: participants.map((item, index) => ({ ...item, revenueShare: shares[index] })) };
+  if (!validateConfiguration(candidate).valid) return null;
+  const check = calculatePartnership(candidate);
+  return check.viable ? shares : null;
+}
+
+/**
+ * Applies one explored alternative as the new case inputs. Only fee, shares,
+ * commitments, capacity, and fixed costs change; volume, shock, demand, costs,
+ * floors, stress, plan, and display preferences stay exactly as they were.
+ * The caller keeps the previous case for undo and baseline comparison.
+ */
+export function applyNegotiationAlternative(config, candidateId) {
+  const valid = assertValidConfiguration(config);
+  if (!valid.alternatives) throw new ValidationError(['Negotiation exploration is absent. Explore alternatives before applying one.']);
+  const explored = exploreNegotiationAlternatives(valid);
+  const candidate = explored.candidates.find((item) => item.id === candidateId);
+  if (!candidate) throw new ValidationError(['Choose a current alternative candidate.']);
+  if (!candidate.feasible) throw new ValidationError(['Only a viable alternative can be applied. Adjust the exploration bounds first.']);
+  const next = { ...valid, deal: JSON.parse(JSON.stringify(candidate.deal)), participants: JSON.parse(JSON.stringify(candidate.participants)) };
+  assertValidConfiguration(next);
+  return next;
+}
+
+/**
+ * Candidate comparison CSV: one row per explored alternative with viability,
+ * robustness, economics, and per-participant profit deltas against the current
+ * monthly case. Skipped grid points follow as memo rows.
+ */
+export function negotiationAlternativesCsv(config) {
+  const explored = exploreNegotiationAlternatives(config);
+  const profitColumns = explored.candidates.length
+    ? explored.candidates[0].participantProfits.map((entry) => entry.id)
+    : [];
+  const rows = [[
+    'Section', 'Candidate', 'Rank', 'Fee', 'Shares', 'Commitments', 'Capacity investment',
+    'Monthly viable', 'Failure summary', 'Stress holds', 'Stress cases', 'Total profit',
+    'Weakest participant', 'Weakest binding',
+    ...profitColumns.flatMap((id) => [`${id} profit`, `${id} delta vs current`]),
+  ]];
+  for (const candidate of explored.candidates) {
+    rows.push(['candidate', candidate.id, candidate.rank, candidate.fee, candidate.shareMode,
+      candidate.commitmentRelief ? 'relieved' : 'kept',
+      candidate.investment ? `+${candidate.investment.addedCapacity} ${candidate.investment.participantId} at ${candidate.investment.investmentCost}` : 'none',
+      candidate.feasible, candidate.failureSummary, candidate.stressHolds, candidate.stressCases,
+      candidate.monthlyTotalProfit, candidate.weakestParticipant, candidate.weakestBinding,
+      ...candidate.participantProfits.flatMap((entry) => [entry.monthlyProfit, entry.profitDelta])]);
+  }
+  for (const skipped of explored.skipped) {
+    rows.push(['skipped', skipped.id, '', '', '', '', '', '', skipped.reason, '', '', '', '', '']);
+  }
+  rows.push(['objective', '', '', '', '', '', '', '', `Objective ${explored.objective}; search mode ${explored.searchMode}; ${explored.candidateCount} candidates, ${explored.feasibleCount} viable. Held constant: ${explored.assumptionsHeldConstant.join(', ')}.`, '', '', '', '', '']);
+  return `${rows.map((row) => row.map(escapeCsvCell).join(',')).join('\r\n')}\r\n`;
 }
 
 /**
@@ -2450,6 +2727,7 @@ export const PARTNERSHIP_REVIEW_TOOLS = Object.freeze([
   {id:'volumes',title:'Effective-volume scenarios'},
   {id:'zero',title:'Zero-volume obligations'},
   {id:'commercial',title:'Multi-period commercial plan'},
+  {id:'alternatives',title:'Negotiation alternatives'},
 // PB_REVIEW_TOOLS
 ]);
 
@@ -2532,6 +2810,17 @@ export function analyzePartnershipReview(rawConfig, tool) {
  const rows=plan.participantPeriods.map(p=>[p.name,plan.participantPeriods.length?`${p.rows.filter(r=>r.viable).length} of ${plan.horizon}`:null,p.firstConstrainedPeriod??'None within horizon',p.cumulativeOperating,plan.periodTotals.map(t=>{const row=p.rows[t.period-1];return `${t.period}:${row.viable?'hold':'exit'}`;}).join(' ')]);
  const note=`Horizon operating contribution ${plan.horizonOperatingContribution}; setup expense ${plan.totalSetupExpense}. Recovery: ${plan.recovery.reason} Cash: closing ${plan.cash.rows[plan.horizon-1].closingCash} from ${plan.startingCash} starting cash with ${plan.collectionLagPeriods}-period collections and ${plan.paymentLagPeriods}-period payments; funding requirement ${plan.cash.fundingRequirement}; receivables after horizon ${plan.cash.receivablesAfterHorizon}; payables after horizon ${plan.cash.payablesAfterHorizon}. Profit-and-loss and cash are separate views of the same declared inputs. This is not a forecast or a funding commitment.`;
  return report(['Participant','Periods holding','First constrained period','Horizon operating profit','Period-by-period hold'],rows,note);
+
+ }
+ case 'alternatives': {
+
+ if (!config.alternatives) {
+   return report(['Candidate','Fee','Shares','Commitments','Capacity investment','Monthly viable','Stress holds','Total profit','Weakest binding'],[],'No negotiation exploration is attached to this case. Declare fee levels, share modes, and an objective to compare alternative structures. The current case is unchanged.');
+ }
+ const explored=exploreNegotiationAlternatives(config);
+ const rows=explored.candidates.map(c=>[c.id,c.fee,c.shareMode,c.commitmentRelief?'relieved':'kept',c.investment?`+${c.investment.addedCapacity} ${c.investment.participantId} at ${c.investment.investmentCost}`:'none',c.feasible?'Viable':'Fails',`${c.stressHolds} of ${c.stressCases}`,c.monthlyTotalProfit,c.weakestBinding]);
+ const note=`Objective ${explored.objective}: ${explored.objective === 'profit' ? 'monthly total profit first, then stress cases held' : 'stress cases held first, then monthly total profit'}. Grid search over ${explored.candidateCount} declared candidates (${explored.feasibleCount} viable${explored.skipped.length ? `, ${explored.skipped.length} skipped: ${explored.skipped.map(s=>s.id).join(', ')}` : ''}); search mode ${explored.searchMode}. Held constant: ${explored.assumptionsHeldConstant.join(', ')}. This ranks the declared grid only; it is not an optimum over continuous terms and not a forecast.`;
+ return report(['Candidate','Fee','Shares','Commitments','Capacity investment','Monthly viable','Stress holds','Total profit','Weakest binding'],rows,note);
 
  }
 // PB_REVIEW_CASES
