@@ -2002,6 +2002,39 @@ const presets = {
       },
     ],
   },
+  "soigneur-cycling-club-hours": {
+    title: "Soigneur cycling club hours: soigneur-station, cape-bag hours, and rice-cake lock-up",
+    threshold: 70,
+    maxChangeCost: 8,
+    groups: [
+      { id: "students", name: "Students", weight: 29 },
+      { id: "neighbours", name: "Neighbours", weight: 20, veto: true },
+      { id: "pandc", name: "P&C", weight: 31 },
+    ],
+    clauses: [
+      {
+        id: "soigneur-cycling-soigneur-station", title: "Soigneur-station", options: [
+          { id: "soigneur-cycling-soigneur-station-original", original: true, label: "Keep weekday soigneur-station from 11:50 with no posted cape-bag card", changeCost: 0, support: { students: 19, neighbours: 75, pandc: 62 } },
+          { id: "soigneur-cycling-soigneur-station-late", original: false, label: "Open weekday soigneur-station at 20:35 with a posted cape-bag card", changeCost: 2, support: { students: 84, neighbours: 23, pandc: 41 } },
+          { id: "soigneur-cycling-soigneur-station-weekend", original: false, label: "Hold Saturday morning soigneur-station at 10:25 with a cape-bag booking card", changeCost: 4, support: { students: 69, neighbours: 31, pandc: 49 } },
+        ],
+      },
+      {
+        id: "soigneur-cycling-cape-bag", title: "Cape-bag hours", options: [
+          { id: "soigneur-cycling-cape-bag-original", original: true, label: "No posted cape-bag hours", changeCost: 0, support: { students: 59, neighbours: 15, pandc: 40 } },
+          { id: "soigneur-cycling-cape-bag-cap", original: false, label: "Close cape-bag hours at 21:40 and keep cake crew at the rice-cake shed", changeCost: 1, support: { students: 40, neighbours: 85, pandc: 66 } },
+          { id: "soigneur-cycling-cape-bag-cut", original: false, label: "Serve cake crew only after 15:45", changeCost: 5, support: { students: 22, neighbours: 83, pandc: 38 } },
+        ],
+      },
+      {
+        id: "soigneur-cycling-rice-cake-lockup", title: "Rice-cake lock-up", options: [
+          { id: "soigneur-cycling-rice-cake-lockup-original", original: true, label: "Leave the rice-cake door on a shared padlock after club hours", changeCost: 0, support: { students: 10, neighbours: 21, pandc: 32 } },
+          { id: "soigneur-cycling-rice-cake-lockup-steward", original: false, label: "Require a P&C steward to lock the rice-cake store before 23:10", changeCost: 3, support: { students: 46, neighbours: 71, pandc: 85 } },
+          { id: "soigneur-cycling-rice-cake-lockup-timer", original: false, label: "Add a timed lock on the rice-cake store after the last soigneur cycling session", changeCost: 2, support: { students: 35, neighbours: 38, pandc: 53 } },
+        ],
+      },
+    ],
+  },
 };
 
 let agreementReviewPacket = null;
