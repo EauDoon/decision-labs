@@ -958,6 +958,23 @@ export const presets = Object.freeze({
       offer("O02", "Musette Salad Run", "Feed-zone lunch pack", "Musette salad", 15, 15, 4, 42, 2),
       { ...offer("O03", "Hall Feed-zone Pickup", "Feed-zone lunch pack", "Bottle water", 44, 47, 1, 64, 5), fulfillment: "pickup" }
     ]
+  },
+  leadOutCyclingCarnivalLunch: {
+    title: "Lead-out cycling carnival lunch",
+    currency: "AUD",
+    buyers: [
+      buyer("B01", "Train-line crate", "Lead-out lunch pack", 17, 23, 4, ["Lead-out pie", "Train salad"]),
+      buyer("B02", "Last-rider bench", "Lead-out lunch pack", 19, 19, 3, ["Lead-out pie"]),
+      buyer("B03", "Sprinter-launch hamper", "Lead-out lunch pack", 15, 46, 5, ["Train salad", "Launch water"]),
+      buyer("B04", "Sideline cooler", "Lead-out lunch pack", 36, 46, 2, ["Launch water"]),
+      buyer("B05", "Scoreboard trolley", "Lead-out lunch pack", 16, 22, 4, ["Lead-out pie", "Launch water"]),
+      buyer("B06", "Bench table", "Lead-out lunch pack", 13, 20, 3, ["Train salad", "Lead-out pie"])
+    ],
+    offers: [
+      offer("O01", "Court-side Lead-out Delivery", "Lead-out lunch pack", "Lead-out pie", 17, 17, 3, 54, 3),
+      offer("O02", "Train Salad Run", "Lead-out lunch pack", "Train salad", 15, 15, 4, 42, 2),
+      { ...offer("O03", "Hall Lead-out Pickup", "Lead-out lunch pack", "Launch water", 46, 49, 1, 64, 5), fulfillment: "pickup" }
+    ]
   }
 });
 

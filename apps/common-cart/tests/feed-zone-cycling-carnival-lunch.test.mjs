@@ -67,6 +67,7 @@ test("feed-zone cycling carnival lunch leftover fill is hall pickup and stays di
   assert.notEqual(feedZoneCycling.scenario.title, canoeing.scenario.title);
   assert.notEqual(feedZoneCycling.scenario.title, sailing.scenario.title);
   assert.notDeepEqual(clonePreset("feedZoneCyclingCarnivalLunch"), clonePreset("firstAidCyclingCarnivalLunch"));
+  assert.notDeepEqual(clonePreset("feedZoneCyclingCarnivalLunch"), clonePreset("leadOutCyclingCarnivalLunch"));
   assert.notDeepEqual(clonePreset("feedZoneCyclingCarnivalLunch"), clonePreset("teamSprintCyclingCarnivalLunch"));
   assert.notDeepEqual(clonePreset("feedZoneCyclingCarnivalLunch"), clonePreset("teamPursuitCyclingCarnivalLunch"));
   assert.notDeepEqual(clonePreset("feedZoneCyclingCarnivalLunch"), clonePreset("individualPursuitCyclingCarnivalLunch"));
@@ -251,6 +252,9 @@ test("feed-zone cycling carnival lunch leftover fill is hall pickup and stays di
   assert.equal(payload.includes("Start-gate"), false);
   assert.equal(payload.includes("Flying-relay"), false);
   assert.equal(payload.includes("Trio-board"), false);
+  assert.equal(payload.includes("train-line"), false);
+  assert.equal(payload.includes("last-rider"), false);
+  assert.equal(payload.includes("sprinter-launch"), false);
   assert.match(payload, /Feed-zone/);
   assert.match(payload, /Musette-line crate/);
   assert.match(payload, /Sticky-bottle bench/);
@@ -279,5 +283,6 @@ test("the example bar includes feed-zone cycling carnival lunch next to first-ai
   assert.ok(html.indexOf('data-preset="teamPursuitCyclingCarnivalLunch"') < html.indexOf('data-preset="teamSprintCyclingCarnivalLunch"'));
   assert.ok(html.indexOf('data-preset="teamSprintCyclingCarnivalLunch"') < html.indexOf('data-preset="firstAidCyclingCarnivalLunch"'));
   assert.ok(html.indexOf('data-preset="firstAidCyclingCarnivalLunch"') < html.indexOf('data-preset="feedZoneCyclingCarnivalLunch"'));
-  assert.ok(html.indexOf('data-preset="feedZoneCyclingCarnivalLunch"') < html.indexOf('data-preset="tiers"'));
+  assert.ok(html.indexOf('data-preset="feedZoneCyclingCarnivalLunch"') < html.indexOf('data-preset="leadOutCyclingCarnivalLunch"'));
+  assert.ok(html.indexOf('data-preset="leadOutCyclingCarnivalLunch"') < html.indexOf('data-preset="tiers"'));
 });
