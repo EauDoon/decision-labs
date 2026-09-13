@@ -70,6 +70,7 @@ test("domestique cycling carnival lunch leftover fill is hall pickup and stays d
   assert.notEqual(domestiqueCycling.scenario.title, canoeing.scenario.title);
   assert.notEqual(domestiqueCycling.scenario.title, sailing.scenario.title);
   assert.notDeepEqual(clonePreset("domestiqueCyclingCarnivalLunch"), clonePreset("leadOutCyclingCarnivalLunch"));
+  assert.notDeepEqual(clonePreset("domestiqueCyclingCarnivalLunch"), clonePreset("bottleHandCyclingCarnivalLunch"));
   assert.notDeepEqual(clonePreset("domestiqueCyclingCarnivalLunch"), clonePreset("soigneurCyclingCarnivalLunch"));
   assert.notDeepEqual(clonePreset("domestiqueCyclingCarnivalLunch"), clonePreset("firstAidCyclingCarnivalLunch"));
   assert.notDeepEqual(clonePreset("domestiqueCyclingCarnivalLunch"), clonePreset("feedZoneCyclingCarnivalLunch"));
