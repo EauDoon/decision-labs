@@ -79,6 +79,7 @@ test("omnium cycling carnival lunch leftover fill is hall pickup and stays disti
   assert.notDeepEqual(clonePreset("omniumCyclingCarnivalLunch"), clonePreset("hockeyCarnivalLunch"));
   assert.notDeepEqual(clonePreset("omniumCyclingCarnivalLunch"), clonePreset("rugbyCarnivalLunch"));
   assert.notDeepEqual(clonePreset("omniumCyclingCarnivalLunch"), clonePreset("soccerCarnivalLunch"));
+  assert.notDeepEqual(clonePreset("omniumCyclingCarnivalLunch"), clonePreset("pointsRaceCyclingCarnivalLunch"));
   const leftoverFill = computeResidualCoverage(omniumCycling.scenario).secondary;
   assert.ok(leftoverFill);
   assert.equal(leftoverFill.merchant, "Hall Omnium Pickup");
@@ -129,6 +130,7 @@ test("omnium cycling carnival lunch leftover fill is hall pickup and stays disti
   assert.notEqual(leftoverOffer.capacity, leftoverOffer.capacity - leftoverFill.fulfilledUnits);
   assert.notEqual(leftoverOffer.unitPrice, leftoverOffer.capacity - leftoverFill.fulfilledUnits);
   assert.notEqual(leftoverOffer.unitPrice, leftoverFill.fulfilledUnits);
+  assert.notEqual(leftoverFill.fulfilledUnits, 38);
   assert.notEqual(leftoverFill.fulfilledUnits, 36);
   assert.notEqual(leftoverFill.fulfilledUnits, 35);
   assert.notEqual(leftoverFill.fulfilledUnits, 34);
@@ -190,5 +192,6 @@ test("the example bar includes omnium cycling carnival lunch next to madison cyc
   assert.match(html, /data-preset="keirinCyclingCarnivalLunch"/u);
   assert.ok(html.indexOf('data-preset="keirinCyclingCarnivalLunch"') < html.indexOf('data-preset="madisonCyclingCarnivalLunch"'));
   assert.ok(html.indexOf('data-preset="madisonCyclingCarnivalLunch"') < html.indexOf('data-preset="omniumCyclingCarnivalLunch"'));
-  assert.ok(html.indexOf('data-preset="omniumCyclingCarnivalLunch"') < html.indexOf('data-preset="tiers"'));
+  assert.ok(html.indexOf('data-preset="omniumCyclingCarnivalLunch"') < html.indexOf('data-preset="pointsRaceCyclingCarnivalLunch"'));
+  assert.ok(html.indexOf('data-preset="pointsRaceCyclingCarnivalLunch"') < html.indexOf('data-preset="tiers"'));
 });
