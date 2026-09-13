@@ -6,7 +6,8 @@ test("team-pursuit cycling club hours keeps remaining 24 / 26 / 69 after individ
   const app = (await readFile(new URL("../src/app.js", import.meta.url), "utf8")).replaceAll("\r\n", "\n");
   const html = (await readFile(new URL("../index.html", import.meta.url), "utf8")).replaceAll("\r\n", "\n");
   const teamStart = app.indexOf('"team-pursuit-cycling-club-hours"');
-  const teamEnd = app.indexOf("let agreementReviewPacket", teamStart);
+  const sprintStart = app.indexOf('"team-sprint-cycling-club-hours"');
+  const teamEnd = sprintStart === -1 ? app.indexOf("let agreementReviewPacket", teamStart) : sprintStart;
   const team = app.slice(teamStart, teamEnd === -1 ? undefined : teamEnd);
   const pursuitStart = app.indexOf('"individual-pursuit-cycling-club-hours"');
   const pursuit = app.slice(pursuitStart, teamStart);
