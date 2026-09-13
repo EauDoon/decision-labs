@@ -1903,6 +1903,39 @@ const presets = {
       },
     ],
   },
+  "first-aid-cycling-club-hours": {
+    title: "First-aid cycling club hours: treatment-tent, ice-pack-rota hours, and triage-board lock-up",
+    threshold: 70,
+    maxChangeCost: 8,
+    groups: [
+      { id: "students", name: "Students", weight: 26 },
+      { id: "neighbours", name: "Neighbours", weight: 19, veto: true },
+      { id: "pandc", name: "P&C", weight: 28 },
+    ],
+    clauses: [
+      {
+        id: "first-aid-cycling-treatment-tent", title: "Treatment-tent", options: [
+          { id: "first-aid-cycling-treatment-tent-original", original: true, label: "Keep weekday treatment-tent from 11:20 with no posted ice-pack-rota card", changeCost: 0, support: { students: 16, neighbours: 74, pandc: 59 } },
+          { id: "first-aid-cycling-treatment-tent-late", original: false, label: "Open weekday treatment-tent at 20:05 with a posted ice-pack-rota card", changeCost: 2, support: { students: 81, neighbours: 22, pandc: 38 } },
+          { id: "first-aid-cycling-treatment-tent-weekend", original: false, label: "Hold Saturday morning treatment-tent at 09:55 with an ice-pack-rota booking card", changeCost: 4, support: { students: 66, neighbours: 30, pandc: 46 } },
+        ],
+      },
+      {
+        id: "first-aid-cycling-ice-pack-rota", title: "Ice-pack-rota hours", options: [
+          { id: "first-aid-cycling-ice-pack-rota-original", original: true, label: "No posted ice-pack-rota hours", changeCost: 0, support: { students: 56, neighbours: 12, pandc: 37 } },
+          { id: "first-aid-cycling-ice-pack-rota-cap", original: false, label: "Close ice-pack-rota hours at 21:10 and keep ice-pack crew at the triage-board shed", changeCost: 1, support: { students: 37, neighbours: 82, pandc: 65 } },
+          { id: "first-aid-cycling-ice-pack-rota-cut", original: false, label: "Serve ice-pack crew only after 15:15", changeCost: 5, support: { students: 19, neighbours: 82, pandc: 35 } },
+        ],
+      },
+      {
+        id: "first-aid-cycling-triage-board-lockup", title: "Triage-board lock-up", options: [
+          { id: "first-aid-cycling-triage-board-lockup-original", original: true, label: "Leave the triage-board door on a shared padlock after club hours", changeCost: 0, support: { students: 7, neighbours: 20, pandc: 29 } },
+          { id: "first-aid-cycling-triage-board-lockup-steward", original: false, label: "Require a P&C steward to lock the triage-board store before 22:40", changeCost: 3, support: { students: 43, neighbours: 70, pandc: 84 } },
+          { id: "first-aid-cycling-triage-board-lockup-timer", original: false, label: "Add a timed lock on the triage-board store after the last first-aid cycling session", changeCost: 2, support: { students: 32, neighbours: 37, pandc: 52 } },
+        ],
+      },
+    ],
+  },
 };
 
 let agreementReviewPacket = null;
