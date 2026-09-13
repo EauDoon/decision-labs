@@ -6,7 +6,8 @@ test("scratch cycling club hours keeps remaining 22 / 24 / 65 after points-race"
   const app = (await readFile(new URL("../src/app.js", import.meta.url), "utf8")).replaceAll("\r\n", "\n");
   const html = (await readFile(new URL("../index.html", import.meta.url), "utf8")).replaceAll("\r\n", "\n");
   const scratchStart = app.indexOf('"scratch-cycling-club-hours"');
-  const scratchEnd = app.indexOf("let agreementReviewPacket", scratchStart);
+  const pursuitStart = app.indexOf('"individual-pursuit-cycling-club-hours"');
+  const scratchEnd = pursuitStart === -1 ? app.indexOf("let agreementReviewPacket", scratchStart) : pursuitStart;
   const scratch = app.slice(scratchStart, scratchEnd === -1 ? undefined : scratchEnd);
   const pointsRaceStart = app.indexOf('"points-race-cycling-club-hours"');
   const pointsRace = app.slice(pointsRaceStart, scratchStart);
@@ -48,6 +49,10 @@ test("scratch cycling club hours keeps remaining 22 / 24 / 65 after points-race"
   assert.doesNotMatch(scratch, /bell-lap/);
   assert.doesNotMatch(scratch, /prime-board/);
   assert.doesNotMatch(scratch, /bell crew/);
+  assert.doesNotMatch(scratch, /pursuit-line/);
+  assert.doesNotMatch(scratch, /catch-bell/);
+  assert.doesNotMatch(scratch, /pursuit-chip/);
+  assert.doesNotMatch(scratch, /pursuit crew/);
   assert.match(pointsRace, /weight: 21/);
   assert.match(pointsRace, /weight: 23/);
   assert.match(pointsRace, /Bell-lap hours/);
