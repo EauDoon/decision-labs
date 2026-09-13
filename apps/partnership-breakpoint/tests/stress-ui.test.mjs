@@ -13234,3 +13234,84 @@ test('keyboard last-over-capacity remaining copy shortcuts stay on first-aid cyc
   assert.doesNotMatch(JSON.stringify(firstAid.saved()), /\bapi\b/i);
 });
 
+test('feed-zone cycling carnival split preset loads from the starting-point buttons', async () => {
+  const app = await workbench();
+  assert.match(app.markup(), /data-preset="feedZoneCyclingCarnivalSplit"/);
+  assert.match(app.markup(), /Feed-zone cycling carnival split/);
+  assert.match(app.markup(), /data-preset="firstAidCyclingCarnivalSplit"/);
+  assert.match(app.markup(), /First-aid cycling carnival split/);
+  const markup = app.markup();
+  assert.ok(markup.indexOf('data-preset="teamSprintCyclingCarnivalSplit"') < markup.indexOf('data-preset="firstAidCyclingCarnivalSplit"'));
+  assert.ok(markup.indexOf('data-preset="firstAidCyclingCarnivalSplit"') < markup.indexOf('data-preset="feedZoneCyclingCarnivalSplit"'));
+  app.click('preset', { preset: 'feedZoneCyclingCarnivalSplit' });
+  assert.equal(app.saved().participants.length, 3);
+  assert.deepEqual(app.saved().participants.map((item) => item.id), ['feed-zone-cycling-committee', 'feed-zone-cycling-club-hire', 'feed-zone-cycling-first-aid']);
+  assert.deepEqual(app.saved().participants.map((item) => item.name), ['Carnival committee', 'Feed-zone cycling club hire', 'First-aid']);
+  assert.equal(app.saved().deal.feePerTransaction, 8);
+  assert.equal(app.saved().deal.monthlyVolume, 6900);
+  assert.equal(app.saved().deal.addressableVolume, 8700);
+  assert.deepEqual(app.saved().participants.map((item) => item.capacity), [8250, 9350, 6900]);
+  assert.notEqual(app.saved().participants[0].variableCostPerTransaction, app.saved().participants[1].variableCostPerTransaction);
+  assert.notEqual(app.saved().participants[1].variableCostPerTransaction, app.saved().participants[2].variableCostPerTransaction);
+  assert.equal(app.saved().participants[2].variableCostPerTransaction, 1.26);
+  assert.match(app.notice(), /Feed-zone cycling carnival split loaded/);
+  assert.match(app.markup(), /Operating region holds/);
+  const exported = JSON.stringify(app.saved());
+  assert.doesNotMatch(exported, /live roster/i);
+  assert.doesNotMatch(exported, /hosted/i);
+  assert.doesNotMatch(exported, /\bapi\b/i);
+  assert.doesNotMatch(exported, /forecast/i);
+  assert.doesNotMatch(exported, /treatment-tent/i);
+  assert.doesNotMatch(exported, /ice-pack-rota/i);
+  assert.doesNotMatch(exported, /triage-board/i);
+  assert.doesNotMatch(exported, /start-gate/i);
+  assert.doesNotMatch(exported, /flying-relay/i);
+  assert.doesNotMatch(exported, /trio-board/i);
+  assert.match(exported, /Feed-zone cycling club hire/);
+});
+
+test('cyclo-cross carnival first-aid stays 1.56 after loading feed-zone cycling carnival', async () => {
+  const app = await workbench();
+  app.click('preset', { preset: 'feedZoneCyclingCarnivalSplit' });
+  assert.equal(app.saved().participants[2].variableCostPerTransaction, 1.26);
+  app.click('preset', { preset: 'cycloCrossCarnivalSplit' });
+  assert.equal(app.saved().participants[2].id, 'cyclo-cross-first-aid');
+  assert.equal(app.saved().participants[2].variableCostPerTransaction, 1.56);
+  assert.equal(app.saved().deal.monthlyVolume, 5300);
+  assert.deepEqual(app.saved().participants.map((item) => item.capacity), [6200, 7300, 5300]);
+  assert.match(app.notice(), /Cyclo-cross carnival split loaded/);
+});
+
+test('keyboard last-over-capacity remaining copy shortcuts stay on feed-zone cycling carnival', async () => {
+  const feedZone = await workbench('file:', { clipboard: 'ok' });
+  feedZone.click('preset', { preset: 'feedZoneCyclingCarnivalSplit' });
+  assert.match(feedZone.markup(), /id="copy-last-over-capacity-remaining"[^>]*aria-keyshortcuts="\* Shift\+F7 Shift\+F10"/);
+  assert.match(feedZone.markup(), /id="hide-last-over-capacity-participant"[^>]*aria-keyshortcuts="# Shift\+F9"/);
+  assert.match(feedZone.markup(), /id="hide-first-over-capacity-participant"[^>]*aria-keyshortcuts="@"/);
+  assert.doesNotMatch(feedZone.markup(), /id="hide-first-over-capacity-participant"[^>]*aria-keyshortcuts="Shift\+F9"/);
+  assert.match(feedZone.markup(), /id="copy-first-over-capacity-remaining"[^>]*aria-keyshortcuts="~"/);
+  feedZone.edit('deal.monthlyVolume', '8700');
+  feedZone.keydown('F7', { shiftKey: true });
+  assert.equal(feedZone.copied().at(-1), 'Last over-capacity remaining listed capacity: 1,800 txn over for First-aid. How far over listed capacity. Not a forecast.');
+  feedZone.keydown('F10', { shiftKey: true });
+  assert.equal(feedZone.copied().at(-1), 'Last over-capacity remaining listed capacity: 1,800 txn over for First-aid. How far over listed capacity. Not a forecast.');
+  feedZone.keydown('~');
+  assert.equal(feedZone.copied().at(-1), 'First over-capacity remaining listed capacity: 450 txn over for Carnival committee. How far over listed capacity. Not a forecast.');
+  feedZone.keydown('F7');
+  assert.equal(feedZone.copied().at(-1), 'First zero-share participant: none entered.');
+  feedZone.keydown('F8', { shiftKey: true });
+  assert.ok(feedZone.focused().includes('#copy-last-over-capacity-remaining'));
+  feedZone.keydown('F9', { shiftKey: true });
+  assert.ok(feedZone.focused().includes('#hide-last-over-capacity-participant'));
+  feedZone.keydown('F9');
+  assert.ok(feedZone.focused().includes('#hide-first-zero-share-participant'));
+  feedZone.keydown('@');
+  assert.ok(feedZone.focused().includes('#hide-first-over-capacity-participant'));
+  feedZone.keydown('F12', { shiftKey: true });
+  assert.ok(feedZone.focused().includes('#hide-first-over-capacity-participant'));
+  assert.equal(feedZone.saved().participants[2].variableCostPerTransaction, 1.26);
+  assert.doesNotMatch(JSON.stringify(feedZone.saved()), /live roster/i);
+  assert.doesNotMatch(JSON.stringify(feedZone.saved()), /hosted/i);
+  assert.doesNotMatch(JSON.stringify(feedZone.saved()), /\bapi\b/i);
+});
+
