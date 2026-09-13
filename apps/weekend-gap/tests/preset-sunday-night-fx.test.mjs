@@ -217,6 +217,7 @@ test("Sunday night FX open ORs into fxWeekday through isSundayNightFxOpenHour af
   assert.match(helper, /localHour >= 20 && localHour < 22/);
   assert.match(helper, /dayIndex === 0/);
   assert.match(helper, /sundayLateNightFxOpen/);
+  assert.match(helper, /saturdayNightFxOpen/);
   assert.match(helper, /sundayEveningFxOpen/);
   assert.match(helper, /saturdayEveningFxOpen/);
   assert.match(helper, /sundayLateFxOpen/);

@@ -31,6 +31,7 @@ test("Sunday late-night FX open keeps the Normal Friday calendar with a Sunday l
   assert.match(preset.name, /Sunday late-night FX open/i);
   assert.equal(preset.sundayLateNightFxOpen, true);
   assert.equal(DEFAULT_SCENARIO.sundayLateNightFxOpen, false);
+  assert.equal(preset.saturdayNightFxOpen, false);
   assert.equal(preset.sundayNightFxOpen, false);
   assert.equal(preset.sundayEveningFxOpen, false);
   assert.equal(preset.saturdayEveningFxOpen, false);
@@ -48,6 +49,7 @@ test("Sunday late-night FX open keeps the Normal Friday calendar with a Sunday l
   assert.equal(preset.saturdayLatePayoutOpen, false);
   assert.equal(preset.demandProfile, DEFAULT_SCENARIO.demandProfile);
   assert.notDeepEqual(preset, PRESETS.normal);
+  assert.notDeepEqual(preset, PRESETS.saturdayNightFxOpen);
   assert.notDeepEqual(preset, PRESETS.sundayNightFxOpen);
   assert.notDeepEqual(preset, PRESETS.sundayEveningFxOpen);
   assert.notDeepEqual(preset, PRESETS.saturdayEveningFxOpen);
@@ -226,12 +228,13 @@ test("Sunday late-night FX open keeps the Normal Friday calendar with a Sunday l
 test("Sunday late-night FX open ORs into fxWeekday through isSundayLateNightFxOpenHour after sundayEveningFxOpen", async () => {
   const model = await readFile(new URL("../src/model.js", import.meta.url), "utf8");
   const helperStart = model.indexOf("function isSundayLateNightFxOpenHour");
-  const helperNext = model.indexOf("\nexport function getOperationalStatus", helperStart);
+  const helperNext = model.indexOf("function isSaturdayNightFxOpenHour", helperStart);
   const commentStart = model.lastIndexOf("/** Sunday 22:00-24:00", helperStart);
   const helper = model.slice(commentStart === -1 ? helperStart : commentStart, helperNext === -1 ? undefined : helperNext);
   assert.match(helper, /scenario\.sundayLateNightFxOpen !== true/);
   assert.match(helper, /localHour >= 22 && localHour < 24/);
   assert.match(helper, /dayIndex === 0/);
+  assert.match(helper, /saturdayNightFxOpen/);
   assert.match(helper, /sundayNightFxOpen/);
   assert.match(helper, /sundayEveningFxOpen/);
   assert.match(helper, /saturdayEveningFxOpen/);
