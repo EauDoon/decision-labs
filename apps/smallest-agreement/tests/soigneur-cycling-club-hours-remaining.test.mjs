@@ -6,7 +6,7 @@ test("soigneur cycling club hours keeps remaining 29 / 31 / 79 after lead-out", 
   const app = (await readFile(new URL("../src/app.js", import.meta.url), "utf8")).replaceAll("\r\n", "\n");
   const html = (await readFile(new URL("../index.html", import.meta.url), "utf8")).replaceAll("\r\n", "\n");
   const soigneurStart = app.indexOf('"soigneur-cycling-club-hours"');
-  const soigneurEnd = app.indexOf("let agreementReviewPacket", soigneurStart);
+  const soigneurEnd = app.indexOf('"domestique-cycling-club-hours"', soigneurStart);
   const soigneur = app.slice(soigneurStart, soigneurEnd === -1 ? undefined : soigneurEnd);
   const leadOutStart = app.indexOf('"lead-out-cycling-club-hours"');
   const leadOut = app.slice(leadOutStart, soigneurStart);
