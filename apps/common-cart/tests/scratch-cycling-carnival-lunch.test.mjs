@@ -197,6 +197,9 @@ test("scratch cycling carnival lunch leftover fill is hall pickup and stays dist
   assert.equal(payload.includes("points-sprint"), false);
   assert.equal(payload.includes("bell-lap"), false);
   assert.equal(payload.includes("prime-board"), false);
+  assert.equal(payload.includes("pursuit-line"), false);
+  assert.equal(payload.includes("catch-bell"), false);
+  assert.equal(payload.includes("pursuit-chip"), false);
   assert.match(payload, /Scratch-bunch crate/);
   assert.match(payload, /Bunch-finish bench/);
   assert.match(payload, /Scratch-chip hamper/);

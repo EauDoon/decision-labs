@@ -873,6 +873,23 @@ export const presets = Object.freeze({
       offer("O02", "Bunch Salad Run", "Scratch lunch pack", "Bunch salad", 15, 15, 4, 42, 2),
       { ...offer("O03", "Hall Scratch Pickup", "Scratch lunch pack", "Chip water", 34, 38, 1, 64, 5), fulfillment: "pickup" }
     ]
+  },
+  individualPursuitCyclingCarnivalLunch: {
+    title: "Individual-pursuit cycling carnival lunch",
+    currency: "AUD",
+    buyers: [
+      buyer("B01", "Pursuit-line crate", "Individual-pursuit lunch pack", 15, 23, 4, ["Individual-pursuit pie", "Catch salad"]),
+      buyer("B02", "Catch-bell bench", "Individual-pursuit lunch pack", 19, 19, 3, ["Individual-pursuit pie"]),
+      buyer("B03", "Pursuit-chip hamper", "Individual-pursuit lunch pack", 15, 36, 5, ["Catch salad", "Pursuit water"]),
+      buyer("B04", "Sideline cooler", "Individual-pursuit lunch pack", 26, 36, 2, ["Pursuit water"]),
+      buyer("B05", "Scoreboard trolley", "Individual-pursuit lunch pack", 16, 22, 4, ["Individual-pursuit pie", "Pursuit water"]),
+      buyer("B06", "Bench table", "Individual-pursuit lunch pack", 13, 20, 3, ["Catch salad", "Individual-pursuit pie"])
+    ],
+    offers: [
+      offer("O01", "Court-side Individual-pursuit Delivery", "Individual-pursuit lunch pack", "Individual-pursuit pie", 17, 17, 3, 54, 3),
+      offer("O02", "Catch Salad Run", "Individual-pursuit lunch pack", "Catch salad", 15, 15, 4, 42, 2),
+      { ...offer("O03", "Hall Individual-pursuit Pickup", "Individual-pursuit lunch pack", "Pursuit water", 36, 40, 1, 64, 5), fulfillment: "pickup" }
+    ]
   }
 });
 
