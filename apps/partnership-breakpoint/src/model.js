@@ -596,6 +596,15 @@ export const PRESETS = Object.freeze({
       { id: 'feed-zone-cycling-first-aid', name: 'First-aid', revenueShare: 0.25, variableCostPerTransaction: 1.26, fixedMonthlyCost: 1800, minimumAcceptableProfit: 720, capacity: 6900, minimumCommitment: 0, riskCost: 490 },
     ],
   },
+  leadOutCyclingCarnivalSplit: {
+    name: 'Lead-out cycling carnival split',
+    deal: { monthlyVolume: 7000, feePerTransaction: 8, addressableVolume: 8900, volumeShockPct: 0 },
+    participants: [
+      { id: 'lead-out-cycling-committee', name: 'Carnival committee', revenueShare: 0.37, variableCostPerTransaction: 2.03, fixedMonthlyCost: 3910, minimumAcceptableProfit: 1620, capacity: 8400, minimumCommitment: 0, riskCost: 602 },
+      { id: 'lead-out-cycling-club-hire', name: 'Lead-out cycling club hire', revenueShare: 0.38, variableCostPerTransaction: 1.65, fixedMonthlyCost: 3180, minimumAcceptableProfit: 1160, capacity: 9500, minimumCommitment: 610, riskCost: 618 },
+      { id: 'lead-out-cycling-first-aid', name: 'First-aid', revenueShare: 0.25, variableCostPerTransaction: 1.24, fixedMonthlyCost: 1810, minimumAcceptableProfit: 730, capacity: 7000, minimumCommitment: 0, riskCost: 500 },
+    ],
+  },
 });
 
 function isFiniteNumber(value) {
