@@ -30,7 +30,7 @@ Every workbench:
 | [Partnership Breakpoint](apps/partnership-breakpoint/) | 1.5.51 | Find which participant in a revenue split reaches an exit threshold first when volume, fees, or costs move. | **Balanced** starting point |
 | [Common Cart](apps/common-cart/) | 1.4.51 | Pool buyer constraints and compare conditional merchant offers without exposing individual buyer records to the merchant view. | **Coffee** scenario (Neighbourhood coffee run) |
 | [The Smallest Agreement](apps/smallest-agreement/) | 1.5.51 | Find the lowest-cost set of clause changes that still crosses an approval threshold while respecting support floors, locks, and a change budget. | **Neighbourhood Plan** |
-| [Weekend Gap](apps/weekend-gap/) | 1.5.50 | Follow synthetic AUD redemption demand from Friday to Monday when reserves and settlement windows do not fully overlap. | **Normal Friday** (72-hour case) |
+| [Weekend Gap](apps/weekend-gap/) | 1.5.51 | Follow synthetic AUD redemption demand from Friday to Monday when reserves and settlement windows do not fully overlap. | **Normal Friday** (72-hour case) |
 
 Open [index.html](index.html) for the product home: one-sentence jobs, Open
 workbench / How it works actions, in-page trust notes, card versions, and a
@@ -179,6 +179,7 @@ Weekend Gap 1.5.47 also names first-weekday-FX-open copy shortcut, Saturday late
 Weekend Gap 1.5.48 also names first-weekday-FX-open copy shortcut, Sunday predawn FX open, and the hide-weekday-FX-closed Gantt filter.
 Weekend Gap 1.5.49 also names first-weekday-FX-open copy shortcut, Sunday dawn FX open, and the hide-weekday-FX-closed Gantt filter.
 Weekend Gap 1.5.50 also names first-weekday-FX-open copy shortcut, Sunday daybreak FX open, and the hide-weekday-FX-closed Gantt filter.
+Weekend Gap 1.5.51 also names first-weekday-FX-open copy shortcut, Sunday sunrise FX open, and the hide-weekday-FX-closed Gantt filter.
 The catalog also names how-it-works jump, version-line copy, and skip-link focus.
 That What's new entry is hub-only. It does not change workbench versions.
 The catalog also names skip-link copy, last-card focus, and 404 Copy jobs.
