@@ -1936,6 +1936,39 @@ const presets = {
       },
     ],
   },
+  "feed-zone-cycling-club-hours": {
+    title: "Feed-zone cycling club hours: musette-line, sticky-bottle hours, and bottle-hand-up lock-up",
+    threshold: 70,
+    maxChangeCost: 8,
+    groups: [
+      { id: "students", name: "Students", weight: 27 },
+      { id: "neighbours", name: "Neighbours", weight: 19, veto: true },
+      { id: "pandc", name: "P&C", weight: 29 },
+    ],
+    clauses: [
+      {
+        id: "feed-zone-cycling-musette-line", title: "Musette-line", options: [
+          { id: "feed-zone-cycling-musette-line-original", original: true, label: "Keep weekday musette-line from 11:30 with no posted sticky-bottle card", changeCost: 0, support: { students: 17, neighbours: 73, pandc: 60 } },
+          { id: "feed-zone-cycling-musette-line-late", original: false, label: "Open weekday musette-line at 20:15 with a posted sticky-bottle card", changeCost: 2, support: { students: 82, neighbours: 21, pandc: 39 } },
+          { id: "feed-zone-cycling-musette-line-weekend", original: false, label: "Hold Saturday morning musette-line at 10:05 with a sticky-bottle booking card", changeCost: 4, support: { students: 67, neighbours: 29, pandc: 47 } },
+        ],
+      },
+      {
+        id: "feed-zone-cycling-sticky-bottle", title: "Sticky-bottle hours", options: [
+          { id: "feed-zone-cycling-sticky-bottle-original", original: true, label: "No posted sticky-bottle hours", changeCost: 0, support: { students: 57, neighbours: 13, pandc: 38 } },
+          { id: "feed-zone-cycling-sticky-bottle-cap", original: false, label: "Close sticky-bottle hours at 21:20 and keep bottle crew at the bottle-hand-up shed", changeCost: 1, support: { students: 38, neighbours: 83, pandc: 64 } },
+          { id: "feed-zone-cycling-sticky-bottle-cut", original: false, label: "Serve bottle crew only after 15:25", changeCost: 5, support: { students: 20, neighbours: 81, pandc: 36 } },
+        ],
+      },
+      {
+        id: "feed-zone-cycling-bottle-hand-up-lockup", title: "Bottle-hand-up lock-up", options: [
+          { id: "feed-zone-cycling-bottle-hand-up-lockup-original", original: true, label: "Leave the bottle-hand-up door on a shared padlock after club hours", changeCost: 0, support: { students: 8, neighbours: 19, pandc: 30 } },
+          { id: "feed-zone-cycling-bottle-hand-up-lockup-steward", original: false, label: "Require a P&C steward to lock the bottle-hand-up store before 22:50", changeCost: 3, support: { students: 44, neighbours: 69, pandc: 83 } },
+          { id: "feed-zone-cycling-bottle-hand-up-lockup-timer", original: false, label: "Add a timed lock on the bottle-hand-up store after the last feed-zone cycling session", changeCost: 2, support: { students: 33, neighbours: 36, pandc: 51 } },
+        ],
+      },
+    ],
+  },
 };
 
 let agreementReviewPacket = null;
