@@ -533,6 +533,15 @@ export const PRESETS = Object.freeze({
       { id: 'omnium-cycling-first-aid', name: 'First-aid', revenueShare: 0.25, variableCostPerTransaction: 1.40, fixedMonthlyCost: 1730, minimumAcceptableProfit: 650, capacity: 6200, minimumCommitment: 0, riskCost: 420 },
     ],
   },
+  pointsRaceCyclingCarnivalSplit: {
+    name: 'Points-race cycling carnival split',
+    deal: { monthlyVolume: 6300, feePerTransaction: 8, addressableVolume: 7500, volumeShockPct: 0 },
+    participants: [
+      { id: 'points-race-cycling-committee', name: 'Carnival committee', revenueShare: 0.37, variableCostPerTransaction: 1.96, fixedMonthlyCost: 3840, minimumAcceptableProfit: 1550, capacity: 7350, minimumCommitment: 0, riskCost: 582 },
+      { id: 'points-race-cycling-club-hire', name: 'Points-race cycling club hire', revenueShare: 0.38, variableCostPerTransaction: 1.79, fixedMonthlyCost: 3110, minimumAcceptableProfit: 1090, capacity: 8450, minimumCommitment: 540, riskCost: 550 },
+      { id: 'points-race-cycling-first-aid', name: 'First-aid', revenueShare: 0.25, variableCostPerTransaction: 1.38, fixedMonthlyCost: 1740, minimumAcceptableProfit: 660, capacity: 6300, minimumCommitment: 0, riskCost: 430 },
+    ],
+  },
 });
 
 function isFiniteNumber(value) {
