@@ -1735,6 +1735,40 @@ const presets = {
       },
     ],
   },
+
+  "points-race-cycling-club-hours": {
+    title: "Points-race cycling club hours: points-race course booking, bell-lap hours, and prime-board lock-up",
+    threshold: 70,
+    maxChangeCost: 8,
+    groups: [
+      { id: "students", name: "Students", weight: 21 },
+      { id: "neighbours", name: "Neighbours", weight: 18, veto: true },
+      { id: "pandc", name: "P&C", weight: 23 },
+    ],
+    clauses: [
+      {
+        id: "points-race-cycling-course-booking", title: "Points-race course booking", options: [
+          { id: "points-race-cycling-course-booking-original", original: true, label: "Keep weekday points-race course from 10:30 with no posted points-sprint rota", changeCost: 0, support: { students: 11, neighbours: 79, pandc: 60 } },
+          { id: "points-race-cycling-course-booking-late", original: false, label: "Open weekday points-race course at 19:15 with a posted points-sprint rota", changeCost: 2, support: { students: 82, neighbours: 21, pandc: 33 } },
+          { id: "points-race-cycling-course-booking-weekend", original: false, label: "Hold Saturday morning points-race course at 09:05 with a points-sprint booking card", changeCost: 4, support: { students: 67, neighbours: 29, pandc: 41 } },
+        ],
+      },
+      {
+        id: "points-race-cycling-bell-lap", title: "Bell-lap hours", options: [
+          { id: "points-race-cycling-bell-lap-original", original: true, label: "No posted bell-lap hours", changeCost: 0, support: { students: 57, neighbours: 7, pandc: 32 } },
+          { id: "points-race-cycling-bell-lap-cap", original: false, label: "Close bell-lap hours at 20:20 and keep bell crew at the bell-lap shed", changeCost: 1, support: { students: 32, neighbours: 83, pandc: 64 } },
+          { id: "points-race-cycling-bell-lap-cut", original: false, label: "Serve bell crew only after 14:25", changeCost: 5, support: { students: 14, neighbours: 87, pandc: 30 } },
+        ],
+      },
+      {
+        id: "points-race-cycling-prime-board-lockup", title: "Prime-board lock-up", options: [
+          { id: "points-race-cycling-prime-board-lockup-original", original: true, label: "Leave the prime-board door on a shared padlock after club hours", changeCost: 0, support: { students: 2, neighbours: 19, pandc: 24 } },
+          { id: "points-race-cycling-prime-board-lockup-steward", original: false, label: "Require a P&C steward to lock the prime-board store before 21:50", changeCost: 3, support: { students: 44, neighbours: 69, pandc: 89 } },
+          { id: "points-race-cycling-prime-board-lockup-timer", original: false, label: "Add a timed lock on the prime-board store after the last points-race cycling session", changeCost: 2, support: { students: 33, neighbours: 36, pandc: 55 } },
+        ],
+      },
+    ],
+  },
 };
 
 let agreementReviewPacket = null;
