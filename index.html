@@ -3341,6 +3341,19 @@
         }
         return target;
       };
+      const firstLabelledSkipLabelledbyTagIdEqSqHeading = () => {
+        const target = firstLabelledSkipTarget();
+        if (!target) return null;
+        const labelledBy = target.getAttribute ? target.getAttribute('aria-labelledby') : '';
+        if (labelledBy) {
+          const named = document.getElementById(labelledBy);
+          if (named && named.tagName) {
+            const heading = document.querySelector(named.tagName.toLowerCase() + "[id='" + labelledBy + "']");
+            if (heading) return heading;
+          }
+        }
+        return target;
+      };
       lastLabelledSkipHrefBtn?.addEventListener('click', async () => {
         const markdown = lastLabelledSkipHrefMarkdown();
         const empty = markdown === '';
@@ -5001,6 +5014,53 @@
           }
         }
       });
+      const firstLabelledSkipLabelledbyTagIdEqSqMarkdown = () => {
+        const skips = document.querySelectorAll('#skips a.skip');
+        for (let i = 0; i < skips.length; i += 1) {
+          const skip = skips[i];
+          const href = skip && skip.getAttribute ? skip.getAttribute('href') : '';
+          if (!href || href.charAt(0) !== '#' || href.length < 2) continue;
+          const target = document.getElementById(href.slice(1));
+          if (!target) continue;
+          const labelledBy = target.getAttribute ? target.getAttribute('aria-labelledby') : '';
+          if (!labelledBy) continue;
+          const heading = document.getElementById(labelledBy);
+          if (!heading || !heading.tagName) continue;
+          const found = document.querySelector(heading.tagName.toLowerCase() + "[id='" + labelledBy + "']");
+          if (!found) continue;
+          return `- ${heading.tagName.toLowerCase()}[id='${labelledBy}']`;
+        }
+        return '';
+      };
+      const firstLabelledSkipLabelledbyTagIdEqSqBtn = document.getElementById('copy-first-labelled-skip-labelledby-tag-id-eq-sq');
+      const firstLabelledSkipLabelledbyTagIdEqSqStatus = document.getElementById('copy-first-labelled-skip-labelledby-tag-id-eq-sq-status');
+      const firstLabelledSkipLabelledbyTagIdEqSqFallback = document.getElementById('copy-first-labelled-skip-labelledby-tag-id-eq-sq-fallback');
+      firstLabelledSkipLabelledbyTagIdEqSqBtn?.addEventListener('click', async () => {
+        const markdown = firstLabelledSkipLabelledbyTagIdEqSqMarkdown();
+        const empty = markdown === '';
+        try {
+          if (!navigator.clipboard?.writeText) throw new Error('clipboard unavailable');
+          await navigator.clipboard.writeText(markdown);
+          if (firstLabelledSkipLabelledbyTagIdEqSqFallback) firstLabelledSkipLabelledbyTagIdEqSqFallback.hidden = true;
+          if (firstLabelledSkipLabelledbyTagIdEqSqStatus) {
+            firstLabelledSkipLabelledbyTagIdEqSqStatus.textContent = empty
+              ? 'First labelled skip labelledby tag-id-eq-sq was missing. Copied an empty string. This is catalog copy, not a live product feed.'
+              : 'Copied the first labelled skip labelledby tag-id-eq-sq from this catalog page as Markdown. Not a live product feed.';
+          }
+        } catch {
+          if (firstLabelledSkipLabelledbyTagIdEqSqFallback) {
+            firstLabelledSkipLabelledbyTagIdEqSqFallback.hidden = false;
+            firstLabelledSkipLabelledbyTagIdEqSqFallback.value = markdown;
+            firstLabelledSkipLabelledbyTagIdEqSqFallback.focus();
+            firstLabelledSkipLabelledbyTagIdEqSqFallback.select();
+          }
+          if (firstLabelledSkipLabelledbyTagIdEqSqStatus) {
+            firstLabelledSkipLabelledbyTagIdEqSqStatus.textContent = empty
+              ? 'Clipboard unavailable. Copy the empty string from the text box. First labelled skip labelledby tag-id-eq-sq was missing. This is catalog copy, not a live product feed.'
+              : 'Clipboard unavailable. Copy the Markdown from the text box. This is the first labelled skip labelledby tag-id-eq-sq, not a live product feed.';
+          }
+        }
+      });
       document.addEventListener('keydown', (event) => {
         if (event.defaultPrevented || event.altKey || event.ctrlKey || event.metaKey) return;
         if (inEditable(event.target)) return;
@@ -5489,6 +5549,21 @@
         if (event.shiftKey && event.key === 'Soft10') {
           event.preventDefault();
           (lastLabelledSkipLabelledbyTagIdEqSqHeading() || document.getElementById('skips') || document.getElementById('catalog-heading'))?.focus();
+          return;
+        }
+        if (event.shiftKey && event.key === 'Soft11') {
+          event.preventDefault();
+          firstLabelledSkipLabelledbyTagIdEqSqBtn?.click();
+          return;
+        }
+        if (event.shiftKey && event.key === 'Soft12') {
+          event.preventDefault();
+          (document.getElementById('copy-first-labelled-skip-labelledby-tag-id-eq-sq') || document.getElementById('skips') || document.getElementById('catalog-heading'))?.focus();
+          return;
+        }
+        if (event.shiftKey && event.key === 'Soft13') {
+          event.preventDefault();
+          (firstLabelledSkipLabelledbyTagIdEqSqHeading() || document.getElementById('skips') || document.getElementById('catalog-heading'))?.focus();
           return;
         }
         if (event.shiftKey && event.key === 'Zoom') {
