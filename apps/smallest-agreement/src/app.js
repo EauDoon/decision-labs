@@ -1969,6 +1969,39 @@ const presets = {
       },
     ],
   },
+  "lead-out-cycling-club-hours": {
+    title: "Lead-out cycling club hours: train-line, last-rider hours, and sprinter-launch lock-up",
+    threshold: 70,
+    maxChangeCost: 8,
+    groups: [
+      { id: "students", name: "Students", weight: 28 },
+      { id: "neighbours", name: "Neighbours", weight: 19, veto: true },
+      { id: "pandc", name: "P&C", weight: 30 },
+    ],
+    clauses: [
+      {
+        id: "lead-out-cycling-train-line", title: "Train-line", options: [
+          { id: "lead-out-cycling-train-line-original", original: true, label: "Keep weekday train-line from 11:40 with no posted last-rider card", changeCost: 0, support: { students: 18, neighbours: 74, pandc: 61 } },
+          { id: "lead-out-cycling-train-line-late", original: false, label: "Open weekday train-line at 20:25 with a posted last-rider card", changeCost: 2, support: { students: 83, neighbours: 22, pandc: 40 } },
+          { id: "lead-out-cycling-train-line-weekend", original: false, label: "Hold Saturday morning train-line at 10:15 with a last-rider booking card", changeCost: 4, support: { students: 68, neighbours: 30, pandc: 48 } },
+        ],
+      },
+      {
+        id: "lead-out-cycling-last-rider", title: "Last-rider hours", options: [
+          { id: "lead-out-cycling-last-rider-original", original: true, label: "No posted last-rider hours", changeCost: 0, support: { students: 58, neighbours: 14, pandc: 39 } },
+          { id: "lead-out-cycling-last-rider-cap", original: false, label: "Close last-rider hours at 21:30 and keep launch crew at the sprinter-launch shed", changeCost: 1, support: { students: 39, neighbours: 84, pandc: 65 } },
+          { id: "lead-out-cycling-last-rider-cut", original: false, label: "Serve launch crew only after 15:35", changeCost: 5, support: { students: 21, neighbours: 82, pandc: 37 } },
+        ],
+      },
+      {
+        id: "lead-out-cycling-sprinter-launch-lockup", title: "Sprinter-launch lock-up", options: [
+          { id: "lead-out-cycling-sprinter-launch-lockup-original", original: true, label: "Leave the sprinter-launch door on a shared padlock after club hours", changeCost: 0, support: { students: 9, neighbours: 20, pandc: 31 } },
+          { id: "lead-out-cycling-sprinter-launch-lockup-steward", original: false, label: "Require a P&C steward to lock the sprinter-launch store before 23:00", changeCost: 3, support: { students: 45, neighbours: 70, pandc: 84 } },
+          { id: "lead-out-cycling-sprinter-launch-lockup-timer", original: false, label: "Add a timed lock on the sprinter-launch store after the last lead-out cycling session", changeCost: 2, support: { students: 34, neighbours: 37, pandc: 52 } },
+        ],
+      },
+    ],
+  },
 };
 
 let agreementReviewPacket = null;
