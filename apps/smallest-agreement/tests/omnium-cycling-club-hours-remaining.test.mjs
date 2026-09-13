@@ -6,7 +6,8 @@ test("omnium cycling club hours keeps remaining 20 / 22 / 59 after madison", asy
   const app = (await readFile(new URL("../src/app.js", import.meta.url), "utf8")).replaceAll("\r\n", "\n");
   const html = (await readFile(new URL("../index.html", import.meta.url), "utf8")).replaceAll("\r\n", "\n");
   const omniumStart = app.indexOf('"omnium-cycling-club-hours"');
-  const omniumEnd = app.indexOf("let agreementReviewPacket", omniumStart);
+  const pointsRaceStart = app.indexOf('"points-race-cycling-club-hours"');
+  const omniumEnd = pointsRaceStart === -1 ? app.indexOf("let agreementReviewPacket", omniumStart) : pointsRaceStart;
   const omnium = app.slice(omniumStart, omniumEnd === -1 ? undefined : omniumEnd);
   const madisonStart = app.indexOf('"madison-cycling-club-hours"');
   const madison = app.slice(madisonStart, omniumStart);
@@ -37,6 +38,9 @@ test("omnium cycling club hours keeps remaining 20 / 22 / 59 after madison", asy
   assert.doesNotMatch(omnium, /handsling/);
   assert.doesNotMatch(omnium, /pairing crew/);
   assert.doesNotMatch(omnium, /pacer crew/);
+  assert.doesNotMatch(omnium, /points-sprint/);
+  assert.doesNotMatch(omnium, /bell-lap/);
+  assert.doesNotMatch(omnium, /prime-board/);
   assert.match(madison, /weight: 19/);
   assert.match(madison, /weight: 21/);
   assert.match(madison, /Handsling hours/);
