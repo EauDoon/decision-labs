@@ -931,6 +931,11 @@ ${skipNav}
       <span class="copy-first-labelled-skip-labelledby-tag-id-eq-status" id="copy-first-labelled-skip-labelledby-tag-id-eq-status" role="status"></span>
     </p>
     <textarea id="copy-first-labelled-skip-labelledby-tag-id-eq-fallback" class="copy-first-labelled-skip-labelledby-tag-id-eq-fallback" hidden readonly rows="2" aria-label="First labelled skip labelledby tag-id-eq as Markdown"></textarea>
+    <p class="copy-last-labelled-skip-labelledby-tag-id-eq-sq-tools">
+      <button type="button" class="copy-last-labelled-skip-labelledby-tag-id-eq-sq" id="copy-last-labelled-skip-labelledby-tag-id-eq-sq">Copy last labelled skip labelledby tag-id-eq-sq</button>
+      <span class="copy-last-labelled-skip-labelledby-tag-id-eq-sq-status" id="copy-last-labelled-skip-labelledby-tag-id-eq-sq-status" role="status"></span>
+    </p>
+    <textarea id="copy-last-labelled-skip-labelledby-tag-id-eq-sq-fallback" class="copy-last-labelled-skip-labelledby-tag-id-eq-sq-fallback" hidden readonly rows="2" aria-label="Last labelled skip labelledby tag-id-eq-sq as Markdown"></textarea>
     <p class="copy-first-review-tools">
       <button type="button" class="copy-first-review" id="copy-first-review">Copy first review path</button>
       <span class="copy-first-review-status" id="copy-first-review-status" role="status"></span>
