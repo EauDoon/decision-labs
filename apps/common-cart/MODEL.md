@@ -198,7 +198,7 @@ Buyer CSV import accepts a header row of label, category, quantity, max unit pri
 
 `restoreRemovedBuyer` inserts one previously removed buyer when that id is free. The app keeps one session slot; the model does not store the slot.
 
-`restoreExampleOffers` replaces offers with a named preset's offers and keeps the current buyers, title, and currency. Named lunch presets include Scratch cycling carnival lunch after Points-race cycling carnival lunch after Omnium cycling carnival lunch after Madison cycling carnival lunch. Scratch leftover uncovered leftover-only remaining is 39 leftover-only units. Pickup minimum 38, unit price 34, capacity 64. Leftover-only minimum stays 15. Distinct from Points-race leftover remaining 38.
+`restoreExampleOffers` replaces offers with a named preset's offers and keeps the current buyers, title, and currency. Named lunch presets include Individual-pursuit cycling carnival lunch after Scratch cycling carnival lunch after Points-race cycling carnival lunch after Omnium cycling carnival lunch after Madison cycling carnival lunch. Individual-pursuit leftover uncovered leftover-only remaining is 41 leftover-only units. Pickup minimum 40, unit price 36, capacity 64. Leftover-only minimum stays 15. Distinct from Scratch leftover remaining 39.
 
 Compared rooms that use different currencies set `currencyWarning` and omit landed totals. The model does not convert currencies.
 
