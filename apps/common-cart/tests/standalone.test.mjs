@@ -442,13 +442,38 @@ test("release 1.4.36 ships gravel cycling carnival lunch, leftover uncovered lef
 
 
 
+test("release 1.4.48 ships team-sprint cycling carnival lunch, leftover uncovered leftover-only remaining copy and first leftover-only hide jump", async () => {
+  const pkg = JSON.parse(await readFile(new URL("../package.json", import.meta.url), "utf8"));
+  const changelog = await readFile(new URL("../CHANGELOG.md", import.meta.url), "utf8");
+  const html = await readFile(new URL("../standalone.html", import.meta.url), "utf8");
+  assert.equal(pkg.version, "1.4.48");
+  const firstHeading = changelog.match(/^## .+$/m)?.[0];
+  assert.equal(firstHeading, "## 1.4.48 - 2026-09-13");
+  assert.match(changelog, /Team-sprint cycling carnival lunch, leftover-uncovered leftover-only remaining copy, and first leftover-only hide jump in Common Cart 1\.4\.48/);
+  assert.match(html, /id="copy-leftover-uncovered-leftover-only-remaining"/u);
+  assert.match(html, /id="copy-leftover-uncovered-leftover-only-remaining"[^>]*aria-keyshortcuts="Shift\+F7 F10"/u);
+  assert.match(html, /id="hide-first-leftover-only-buyer"/u);
+  assert.match(html, /id="hide-last-leftover-only-buyer"/u);
+  assert.match(html, /data-preset="teamSprintCyclingCarnivalLunch"/u);
+  assert.match(html, /data-preset="teamPursuitCyclingCarnivalLunch"/u);
+  assert.ok(html.indexOf('data-preset="teamPursuitCyclingCarnivalLunch"') < html.indexOf('data-preset="teamSprintCyclingCarnivalLunch"'));
+  assert.ok(html.indexOf('data-preset="teamSprintCyclingCarnivalLunch"') < html.indexOf('data-preset="tiers"'));
+  assert.match(html, /Court-side Team-sprint Delivery/u);
+  assert.match(html, /Hall Team-sprint Pickup/u);
+  assert.match(html, /Start-gate crate/u);
+  assert.match(html, /Flying-relay bench/u);
+  assert.match(html, /Trio-board hamper/u);
+  assert.match(html, /if \(event\.shiftKey && key === "F9"\) \{\s*event\.preventDefault\(\);\s*focusHideFirstLeftoverOnlyBuyer\(\);/u);
+  assert.match(html, /if \(key === "F9"\) \{\s*event\.preventDefault\(\);\s*focusHideFirstUncoveredLeftoverBuyer\(\);/u);
+  assert.match(html, /if \(key === "ArrowUp"\) \{\s*event\.preventDefault\(\);\s*focusHideLastLeftoverOnlyBuyer\(\);/u);
+});
+
 test("release 1.4.47 ships team-pursuit cycling carnival lunch, leftover uncovered leftover-only remaining copy and first leftover-only hide jump", async () => {
   const pkg = JSON.parse(await readFile(new URL("../package.json", import.meta.url), "utf8"));
   const changelog = await readFile(new URL("../CHANGELOG.md", import.meta.url), "utf8");
   const html = await readFile(new URL("../standalone.html", import.meta.url), "utf8");
-  assert.equal(pkg.version, "1.4.47");
-  const firstHeading = changelog.match(/^## .+$/m)?.[0];
-  assert.equal(firstHeading, "## 1.4.47 - 2026-09-13");
+  assert.equal(pkg.version, "1.4.48");
+  assert.match(changelog, /## 1\.4\.47 - 2026-09-13/);
   assert.match(changelog, /Team-pursuit cycling carnival lunch, leftover-uncovered leftover-only remaining copy, and first leftover-only hide jump in Common Cart 1\.4\.47/);
   assert.match(html, /id="copy-leftover-uncovered-leftover-only-remaining"/u);
   assert.match(html, /id="copy-leftover-uncovered-leftover-only-remaining"[^>]*aria-keyshortcuts="Shift\+F7 F10"/u);
@@ -472,7 +497,7 @@ test("release 1.4.46 ships individual-pursuit cycling carnival lunch, leftover u
   const pkg = JSON.parse(await readFile(new URL("../package.json", import.meta.url), "utf8"));
   const changelog = await readFile(new URL("../CHANGELOG.md", import.meta.url), "utf8");
   const html = await readFile(new URL("../standalone.html", import.meta.url), "utf8");
-  assert.equal(pkg.version, "1.4.47");
+  assert.equal(pkg.version, "1.4.48");
   assert.match(changelog, /## 1\.4\.46 - 2026-09-13/);
   assert.match(changelog, /Individual-pursuit cycling carnival lunch, leftover-uncovered leftover-only remaining copy, and first leftover-only hide jump in Common Cart 1\.4\.46/);
   assert.match(html, /id="copy-leftover-uncovered-leftover-only-remaining"/u);
@@ -497,7 +522,7 @@ test("release 1.4.45 ships scratch cycling carnival lunch, leftover uncovered le
   const pkg = JSON.parse(await readFile(new URL("../package.json", import.meta.url), "utf8"));
   const changelog = await readFile(new URL("../CHANGELOG.md", import.meta.url), "utf8");
   const html = await readFile(new URL("../standalone.html", import.meta.url), "utf8");
-  assert.equal(pkg.version, "1.4.47");
+  assert.equal(pkg.version, "1.4.48");
   assert.match(changelog, /## 1\.4\.45 - 2026-09-13/);
   assert.match(changelog, /Scratch cycling carnival lunch, leftover-uncovered leftover-only remaining copy, and first leftover-only hide jump in Common Cart 1\.4\.45/);
   assert.match(html, /id="copy-leftover-uncovered-leftover-only-remaining"/u);
@@ -522,7 +547,7 @@ test("release 1.4.44 ships points-race cycling carnival lunch, leftover uncovere
   const pkg = JSON.parse(await readFile(new URL("../package.json", import.meta.url), "utf8"));
   const changelog = await readFile(new URL("../CHANGELOG.md", import.meta.url), "utf8");
   const html = await readFile(new URL("../standalone.html", import.meta.url), "utf8");
-  assert.equal(pkg.version, "1.4.47");
+  assert.equal(pkg.version, "1.4.48");
   assert.match(changelog, /## 1\.4\.44 - 2026-09-12/);
   assert.match(changelog, /Points-race cycling carnival lunch, leftover-uncovered leftover-only remaining copy, and first leftover-only hide jump in Common Cart 1\.4\.44/);
   assert.match(html, /id="copy-leftover-uncovered-leftover-only-remaining"/u);
@@ -547,7 +572,7 @@ test("release 1.4.43 ships omnium cycling carnival lunch, leftover uncovered lef
   const pkg = JSON.parse(await readFile(new URL("../package.json", import.meta.url), "utf8"));
   const changelog = await readFile(new URL("../CHANGELOG.md", import.meta.url), "utf8");
   const html = await readFile(new URL("../standalone.html", import.meta.url), "utf8");
-  assert.equal(pkg.version, "1.4.47");
+  assert.equal(pkg.version, "1.4.48");
   assert.match(changelog, /## 1\.4\.43 - 2026-09-12/);
   assert.match(changelog, /Omnium cycling carnival lunch, leftover-uncovered leftover-only remaining copy, and first leftover-only hide jump in Common Cart 1\.4\.43/);
   assert.match(html, /id="copy-leftover-uncovered-leftover-only-remaining"/u);
@@ -571,7 +596,7 @@ test("release 1.4.43 ships omnium cycling carnival lunch, leftover uncovered lef
 test("release 1.4.42 ships madison cycling carnival lunch, leftover uncovered leftover-only remaining copy and first leftover-only hide jump", async () => {
   const pkg = JSON.parse(await readFile(new URL("../package.json", import.meta.url), "utf8"));
   const html = await readFile(new URL("../standalone.html", import.meta.url), "utf8");
-  assert.equal(pkg.version, "1.4.47");
+  assert.equal(pkg.version, "1.4.48");
   assert.match(html, /id="copy-leftover-uncovered-leftover-only-remaining"/u);
   assert.match(html, /id="copy-leftover-uncovered-leftover-only-remaining"[^>]*aria-keyshortcuts="Shift\+F7 F10"/u);
   assert.match(html, /id="hide-first-leftover-only-buyer"/u);
@@ -593,7 +618,7 @@ test("release 1.4.42 ships madison cycling carnival lunch, leftover uncovered le
 test("release 1.4.41 ships keirin cycling carnival lunch, leftover uncovered leftover-only remaining copy and first leftover-only hide jump", async () => {
   const pkg = JSON.parse(await readFile(new URL("../package.json", import.meta.url), "utf8"));
   const html = await readFile(new URL("../standalone.html", import.meta.url), "utf8");
-  assert.equal(pkg.version, "1.4.47");
+  assert.equal(pkg.version, "1.4.48");
   assert.match(html, /id="copy-leftover-uncovered-leftover-only-remaining"/u);
   assert.match(html, /id="copy-leftover-uncovered-leftover-only-remaining"[^>]*aria-keyshortcuts="Shift\+F7 F10"/u);
   assert.match(html, /id="hide-first-leftover-only-buyer"/u);
