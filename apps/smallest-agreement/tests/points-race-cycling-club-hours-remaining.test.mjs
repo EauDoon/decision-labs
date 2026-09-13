@@ -6,7 +6,8 @@ test("points-race cycling club hours keeps remaining 21 / 23 / 62 after omnium",
   const app = (await readFile(new URL("../src/app.js", import.meta.url), "utf8")).replaceAll("\r\n", "\n");
   const html = (await readFile(new URL("../index.html", import.meta.url), "utf8")).replaceAll("\r\n", "\n");
   const pointsRaceStart = app.indexOf('"points-race-cycling-club-hours"');
-  const pointsRaceEnd = app.indexOf("let agreementReviewPacket", pointsRaceStart);
+  const scratchStart = app.indexOf('"scratch-cycling-club-hours"');
+  const pointsRaceEnd = scratchStart === -1 ? app.indexOf("let agreementReviewPacket", pointsRaceStart) : scratchStart;
   const pointsRace = app.slice(pointsRaceStart, pointsRaceEnd === -1 ? undefined : pointsRaceEnd);
   const omniumStart = app.indexOf('"omnium-cycling-club-hours"');
   const omnium = app.slice(omniumStart, pointsRaceStart);
