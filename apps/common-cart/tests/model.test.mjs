@@ -246,8 +246,8 @@ test("empty fields name the missing input instead of a JSON path", () => {
   }
 });
 
-test("numeric fields reject exponential notation and plus prefixes", () => {
-  for (const value of ["1e2", "1E-1", "+10", "1e+2", "NaN", "Infinity"]) {
+test("numeric fields reject exponential notation and accept plus-prefixed numbers", () => {
+  for (const value of ["1e2", "1E-1", "1e+2", "NaN", "Infinity"]) {
     const quantity = clonePreset("neighbourhood");
     quantity.buyers[0].quantity = value;
     assert.throws(() => validateScenario(quantity), /must be a number/);
@@ -255,6 +255,14 @@ test("numeric fields reject exponential notation and plus prefixes", () => {
     price.offers[0].unitPrice = value;
     assert.throws(() => validateScenario(price), /must be a number/);
   }
+  const intScenario = clonePreset("neighbourhood");
+  intScenario.buyers[0].quantity = "+10";
+  const intNormalized = validateScenario(intScenario);
+  assert.equal(intNormalized.buyers[0].quantity, 10);
+  const decimalScenario = clonePreset("neighbourhood");
+  decimalScenario.offers[0].unitPrice = "+5.5";
+  const decimalNormalized = validateScenario(decimalScenario);
+  assert.equal(decimalNormalized.offers[0].unitPrice, 5.5);
   const decimals = clonePreset("neighbourhood");
   decimals.buyers[0].quantity = "2";
   decimals.offers[0].unitPrice = "26.50";
