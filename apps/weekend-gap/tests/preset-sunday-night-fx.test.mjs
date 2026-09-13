@@ -210,12 +210,13 @@ test("Sunday night FX open keeps the Normal Friday calendar with a Sunday night 
 test("Sunday night FX open ORs into fxWeekday through isSundayNightFxOpenHour after sundayEveningFxOpen", async () => {
   const model = await readFile(new URL("../src/model.js", import.meta.url), "utf8");
   const helperStart = model.indexOf("function isSundayNightFxOpenHour");
-  const helperNext = model.indexOf("\nexport function getOperationalStatus", helperStart);
+  const helperNext = model.indexOf("function isSundayLateNightFxOpenHour", helperStart);
   const commentStart = model.lastIndexOf("/** Sunday 20:00-22:00", helperStart);
   const helper = model.slice(commentStart === -1 ? helperStart : commentStart, helperNext === -1 ? undefined : helperNext);
   assert.match(helper, /scenario\.sundayNightFxOpen !== true/);
   assert.match(helper, /localHour >= 20 && localHour < 22/);
   assert.match(helper, /dayIndex === 0/);
+  assert.match(helper, /sundayLateNightFxOpen/);
   assert.match(helper, /sundayEveningFxOpen/);
   assert.match(helper, /saturdayEveningFxOpen/);
   assert.match(helper, /sundayLateFxOpen/);
