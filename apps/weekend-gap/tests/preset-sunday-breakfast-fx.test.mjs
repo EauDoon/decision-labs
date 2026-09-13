@@ -31,6 +31,8 @@ test("Sunday breakfast FX open keeps the Normal Friday calendar with a Sunday br
   assert.match(preset.name, /Sunday breakfast FX open/i);
   assert.equal(preset.sundayBreakfastFxOpen, true);
   assert.equal(DEFAULT_SCENARIO.sundayBreakfastFxOpen, false);
+  assert.equal(preset.sundayBrunchFxOpen, false);
+  assert.equal(DEFAULT_SCENARIO.sundayBrunchFxOpen, false);
   assert.equal(preset.sundayDawnFxOpen, false);
   assert.equal(preset.sundaySunriseFxOpen, false);
   assert.equal(preset.sundayDaybreakFxOpen, false);
@@ -57,6 +59,7 @@ test("Sunday breakfast FX open keeps the Normal Friday calendar with a Sunday br
   assert.notDeepEqual(preset, PRESETS.normal);
   assert.notDeepEqual(preset, PRESETS.sundayDawnFxOpen);
   assert.notDeepEqual(preset, PRESETS.sundaySunriseFxOpen);
+  assert.notDeepEqual(preset, PRESETS.sundayBrunchFxOpen);
   assert.notDeepEqual(preset, PRESETS.sundayDaybreakFxOpen);
   assert.notDeepEqual(preset, PRESETS.sundayPredawnFxOpen);
   assert.notDeepEqual(preset, PRESETS.saturdayLateNightFxOpen);
@@ -242,7 +245,8 @@ test("Sunday breakfast FX open keeps the Normal Friday calendar with a Sunday br
 test("Sunday breakfast FX open ORs into fxWeekday through isSundayBreakfastFxOpenHour after sundaySunriseFxOpen", async () => {
   const model = await readFile(new URL("../src/model.js", import.meta.url), "utf8");
   const helperStart = model.indexOf("function isSundayBreakfastFxOpenHour");
-  const helperNext = model.indexOf("\nexport function getOperationalStatus", helperStart);
+  const brunchStart = model.indexOf("function isSundayBrunchFxOpenHour", helperStart);
+  const helperNext = brunchStart === -1 ? model.indexOf("\nexport function getOperationalStatus", helperStart) : brunchStart;
   const commentStart = model.lastIndexOf("/** Sunday 07:00-09:00", helperStart);
   const helper = model.slice(commentStart === -1 ? helperStart : commentStart, helperNext === -1 ? undefined : helperNext);
   assert.match(helper, /scenario\.sundayBreakfastFxOpen !== true/);
@@ -288,16 +292,21 @@ test("Sunday breakfast FX open ORs into fxWeekday through isSundayBreakfastFxOpe
   assert.match(model, /isSundayBreakfastFxOpenHour\(hourOffset, scenario\)/);
   const sundaySunriseStart = model.indexOf("function isSundaySunriseFxOpenHour");
   const sundayBreakfastStart = model.indexOf("function isSundayBreakfastFxOpenHour");
+  const sundayBrunchStart = model.indexOf("function isSundayBrunchFxOpenHour");
   const statusStart = model.indexOf("export function getOperationalStatus");
   assert.ok(sundaySunriseStart !== -1 && sundayBreakfastStart > sundaySunriseStart);
-  assert.ok(sundayBreakfastStart !== -1 && statusStart > sundayBreakfastStart);
+  assert.ok(sundayBreakfastStart !== -1 && sundayBrunchStart > sundayBreakfastStart);
+  assert.ok(sundayBrunchStart !== -1 && statusStart > sundayBrunchStart);
   const statusNext = model.indexOf("\nexport function ", statusStart + 1);
   const status = model.slice(statusStart, statusNext === -1 ? undefined : statusNext);
   assert.match(status, /isSundaySunriseFxOpenHour\(hourOffset, scenario\)/);
   assert.match(status, /isSundayBreakfastFxOpenHour\(hourOffset, scenario\)/);
+  assert.match(status, /isSundayBrunchFxOpenHour\(hourOffset, scenario\)/);
   const sundaySunriseCall = status.indexOf("isSundaySunriseFxOpenHour(hourOffset, scenario)");
   const sundayBreakfastCall = status.indexOf("isSundayBreakfastFxOpenHour(hourOffset, scenario)");
+  const sundayBrunchCall = status.indexOf("isSundayBrunchFxOpenHour(hourOffset, scenario)");
   assert.ok(sundaySunriseCall !== -1 && sundayBreakfastCall > sundaySunriseCall);
+  assert.ok(sundayBreakfastCall !== -1 && sundayBrunchCall > sundayBreakfastCall);
   assert.doesNotMatch(model, /Date\.now/);
 });
 
@@ -311,10 +320,13 @@ test("Sunday breakfast FX open is available as a preset button and is not an FX 
   const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
   const sundaySunrisePreset = html.indexOf('data-preset="sundaySunriseFxOpen"');
   const sundayBreakfastPreset = html.indexOf('data-preset="sundayBreakfastFxOpen"');
+  const sundayBrunchPreset = html.indexOf('data-preset="sundayBrunchFxOpen"');
   assert.ok(sundaySunrisePreset !== -1 && sundayBreakfastPreset > sundaySunrisePreset);
+  assert.ok(sundayBrunchPreset > sundayBreakfastPreset);
   assert.match(html, /Sunday breakfast FX open \(synthetic\)/);
   assert.match(html, /id="sundayBreakfastFxOpen"/);
   assert.match(html, /Keep Sunday FX open 07:00 to 09:00/);
+  assert.match(html, /Keep Sunday FX open 09:00 to 11:00/);
   assert.match(html, /Keep Sunday FX open 06:00 to 08:00/);
   assert.match(html, /Keep Sunday FX open 04:00 to 06:00/);
   assert.match(html, /Keep Sunday FX open 02:00 to 04:00/);
