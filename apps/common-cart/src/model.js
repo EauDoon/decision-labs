@@ -839,6 +839,23 @@ export const presets = Object.freeze({
       offer("O02", "Tempo Salad Run", "Omnium lunch pack", "Tempo salad", 15, 15, 4, 42, 2),
       { ...offer("O03", "Hall Omnium Pickup", "Omnium lunch pack", "Tempo water", 32, 36, 1, 64, 5), fulfillment: "pickup" }
     ]
+  },
+  pointsRaceCyclingCarnivalLunch: {
+    title: "Points-race cycling carnival lunch",
+    currency: "AUD",
+    buyers: [
+      buyer("B01", "Points-sprint crate", "Points-race lunch pack", 15, 23, 4, ["Points-race pie", "Bell salad"]),
+      buyer("B02", "Bell-lap bench", "Points-race lunch pack", 19, 19, 3, ["Points-race pie"]),
+      buyer("B03", "Prime-board hamper", "Points-race lunch pack", 15, 33, 5, ["Bell salad", "Prime water"]),
+      buyer("B04", "Sideline cooler", "Points-race lunch pack", 23, 33, 2, ["Prime water"]),
+      buyer("B05", "Scoreboard trolley", "Points-race lunch pack", 16, 22, 4, ["Points-race pie", "Prime water"]),
+      buyer("B06", "Bench table", "Points-race lunch pack", 13, 20, 3, ["Bell salad", "Points-race pie"])
+    ],
+    offers: [
+      offer("O01", "Court-side Points-race Delivery", "Points-race lunch pack", "Points-race pie", 17, 17, 3, 54, 3),
+      offer("O02", "Bell Salad Run", "Points-race lunch pack", "Bell salad", 15, 15, 4, 42, 2),
+      { ...offer("O03", "Hall Points-race Pickup", "Points-race lunch pack", "Prime water", 33, 37, 1, 64, 5), fulfillment: "pickup" }
+    ]
   }
 });
 
