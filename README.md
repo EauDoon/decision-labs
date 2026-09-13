@@ -234,6 +234,8 @@ The catalog also names first-unlabelled-skip-href copy, first-unlabelled-skip-hr
 That What's new entry is hub-only. It does not change workbench versions.
 The catalog also names first-unlabelled-skip-target-text copy, first-unlabelled-skip-target-text jump, and first-unlabelled-skip-target-heading jump.
 That What's new entry is hub-only. It does not change workbench versions.
+The catalog also names first-labelled-skip-labelledby-selector copy, first-labelled-skip-labelledby-selector jump, and first-labelled-skip-labelledby-selector-heading jump.
+That What's new entry is hub-only. It does not change workbench versions.
 The catalog also names last-labelled-skip-labelledby-selector copy, last-labelled-skip-labelledby-selector jump, and last-labelled-skip-labelledby-selector-heading jump.
 That What's new entry is hub-only. It does not change workbench versions.
 The catalog also names last-labelled-skip-labelledby-href copy, last-labelled-skip-labelledby-href jump, and last-labelled-skip-labelledby-href-heading jump.
@@ -349,6 +351,13 @@ that 404 page copies the same labelled skip labelledby selector without adding a
 Key `Shift+KanaMode` copies the tag and id of the last labelled skip labelledby heading.
 Key `Shift+Hankaku` focuses the Copy last labelled skip labelledby selector control.
 Key `Shift+Zenkaku` focuses the last labelled skip labelledby selector heading.
+Copy first labelled skip labelledby selector copies the tag and id of the first labelled skip labelledby heading
+already printed on this page as one Markdown line. If that labelledby selector is missing, it copies an empty string.
+Copy first labelled skip labelledby selector on
+that 404 page copies the same labelled skip labelledby selector without adding a public path.
+Key `Shift+Alphanumeric` copies the tag and id of the first labelled skip labelledby heading.
+Key `Shift+Hiragana` focuses the Copy first labelled skip labelledby selector control.
+Key `Shift+Katakana` focuses the first labelled skip labelledby selector heading.
 Copy last labelled skip labelledby href copies the hash fragment of the last labelled skip labelledby id
 already printed on this page as one Markdown line. If that labelledby href is missing, it copies an empty string.
 Copy last labelled skip labelledby href on
@@ -840,6 +849,22 @@ Press `Shift+Zenkaku` to focus the labelled heading named by the last labelled s
 That key moves focus; it does not open a workbench. It does not copy. That key
 is distinct from `Shift+ModeChange`, which focuses the last labelled skip labelledby href heading, from `Shift+ExSel`, which focuses the last labelled skip labelledby heading, from `Shift+Execute`,
 which focuses the last labelled skip target heading, from `n`, which focuses What's new.
+Press `Shift+Alphanumeric` to copy the tag and id of the first labelled skip labelledby heading from this page as one Markdown
+line. That key uses the same Copy first labelled skip labelledby selector control, including
+the visible text box when the clipboard API is unavailable. If that labelledby selector is
+missing, it copies an empty string. This is catalog copy, not a live product
+feed. It is distinct from `Shift+KanaMode`, which copies the last labelled skip labelledby selector, from
+`Shift+Process`, which copies the first labelled skip labelledby href, from `Shift+Zoom`, which copies the first labelled skip labelledby id, and from
+`Shift+NumLock`, which copies the first labelled skip target id.
+Press `Shift+Hiragana` to focus the Copy first labelled skip labelledby selector control, or the skip-link row
+or catalog heading if that control is missing. That key moves focus; it does not
+open a workbench. It does not copy. That key is distinct from `Shift+Hankaku`, which
+focuses Copy last labelled skip labelledby selector, from `Shift+Accept`, which focuses Copy first labelled skip labelledby href, from
+`Shift+NonConvert`, which focuses Copy first labelled skip labelledby id, and from `#`, which focuses Copy skip links.
+Press `Shift+Katakana` to focus the labelled heading named by the first labelled skip labelledby selector, or that target, the skip-link row, or catalog heading if that heading is missing.
+That key moves focus; it does not open a workbench. It does not copy. That key
+is distinct from `Shift+Zenkaku`, which focuses the last labelled skip labelledby selector heading, from `Shift+Final`, which focuses the first labelled skip labelledby href heading, from `Shift+Convert`,
+which focuses the first labelled skip labelledby heading, from `n`, which focuses What's new.
 Press `Shift+Kanji` to copy the hash fragment of the last labelled skip labelledby id from this page as one Markdown
 line. That key uses the same Copy last labelled skip labelledby href control, including
 the visible text box when the clipboard API is unavailable. If that labelledby href is
