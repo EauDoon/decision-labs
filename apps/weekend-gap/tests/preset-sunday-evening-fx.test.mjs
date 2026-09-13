@@ -31,6 +31,7 @@ test("Sunday evening FX open keeps the Normal Friday calendar with a Sunday even
   assert.match(preset.name, /Sunday evening FX open/i);
   assert.equal(preset.sundayEveningFxOpen, true);
   assert.equal(DEFAULT_SCENARIO.sundayEveningFxOpen, false);
+  assert.equal(preset.sundayNightFxOpen, false);
   assert.equal(preset.saturdayEveningFxOpen, false);
   assert.equal(preset.sundayMorningFxOpen, false);
   assert.equal(preset.sundayAfternoonFxOpen, false);
@@ -46,6 +47,7 @@ test("Sunday evening FX open keeps the Normal Friday calendar with a Sunday even
   assert.equal(preset.saturdayLatePayoutOpen, false);
   assert.equal(preset.demandProfile, DEFAULT_SCENARIO.demandProfile);
   assert.notDeepEqual(preset, PRESETS.normal);
+  assert.notDeepEqual(preset, PRESETS.sundayNightFxOpen);
   assert.notDeepEqual(preset, PRESETS.saturdayEveningFxOpen);
   assert.notDeepEqual(preset, PRESETS.sundayMorningFxOpen);
   assert.notDeepEqual(preset, PRESETS.sundayAfternoonFxOpen);
@@ -138,6 +140,7 @@ test("Sunday evening FX open keeps the Normal Friday calendar with a Sunday even
   const eveningOpen = firstSundayEveningFxOpenHour(preset);
   assert.equal(eveningOpen, 51);
   assert.equal(firstSundayEveningFxOpenHour(DEFAULT_SCENARIO), null);
+  assert.equal(firstSundayEveningFxOpenHour(PRESETS.sundayNightFxOpen), null);
   assert.equal(firstSundayEveningFxOpenHour(PRESETS.saturdayEveningFxOpen), null);
   assert.equal(firstSundayEveningFxOpenHour(PRESETS.sundayMorningFxOpen), null);
   assert.equal(firstSundayEveningFxOpenHour(PRESETS.sundayAfternoonFxOpen), null);
@@ -193,13 +196,14 @@ test("Sunday evening FX open keeps the Normal Friday calendar with a Sunday even
 test("Sunday evening FX open ORs into fxWeekday through isSundayEveningFxOpenHour after saturdayEveningFxOpen", async () => {
   const model = await readFile(new URL("../src/model.js", import.meta.url), "utf8");
   const helperStart = model.indexOf("function isSundayEveningFxOpenHour");
-  const helperNext = model.indexOf("\nexport function getOperationalStatus", helperStart);
+  const helperNext = model.indexOf("function isSundayNightFxOpenHour", helperStart);
   const commentStart = model.lastIndexOf("/** Sunday 18:00-20:00", helperStart);
   const helper = model.slice(commentStart === -1 ? helperStart : commentStart, helperNext === -1 ? undefined : helperNext);
   assert.match(helper, /scenario\.sundayEveningFxOpen !== true/);
   assert.match(helper, /localHour >= 18 && localHour < 20/);
   assert.match(helper, /dayIndex === 0/);
   assert.match(helper, /saturdayEveningFxOpen/);
+  assert.match(helper, /sundayNightFxOpen/);
   assert.match(helper, /sundayLateFxOpen/);
   assert.match(helper, /sundayAfternoonFxOpen/);
   assert.match(helper, /sundayMiddayFxOpen/);
@@ -218,19 +222,25 @@ test("Sunday evening FX open ORs into fxWeekday through isSundayEveningFxOpenHou
   assert.doesNotMatch(helper, /isSaturdayLateFxOpenHour/);
   assert.doesNotMatch(helper, /isSaturdayAfternoonFxOpenHour/);
   assert.doesNotMatch(helper, /isSaturdayMiddayFxOpenHour/);
+  assert.doesNotMatch(helper, /function isSundayNightFxOpenHour/);
   assert.match(model, /isSundayEveningFxOpenHour\(hourOffset, scenario\)/);
   const saturdayEveningStart = model.indexOf("function isSaturdayEveningFxOpenHour");
   const sundayEveningStart = model.indexOf("function isSundayEveningFxOpenHour");
+  const sundayNightStart = model.indexOf("function isSundayNightFxOpenHour");
   const statusStart = model.indexOf("export function getOperationalStatus");
   assert.ok(saturdayEveningStart !== -1 && sundayEveningStart > saturdayEveningStart);
-  assert.ok(sundayEveningStart !== -1 && statusStart > sundayEveningStart);
+  assert.ok(sundayEveningStart !== -1 && sundayNightStart > sundayEveningStart);
+  assert.ok(sundayNightStart !== -1 && statusStart > sundayNightStart);
   const statusNext = model.indexOf("\nexport function ", statusStart + 1);
   const status = model.slice(statusStart, statusNext === -1 ? undefined : statusNext);
   assert.match(status, /isSaturdayEveningFxOpenHour\(hourOffset, scenario\)/);
   assert.match(status, /isSundayEveningFxOpenHour\(hourOffset, scenario\)/);
+  assert.match(status, /isSundayNightFxOpenHour\(hourOffset, scenario\)/);
   const saturdayEveningCall = status.indexOf("isSaturdayEveningFxOpenHour(hourOffset, scenario)");
   const sundayEveningCall = status.indexOf("isSundayEveningFxOpenHour(hourOffset, scenario)");
+  const sundayNightCall = status.indexOf("isSundayNightFxOpenHour(hourOffset, scenario)");
   assert.ok(saturdayEveningCall !== -1 && sundayEveningCall > saturdayEveningCall);
+  assert.ok(sundayEveningCall !== -1 && sundayNightCall > sundayEveningCall);
   assert.doesNotMatch(model, /Date\.now/);
 });
 
