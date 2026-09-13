@@ -181,6 +181,7 @@ test("Saturday evening FX open ORs into fxWeekday through isSaturdayEveningFxOpe
   assert.match(helper, /saturdayEarlyFxOpen/);
   assert.match(helper, /saturdayLatePayoutOpen/);
   assert.match(helper, /sundayEveningFxOpen/);
+  assert.match(helper, /sundayNightFxOpen/);
   assert.doesNotMatch(helper, /isSundayMorningFxOpenHour/);
   assert.doesNotMatch(helper, /isSaturdayLateFxOpenHour/);
   assert.doesNotMatch(helper, /isSaturdayAfternoonFxOpenHour/);
