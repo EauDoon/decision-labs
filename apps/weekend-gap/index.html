@@ -133,6 +133,7 @@ SOFTWARE.
               <button type="button" class="preset-button" data-preset="saturdayEveningFxOpen">Saturday evening FX open (synthetic)</button>
               <button type="button" class="preset-button" data-preset="sundayEveningFxOpen">Sunday evening FX open (synthetic)</button>
               <button type="button" class="preset-button" data-preset="sundayNightFxOpen">Sunday night FX open (synthetic)</button>
+              <button type="button" class="preset-button" data-preset="sundayLateNightFxOpen">Sunday late-night FX open (synthetic)</button>
             </div>
           </fieldset>
 
@@ -525,7 +526,14 @@ SOFTWARE.
                 <input id="sundayNightFxOpen" name="sundayNightFxOpen" data-field="sundayNightFxOpen" type="checkbox">
                 Keep Sunday FX open 20:00 to 22:00
               </label>
-              <p>When selected, Sunday 20:00 to 22:00 treats FX as weekday-depth / open even though Sunday is not a business day. That window is a real weekday-FX-open case through isSundayNightFxOpenHour. Issuer, bank and payout stay on their Sunday night rules those hours. Older scenario files omit this field and keep Sunday night on ordinary weekend FX depth. Distinct from Sunday evening FX open, Saturday evening FX open, Sunday late FX open, Sunday afternoon FX open, Sunday midday FX open, Sunday morning FX open, Sunday early FX open, Saturday late FX open, Saturday afternoon FX open, Saturday midday FX open, Saturday early FX open, Friday early FX open, and Friday late FX open. This is a synthetic calendar, not an FX feed.</p>
+              <p>When selected, Sunday 20:00 to 22:00 treats FX as weekday-depth / open even though Sunday is not a business day. That window is a real weekday-FX-open case through isSundayNightFxOpenHour. Issuer, bank and payout stay on their Sunday night rules those hours. Older scenario files omit this field and keep Sunday night on ordinary weekend FX depth. Distinct from Sunday late-night FX open, Sunday evening FX open, Saturday evening FX open, Sunday late FX open, Sunday afternoon FX open, Sunday midday FX open, Sunday morning FX open, Sunday early FX open, Saturday late FX open, Saturday afternoon FX open, Saturday midday FX open, Saturday early FX open, Friday early FX open, and Friday late FX open. This is a synthetic calendar, not an FX feed.</p>
+            </div>
+            <div class="input-group input-group--full">
+              <label class="checkbox-label" for="sundayLateNightFxOpen">
+                <input id="sundayLateNightFxOpen" name="sundayLateNightFxOpen" data-field="sundayLateNightFxOpen" type="checkbox">
+                Keep Sunday FX open 22:00 to 24:00
+              </label>
+              <p>When selected, Sunday 22:00 to 24:00 treats FX as weekday-depth / open even though Sunday is not a business day. That window is a real weekday-FX-open case through isSundayLateNightFxOpenHour. Issuer, bank and payout stay on their Sunday late-night rules those hours. Older scenario files omit this field and keep Sunday late-night on ordinary weekend FX depth. Distinct from Sunday night FX open, Sunday evening FX open, Saturday evening FX open, Sunday late FX open, Sunday afternoon FX open, Sunday midday FX open, Sunday morning FX open, Sunday early FX open, Saturday late FX open, Saturday afternoon FX open, Saturday midday FX open, Saturday early FX open, Friday early FX open, and Friday late FX open. This is a synthetic calendar, not an FX feed.</p>
             </div>
           </form>
 
