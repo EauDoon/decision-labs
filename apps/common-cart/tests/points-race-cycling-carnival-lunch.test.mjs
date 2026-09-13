@@ -203,5 +203,6 @@ test("the example bar includes points-race cycling carnival lunch next to omnium
   assert.match(html, /data-preset="madisonCyclingCarnivalLunch"/u);
   assert.ok(html.indexOf('data-preset="madisonCyclingCarnivalLunch"') < html.indexOf('data-preset="omniumCyclingCarnivalLunch"'));
   assert.ok(html.indexOf('data-preset="omniumCyclingCarnivalLunch"') < html.indexOf('data-preset="pointsRaceCyclingCarnivalLunch"'));
-  assert.ok(html.indexOf('data-preset="pointsRaceCyclingCarnivalLunch"') < html.indexOf('data-preset="tiers"'));
+  assert.ok(html.indexOf('data-preset="pointsRaceCyclingCarnivalLunch"') < html.indexOf('data-preset="scratchCyclingCarnivalLunch"'));
+  assert.ok(html.indexOf('data-preset="scratchCyclingCarnivalLunch"') < html.indexOf('data-preset="tiers"'));
 });

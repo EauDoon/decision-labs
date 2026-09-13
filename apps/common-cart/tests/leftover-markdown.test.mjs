@@ -3355,6 +3355,9 @@ test("keirin cycling carnival leftover uncovered leftover-only remaining stays d
   const pointsRaceCycling = clonePreset("pointsRaceCyclingCarnivalLunch");
   assert.notEqual(createLeftoverUncoveredLeftoverOnlyRemainingMarkdown(keirinCycling), createLeftoverUncoveredLeftoverOnlyRemainingMarkdown(pointsRaceCycling));
   assert.match(createLeftoverUncoveredLeftoverOnlyRemainingMarkdown(pointsRaceCycling), /leftover uncovered leftover-only remaining \(organizer private\): 38\./);
+  const scratchCycling = clonePreset("scratchCyclingCarnivalLunch");
+  assert.notEqual(createLeftoverUncoveredLeftoverOnlyRemainingMarkdown(keirinCycling), createLeftoverUncoveredLeftoverOnlyRemainingMarkdown(scratchCycling));
+  assert.match(createLeftoverUncoveredLeftoverOnlyRemainingMarkdown(scratchCycling), /leftover uncovered leftover-only remaining \(organizer private\): 39\./);
 });
 
 test("madison cycling carnival leftover uncovered leftover-only remaining stays distinct from leftover-only allocated, leftover-only headroom, leftover-only capacity, leftover-only minimum, leftover unit price, leftover fill remaining, and keirin leftover-only remaining", () => {
@@ -3412,6 +3415,9 @@ test("madison cycling carnival leftover uncovered leftover-only remaining stays 
   const pointsRaceCycling = clonePreset("pointsRaceCyclingCarnivalLunch");
   assert.notEqual(createLeftoverUncoveredLeftoverOnlyRemainingMarkdown(madisonCycling), createLeftoverUncoveredLeftoverOnlyRemainingMarkdown(pointsRaceCycling));
   assert.match(createLeftoverUncoveredLeftoverOnlyRemainingMarkdown(pointsRaceCycling), /leftover uncovered leftover-only remaining \(organizer private\): 38\./);
+  const scratchCycling = clonePreset("scratchCyclingCarnivalLunch");
+  assert.notEqual(createLeftoverUncoveredLeftoverOnlyRemainingMarkdown(madisonCycling), createLeftoverUncoveredLeftoverOnlyRemainingMarkdown(scratchCycling));
+  assert.match(createLeftoverUncoveredLeftoverOnlyRemainingMarkdown(scratchCycling), /leftover uncovered leftover-only remaining \(organizer private\): 39\./);
 });
 
 test("omnium cycling carnival leftover uncovered leftover-only remaining stays distinct from leftover-only allocated, leftover-only headroom, leftover-only capacity, leftover-only minimum, leftover unit price, leftover fill remaining, and madison leftover-only remaining", () => {
@@ -3476,6 +3482,9 @@ test("omnium cycling carnival leftover uncovered leftover-only remaining stays d
   const pointsRaceCycling = clonePreset("pointsRaceCyclingCarnivalLunch");
   assert.notEqual(createLeftoverUncoveredLeftoverOnlyRemainingMarkdown(omniumCycling), createLeftoverUncoveredLeftoverOnlyRemainingMarkdown(pointsRaceCycling));
   assert.match(createLeftoverUncoveredLeftoverOnlyRemainingMarkdown(pointsRaceCycling), /leftover uncovered leftover-only remaining \(organizer private\): 38\./);
+  const scratchCycling = clonePreset("scratchCyclingCarnivalLunch");
+  assert.notEqual(createLeftoverUncoveredLeftoverOnlyRemainingMarkdown(omniumCycling), createLeftoverUncoveredLeftoverOnlyRemainingMarkdown(scratchCycling));
+  assert.match(createLeftoverUncoveredLeftoverOnlyRemainingMarkdown(scratchCycling), /leftover uncovered leftover-only remaining \(organizer private\): 39\./);
 });
 
 test("points-race cycling carnival leftover uncovered leftover-only remaining stays distinct from leftover-only allocated, leftover-only headroom, leftover-only capacity, leftover-only minimum, leftover unit price, leftover fill remaining, and omnium leftover-only remaining", () => {
@@ -3535,6 +3544,72 @@ test("points-race cycling carnival leftover uncovered leftover-only remaining st
   assert.match(createLeftoverUncoveredLeftoverOnlyRemainingMarkdown(keirinCycling), /leftover uncovered leftover-only remaining \(organizer private\): 35\./);
   assert.match(createLeftoverUncoveredLeftoverOnlyRemainingMarkdown(hillClimbCycling), /leftover uncovered leftover-only remaining \(organizer private\): 34\./);
   assert.match(createLeftoverUncoveredLeftoverOnlyRemainingMarkdown(timeTrialCycling), /leftover uncovered leftover-only remaining \(organizer private\): 33\./);
+  assert.equal(omniumCycling.offers.find((offer) => offer.id === computeResidualCoverage(omniumCycling).secondary.offerId).capacity, 64);
+  assert.equal(madisonCycling.offers.find((offer) => offer.id === computeResidualCoverage(madisonCycling).secondary.offerId).capacity, 64);
+  assert.equal(keirinCycling.offers.find((offer) => offer.id === computeResidualCoverage(keirinCycling).secondary.offerId).capacity, 64);
+  assert.equal(hillClimbCycling.offers.find((offer) => offer.id === computeResidualCoverage(hillClimbCycling).secondary.offerId).capacity, 64);
+  const scratchCycling = clonePreset("scratchCyclingCarnivalLunch");
+  assert.notEqual(createLeftoverUncoveredLeftoverOnlyRemainingMarkdown(pointsRaceCycling), createLeftoverUncoveredLeftoverOnlyRemainingMarkdown(scratchCycling));
+  assert.match(createLeftoverUncoveredLeftoverOnlyRemainingMarkdown(scratchCycling), /leftover uncovered leftover-only remaining \(organizer private\): 39\./);
+});
+
+test("scratch cycling carnival leftover uncovered leftover-only remaining stays distinct from leftover-only allocated, leftover-only headroom, leftover-only capacity, leftover-only minimum, leftover unit price, leftover fill remaining, and points-race leftover-only remaining", () => {
+  const scratchCycling = clonePreset("scratchCyclingCarnivalLunch");
+  const leftoverOnlyUnitPrice = createLeftoverUncoveredLeftoverOnlyUnitPriceMarkdown(scratchCycling);
+  const leftoverOnlyCapacity = createLeftoverUncoveredLeftoverOnlyCapacityMarkdown(scratchCycling);
+  const leftoverOnlyAllocated = createLeftoverUncoveredLeftoverOnlyAllocatedMarkdown(scratchCycling);
+  const leftoverOnlyHeadroom = createLeftoverUncoveredLeftoverOnlyHeadroomMarkdown(scratchCycling);
+  const leftoverOnlyMinimum = createLeftoverUncoveredLeftoverOnlyMinimumMarkdown(scratchCycling);
+  const leftoverOnlyMaximum = createLeftoverUncoveredLeftoverOnlyMaximumMarkdown(scratchCycling);
+  const leftoverOnlyRemaining = createLeftoverUncoveredLeftoverOnlyRemainingMarkdown(scratchCycling);
+  const leftoverOnlyCount = createLeftoverUncoveredLeftoverOnlyCountMarkdown(scratchCycling);
+  const leftoverOffer = scratchCycling.offers.find((offer) => offer.id === computeResidualCoverage(scratchCycling).secondary.offerId);
+  assert.equal(leftoverOffer.minimumUnits, 38);
+  assert.equal(leftoverOffer.unitPrice, 34);
+  assert.equal(leftoverOffer.capacity, 64);
+  assert.match(leftoverOnlyRemaining, /leftover uncovered leftover-only remaining \(organizer private\): 39\./);
+  assert.match(leftoverOnlyAllocated, /leftover uncovered leftover-only allocated \(organizer private\): 39\./);
+  assert.match(leftoverOnlyHeadroom, /leftover uncovered leftover-only headroom \(organizer private\): 25\./);
+  assert.match(leftoverOnlyMinimum, /leftover uncovered leftover-only minimum \(organizer private\): 15\./);
+  assert.match(leftoverOnlyUnitPrice, /leftover uncovered leftover-only unit price \(organizer private\): 34\./);
+  assert.match(leftoverOnlyCapacity, /leftover uncovered leftover-only capacity \(organizer private\): 64\./);
+  assert.notEqual(39, leftoverOffer.minimumUnits);
+  assert.notEqual(39, leftoverOffer.unitPrice);
+  assert.notEqual(39, leftoverOffer.capacity);
+  assert.notEqual(39, 34);
+  assert.notEqual(39, 25);
+  assert.notEqual(39, 15);
+  assert.notEqual(39, 38);
+  assert.notEqual(39, 37);
+  assert.notEqual(39, 36);
+  assert.notEqual(leftoverOnlyRemaining, leftoverOnlyAllocated);
+  assert.notEqual(leftoverOnlyRemaining, leftoverOnlyUnitPrice);
+  assert.notEqual(leftoverOnlyRemaining, leftoverOnlyCapacity);
+  assert.notEqual(leftoverOnlyRemaining, leftoverOnlyHeadroom);
+  assert.notEqual(leftoverOnlyRemaining, leftoverOnlyMinimum);
+  assert.notEqual(leftoverOnlyRemaining, leftoverOnlyMaximum);
+  assert.notEqual(leftoverOnlyRemaining, leftoverOnlyCount);
+  assert.notEqual(leftoverOnlyHeadroom, leftoverOnlyUnitPrice);
+  const pointsRaceCycling = clonePreset("pointsRaceCyclingCarnivalLunch");
+  const omniumCycling = clonePreset("omniumCyclingCarnivalLunch");
+  const madisonCycling = clonePreset("madisonCyclingCarnivalLunch");
+  const keirinCycling = clonePreset("keirinCyclingCarnivalLunch");
+  const hillClimbCycling = clonePreset("hillClimbCyclingCarnivalLunch");
+  const timeTrialCycling = clonePreset("timeTrialCyclingCarnivalLunch");
+  assert.notEqual(createLeftoverUncoveredLeftoverOnlyRemainingMarkdown(scratchCycling), createLeftoverUncoveredLeftoverOnlyRemainingMarkdown(pointsRaceCycling));
+  assert.notEqual(createLeftoverUncoveredLeftoverOnlyRemainingMarkdown(scratchCycling), createLeftoverUncoveredLeftoverOnlyRemainingMarkdown(omniumCycling));
+  assert.notEqual(createLeftoverUncoveredLeftoverOnlyRemainingMarkdown(scratchCycling), createLeftoverUncoveredLeftoverOnlyRemainingMarkdown(madisonCycling));
+  assert.notEqual(createLeftoverUncoveredLeftoverOnlyRemainingMarkdown(scratchCycling), createLeftoverUncoveredLeftoverOnlyRemainingMarkdown(keirinCycling));
+  assert.notEqual(createLeftoverUncoveredLeftoverOnlyRemainingMarkdown(scratchCycling), createLeftoverUncoveredLeftoverOnlyRemainingMarkdown(hillClimbCycling));
+  assert.notEqual(createLeftoverUncoveredLeftoverOnlyRemainingMarkdown(scratchCycling), createLeftoverUncoveredLeftoverOnlyRemainingMarkdown(timeTrialCycling));
+  assert.notEqual(createLeftoverUncoveredLeftoverOnlyUnitPriceMarkdown(scratchCycling), createLeftoverUncoveredLeftoverOnlyUnitPriceMarkdown(pointsRaceCycling));
+  assert.notEqual(createLeftoverUncoveredLeftoverOnlyHeadroomMarkdown(scratchCycling), createLeftoverUncoveredLeftoverOnlyHeadroomMarkdown(pointsRaceCycling));
+  assert.match(createLeftoverUncoveredLeftoverOnlyRemainingMarkdown(pointsRaceCycling), /leftover uncovered leftover-only remaining \(organizer private\): 38\./);
+  assert.match(createLeftoverUncoveredLeftoverOnlyRemainingMarkdown(omniumCycling), /leftover uncovered leftover-only remaining \(organizer private\): 37\./);
+  assert.match(createLeftoverUncoveredLeftoverOnlyRemainingMarkdown(madisonCycling), /leftover uncovered leftover-only remaining \(organizer private\): 36\./);
+  assert.match(createLeftoverUncoveredLeftoverOnlyRemainingMarkdown(keirinCycling), /leftover uncovered leftover-only remaining \(organizer private\): 35\./);
+  assert.match(createLeftoverUncoveredLeftoverOnlyRemainingMarkdown(hillClimbCycling), /leftover uncovered leftover-only remaining \(organizer private\): 34\./);
+  assert.equal(pointsRaceCycling.offers.find((offer) => offer.id === computeResidualCoverage(pointsRaceCycling).secondary.offerId).capacity, 64);
   assert.equal(omniumCycling.offers.find((offer) => offer.id === computeResidualCoverage(omniumCycling).secondary.offerId).capacity, 64);
   assert.equal(madisonCycling.offers.find((offer) => offer.id === computeResidualCoverage(madisonCycling).secondary.offerId).capacity, 64);
   assert.equal(keirinCycling.offers.find((offer) => offer.id === computeResidualCoverage(keirinCycling).secondary.offerId).capacity, 64);
