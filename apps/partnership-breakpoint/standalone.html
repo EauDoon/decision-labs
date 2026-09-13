@@ -967,6 +967,15 @@ const PRESETS = Object.freeze({
       { id: 'first-aid-cycling-first-aid', name: 'First-aid', revenueShare: 0.25, variableCostPerTransaction: 1.28, fixedMonthlyCost: 1790, minimumAcceptableProfit: 710, capacity: 6800, minimumCommitment: 0, riskCost: 480 },
     ],
   },
+  feedZoneCyclingCarnivalSplit: {
+    name: 'Feed-zone cycling carnival split',
+    deal: { monthlyVolume: 6900, feePerTransaction: 8, addressableVolume: 8700, volumeShockPct: 0 },
+    participants: [
+      { id: 'feed-zone-cycling-committee', name: 'Carnival committee', revenueShare: 0.37, variableCostPerTransaction: 2.02, fixedMonthlyCost: 3900, minimumAcceptableProfit: 1610, capacity: 8250, minimumCommitment: 0, riskCost: 598 },
+      { id: 'feed-zone-cycling-club-hire', name: 'Feed-zone cycling club hire', revenueShare: 0.38, variableCostPerTransaction: 1.67, fixedMonthlyCost: 3170, minimumAcceptableProfit: 1150, capacity: 9350, minimumCommitment: 600, riskCost: 614 },
+      { id: 'feed-zone-cycling-first-aid', name: 'First-aid', revenueShare: 0.25, variableCostPerTransaction: 1.26, fixedMonthlyCost: 1800, minimumAcceptableProfit: 720, capacity: 6900, minimumCommitment: 0, riskCost: 490 },
+    ],
+  },
 });
 
 function isFiniteNumber(value) {
