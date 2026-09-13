@@ -2008,7 +2008,7 @@ const presets = {
     maxChangeCost: 8,
     groups: [
       { id: "students", name: "Students", weight: 29 },
-      { id: "neighbours", name: "Neighbours", weight: 20, veto: true },
+      { id: "neighbours", name: "Neighbours", weight: 19, veto: true },
       { id: "pandc", name: "P&C", weight: 31 },
     ],
     clauses: [
