@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 
-import { catalogVersionLine, notFoundPage, catalogJobs, catalogLastWhatsNewHeading, catalogFirstWhatsNewHeading, catalogFirstWorkbenchHeading, catalogLastWorkbenchHeading, catalogLastReviewPath, catalogFirstReviewPath, catalogFirstOpenHref, catalogLastOpenHref, catalogFirstSkipHref, catalogLastSkipHref, catalogFirstSkipText, catalogLastSkipText, catalogFirstSkipTargetText, catalogLastSkipTargetText, catalogFirstLabelledSkipTargetText, catalogLastLabelledSkipTargetText, catalogFirstLabelledSkipHref, catalogLastLabelledSkipHref, catalogLastLabelledSkipText, catalogFirstLabelledSkipText, catalogLastUnlabelledSkipText, catalogFirstUnlabelledSkipText, catalogFirstUnlabelledSkipHref, catalogLastUnlabelledSkipHref, catalogFirstUnlabelledSkipTargetText, catalogLastUnlabelledSkipTargetText, catalogFirstUnlabelledSkipTargetId, catalogLastUnlabelledSkipTargetId, catalogFirstLabelledSkipTargetId, catalogLastLabelledSkipTargetId, catalogLastLabelledSkipLabelledbyId, catalogFirstLabelledSkipLabelledbyId, catalogFirstLabelledSkipLabelledbyHref, catalogLastLabelledSkipLabelledbyHref, catalogLastLabelledSkipLabelledbySelector } from '../scripts/serve.mjs';
+import { catalogVersionLine, notFoundPage, catalogJobs, catalogLastWhatsNewHeading, catalogFirstWhatsNewHeading, catalogFirstWorkbenchHeading, catalogLastWorkbenchHeading, catalogLastReviewPath, catalogFirstReviewPath, catalogFirstOpenHref, catalogLastOpenHref, catalogFirstSkipHref, catalogLastSkipHref, catalogFirstSkipText, catalogLastSkipText, catalogFirstSkipTargetText, catalogLastSkipTargetText, catalogFirstLabelledSkipTargetText, catalogLastLabelledSkipTargetText, catalogFirstLabelledSkipHref, catalogLastLabelledSkipHref, catalogLastLabelledSkipText, catalogFirstLabelledSkipText, catalogLastUnlabelledSkipText, catalogFirstUnlabelledSkipText, catalogFirstUnlabelledSkipHref, catalogLastUnlabelledSkipHref, catalogFirstUnlabelledSkipTargetText, catalogLastUnlabelledSkipTargetText, catalogFirstUnlabelledSkipTargetId, catalogLastUnlabelledSkipTargetId, catalogFirstLabelledSkipTargetId, catalogLastLabelledSkipTargetId, catalogLastLabelledSkipLabelledbyId, catalogFirstLabelledSkipLabelledbyId, catalogFirstLabelledSkipLabelledbyHref, catalogLastLabelledSkipLabelledbyHref, catalogLastLabelledSkipLabelledbySelector, catalogFirstLabelledSkipLabelledbySelector } from '../scripts/serve.mjs';
 
 const html = readFileSync(new URL('../index.html', import.meta.url), 'utf8');
 const readme = readFileSync(new URL('../README.md', import.meta.url), 'utf8');
@@ -1089,7 +1089,7 @@ test('404 last labelled skip labelledby selector matches the tag and id of the l
   assert.notEqual(selector, catalogLastLabelledSkipTargetText());
   const serveSrc = readFileSync(new URL('../scripts/serve.mjs', import.meta.url), 'utf8');
   const start = serveSrc.indexOf('export function catalogLastLabelledSkipLabelledbySelector');
-  const end = serveSrc.indexOf('export function notFoundPage');
+  const end = serveSrc.indexOf('export function catalogFirstLabelledSkipLabelledbySelector');
   const body = serveSrc.slice(start, end);
   assert.match(body, /catalogLastLabelledSkipLabelledbyId/);
   assert.match(body, /catalogMarkupTag/);
@@ -1111,4 +1111,48 @@ test('404 last labelled skip labelledby selector matches the tag and id of the l
   assert.match(page, /id="trust-title"/);
   assert.match(page, /id="skips"/);
   assert.equal(page.indexOf('id="copy-last-labelled-skip-labelledby-href"') < page.indexOf('id="copy-last-labelled-skip-labelledby-selector"'), true);
+});
+
+test('404 first labelled skip labelledby selector matches the tag and id of the first labelled skip labelledby heading', () => {
+  const selector = catalogFirstLabelledSkipLabelledbySelector();
+  const id = catalogFirstLabelledSkipLabelledbyId();
+  const href = catalogFirstLabelledSkipLabelledbyHref();
+  const last = catalogLastLabelledSkipLabelledbySelector();
+  assert.equal(selector, 'h2#whats-new-title');
+  assert.equal(id, 'whats-new-title');
+  assert.equal(href, '#whats-new-title');
+  assert.equal(selector, `h2#${id}`);
+  assert.equal(html.includes(`id="${id}"`), true, 'first labelled skip labelledby id missing from catalog');
+  assert.notEqual(selector, id);
+  assert.notEqual(selector, href);
+  assert.notEqual(selector, last);
+  assert.notEqual(selector, catalogFirstLabelledSkipHref());
+  assert.notEqual(selector, catalogFirstLabelledSkipTargetId());
+  assert.notEqual(selector, catalogFirstLabelledSkipLabelledbyHref());
+  assert.notEqual(selector, catalogFirstLabelledSkipTargetText());
+  const serveSrc = readFileSync(new URL('../scripts/serve.mjs', import.meta.url), 'utf8');
+  const start = serveSrc.indexOf('export function catalogFirstLabelledSkipLabelledbySelector');
+  const end = serveSrc.indexOf('export function notFoundPage');
+  const body = serveSrc.slice(start, end);
+  assert.match(body, /catalogFirstLabelledSkipLabelledbyId/);
+  assert.match(body, /catalogMarkupTag/);
+  assert.match(body, /toLowerCase\(\)\}#\$\{id\}/);
+  assert.doesNotMatch(body, /return match\[1\]/);
+  assert.doesNotMatch(body, /catalogSkipLinks/);
+  assert.doesNotMatch(body, /return href\.slice\(1\)/);
+  assert.doesNotMatch(body, /catalogMarkupText/);
+  assert.doesNotMatch(body, /return link\.text/);
+  assert.doesNotMatch(body, /catalogLastLabelledSkipLabelledbyId/);
+  const page = notFoundPage();
+  assert.match(page, /id="copy-first-labelled-skip-labelledby-selector"/);
+  assert.match(page, />Copy first labelled skip labelledby selector</);
+  assert.match(page, /firstLabelledSkipLabelledbySelectorMarkdown/);
+  assert.match(page, /id="copy-last-labelled-skip-labelledby-selector"/);
+  assert.match(page, />Copy last labelled skip labelledby selector</);
+  assert.match(page, /id="copy-first-labelled-skip-labelledby-href"/);
+  assert.match(page, />Copy first labelled skip labelledby href</);
+  assert.match(page, /id="whats-new"/);
+  assert.match(page, /id="whats-new-title"/);
+  assert.match(page, /id="skips"/);
+  assert.equal(page.indexOf('id="copy-last-labelled-skip-labelledby-selector"') < page.indexOf('id="copy-first-labelled-skip-labelledby-selector"'), true);
 });
