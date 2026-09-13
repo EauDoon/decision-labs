@@ -241,6 +241,8 @@ The catalog also names first-unlabelled-skip-href copy, first-unlabelled-skip-hr
 That What's new entry is hub-only. It does not change workbench versions.
 The catalog also names first-unlabelled-skip-target-text copy, first-unlabelled-skip-target-text jump, and first-unlabelled-skip-target-heading jump.
 That What's new entry is hub-only. It does not change workbench versions.
+The catalog also names first-labelled-skip-labelledby-tag-id-eq copy, first-labelled-skip-labelledby-tag-id-eq jump, and first-labelled-skip-labelledby-tag-id-eq-heading jump.
+That What's new entry is hub-only. It does not change workbench versions.
 The catalog also names last-labelled-skip-labelledby-tag-id-eq copy, last-labelled-skip-labelledby-tag-id-eq jump, and last-labelled-skip-labelledby-tag-id-eq-heading jump.
 That What's new entry is hub-only. It does not change workbench versions.
 The catalog also names first-labelled-skip-labelledby-tag-id-attr copy, first-labelled-skip-labelledby-tag-id-attr jump, and first-labelled-skip-labelledby-tag-id-attr-heading jump.
@@ -403,6 +405,13 @@ that 404 page copies the same labelled skip labelledby tag-id-eq without adding 
 Key `Shift+Soft2` copies the tag and unquoted id attribute selector of the last labelled skip labelledby heading.
 Key `Shift+Soft3` focuses the Copy last labelled skip labelledby tag-id-eq control.
 Key `Shift+Soft4` focuses the last labelled skip labelledby tag-id-eq heading.
+Copy first labelled skip labelledby tag-id-eq copies the tag and unquoted id attribute selector of the first labelled skip labelledby heading
+already printed on this page as one Markdown line. If that labelledby tag-id-eq is missing, it copies an empty string.
+Copy first labelled skip labelledby tag-id-eq on
+that 404 page copies the same labelled skip labelledby tag-id-eq without adding a public path.
+Key `Shift+Soft5` copies the tag and unquoted id attribute selector of the first labelled skip labelledby heading.
+Key `Shift+Soft6` focuses the Copy first labelled skip labelledby tag-id-eq control.
+Key `Shift+Soft7` focuses the first labelled skip labelledby tag-id-eq heading.
 Copy last labelled skip labelledby id-attr copies the id attribute selector of the last labelled skip labelledby heading
 already printed on this page as one Markdown line. If that labelledby id-attr is missing, it copies an empty string.
 Copy last labelled skip labelledby id-attr on
@@ -984,6 +993,21 @@ focuses Copy last labelled skip labelledby selector, and from `#`, which focuses
 Press `Shift+Soft4` to focus the labelled heading named by the last labelled skip labelledby tag-id-eq, or that target, the skip-link row, or catalog heading if that heading is missing.
 That key moves focus; it does not open a workbench. It does not copy. That key
 is distinct from `Shift+FnLock`, which focuses the last labelled skip labelledby tag-id-attr heading, from `Shift+Soft1`, which focuses the first labelled skip labelledby tag-id-attr heading, from `Shift+CodeInput`, which focuses the last labelled skip labelledby id-attr heading, from `Shift+Zenkaku`, which focuses the last labelled skip labelledby selector heading, from `n`, which focuses What's new.
+Press `Shift+Soft5` to copy the tag and unquoted id attribute selector of the first labelled skip labelledby heading from this page as one Markdown
+line. That key uses the same Copy first labelled skip labelledby tag-id-eq control, including
+the visible text box when the clipboard API is unavailable. If that labelledby tag-id-eq is
+missing, it copies an empty string. This is catalog copy, not a live product
+feed. It is distinct from `Shift+Soft2`, which copies the last labelled skip labelledby tag-id-eq, from
+`Shift+GroupNext`, which copies the first labelled skip labelledby tag-id-attr, from `Shift+Hanja`, which copies the first labelled skip labelledby id-attr, from `Shift+Alphanumeric`, which copies the first labelled skip labelledby selector, from `Shift+Process`, which copies the first labelled skip labelledby href, and from
+`Shift+Zoom`, which copies the first labelled skip labelledby id.
+Press `Shift+Soft6` to focus the Copy first labelled skip labelledby tag-id-eq control, or the skip-link row
+or catalog heading if that control is missing. That key moves focus; it does not
+open a workbench. It does not copy. That key is distinct from `Shift+Soft3`, which
+focuses Copy last labelled skip labelledby tag-id-eq, from `Shift+GroupPrevious`, which focuses Copy first labelled skip labelledby tag-id-attr, from
+`Shift+HangulMode`, which focuses Copy first labelled skip labelledby id-attr, from `Shift+Hiragana`, which focuses Copy first labelled skip labelledby selector, and from `#`, which focuses Copy skip links.
+Press `Shift+Soft7` to focus the labelled heading named by the first labelled skip labelledby tag-id-eq, or that target, the skip-link row, or catalog heading if that heading is missing.
+That key moves focus; it does not open a workbench. It does not copy. That key
+is distinct from `Shift+Soft4`, which focuses the last labelled skip labelledby tag-id-eq heading, from `Shift+Soft1`, which focuses the first labelled skip labelledby tag-id-attr heading, from `Shift+HanjaMode`, which focuses the first labelled skip labelledby id-attr heading, from `Shift+Katakana`, which focuses the first labelled skip labelledby selector heading, from `n`, which focuses What's new.
 Press `Shift+Eisu` to copy the id attribute selector of the last labelled skip labelledby heading from this page as one Markdown
 line. That key uses the same Copy last labelled skip labelledby id-attr control, including
 the visible text box when the clipboard API is unavailable. If that labelledby id-attr is
