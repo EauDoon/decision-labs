@@ -6,7 +6,8 @@ test("feed-zone cycling club hours keeps remaining 27 / 29 / 75 after first-aid"
   const app = (await readFile(new URL("../src/app.js", import.meta.url), "utf8")).replaceAll("\r\n", "\n");
   const html = (await readFile(new URL("../index.html", import.meta.url), "utf8")).replaceAll("\r\n", "\n");
   const feedZoneStart = app.indexOf('"feed-zone-cycling-club-hours"');
-  const feedZoneEnd = app.indexOf("let agreementReviewPacket", feedZoneStart);
+  const leadOutStart = app.indexOf('"lead-out-cycling-club-hours"');
+  const feedZoneEnd = leadOutStart === -1 ? app.indexOf("let agreementReviewPacket", feedZoneStart) : leadOutStart;
   const feedZone = app.slice(feedZoneStart, feedZoneEnd === -1 ? undefined : feedZoneEnd);
   const firstAidStart = app.indexOf('"first-aid-cycling-club-hours"');
   const firstAid = app.slice(firstAidStart, feedZoneStart);
