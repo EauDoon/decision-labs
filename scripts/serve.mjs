@@ -2901,6 +2901,55 @@ ${skipNav}
         }
       });
 
+
+      const firstLabelledSkipLabelledbyTagIdEqSqBtn = document.getElementById('copy-first-labelled-skip-labelledby-tag-id-eq-sq');
+      const firstLabelledSkipLabelledbyTagIdEqSqStatus = document.getElementById('copy-first-labelled-skip-labelledby-tag-id-eq-sq-status');
+      const firstLabelledSkipLabelledbyTagIdEqSqFallback = document.getElementById('copy-first-labelled-skip-labelledby-tag-id-eq-sq-fallback');
+      const firstLabelledSkipLabelledbyTagIdEqSqMarkdown = () => {
+        const skips = document.querySelectorAll('#skips a.skip');
+        for (let i = 0; i < skips.length; i += 1) {
+          const skip = skips[i];
+          const href = skip && skip.getAttribute ? skip.getAttribute('href') : '';
+          if (!href || href.charAt(0) !== '#' || href.length < 2) continue;
+          const target = document.getElementById(href.slice(1));
+          if (!target) continue;
+          const labelledBy = target.getAttribute ? target.getAttribute('aria-labelledby') : '';
+          if (!labelledBy) continue;
+          const heading = document.getElementById(labelledBy);
+          if (!heading || !heading.tagName) continue;
+          const found = document.querySelector(heading.tagName.toLowerCase() + "[id='" + labelledBy + "']");
+          if (!found) continue;
+          return '- ' + heading.tagName.toLowerCase() + "[id='" + labelledBy + "']";
+        }
+        return '';
+      };
+      firstLabelledSkipLabelledbyTagIdEqSqBtn?.addEventListener('click', async () => {
+        const markdown = firstLabelledSkipLabelledbyTagIdEqSqMarkdown();
+        const empty = markdown === '';
+        try {
+          if (!navigator.clipboard?.writeText) throw new Error('clipboard unavailable');
+          await navigator.clipboard.writeText(markdown);
+          if (firstLabelledSkipLabelledbyTagIdEqSqFallback) firstLabelledSkipLabelledbyTagIdEqSqFallback.hidden = true;
+          if (firstLabelledSkipLabelledbyTagIdEqSqStatus) {
+            firstLabelledSkipLabelledbyTagIdEqSqStatus.textContent = empty
+              ? 'First labelled skip labelledby tag-id-eq-sq was missing. Copied an empty string. This is catalog copy, not a live product feed.'
+              : 'Copied the first labelled skip labelledby tag-id-eq-sq from this page as Markdown. Not a live product feed.';
+          }
+        } catch {
+          if (firstLabelledSkipLabelledbyTagIdEqSqFallback) {
+            firstLabelledSkipLabelledbyTagIdEqSqFallback.hidden = false;
+            firstLabelledSkipLabelledbyTagIdEqSqFallback.value = markdown;
+            firstLabelledSkipLabelledbyTagIdEqSqFallback.focus();
+            firstLabelledSkipLabelledbyTagIdEqSqFallback.select();
+          }
+          if (firstLabelledSkipLabelledbyTagIdEqSqStatus) {
+            firstLabelledSkipLabelledbyTagIdEqSqStatus.textContent = empty
+              ? 'Clipboard unavailable. Copy the empty string from the text box. First labelled skip labelledby tag-id-eq-sq was missing. This is catalog copy, not a live product feed.'
+              : 'Clipboard unavailable. Copy the Markdown from the text box. This is the first labelled skip labelledby tag-id-eq-sq, not a live product feed.';
+          }
+        }
+      });
+
       const firstReviewBtn = document.getElementById('copy-first-review');
       const firstReviewStatus = document.getElementById('copy-first-review-status');
       const firstReviewFallback = document.getElementById('copy-first-review-fallback');
