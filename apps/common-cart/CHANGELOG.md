@@ -1,5 +1,19 @@
 # Changelog
 
+## 1.4.44 - 2026-09-12
+
+Points-race cycling carnival lunch, leftover-uncovered leftover-only remaining copy, and first leftover-only hide jump in Common Cart 1.4.44.
+
+A workshop follow-up on 1.4.43. Common Cart remains an offline simulator. Residual coverage is leftover planning, not checkout. Merchant views, JSON, CSV, overlap Markdown, leftover print, winning merchant copy, winning fulfillment copy, and remaining-capacity copy still receive aggregates, counts, merchant labels, or fulfillment modes only. Organizer leftover copies are labeled organizer-private. Review packets from 1.4.0 and the 1.4.1-1.4.43 review UI stay private and unsigned.
+
+### Added
+
+- Keyboard `Shift+F7` copies leftover uncovered leftover-only remaining through the leftover uncovered leftover-only remaining copy control, using one-line organizer-private Markdown of leftover-only buyer units after the winner. Honest empty none when leftover after the winner is missing. Ignored while typing. Distinct prefix from leftover uncovered leftover-only allocated, leftover uncovered leftover-only headroom, leftover uncovered leftover-only capacity, leftover uncovered leftover-only minimum, leftover uncovered leftover-only maximum, leftover uncovered leftover-only count, leftover uncovered remaining, leftover-fill remaining, leftover unit price, leftover uncovered leftover-only unit price, leftover uncovered maximum, leftover uncovered minimum, leftover uncovered count, leftover-fill maximum, leftover-fill minimum, leftover unspent item headroom even when the number matches. Shift is handled before unshifted `F7` leftover-only count copy. Unshifted `F10` still copies leftover uncovered leftover-only remaining. The leftover uncovered leftover-only allocated button stays on screen without that shortcut.
+- Keyboard `Shift+F8` jumps to the leftover uncovered leftover-only remaining copy control, or the leftover heading if that control is missing. Does not copy. Ignored while typing. Distinct from unshifted `F8` leftover uncovered leftover-only count jump and leftover uncovered leftover-only allocated jump. Unshifted `F11` still jumps to the same leftover uncovered leftover-only remaining copy control.
+- Keyboard `Shift+F9` jumps to hide first leftover-only buyer (`hide-first-leftover-only-buyer`), or the buyer list if that control is missing. Ignored while typing. Distinct from 1.4.37 `Shift+F9` hide last leftover-only buyer. That last leftover-only hide stays on `ArrowUp` without `Shift+F9`. Distinct from unshifted `F9` and `Shift+F12` hide first uncovered leftover buyer. `ArrowLeft` still jumps to hide first leftover-only buyer.
+- Points-race cycling carnival lunch (synthetic) preset after Omnium cycling carnival lunch. Winner Court-side Points-race Delivery. Leftover Hall Points-race Pickup with pickup minimum 37, unit price 33, and capacity 64. Leftover uncovered leftover-only remaining on this room is 38 leftover-only units. Leftover uncovered leftover-only headroom is leftover-fill remaining capacity after leftover-only units 26. Leftover uncovered leftover-only capacity reports 64, not 26. Leftover uncovered leftover-only minimum is the smallest leftover-only buyer quantity 15. Distinct from Omnium leftover minimum 36, unit price 32, capacity 64, leftover-only remaining 37, leftover-only remaining after leftover-only units 27. Soccer 11 through Omnium 36 stay. Points-sprint / bell-lap / prime-board, not omnium-board / flying-200 / elimination-heat / tempo-lap / madison-pair / handsling / derny-pacer / keirin-gate / keirin-chip / hairpin / summit-marshal / climb-chip / start-ramp / timing-hut / time-check / pit-lane / circuit / sealed-road. Synthetic. Not live inventory.
+
+
 ## 1.4.43 - 2026-09-12
 
 Omnium cycling carnival lunch, leftover-uncovered leftover-only remaining copy, and first leftover-only hide jump in Common Cart 1.4.43.
