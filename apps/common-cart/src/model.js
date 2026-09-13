@@ -963,7 +963,7 @@ export const presets = Object.freeze({
     title: "Lead-out cycling carnival lunch",
     currency: "AUD",
     buyers: [
-      buyer("B01", "Train-line crate", "Lead-out lunch pack", 15, 23, 4, ["Lead-out pie", "Train salad"]),
+      buyer("B01", "Train-line crate", "Lead-out lunch pack", 17, 23, 4, ["Lead-out pie", "Train salad"]),
       buyer("B02", "Last-rider bench", "Lead-out lunch pack", 19, 19, 3, ["Lead-out pie"]),
       buyer("B03", "Sprinter-launch hamper", "Lead-out lunch pack", 15, 46, 5, ["Train salad", "Launch water"]),
       buyer("B04", "Sideline cooler", "Lead-out lunch pack", 36, 46, 2, ["Launch water"]),

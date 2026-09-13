@@ -38,7 +38,7 @@ test("lead-out cycling carnival lunch leftover fill is hall pickup and stays dis
   assert.ok(leadOutCycling.winner);
   assert.equal(leadOutCycling.winner.offer.merchant, "Court-side Lead-out Delivery");
   assert.equal(leadOutCycling.winner.offer.fulfillment, "shipping");
-  assert.equal(leadOutCycling.winner.fulfilledUnits, 50);
+  assert.equal(leadOutCycling.winner.fulfilledUnits, 52);
   assert.deepEqual(leadOutCycling.winner.selectedBuyerIds, ["B01", "B02", "B05"]);
   assert.equal(leadOutCycling.scenario.title, "Lead-out cycling carnival lunch");
   assert.notEqual(leadOutCycling.scenario.title, clonePreset("firstAidCyclingCarnivalLunch").title);
@@ -269,7 +269,7 @@ test("lead-out cycling carnival lunch leftover fill is hall pickup and stays dis
   const second = evaluateMarket(validateScenario(clonePreset("leadOutCyclingCarnivalLunch")));
   assert.equal(first.winner.offer.id, second.winner.offer.id);
   assert.equal(first.winner.fulfilledUnits, second.winner.fulfilledUnits);
-  assert.equal(first.winner.fulfilledUnits, 50);
+  assert.equal(first.winner.fulfilledUnits, 52);
 });
 
 test("the example bar includes lead-out cycling carnival lunch next to feed-zone cycling carnival lunch", async () => {
