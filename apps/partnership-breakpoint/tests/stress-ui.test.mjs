@@ -13403,3 +13403,87 @@ test('keyboard last-over-capacity remaining copy shortcuts stay on lead-out cycl
   assert.doesNotMatch(JSON.stringify(leadOut.saved()), /\bapi\b/i);
 });
 
+test('soigneur cycling carnival split preset loads from the starting-point buttons', async () => {
+  const app = await workbench();
+  assert.match(app.markup(), /data-preset="soigneurCyclingCarnivalSplit"/);
+  assert.match(app.markup(), /Soigneur cycling carnival split/);
+  assert.match(app.markup(), /data-preset="leadOutCyclingCarnivalSplit"/);
+  assert.match(app.markup(), /Lead-out cycling carnival split/);
+  const markup = app.markup();
+  assert.ok(markup.indexOf('data-preset="feedZoneCyclingCarnivalSplit"') < markup.indexOf('data-preset="leadOutCyclingCarnivalSplit"'));
+  assert.ok(markup.indexOf('data-preset="leadOutCyclingCarnivalSplit"') < markup.indexOf('data-preset="soigneurCyclingCarnivalSplit"'));
+  app.click('preset', { preset: 'soigneurCyclingCarnivalSplit' });
+  assert.equal(app.saved().participants.length, 3);
+  assert.deepEqual(app.saved().participants.map((item) => item.id), ['soigneur-cycling-committee', 'soigneur-cycling-club-hire', 'soigneur-cycling-first-aid']);
+  assert.deepEqual(app.saved().participants.map((item) => item.name), ['Carnival committee', 'Soigneur cycling club hire', 'First-aid']);
+  assert.equal(app.saved().deal.feePerTransaction, 8);
+  assert.equal(app.saved().deal.monthlyVolume, 7100);
+  assert.equal(app.saved().deal.addressableVolume, 9100);
+  assert.deepEqual(app.saved().participants.map((item) => item.capacity), [8550, 9650, 7100]);
+  assert.notEqual(app.saved().participants[0].variableCostPerTransaction, app.saved().participants[1].variableCostPerTransaction);
+  assert.notEqual(app.saved().participants[1].variableCostPerTransaction, app.saved().participants[2].variableCostPerTransaction);
+  assert.equal(app.saved().participants[2].variableCostPerTransaction, 1.22);
+  assert.match(app.notice(), /Soigneur cycling carnival split loaded/);
+  assert.match(app.markup(), /Operating region holds/);
+  const exported = JSON.stringify(app.saved());
+  assert.doesNotMatch(exported, /live roster/i);
+  assert.doesNotMatch(exported, /hosted/i);
+  assert.doesNotMatch(exported, /\bapi\b/i);
+  assert.doesNotMatch(exported, /forecast/i);
+  assert.doesNotMatch(exported, /train-line/i);
+  assert.doesNotMatch(exported, /last-rider/i);
+  assert.doesNotMatch(exported, /sprinter-launch/i);
+  assert.doesNotMatch(exported, /musette-line/i);
+  assert.doesNotMatch(exported, /sticky-bottle/i);
+  assert.doesNotMatch(exported, /bottle-hand-up/i);
+  assert.doesNotMatch(exported, /treatment-tent/i);
+  assert.doesNotMatch(exported, /ice-pack-rota/i);
+  assert.doesNotMatch(exported, /triage-board/i);
+  assert.match(exported, /Soigneur cycling club hire/);
+});
+
+test('cyclo-cross carnival first-aid stays 1.56 after loading soigneur cycling carnival', async () => {
+  const app = await workbench();
+  app.click('preset', { preset: 'soigneurCyclingCarnivalSplit' });
+  assert.equal(app.saved().participants[2].variableCostPerTransaction, 1.22);
+  app.click('preset', { preset: 'cycloCrossCarnivalSplit' });
+  assert.equal(app.saved().participants[2].id, 'cyclo-cross-first-aid');
+  assert.equal(app.saved().participants[2].variableCostPerTransaction, 1.56);
+  assert.equal(app.saved().deal.monthlyVolume, 5300);
+  assert.deepEqual(app.saved().participants.map((item) => item.capacity), [6200, 7300, 5300]);
+  assert.match(app.notice(), /Cyclo-cross carnival split loaded/);
+});
+
+test('keyboard last-over-capacity remaining copy shortcuts stay on soigneur cycling carnival', async () => {
+  const soigneur = await workbench('file:', { clipboard: 'ok' });
+  soigneur.click('preset', { preset: 'soigneurCyclingCarnivalSplit' });
+  assert.match(soigneur.markup(), /id="copy-last-over-capacity-remaining"[^>]*aria-keyshortcuts="\* Shift\+F7 Shift\+F10"/);
+  assert.match(soigneur.markup(), /id="hide-last-over-capacity-participant"[^>]*aria-keyshortcuts="# Shift\+F9"/);
+  assert.match(soigneur.markup(), /id="hide-first-over-capacity-participant"[^>]*aria-keyshortcuts="@"/);
+  assert.doesNotMatch(soigneur.markup(), /id="hide-first-over-capacity-participant"[^>]*aria-keyshortcuts="Shift\+F9"/);
+  assert.match(soigneur.markup(), /id="copy-first-over-capacity-remaining"[^>]*aria-keyshortcuts="~"/);
+  soigneur.edit('deal.monthlyVolume', '9100');
+  soigneur.keydown('F7', { shiftKey: true });
+  assert.equal(soigneur.copied().at(-1), 'Last over-capacity remaining listed capacity: 2,000 txn over for First-aid. How far over listed capacity. Not a forecast.');
+  soigneur.keydown('F10', { shiftKey: true });
+  assert.equal(soigneur.copied().at(-1), 'Last over-capacity remaining listed capacity: 2,000 txn over for First-aid. How far over listed capacity. Not a forecast.');
+  soigneur.keydown('~');
+  assert.equal(soigneur.copied().at(-1), 'First over-capacity remaining listed capacity: 550 txn over for Carnival committee. How far over listed capacity. Not a forecast.');
+  soigneur.keydown('F7');
+  assert.equal(soigneur.copied().at(-1), 'First zero-share participant: none entered.');
+  soigneur.keydown('F8', { shiftKey: true });
+  assert.ok(soigneur.focused().includes('#copy-last-over-capacity-remaining'));
+  soigneur.keydown('F9', { shiftKey: true });
+  assert.ok(soigneur.focused().includes('#hide-last-over-capacity-participant'));
+  soigneur.keydown('F9');
+  assert.ok(soigneur.focused().includes('#hide-first-zero-share-participant'));
+  soigneur.keydown('@');
+  assert.ok(soigneur.focused().includes('#hide-first-over-capacity-participant'));
+  soigneur.keydown('F12', { shiftKey: true });
+  assert.ok(soigneur.focused().includes('#hide-first-over-capacity-participant'));
+  assert.equal(soigneur.saved().participants[2].variableCostPerTransaction, 1.22);
+  assert.doesNotMatch(JSON.stringify(soigneur.saved()), /live roster/i);
+  assert.doesNotMatch(JSON.stringify(soigneur.saved()), /hosted/i);
+  assert.doesNotMatch(JSON.stringify(soigneur.saved()), /\bapi\b/i);
+});
+
