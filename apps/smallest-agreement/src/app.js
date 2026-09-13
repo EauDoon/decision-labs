@@ -1769,6 +1769,40 @@ const presets = {
       },
     ],
   },
+
+  "scratch-cycling-club-hours": {
+    title: "Scratch cycling club hours: scratch-bunch rota, bunch-finish hours, and scratch-chip lock-up",
+    threshold: 70,
+    maxChangeCost: 8,
+    groups: [
+      { id: "students", name: "Students", weight: 22 },
+      { id: "neighbours", name: "Neighbours", weight: 19, veto: true },
+      { id: "pandc", name: "P&C", weight: 24 },
+    ],
+    clauses: [
+      {
+        id: "scratch-cycling-bunch-rota", title: "Scratch-bunch rota", options: [
+          { id: "scratch-cycling-bunch-rota-original", original: true, label: "Keep weekday scratch-bunch from 10:40 with no posted bunch-finish card", changeCost: 0, support: { students: 12, neighbours: 78, pandc: 59 } },
+          { id: "scratch-cycling-bunch-rota-late", original: false, label: "Open weekday scratch-bunch at 19:25 with a posted bunch-finish card", changeCost: 2, support: { students: 81, neighbours: 22, pandc: 34 } },
+          { id: "scratch-cycling-bunch-rota-weekend", original: false, label: "Hold Saturday morning scratch-bunch at 09:15 with a bunch-finish booking card", changeCost: 4, support: { students: 66, neighbours: 30, pandc: 42 } },
+        ],
+      },
+      {
+        id: "scratch-cycling-bunch-finish", title: "Bunch-finish hours", options: [
+          { id: "scratch-cycling-bunch-finish-original", original: true, label: "No posted bunch-finish hours", changeCost: 0, support: { students: 56, neighbours: 8, pandc: 33 } },
+          { id: "scratch-cycling-bunch-finish-cap", original: false, label: "Close bunch-finish hours at 20:30 and keep bunch crew at the scratch-chip shed", changeCost: 1, support: { students: 33, neighbours: 82, pandc: 65 } },
+          { id: "scratch-cycling-bunch-finish-cut", original: false, label: "Serve bunch crew only after 14:35", changeCost: 5, support: { students: 15, neighbours: 86, pandc: 31 } },
+        ],
+      },
+      {
+        id: "scratch-cycling-scratch-chip-lockup", title: "Scratch-chip lock-up", options: [
+          { id: "scratch-cycling-scratch-chip-lockup-original", original: true, label: "Leave the scratch-chip door on a shared padlock after club hours", changeCost: 0, support: { students: 3, neighbours: 20, pandc: 25 } },
+          { id: "scratch-cycling-scratch-chip-lockup-steward", original: false, label: "Require a P&C steward to lock the scratch-chip store before 22:00", changeCost: 3, support: { students: 43, neighbours: 70, pandc: 88 } },
+          { id: "scratch-cycling-scratch-chip-lockup-timer", original: false, label: "Add a timed lock on the scratch-chip store after the last scratch cycling session", changeCost: 2, support: { students: 32, neighbours: 37, pandc: 56 } },
+        ],
+      },
+    ],
+  },
 };
 
 let agreementReviewPacket = null;
