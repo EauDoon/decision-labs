@@ -551,6 +551,18 @@ export function catalogLastLabelledSkipLabelledbyTagIdEqSq() {
   return `${tag[1].toLowerCase()}[id='${id}']`;
 }
 
+
+export function catalogFirstLabelledSkipLabelledbyTagIdEqSq() {
+  const id = catalogFirstLabelledSkipLabelledbyId();
+  if (!id) return '';
+  const html = readFileSync(new URL('index.html', root), 'utf8');
+  const found = catalogMarkupTag(html, id);
+  if (!found) return '';
+  const tag = found.tag.match(/^<([a-z0-9]+)/i);
+  if (!tag) return '';
+  return `${tag[1].toLowerCase()}[id='${id}']`;
+}
+
 export function notFoundPage() {
   const versions = catalogVersionLine();
   const jobsList = catalogJobs().map(({ name, job }) => `<li>${escapeHtml(name)}: ${escapeHtml(job)}</li>`).join('\n      ');
