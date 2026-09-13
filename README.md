@@ -231,6 +231,8 @@ The catalog also names first-unlabelled-skip-href copy, first-unlabelled-skip-hr
 That What's new entry is hub-only. It does not change workbench versions.
 The catalog also names first-unlabelled-skip-target-text copy, first-unlabelled-skip-target-text jump, and first-unlabelled-skip-target-heading jump.
 That What's new entry is hub-only. It does not change workbench versions.
+The catalog also names first-labelled-skip-labelledby-href copy, first-labelled-skip-labelledby-href jump, and first-labelled-skip-labelledby-href-heading jump.
+That What's new entry is hub-only. It does not change workbench versions.
 The catalog also names first-labelled-skip-labelledby-id copy, first-labelled-skip-labelledby-id jump, and first-labelled-skip-labelledby-heading jump.
 That What's new entry is hub-only. It does not change workbench versions.
 The catalog also names last-labelled-skip-labelledby-id copy, last-labelled-skip-labelledby-id jump, and last-labelled-skip-labelledby-heading jump.
@@ -333,6 +335,13 @@ that 404 page copies the same labelled skip labelledby id without adding a publi
 Key `Shift+Attn` copies the aria-labelledby id of the last skip target that has aria-labelledby.
 Key `Shift+CrSel` focuses the Copy last labelled skip labelledby id control.
 Key `Shift+ExSel` focuses the last labelled skip labelledby heading.
+Copy first labelled skip labelledby href copies the hash fragment of the first labelled skip labelledby id
+already printed on this page as one Markdown line. If that labelledby href is missing, it copies an empty string.
+Copy first labelled skip labelledby href on
+that 404 page copies the same labelled skip labelledby href without adding a public path.
+Key `Shift+Process` copies the hash fragment of the first labelled skip labelledby id.
+Key `Shift+Accept` focuses the Copy first labelled skip labelledby href control.
+Key `Shift+Final` focuses the first labelled skip labelledby href heading.
 Copy first labelled skip labelledby id copies the aria-labelledby id of the first skip target that has aria-labelledby
 already printed on this page as one Markdown line. If that labelledby id is missing, it copies an empty string.
 Copy first labelled skip labelledby id on
@@ -794,21 +803,38 @@ Press `Shift+ExSel` to focus the labelled heading named by aria-labelledby on th
 That key moves focus; it does not open a workbench. It does not copy. That key
 is distinct from `Shift+Execute`, which focuses the last labelled skip target heading, from `Shift+Help`, which focuses the first labelled skip target heading, from `Shift+F24`,
 which focuses the last unlabelled skip target heading, from `n`, which focuses What's new.
+Press `Shift+Process` to copy the hash fragment of the first labelled skip labelledby id from this page as one Markdown
+line. That key uses the same Copy first labelled skip labelledby href control, including
+the visible text box when the clipboard API is unavailable. If that labelledby href is
+missing, it copies an empty string. This is catalog copy, not a live product
+feed. It is distinct from `Shift+Zoom`, which copies the first labelled skip labelledby id, from
+`Shift+F2`, which copies the first labelled skip href, from `Shift+Attn`, which copies the last labelled skip labelledby id, and from
+`Shift+NumLock`, which copies the first labelled skip target id.
+Press `Shift+Accept` to focus the Copy first labelled skip labelledby href control, or the skip-link row
+or catalog heading if that control is missing. That key moves focus; it does not
+open a workbench. It does not copy. That key is distinct from `Shift+NonConvert`, which
+focuses Copy first labelled skip labelledby id, from `Shift+CrSel`, which focuses Copy last labelled skip labelledby id, from
+`Shift+Clear`, which focuses Copy first labelled skip target id, and from `#`, which focuses Copy skip links.
+Press `Shift+Final` to focus the labelled heading named by the first labelled skip labelledby href, or that target, the skip-link row, or catalog heading if that heading is missing.
+That key moves focus; it does not open a workbench. It does not copy. That key
+is distinct from `Shift+Convert`, which focuses the first labelled skip labelledby heading, from `Shift+ExSel`, which focuses the last labelled skip labelledby heading, from `Shift+Help`,
+which focuses the first labelled skip target heading, from `n`, which focuses What's new.
 Press `Shift+Zoom` to copy the aria-labelledby id of the first skip target that has aria-labelledby from this page as one Markdown
 line. That key uses the same Copy first labelled skip labelledby id control, including
 the visible text box when the clipboard API is unavailable. If that labelledby id is
 missing, it copies an empty string. This is catalog copy, not a live product
-feed. It is distinct from `Shift+Attn`, which copies the last labelled skip labelledby id, from
+feed. It is distinct from `Shift+Process`, which copies the first labelled skip labelledby href, from `Shift+Attn`, which copies the last labelled skip labelledby id, from
 `Shift+NumLock`, which copies the first labelled skip target id, from `Shift+CapsLock`, which copies the last labelled skip target id, and from
 `Shift+F10`, which copies the first labelled skip-target text.
 Press `Shift+NonConvert` to focus the Copy first labelled skip labelledby id control, or the skip-link row
 or catalog heading if that control is missing. That key moves focus; it does not
-open a workbench. It does not copy. That key is distinct from `Shift+CrSel`, which
+open a workbench. It does not copy. That key is distinct from `Shift+Accept`, which
+focuses Copy first labelled skip labelledby href, from `Shift+CrSel`, which
 focuses Copy last labelled skip labelledby id, from `Shift+Clear`, which focuses Copy first labelled skip target id, from
 `Shift+Select`, which focuses Copy last labelled skip target id, and from `#`, which focuses Copy skip links.
 Press `Shift+Convert` to focus the labelled heading named by aria-labelledby on the first labelled skip target, or that target, the skip-link row, or catalog heading if that heading is missing.
 That key moves focus; it does not open a workbench. It does not copy. That key
-is distinct from `Shift+ExSel`, which focuses the last labelled skip labelledby heading, from `Shift+Help`, which focuses the first labelled skip target heading, from `Shift+Execute`,
+is distinct from `Shift+Final`, which focuses the first labelled skip labelledby href heading, from `Shift+ExSel`, which focuses the last labelled skip labelledby heading, from `Shift+Help`, which focuses the first labelled skip target heading, from `Shift+Execute`,
 which focuses the last labelled skip target heading, from `n`, which focuses What's new.
 Press `Shift+ContextMenu` to copy the href of the last skip link whose target has no aria-labelledby from this page as one Markdown
 line. That key uses the same Copy last unlabelled skip href control, including
