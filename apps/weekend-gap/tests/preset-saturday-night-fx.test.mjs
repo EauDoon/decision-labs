@@ -32,6 +32,7 @@ test("Saturday night FX open keeps the Normal Friday calendar with a Saturday ni
   assert.equal(preset.saturdayNightFxOpen, true);
   assert.equal(DEFAULT_SCENARIO.saturdayNightFxOpen, false);
   assert.equal(preset.sundayLateNightFxOpen, false);
+  assert.equal(preset.saturdayLateNightFxOpen, false);
   assert.equal(preset.sundayNightFxOpen, false);
   assert.equal(preset.sundayEveningFxOpen, false);
   assert.equal(preset.saturdayEveningFxOpen, false);
@@ -50,6 +51,7 @@ test("Saturday night FX open keeps the Normal Friday calendar with a Saturday ni
   assert.equal(preset.demandProfile, DEFAULT_SCENARIO.demandProfile);
   assert.notDeepEqual(preset, PRESETS.normal);
   assert.notDeepEqual(preset, PRESETS.sundayLateNightFxOpen);
+  assert.notDeepEqual(preset, PRESETS.saturdayLateNightFxOpen);
   assert.notDeepEqual(preset, PRESETS.sundayNightFxOpen);
   assert.notDeepEqual(preset, PRESETS.sundayEveningFxOpen);
   assert.notDeepEqual(preset, PRESETS.saturdayEveningFxOpen);
@@ -243,7 +245,7 @@ test("Saturday night FX open keeps the Normal Friday calendar with a Saturday ni
 test("Saturday night FX open ORs into fxWeekday through isSaturdayNightFxOpenHour after sundayLateNightFxOpen", async () => {
   const model = await readFile(new URL("../src/model.js", import.meta.url), "utf8");
   const helperStart = model.indexOf("function isSaturdayNightFxOpenHour");
-  const helperNext = model.indexOf("\nexport function getOperationalStatus", helperStart);
+  const helperNext = model.indexOf("function isSaturdayLateNightFxOpenHour", helperStart);
   const commentStart = model.lastIndexOf("/** Saturday 20:00-22:00", helperStart);
   const helper = model.slice(commentStart === -1 ? helperStart : commentStart, helperNext === -1 ? undefined : helperNext);
   assert.match(helper, /scenario\.saturdayNightFxOpen !== true/);
