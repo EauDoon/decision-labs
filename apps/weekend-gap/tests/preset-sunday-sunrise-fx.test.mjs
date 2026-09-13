@@ -33,6 +33,8 @@ test("Sunday sunrise FX open keeps the Normal Friday calendar with a Sunday sunr
   assert.equal(DEFAULT_SCENARIO.sundaySunriseFxOpen, false);
   assert.equal(preset.sundayBreakfastFxOpen, false);
   assert.equal(DEFAULT_SCENARIO.sundayBreakfastFxOpen, false);
+  assert.equal(preset.sundayBrunchFxOpen, false);
+  assert.equal(DEFAULT_SCENARIO.sundayBrunchFxOpen, false);
   assert.equal(preset.sundayDawnFxOpen, false);
   assert.equal(preset.sundayDaybreakFxOpen, false);
   assert.equal(preset.sundayPredawnFxOpen, false);
@@ -59,6 +61,7 @@ test("Sunday sunrise FX open keeps the Normal Friday calendar with a Sunday sunr
   assert.notDeepEqual(preset, PRESETS.sundayDawnFxOpen);
   assert.notDeepEqual(preset, PRESETS.sundayDaybreakFxOpen);
   assert.notDeepEqual(preset, PRESETS.sundayBreakfastFxOpen);
+  assert.notDeepEqual(preset, PRESETS.sundayBrunchFxOpen);
   assert.notDeepEqual(preset, PRESETS.sundayPredawnFxOpen);
   assert.notDeepEqual(preset, PRESETS.saturdayLateNightFxOpen);
   assert.notDeepEqual(preset, PRESETS.saturdayNightFxOpen);
@@ -284,18 +287,23 @@ test("Sunday sunrise FX open ORs into fxWeekday through isSundaySunriseFxOpenHou
   const statusStart = model.indexOf("export function getOperationalStatus");
   assert.ok(sundayDaybreakStart !== -1 && sundaySunriseStart > sundayDaybreakStart);
   const sundayBreakfastStart = model.indexOf("function isSundayBreakfastFxOpenHour");
+  const sundayBrunchStart = model.indexOf("function isSundayBrunchFxOpenHour");
   assert.ok(sundaySunriseStart !== -1 && sundayBreakfastStart > sundaySunriseStart);
-  assert.ok(sundayBreakfastStart !== -1 && statusStart > sundayBreakfastStart);
+  assert.ok(sundayBreakfastStart !== -1 && sundayBrunchStart > sundayBreakfastStart);
+  assert.ok(sundayBrunchStart !== -1 && statusStart > sundayBrunchStart);
   const statusNext = model.indexOf("\nexport function ", statusStart + 1);
   const status = model.slice(statusStart, statusNext === -1 ? undefined : statusNext);
   assert.match(status, /isSundayDaybreakFxOpenHour\(hourOffset, scenario\)/);
   assert.match(status, /isSundaySunriseFxOpenHour\(hourOffset, scenario\)/);
   assert.match(status, /isSundayBreakfastFxOpenHour\(hourOffset, scenario\)/);
+  assert.match(status, /isSundayBrunchFxOpenHour\(hourOffset, scenario\)/);
   const sundayDaybreakCall = status.indexOf("isSundayDaybreakFxOpenHour(hourOffset, scenario)");
   const sundaySunriseCall = status.indexOf("isSundaySunriseFxOpenHour(hourOffset, scenario)");
   const sundayBreakfastCall = status.indexOf("isSundayBreakfastFxOpenHour(hourOffset, scenario)");
+  const sundayBrunchCall = status.indexOf("isSundayBrunchFxOpenHour(hourOffset, scenario)");
   assert.ok(sundayDaybreakCall !== -1 && sundaySunriseCall > sundayDaybreakCall);
   assert.ok(sundaySunriseCall !== -1 && sundayBreakfastCall > sundaySunriseCall);
+  assert.ok(sundayBreakfastCall !== -1 && sundayBrunchCall > sundayBreakfastCall);
   assert.doesNotMatch(model, /Date\.now/);
 });
 
@@ -310,12 +318,15 @@ test("Sunday sunrise FX open is available as a preset button and is not an FX fe
   const sundayDaybreakPreset = html.indexOf('data-preset="sundayDaybreakFxOpen"');
   const sundaySunrisePreset = html.indexOf('data-preset="sundaySunriseFxOpen"');
   const sundayBreakfastPreset = html.indexOf('data-preset="sundayBreakfastFxOpen"');
+  const sundayBrunchPreset = html.indexOf('data-preset="sundayBrunchFxOpen"');
   assert.ok(sundayDaybreakPreset !== -1 && sundaySunrisePreset > sundayDaybreakPreset);
   assert.ok(sundayBreakfastPreset > sundaySunrisePreset);
+  assert.ok(sundayBrunchPreset > sundayBreakfastPreset);
   assert.match(html, /Sunday sunrise FX open \(synthetic\)/);
   assert.match(html, /id="sundaySunriseFxOpen"/);
   assert.match(html, /Keep Sunday FX open 06:00 to 08:00/);
   assert.match(html, /Keep Sunday FX open 07:00 to 09:00/);
+  assert.match(html, /Keep Sunday FX open 09:00 to 11:00/);
   assert.match(html, /Keep Sunday FX open 04:00 to 06:00/);
   assert.match(html, /Keep Sunday FX open 02:00 to 04:00/);
   assert.match(html, /not an FX feed/i);
