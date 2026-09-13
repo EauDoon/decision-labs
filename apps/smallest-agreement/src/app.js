@@ -1837,6 +1837,39 @@ const presets = {
       },
     ],
   },
+  "team-pursuit-cycling-club-hours": {
+    title: "Team-pursuit cycling club hours: team-pursuit-rota, changeover-bell hours, and quartet-board lock-up",
+    threshold: 70,
+    maxChangeCost: 8,
+    groups: [
+      { id: "students", name: "Students", weight: 24 },
+      { id: "neighbours", name: "Neighbours", weight: 19, veto: true },
+      { id: "pandc", name: "P&C", weight: 26 },
+    ],
+    clauses: [
+      {
+        id: "team-pursuit-cycling-team-pursuit-rota", title: "Team-pursuit-rota", options: [
+          { id: "team-pursuit-cycling-team-pursuit-rota-original", original: true, label: "Keep weekday team-pursuit-rota from 11:00 with no posted changeover-bell card", changeCost: 0, support: { students: 14, neighbours: 76, pandc: 57 } },
+          { id: "team-pursuit-cycling-team-pursuit-rota-late", original: false, label: "Open weekday team-pursuit-rota at 19:45 with a posted changeover-bell card", changeCost: 2, support: { students: 79, neighbours: 24, pandc: 36 } },
+          { id: "team-pursuit-cycling-team-pursuit-rota-weekend", original: false, label: "Hold Saturday morning team-pursuit-rota at 09:35 with a changeover-bell booking card", changeCost: 4, support: { students: 64, neighbours: 32, pandc: 44 } },
+        ],
+      },
+      {
+        id: "team-pursuit-cycling-changeover-bell", title: "Changeover-bell hours", options: [
+          { id: "team-pursuit-cycling-changeover-bell-original", original: true, label: "No posted changeover-bell hours", changeCost: 0, support: { students: 54, neighbours: 10, pandc: 35 } },
+          { id: "team-pursuit-cycling-changeover-bell-cap", original: false, label: "Close changeover-bell hours at 20:50 and keep changeover crew at the quartet-board shed", changeCost: 1, support: { students: 35, neighbours: 80, pandc: 67 } },
+          { id: "team-pursuit-cycling-changeover-bell-cut", original: false, label: "Serve changeover crew only after 14:55", changeCost: 5, support: { students: 17, neighbours: 84, pandc: 33 } },
+        ],
+      },
+      {
+        id: "team-pursuit-cycling-quartet-board-lockup", title: "Quartet-board lock-up", options: [
+          { id: "team-pursuit-cycling-quartet-board-lockup-original", original: true, label: "Leave the quartet-board door on a shared padlock after club hours", changeCost: 0, support: { students: 5, neighbours: 22, pandc: 27 } },
+          { id: "team-pursuit-cycling-quartet-board-lockup-steward", original: false, label: "Require a P&C steward to lock the quartet-board store before 22:20", changeCost: 3, support: { students: 41, neighbours: 72, pandc: 86 } },
+          { id: "team-pursuit-cycling-quartet-board-lockup-timer", original: false, label: "Add a timed lock on the quartet-board store after the last team-pursuit cycling session", changeCost: 2, support: { students: 30, neighbours: 39, pandc: 54 } },
+        ],
+      },
+    ],
+  },
 };
 
 let agreementReviewPacket = null;
