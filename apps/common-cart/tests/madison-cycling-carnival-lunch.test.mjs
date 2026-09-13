@@ -77,6 +77,7 @@ test("madison cycling carnival lunch leftover fill is hall pickup and stays dist
   assert.notDeepEqual(clonePreset("madisonCyclingCarnivalLunch"), clonePreset("rugbyCarnivalLunch"));
   assert.notDeepEqual(clonePreset("madisonCyclingCarnivalLunch"), clonePreset("soccerCarnivalLunch"));
   assert.notDeepEqual(clonePreset("madisonCyclingCarnivalLunch"), clonePreset("omniumCyclingCarnivalLunch"));
+  assert.notDeepEqual(clonePreset("madisonCyclingCarnivalLunch"), clonePreset("pointsRaceCyclingCarnivalLunch"));
   const leftoverFill = computeResidualCoverage(madisonCycling.scenario).secondary;
   assert.ok(leftoverFill);
   assert.equal(leftoverFill.merchant, "Hall Madison Pickup");
