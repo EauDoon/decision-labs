@@ -667,6 +667,7 @@ footer {
           <button class="preset" data-preset="feedZoneCyclingCarnivalLunch" type="button">Feed-zone cycling carnival</button>
           <button class="preset" data-preset="leadOutCyclingCarnivalLunch" type="button">Lead-out cycling carnival</button>
           <button class="preset" data-preset="soigneurCyclingCarnivalLunch" type="button">Soigneur cycling carnival</button>
+          <button class="preset" data-preset="domestiqueCyclingCarnivalLunch" type="button">Domestique cycling carnival</button>
           <button class="preset" data-preset="tiers" type="button">Price ladder</button>
         </div>
       </div>
@@ -2313,6 +2314,23 @@ const presets = Object.freeze({
       offer("O01", "Court-side Soigneur Delivery", "Soigneur lunch pack", "Soigneur pie", 17, 17, 3, 54, 3),
       offer("O02", "Station Salad Run", "Soigneur lunch pack", "Station salad", 15, 15, 4, 42, 2),
       { ...offer("O03", "Hall Soigneur Pickup", "Soigneur lunch pack", "Cake water", 48, 51, 1, 64, 5), fulfillment: "pickup" }
+    ]
+  },
+  domestiqueCyclingCarnivalLunch: {
+    title: "Domestique cycling carnival lunch",
+    currency: "AUD",
+    buyers: [
+      buyer("B01", "Wheel-change crate", "Domestique lunch pack", 18, 23, 4, ["Domestique pie", "Neutral salad"]),
+      buyer("B02", "Neutral-service bench", "Domestique lunch pack", 19, 19, 3, ["Domestique pie"]),
+      buyer("B03", "Team-car hamper", "Domestique lunch pack", 15, 48, 5, ["Neutral salad", "Car water"]),
+      buyer("B04", "Sideline cooler", "Domestique lunch pack", 38, 48, 2, ["Car water"]),
+      buyer("B05", "Scoreboard trolley", "Domestique lunch pack", 17, 22, 4, ["Domestique pie", "Car water"]),
+      buyer("B06", "Bench table", "Domestique lunch pack", 13, 20, 3, ["Neutral salad", "Domestique pie"])
+    ],
+    offers: [
+      offer("O01", "Court-side Domestique Delivery", "Domestique lunch pack", "Domestique pie", 17, 17, 3, 55, 3),
+      offer("O02", "Neutral Salad Run", "Domestique lunch pack", "Neutral salad", 15, 15, 4, 42, 2),
+      { ...offer("O03", "Hall Domestique Pickup", "Domestique lunch pack", "Car water", 48, 52, 1, 64, 5), fulfillment: "pickup" }
     ]
   }
 });
