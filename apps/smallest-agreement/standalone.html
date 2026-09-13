@@ -311,6 +311,7 @@ kbd { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; border: 1px s
             <option value="omnium-cycling-club-hours">Omnium cycling club hours</option>
             <option value="points-race-cycling-club-hours">Points-race cycling club hours</option>
             <option value="scratch-cycling-club-hours">Scratch cycling club hours</option>
+            <option value="individual-pursuit-cycling-club-hours">Individual-pursuit cycling club hours</option>
           </select>
         </label>
         <button class="button button-secondary" type="button" id="load-preset">Load preset</button>
@@ -6587,6 +6588,40 @@ const presets = {
           { id: "scratch-cycling-scratch-chip-lockup-original", original: true, label: "Leave the scratch-chip door on a shared padlock after club hours", changeCost: 0, support: { students: 3, neighbours: 20, pandc: 25 } },
           { id: "scratch-cycling-scratch-chip-lockup-steward", original: false, label: "Require a P&C steward to lock the scratch-chip store before 22:00", changeCost: 3, support: { students: 43, neighbours: 70, pandc: 88 } },
           { id: "scratch-cycling-scratch-chip-lockup-timer", original: false, label: "Add a timed lock on the scratch-chip store after the last scratch cycling session", changeCost: 2, support: { students: 32, neighbours: 37, pandc: 56 } },
+        ],
+      },
+    ],
+  },
+
+  "individual-pursuit-cycling-club-hours": {
+    title: "Individual-pursuit cycling club hours: pursuit-line rota, catch-bell hours, and pursuit-chip lock-up",
+    threshold: 70,
+    maxChangeCost: 8,
+    groups: [
+      { id: "students", name: "Students", weight: 23 },
+      { id: "neighbours", name: "Neighbours", weight: 19, veto: true },
+      { id: "pandc", name: "P&C", weight: 25 },
+    ],
+    clauses: [
+      {
+        id: "individual-pursuit-cycling-pursuit-line", title: "Pursuit-line rota", options: [
+          { id: "individual-pursuit-cycling-pursuit-line-original", original: true, label: "Keep weekday pursuit-line from 10:50 with no posted catch-bell card", changeCost: 0, support: { students: 13, neighbours: 77, pandc: 58 } },
+          { id: "individual-pursuit-cycling-pursuit-line-late", original: false, label: "Open weekday pursuit-line at 19:35 with a posted catch-bell card", changeCost: 2, support: { students: 80, neighbours: 23, pandc: 35 } },
+          { id: "individual-pursuit-cycling-pursuit-line-weekend", original: false, label: "Hold Saturday morning pursuit-line at 09:25 with a catch-bell booking card", changeCost: 4, support: { students: 65, neighbours: 31, pandc: 43 } },
+        ],
+      },
+      {
+        id: "individual-pursuit-cycling-catch-bell", title: "Catch-bell hours", options: [
+          { id: "individual-pursuit-cycling-catch-bell-original", original: true, label: "No posted catch-bell hours", changeCost: 0, support: { students: 55, neighbours: 9, pandc: 34 } },
+          { id: "individual-pursuit-cycling-catch-bell-cap", original: false, label: "Close catch-bell hours at 20:40 and keep pursuit crew at the pursuit-chip shed", changeCost: 1, support: { students: 34, neighbours: 81, pandc: 66 } },
+          { id: "individual-pursuit-cycling-catch-bell-cut", original: false, label: "Serve pursuit crew only after 14:45", changeCost: 5, support: { students: 16, neighbours: 85, pandc: 32 } },
+        ],
+      },
+      {
+        id: "individual-pursuit-cycling-pursuit-chip-lockup", title: "Pursuit-chip lock-up", options: [
+          { id: "individual-pursuit-cycling-pursuit-chip-lockup-original", original: true, label: "Leave the pursuit-chip door on a shared padlock after club hours", changeCost: 0, support: { students: 4, neighbours: 21, pandc: 26 } },
+          { id: "individual-pursuit-cycling-pursuit-chip-lockup-steward", original: false, label: "Require a P&C steward to lock the pursuit-chip store before 22:10", changeCost: 3, support: { students: 42, neighbours: 71, pandc: 87 } },
+          { id: "individual-pursuit-cycling-pursuit-chip-lockup-timer", original: false, label: "Add a timed lock on the pursuit-chip store after the last individual-pursuit cycling session", changeCost: 2, support: { students: 31, neighbours: 38, pandc: 55 } },
         ],
       },
     ],
