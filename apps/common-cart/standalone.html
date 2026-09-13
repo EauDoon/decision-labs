@@ -663,6 +663,7 @@ footer {
           <button class="preset" data-preset="individualPursuitCyclingCarnivalLunch" type="button">Individual-pursuit cycling carnival</button>
           <button class="preset" data-preset="teamPursuitCyclingCarnivalLunch" type="button">Team-pursuit cycling carnival</button>
           <button class="preset" data-preset="teamSprintCyclingCarnivalLunch" type="button">Team-sprint cycling carnival</button>
+          <button class="preset" data-preset="firstAidCyclingCarnivalLunch" type="button">First-aid cycling carnival</button>
           <button class="preset" data-preset="tiers" type="button">Price ladder</button>
         </div>
       </div>
@@ -2241,6 +2242,23 @@ const presets = Object.freeze({
       offer("O01", "Court-side Team-sprint Delivery", "Team-sprint lunch pack", "Team-sprint pie", 17, 17, 3, 54, 3),
       offer("O02", "Relay Salad Run", "Team-sprint lunch pack", "Relay salad", 15, 15, 4, 42, 2),
       { ...offer("O03", "Hall Team-sprint Pickup", "Team-sprint lunch pack", "Trio water", 40, 43, 1, 64, 5), fulfillment: "pickup" }
+    ]
+  },
+  firstAidCyclingCarnivalLunch: {
+    title: "First-aid cycling carnival lunch",
+    currency: "AUD",
+    buyers: [
+      buyer("B01", "Treatment-tent crate", "First-aid lunch pack", 15, 23, 4, ["First-aid pie", "Tent salad"]),
+      buyer("B02", "Ice-pack-rota bench", "First-aid lunch pack", 19, 19, 3, ["First-aid pie"]),
+      buyer("B03", "Triage-board hamper", "First-aid lunch pack", 15, 42, 5, ["Tent salad", "Triage water"]),
+      buyer("B04", "Sideline cooler", "First-aid lunch pack", 32, 42, 2, ["Triage water"]),
+      buyer("B05", "Scoreboard trolley", "First-aid lunch pack", 16, 22, 4, ["First-aid pie", "Triage water"]),
+      buyer("B06", "Bench table", "First-aid lunch pack", 13, 20, 3, ["Tent salad", "First-aid pie"])
+    ],
+    offers: [
+      offer("O01", "Court-side First-aid Delivery", "First-aid lunch pack", "First-aid pie", 17, 17, 3, 54, 3),
+      offer("O02", "Tent Salad Run", "First-aid lunch pack", "Tent salad", 15, 15, 4, 42, 2),
+      { ...offer("O03", "Hall First-aid Pickup", "First-aid lunch pack", "Triage water", 42, 45, 1, 64, 5), fulfillment: "pickup" }
     ]
   }
 });
