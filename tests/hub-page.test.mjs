@@ -5788,6 +5788,7 @@ test('What\'s new and README name first What\'s new copy, intro jump, and skip-l
   assert.equal(headings.includes('Omnium cycling carnival, last-over-capacity remaining listed capacity copy, and last-over-capacity hide jump in Partnership Breakpoint 1.5.43'), true);
   assert.equal(headings.includes('Points-race cycling carnival, last-over-capacity remaining listed capacity copy, and last-over-capacity hide jump in Partnership Breakpoint 1.5.44'), true);
   assert.equal(headings.includes('Scratch cycling carnival, last-over-capacity remaining listed capacity copy, and last-over-capacity hide jump in Partnership Breakpoint 1.5.45'), true);
+  assert.equal(headings.includes('Individual-pursuit cycling carnival, last-over-capacity remaining listed capacity copy, and last-over-capacity hide jump in Partnership Breakpoint 1.5.46'), true);
   assert.equal(headings.includes('Swimming carnival lunch, leftover-fulfillment copy, and winner-allocated hide in Common Cart 1.4.12'), true);
   assert.equal(headings.includes('Athletics carnival lunch, leftover-delivery copy, and leftover-fill hide in Common Cart 1.4.13'), true);
   assert.equal(headings.includes('Cricket carnival lunch, leftover-pickup copy, and last leftover-fill hide in Common Cart 1.4.14'), true);
@@ -5966,6 +5967,7 @@ test('What\'s new and README name first-workbench copy, first-card jump, and fir
   assert.equal(headings.includes('Omnium cycling carnival, last-over-capacity remaining listed capacity copy, and last-over-capacity hide jump in Partnership Breakpoint 1.5.43'), true);
   assert.equal(headings.includes('Points-race cycling carnival, last-over-capacity remaining listed capacity copy, and last-over-capacity hide jump in Partnership Breakpoint 1.5.44'), true);
   assert.equal(headings.includes('Scratch cycling carnival, last-over-capacity remaining listed capacity copy, and last-over-capacity hide jump in Partnership Breakpoint 1.5.45'), true);
+  assert.equal(headings.includes('Individual-pursuit cycling carnival, last-over-capacity remaining listed capacity copy, and last-over-capacity hide jump in Partnership Breakpoint 1.5.46'), true);
   assert.equal(headings.includes('Athletics carnival lunch, leftover-delivery copy, and leftover-fill hide in Common Cart 1.4.13'), true);
   assert.equal(headings.includes('Cricket carnival lunch, leftover-pickup copy, and last leftover-fill hide in Common Cart 1.4.14'), true);
   assert.equal(headings.includes('Tennis carnival lunch, leftover-label copy, and first leftover-fill hide in Common Cart 1.4.15'), true);
@@ -15328,7 +15330,7 @@ test('copy first unlabelled skip target text markdown is the text of the first s
   const versionLine = {
     getAttribute() { return null; },
     tagName: 'P',
-    textContent: 'Partnership Breakpoint 1.5.45, Common Cart 1.4.45, The Smallest Agreement 1.5.45, Weekend Gap 1.5.45. Each workbench versions itself.',
+    textContent: 'Partnership Breakpoint 1.5.46, Common Cart 1.4.45, The Smallest Agreement 1.5.45, Weekend Gap 1.5.45. Each workbench versions itself.',
   };
   const extra = {
     getAttribute() { return null; },
@@ -15374,7 +15376,7 @@ test('copy first unlabelled skip target text markdown is the text of the first s
     navigator: { clipboard: { writeText: async (text) => { copied = text; } } },
   });
   await clickFirst();
-  assert.equal(copied, '- Partnership Breakpoint 1.5.45, Common Cart 1.4.45, The Smallest Agreement 1.5.45, Weekend Gap 1.5.45. Each workbench versions itself.');
+  assert.equal(copied, '- Partnership Breakpoint 1.5.46, Common Cart 1.4.45, The Smallest Agreement 1.5.45, Weekend Gap 1.5.45. Each workbench versions itself.');
   assert.doesNotMatch(copied, /\n/);
   assert.doesNotMatch(copied, /#version-line/);
   assert.doesNotMatch(copied, /Skip to catalog versions/);
@@ -15394,7 +15396,7 @@ test('copy first unlabelled skip target text markdown is the text of the first s
   copied = 'stale';
   await clickFirst();
   assert.equal(copied, '- Extra');
-  assert.notEqual(copied, '- Partnership Breakpoint 1.5.45, Common Cart 1.4.45, The Smallest Agreement 1.5.45, Weekend Gap 1.5.45. Each workbench versions itself.');
+  assert.notEqual(copied, '- Partnership Breakpoint 1.5.46, Common Cart 1.4.45, The Smallest Agreement 1.5.45, Weekend Gap 1.5.45. Each workbench versions itself.');
   skips = [];
   copied = 'stale';
   await clickFirst();
@@ -15681,7 +15683,7 @@ test('copy last unlabelled skip target text markdown is the text of the last ski
   const versionLine = {
     getAttribute() { return null; },
     tagName: 'P',
-    textContent: 'Partnership Breakpoint 1.5.45, Common Cart 1.4.45, The Smallest Agreement 1.5.45, Weekend Gap 1.5.45. Each workbench versions itself.',
+    textContent: 'Partnership Breakpoint 1.5.46, Common Cart 1.4.45, The Smallest Agreement 1.5.45, Weekend Gap 1.5.45. Each workbench versions itself.',
   };
   const extra = {
     getAttribute() { return null; },
@@ -15727,7 +15729,7 @@ test('copy last unlabelled skip target text markdown is the text of the last ski
     navigator: { clipboard: { writeText: async (text) => { copied = text; } } },
   });
   await clickLast();
-  assert.equal(copied, '- Partnership Breakpoint 1.5.45, Common Cart 1.4.45, The Smallest Agreement 1.5.45, Weekend Gap 1.5.45. Each workbench versions itself.');
+  assert.equal(copied, '- Partnership Breakpoint 1.5.46, Common Cart 1.4.45, The Smallest Agreement 1.5.45, Weekend Gap 1.5.45. Each workbench versions itself.');
   assert.doesNotMatch(copied, /\n/);
   assert.doesNotMatch(copied, /#version-line/);
   assert.doesNotMatch(copied, /Skip to catalog versions/);
@@ -15751,7 +15753,7 @@ test('copy last unlabelled skip target text markdown is the text of the last ski
   copied = 'stale';
   await clickLast();
   assert.equal(copied, '- Extra');
-  assert.notEqual(copied, '- Partnership Breakpoint 1.5.45, Common Cart 1.4.45, The Smallest Agreement 1.5.45, Weekend Gap 1.5.45. Each workbench versions itself.');
+  assert.notEqual(copied, '- Partnership Breakpoint 1.5.46, Common Cart 1.4.45, The Smallest Agreement 1.5.45, Weekend Gap 1.5.45. Each workbench versions itself.');
   skips = [];
   copied = 'stale';
   await clickLast();
@@ -16034,7 +16036,7 @@ test('copy first unlabelled skip target id markdown is the id of the first skip 
   const versionLine = {
     getAttribute() { return null; },
     tagName: 'P',
-    textContent: 'Partnership Breakpoint 1.5.45, Common Cart 1.4.45, The Smallest Agreement 1.5.45, Weekend Gap 1.5.45. Each workbench versions itself.',
+    textContent: 'Partnership Breakpoint 1.5.46, Common Cart 1.4.45, The Smallest Agreement 1.5.45, Weekend Gap 1.5.45. Each workbench versions itself.',
   };
   const extra = {
     getAttribute() { return null; },
@@ -16081,7 +16083,7 @@ test('copy first unlabelled skip target id markdown is the id of the first skip 
   assert.doesNotMatch(copied, /Each workbench versions itself/);
   assert.doesNotMatch(copied, /Skip to catalog versions/);
   assert.notEqual(copied, '- #version-line');
-  assert.notEqual(copied, '- Partnership Breakpoint 1.5.45, Common Cart 1.4.45, The Smallest Agreement 1.5.45, Weekend Gap 1.5.45. Each workbench versions itself.');
+  assert.notEqual(copied, '- Partnership Breakpoint 1.5.46, Common Cart 1.4.45, The Smallest Agreement 1.5.45, Weekend Gap 1.5.45. Each workbench versions itself.');
   skips = [
     {
       getAttribute(name) { return name === 'href' ? '#whats-new' : null; },
@@ -16275,7 +16277,7 @@ test('copy last unlabelled skip target id markdown is the id of the last skip wh
   const versionLine = {
     getAttribute() { return null; },
     tagName: 'P',
-    textContent: 'Partnership Breakpoint 1.5.45, Common Cart 1.4.45, The Smallest Agreement 1.5.45, Weekend Gap 1.5.45. Each workbench versions itself.',
+    textContent: 'Partnership Breakpoint 1.5.46, Common Cart 1.4.45, The Smallest Agreement 1.5.45, Weekend Gap 1.5.45. Each workbench versions itself.',
   };
   const extra = {
     getAttribute() { return null; },
@@ -16322,7 +16324,7 @@ test('copy last unlabelled skip target id markdown is the id of the last skip wh
   assert.doesNotMatch(copied, /Each workbench versions itself/);
   assert.doesNotMatch(copied, /Skip to catalog versions/);
   assert.notEqual(copied, '- #version-line');
-  assert.notEqual(copied, '- Partnership Breakpoint 1.5.45, Common Cart 1.4.45, The Smallest Agreement 1.5.45, Weekend Gap 1.5.45. Each workbench versions itself.');
+  assert.notEqual(copied, '- Partnership Breakpoint 1.5.46, Common Cart 1.4.45, The Smallest Agreement 1.5.45, Weekend Gap 1.5.45. Each workbench versions itself.');
   skips = [
     {
       getAttribute(name) { return name === 'href' ? '#whats-new' : null; },
@@ -16523,7 +16525,7 @@ test('copy first labelled skip target id markdown is the id of the first skip wh
   const versionLine = {
     getAttribute() { return null; },
     tagName: 'P',
-    textContent: 'Partnership Breakpoint 1.5.45, Common Cart 1.4.45, The Smallest Agreement 1.5.45, Weekend Gap 1.5.45. Each workbench versions itself.',
+    textContent: 'Partnership Breakpoint 1.5.46, Common Cart 1.4.45, The Smallest Agreement 1.5.45, Weekend Gap 1.5.45. Each workbench versions itself.',
   };
   const extra = {
     getAttribute() { return null; },
@@ -16775,7 +16777,7 @@ test('copy last labelled skip target id markdown is the id of the last skip whos
   const versionLine = {
     getAttribute() { return null; },
     tagName: 'P',
-    textContent: 'Partnership Breakpoint 1.5.45, Common Cart 1.4.45, The Smallest Agreement 1.5.45, Weekend Gap 1.5.45. Each workbench versions itself.',
+    textContent: 'Partnership Breakpoint 1.5.46, Common Cart 1.4.45, The Smallest Agreement 1.5.45, Weekend Gap 1.5.45. Each workbench versions itself.',
   };
   const extra = {
     getAttribute() { return null; },
@@ -17038,7 +17040,7 @@ test('copy last labelled skip labelledby id markdown is the aria-labelledby id o
   const versionLine = {
     getAttribute() { return null; },
     tagName: 'P',
-    textContent: 'Partnership Breakpoint 1.5.45, Common Cart 1.4.45, The Smallest Agreement 1.5.45, Weekend Gap 1.5.45. Each workbench versions itself.',
+    textContent: 'Partnership Breakpoint 1.5.46, Common Cart 1.4.45, The Smallest Agreement 1.5.45, Weekend Gap 1.5.45. Each workbench versions itself.',
   };
   const extra = {
     getAttribute() { return null; },
@@ -17309,7 +17311,7 @@ test('copy first labelled skip labelledby id markdown is the aria-labelledby id 
   const versionLine = {
     getAttribute() { return null; },
     tagName: 'P',
-    textContent: 'Partnership Breakpoint 1.5.45, Common Cart 1.4.45, The Smallest Agreement 1.5.45, Weekend Gap 1.5.45. Each workbench versions itself.',
+    textContent: 'Partnership Breakpoint 1.5.46, Common Cart 1.4.45, The Smallest Agreement 1.5.45, Weekend Gap 1.5.45. Each workbench versions itself.',
   };
   const extra = {
     getAttribute() { return null; },
@@ -17640,7 +17642,7 @@ test('copy first labelled skip labelledby href markdown is the hash fragment of 
   const versionLine = {
     getAttribute() { return null; },
     tagName: 'P',
-    textContent: 'Partnership Breakpoint 1.5.45, Common Cart 1.4.45, The Smallest Agreement 1.5.45, Weekend Gap 1.5.45. Each workbench versions itself.',
+    textContent: 'Partnership Breakpoint 1.5.46, Common Cart 1.4.45, The Smallest Agreement 1.5.45, Weekend Gap 1.5.45. Each workbench versions itself.',
   };
   const extra = {
     getAttribute() { return null; },
@@ -17844,7 +17846,7 @@ test('copy last labelled skip labelledby href markdown is the hash fragment of t
   const versionLine = {
     getAttribute() { return null; },
     tagName: 'P',
-    textContent: 'Partnership Breakpoint 1.5.45, Common Cart 1.4.45, The Smallest Agreement 1.5.45, Weekend Gap 1.5.45. Each workbench versions itself.',
+    textContent: 'Partnership Breakpoint 1.5.46, Common Cart 1.4.45, The Smallest Agreement 1.5.45, Weekend Gap 1.5.45. Each workbench versions itself.',
   };
   const extra = {
     getAttribute() { return null; },
@@ -18113,7 +18115,7 @@ test('copy last labelled skip labelledby selector markdown is the tag and id of 
   const versionLine = {
     getAttribute() { return null; },
     tagName: 'P',
-    textContent: 'Partnership Breakpoint 1.5.45, Common Cart 1.4.45, The Smallest Agreement 1.5.45, Weekend Gap 1.5.45. Each workbench versions itself.',
+    textContent: 'Partnership Breakpoint 1.5.46, Common Cart 1.4.45, The Smallest Agreement 1.5.45, Weekend Gap 1.5.45. Each workbench versions itself.',
   };
   const extra = {
     getAttribute() { return null; },
