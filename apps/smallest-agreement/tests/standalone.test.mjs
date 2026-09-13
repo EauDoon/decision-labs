@@ -3629,7 +3629,7 @@ test("BMX club hours preset loads a distinct synthetic BMX workshop", async () =
 
 test("cyclo-cross club hours preset loads a distinct synthetic cyclo-cross workshop", async () => {
   const pkg = JSON.parse(readFileSync(new URL("../package.json", import.meta.url), "utf8"));
-  assert.equal(pkg.version, "1.5.53");
+  assert.equal(pkg.version, "1.5.54");
   const app = await savedWorkbench(new Map());
   app.field("#preset-select", "cyclo-cross-club-hours");
   app.click("#load-preset");
@@ -3792,7 +3792,7 @@ test("cyclo-cross club hours preset loads a distinct synthetic cyclo-cross works
 
 test("track cycling club hours preset loads a distinct synthetic track-cycling workshop", async () => {
   const pkg = JSON.parse(readFileSync(new URL("../package.json", import.meta.url), "utf8"));
-  assert.equal(pkg.version, "1.5.53");
+  assert.equal(pkg.version, "1.5.54");
   const app = await savedWorkbench(new Map());
   app.field("#preset-select", "track-cycling-club-hours");
   app.click("#load-preset");
@@ -3958,7 +3958,7 @@ test("track cycling club hours preset loads a distinct synthetic track-cycling w
 
 test("gravel cycling club hours preset loads a distinct synthetic gravel-cycling workshop", async () => {
   const pkg = JSON.parse(readFileSync(new URL("../package.json", import.meta.url), "utf8"));
-  assert.equal(pkg.version, "1.5.53");
+  assert.equal(pkg.version, "1.5.54");
   const app = await savedWorkbench(new Map());
   app.field("#preset-select", "gravel-cycling-club-hours");
   app.click("#load-preset");
@@ -4144,7 +4144,7 @@ test("gravel cycling club hours preset loads a distinct synthetic gravel-cycling
 
 test("road cycling club hours preset loads a distinct synthetic road-cycling workshop", async () => {
   const pkg = JSON.parse(readFileSync(new URL("../package.json", import.meta.url), "utf8"));
-  assert.equal(pkg.version, "1.5.53");
+  assert.equal(pkg.version, "1.5.54");
   const app = await savedWorkbench(new Map());
   app.field("#preset-select", "road-cycling-club-hours");
   app.click("#load-preset");
@@ -4367,7 +4367,7 @@ test("road cycling club hours preset loads a distinct synthetic road-cycling wor
 
 test("criterium cycling club hours preset loads a distinct synthetic criterium-cycling workshop", async () => {
   const pkg = JSON.parse(readFileSync(new URL("../package.json", import.meta.url), "utf8"));
-  assert.equal(pkg.version, "1.5.53");
+  assert.equal(pkg.version, "1.5.54");
   const app = await savedWorkbench(new Map());
   app.field("#preset-select", "criterium-cycling-club-hours");
   app.click("#load-preset");
@@ -4577,7 +4577,7 @@ test("criterium cycling club hours preset loads a distinct synthetic criterium-c
 
 test("keirin cycling club hours preset loads a distinct synthetic keirin-cycling workshop", async () => {
   const pkg = JSON.parse(readFileSync(new URL("../package.json", import.meta.url), "utf8"));
-  assert.equal(pkg.version, "1.5.53");
+  assert.equal(pkg.version, "1.5.54");
   const app = await savedWorkbench(new Map());
   app.field("#preset-select", "keirin-cycling-club-hours");
   app.click("#load-preset");
@@ -4629,7 +4629,7 @@ test("keirin cycling club hours preset loads a distinct synthetic keirin-cycling
 
 test("madison cycling club hours preset loads a distinct synthetic madison-cycling workshop", async () => {
   const pkg = JSON.parse(readFileSync(new URL("../package.json", import.meta.url), "utf8"));
-  assert.equal(pkg.version, "1.5.53");
+  assert.equal(pkg.version, "1.5.54");
   const app = await savedWorkbench(new Map());
   app.field("#preset-select", "madison-cycling-club-hours");
   app.click("#load-preset");
@@ -4684,7 +4684,7 @@ test("madison cycling club hours preset loads a distinct synthetic madison-cycli
 
 test("individual-pursuit cycling club hours preset loads a distinct synthetic individual-pursuit-cycling workshop", async () => {
   const pkg = JSON.parse(readFileSync(new URL("../package.json", import.meta.url), "utf8"));
-  assert.equal(pkg.version, "1.5.53");
+  assert.equal(pkg.version, "1.5.54");
   const changelog = readFileSync(new URL("../CHANGELOG.md", import.meta.url), "utf8");
   assert.match(changelog, /## 1\.5\.46 - 2026-09-13/);
   const app = await savedWorkbench(new Map());
@@ -4764,12 +4764,72 @@ test("individual-pursuit cycling club hours preset loads a distinct synthetic in
   assert.doesNotMatch(app.groups(), /Residents/u);
 });
 
-test("domestique cycling club hours preset loads a distinct synthetic domestique-cycling workshop", async () => {
+test("bottle-hand cycling club hours preset loads a distinct synthetic bottle-hand-cycling workshop", async () => {
   const pkg = JSON.parse(readFileSync(new URL("../package.json", import.meta.url), "utf8"));
-  assert.equal(pkg.version, "1.5.53");
+  assert.equal(pkg.version, "1.5.54");
   const changelog = readFileSync(new URL("../CHANGELOG.md", import.meta.url), "utf8");
   const firstHeading = changelog.match(/^## .+$/m)?.[0];
-  assert.equal(firstHeading, "## 1.5.53 - 2026-09-13");
+  assert.equal(firstHeading, "## 1.5.54 - 2026-09-13");
+  const app = await savedWorkbench(new Map());
+  app.field("#preset-select", "bottle-hand-cycling-club-hours");
+  app.click("#load-preset");
+  assert.match(app.title(), /Bottle-hand cycling club hours: bidon-pass, car-window hours, and crate-lock lock-up/u);
+  assert.equal(app.disabled("#export-button"), false);
+  assert.doesNotMatch(app.alert(), /Fix the proposal/u);
+  assert.match(app.clauses(), /Bidon-pass/u);
+  assert.match(app.clauses(), /Car-window hours/u);
+  assert.match(app.clauses(), /Crate-lock lock-up/u);
+  assert.match(app.clauses(), /bidon-pass/u);
+  assert.match(app.clauses(), /car-window/u);
+  assert.match(app.clauses(), /crate-lock/u);
+  assert.match(app.clauses(), /bottle-hand cycling/u);
+  assert.match(app.clauses(), /12:10/u);
+  assert.match(app.clauses(), /20:55/u);
+  assert.match(app.clauses(), /16:05/u);
+  assert.match(app.clauses(), /crate crew/u);
+  assert.match(app.groups(), /Students/u);
+  assert.match(app.groups(), /Neighbours/u);
+  assert.match(app.groups(), /P&amp;C/u);
+  assert.match(app.firstGroupWithoutFloor(), /First group without a support floor: Students/u);
+  assert.match(app.lastGroupWithoutFloor(), /Last group without a support floor: P&amp;C/u);
+  assert.match(app.groupsWithoutFloorCount(), /Groups without a support floor: 3/u);
+  assert.match(app.groupsWithoutFloorRemaining(), /Groups-without-floor remaining: 83/u);
+  assert.match(app.lastGroupWithoutFloorRemaining(), /Last-without-floor remaining: 33/u);
+  assert.match(app.firstGroupWithoutFloorRemaining(), /First-without-floor remaining: 31/u);
+  assert.match(app.firstGroupWithoutFloorCost(), /First-without-floor cost: 31/u);
+  assert.match(app.lastGroupWithoutFloorCost(), /Last-without-floor cost: 33/u);
+  assert.doesNotMatch(app.title(), /Domestique cycling club hours/u);
+  assert.doesNotMatch(app.title(), /Soigneur cycling club hours/u);
+  assert.doesNotMatch(app.title(), /Lead-out cycling club hours/u);
+  assert.doesNotMatch(app.title(), /Feed-zone cycling club hours/u);
+  assert.doesNotMatch(app.clauses(), /wheel-change/u);
+  assert.doesNotMatch(app.clauses(), /Neutral-service hours/u);
+  assert.doesNotMatch(app.clauses(), /Team-car lock-up/u);
+  assert.doesNotMatch(app.clauses(), /team-car/u);
+  assert.doesNotMatch(app.clauses(), /car crew/u);
+  assert.doesNotMatch(app.clauses(), /soigneur-station/u);
+  assert.doesNotMatch(app.clauses(), /cape-bag/u);
+  assert.doesNotMatch(app.clauses(), /rice-cake/u);
+  assert.doesNotMatch(app.clauses(), /cake crew/u);
+  assert.doesNotMatch(app.clauses(), /train-line/u);
+  assert.doesNotMatch(app.clauses(), /last-rider/u);
+  assert.doesNotMatch(app.clauses(), /sprinter-launch/u);
+  assert.doesNotMatch(app.clauses(), /launch crew/u);
+  assert.doesNotMatch(app.clauses(), /musette-line/u);
+  assert.doesNotMatch(app.clauses(), /sticky-bottle/u);
+  assert.doesNotMatch(app.clauses(), /bottle-hand-up/u);
+  assert.doesNotMatch(app.clauses(), /bottle crew/u);
+  assert.doesNotMatch(app.clauses(), /12:00/u);
+  assert.doesNotMatch(app.clauses(), /20:45/u);
+  assert.doesNotMatch(app.clauses(), /15:55/u);
+  assert.doesNotMatch(app.groups(), /Residents/u);
+});
+
+test("domestique cycling club hours preset loads a distinct synthetic domestique-cycling workshop", async () => {
+  const pkg = JSON.parse(readFileSync(new URL("../package.json", import.meta.url), "utf8"));
+  assert.equal(pkg.version, "1.5.54");
+  const changelog = readFileSync(new URL("../CHANGELOG.md", import.meta.url), "utf8");
+  assert.match(changelog, /## 1\.5\.53 - 2026-09-13/);
   const app = await savedWorkbench(new Map());
   app.field("#preset-select", "domestique-cycling-club-hours");
   app.click("#load-preset");
@@ -4879,7 +4939,7 @@ test("domestique cycling club hours preset loads a distinct synthetic domestique
 
 test("soigneur cycling club hours preset loads a distinct synthetic soigneur-cycling workshop", async () => {
   const pkg = JSON.parse(readFileSync(new URL("../package.json", import.meta.url), "utf8"));
-  assert.equal(pkg.version, "1.5.53");
+  assert.equal(pkg.version, "1.5.54");
   const changelog = readFileSync(new URL("../CHANGELOG.md", import.meta.url), "utf8");
   assert.match(changelog, /## 1\.5\.52 - 2026-09-13/);
   const app = await savedWorkbench(new Map());
@@ -4994,7 +5054,7 @@ test("soigneur cycling club hours preset loads a distinct synthetic soigneur-cyc
 
 test("lead-out cycling club hours preset loads a distinct synthetic lead-out-cycling workshop", async () => {
   const pkg = JSON.parse(readFileSync(new URL("../package.json", import.meta.url), "utf8"));
-  assert.equal(pkg.version, "1.5.53");
+  assert.equal(pkg.version, "1.5.54");
   const changelog = readFileSync(new URL("../CHANGELOG.md", import.meta.url), "utf8");
   assert.match(changelog, /## 1\.5\.51 - 2026-09-13/);
   const app = await savedWorkbench(new Map());
@@ -5096,7 +5156,7 @@ test("lead-out cycling club hours preset loads a distinct synthetic lead-out-cyc
 
 test("feed-zone cycling club hours preset loads a distinct synthetic feed-zone-cycling workshop", async () => {
   const pkg = JSON.parse(readFileSync(new URL("../package.json", import.meta.url), "utf8"));
-  assert.equal(pkg.version, "1.5.53");
+  assert.equal(pkg.version, "1.5.54");
   const changelog = readFileSync(new URL("../CHANGELOG.md", import.meta.url), "utf8");
   assert.match(changelog, /## 1\.5\.50 - 2026-09-13/);
   const app = await savedWorkbench(new Map());
@@ -5190,7 +5250,7 @@ test("feed-zone cycling club hours preset loads a distinct synthetic feed-zone-c
 
 test("first-aid cycling club hours preset loads a distinct synthetic first-aid-cycling workshop", async () => {
   const pkg = JSON.parse(readFileSync(new URL("../package.json", import.meta.url), "utf8"));
-  assert.equal(pkg.version, "1.5.53");
+  assert.equal(pkg.version, "1.5.54");
   const changelog = readFileSync(new URL("../CHANGELOG.md", import.meta.url), "utf8");
   assert.match(changelog, /## 1\.5\.49 - 2026-09-13/);
   const app = await savedWorkbench(new Map());
@@ -5280,7 +5340,7 @@ test("first-aid cycling club hours preset loads a distinct synthetic first-aid-c
 
 test("team-sprint cycling club hours preset loads a distinct synthetic team-sprint-cycling workshop", async () => {
   const pkg = JSON.parse(readFileSync(new URL("../package.json", import.meta.url), "utf8"));
-  assert.equal(pkg.version, "1.5.53");
+  assert.equal(pkg.version, "1.5.54");
   const changelog = readFileSync(new URL("../CHANGELOG.md", import.meta.url), "utf8");
   assert.match(changelog, /## 1\.5\.48 - 2026-09-13/);
   const app = await savedWorkbench(new Map());
@@ -5373,7 +5433,7 @@ test("team-sprint cycling club hours preset loads a distinct synthetic team-spri
 
 test("team-pursuit cycling club hours preset loads a distinct synthetic team-pursuit-cycling workshop", async () => {
   const pkg = JSON.parse(readFileSync(new URL("../package.json", import.meta.url), "utf8"));
-  assert.equal(pkg.version, "1.5.53");
+  assert.equal(pkg.version, "1.5.54");
   const changelog = readFileSync(new URL("../CHANGELOG.md", import.meta.url), "utf8");
   assert.match(changelog, /## 1\.5\.47 - 2026-09-13/);
   const app = await savedWorkbench(new Map());
@@ -5453,7 +5513,7 @@ test("team-pursuit cycling club hours preset loads a distinct synthetic team-pur
 
 test("scratch cycling club hours preset loads a distinct synthetic scratch-cycling workshop", async () => {
   const pkg = JSON.parse(readFileSync(new URL("../package.json", import.meta.url), "utf8"));
-  assert.equal(pkg.version, "1.5.53");
+  assert.equal(pkg.version, "1.5.54");
   const changelog = readFileSync(new URL("../CHANGELOG.md", import.meta.url), "utf8");
   assert.match(changelog, /## 1\.5\.45 - 2026-09-13/);
   const app = await savedWorkbench(new Map());
@@ -5527,7 +5587,7 @@ test("scratch cycling club hours preset loads a distinct synthetic scratch-cycli
 
 test("points-race cycling club hours preset loads a distinct synthetic points-race-cycling workshop", async () => {
   const pkg = JSON.parse(readFileSync(new URL("../package.json", import.meta.url), "utf8"));
-  assert.equal(pkg.version, "1.5.53");
+  assert.equal(pkg.version, "1.5.54");
   const changelog = readFileSync(new URL("../CHANGELOG.md", import.meta.url), "utf8");
   assert.match(changelog, /## 1\.5\.44 - 2026-09-12/);
   const app = await savedWorkbench(new Map());
@@ -5592,7 +5652,7 @@ test("points-race cycling club hours preset loads a distinct synthetic points-ra
 
 test("omnium cycling club hours preset loads a distinct synthetic omnium-cycling workshop", async () => {
   const pkg = JSON.parse(readFileSync(new URL("../package.json", import.meta.url), "utf8"));
-  assert.equal(pkg.version, "1.5.53");
+  assert.equal(pkg.version, "1.5.54");
   const changelog = readFileSync(new URL("../CHANGELOG.md", import.meta.url), "utf8");
   assert.match(changelog, /## 1\.5\.43 - 2026-09-12/);
   const app = await savedWorkbench(new Map());
@@ -5653,7 +5713,7 @@ test("omnium cycling club hours preset loads a distinct synthetic omnium-cycling
 
 test("hill-climb cycling club hours preset loads a distinct synthetic hill-climb-cycling workshop", async () => {
   const pkg = JSON.parse(readFileSync(new URL("../package.json", import.meta.url), "utf8"));
-  assert.equal(pkg.version, "1.5.53");
+  assert.equal(pkg.version, "1.5.54");
   const app = await savedWorkbench(new Map());
   app.field("#preset-select", "hill-climb-cycling-club-hours");
   app.click("#load-preset");
@@ -5705,7 +5765,7 @@ test("hill-climb cycling club hours preset loads a distinct synthetic hill-climb
 
 test("time-trial cycling club hours preset loads a distinct synthetic time-trial-cycling workshop", async () => {
   const pkg = JSON.parse(readFileSync(new URL("../package.json", import.meta.url), "utf8"));
-  assert.equal(pkg.version, "1.5.53");
+  assert.equal(pkg.version, "1.5.54");
   const app = await savedWorkbench(new Map());
   app.field("#preset-select", "time-trial-cycling-club-hours");
   app.click("#load-preset");
@@ -11424,7 +11484,7 @@ test("keyboard Shift+F12 jumps to hide-first-group-without-floor unless an input
 test("keyboard Shift+F7 copies the first-without-floor remaining unless an input is active", async () => {
   const html = await standaloneBytes();
   const pkg = JSON.parse(readFileSync(new URL("../package.json", import.meta.url), "utf8"));
-  assert.equal(pkg.version, "1.5.53");
+  assert.equal(pkg.version, "1.5.54");
   assert.match(html, /<kbd>Shift\+F7<\/kbd> Copy the first-without-floor remaining as one-line Markdown/u);
   assert.match(html, /id="copy-first-group-without-floor-remaining-button"/u);
   assert.match(html, /id="copy-first-group-without-floor-remaining-button"[^>]*aria-keyshortcuts="Shift\+F7"/u);

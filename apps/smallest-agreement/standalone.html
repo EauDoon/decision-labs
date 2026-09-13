@@ -319,6 +319,7 @@ kbd { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; border: 1px s
             <option value="lead-out-cycling-club-hours">Lead-out cycling club hours</option>
             <option value="soigneur-cycling-club-hours">Soigneur cycling club hours</option>
             <option value="domestique-cycling-club-hours">Domestique cycling club hours</option>
+            <option value="bottle-hand-cycling-club-hours">Bottle-hand cycling club hours</option>
           </select>
         </label>
         <button class="button button-secondary" type="button" id="load-preset">Load preset</button>
@@ -6860,6 +6861,39 @@ const presets = {
           { id: "domestique-cycling-team-car-lockup-original", original: true, label: "Leave the team-car door on a shared padlock after club hours", changeCost: 0, support: { students: 10, neighbours: 21, pandc: 32 } },
           { id: "domestique-cycling-team-car-lockup-steward", original: false, label: "Require a P&C steward to lock the team-car store before 23:20", changeCost: 3, support: { students: 46, neighbours: 71, pandc: 85 } },
           { id: "domestique-cycling-team-car-lockup-timer", original: false, label: "Add a timed lock on the team-car store after the last domestique cycling session", changeCost: 2, support: { students: 35, neighbours: 38, pandc: 53 } },
+        ],
+      },
+    ],
+  },
+  "bottle-hand-cycling-club-hours": {
+    title: "Bottle-hand cycling club hours: bidon-pass, car-window hours, and crate-lock lock-up",
+    threshold: 70,
+    maxChangeCost: 8,
+    groups: [
+      { id: "students", name: "Students", weight: 31 },
+      { id: "neighbours", name: "Neighbours", weight: 19, veto: true },
+      { id: "pandc", name: "P&C", weight: 33 },
+    ],
+    clauses: [
+      {
+        id: "bottle-hand-cycling-bidon-pass", title: "Bidon-pass", options: [
+          { id: "bottle-hand-cycling-bidon-pass-original", original: true, label: "Keep weekday bidon-pass from 12:10 with no posted car-window card", changeCost: 0, support: { students: 19, neighbours: 75, pandc: 62 } },
+          { id: "bottle-hand-cycling-bidon-pass-late", original: false, label: "Open weekday bidon-pass at 20:55 with a posted car-window card", changeCost: 2, support: { students: 84, neighbours: 23, pandc: 41 } },
+          { id: "bottle-hand-cycling-bidon-pass-weekend", original: false, label: "Hold Saturday morning bidon-pass at 10:45 with a car-window booking card", changeCost: 4, support: { students: 69, neighbours: 31, pandc: 49 } },
+        ],
+      },
+      {
+        id: "bottle-hand-cycling-car-window", title: "Car-window hours", options: [
+          { id: "bottle-hand-cycling-car-window-original", original: true, label: "No posted car-window hours", changeCost: 0, support: { students: 59, neighbours: 15, pandc: 40 } },
+          { id: "bottle-hand-cycling-car-window-cap", original: false, label: "Close car-window hours at 22:00 and keep crate crew at the crate-lock shed", changeCost: 1, support: { students: 40, neighbours: 85, pandc: 66 } },
+          { id: "bottle-hand-cycling-car-window-cut", original: false, label: "Serve crate crew only after 16:05", changeCost: 5, support: { students: 22, neighbours: 83, pandc: 38 } },
+        ],
+      },
+      {
+        id: "bottle-hand-cycling-crate-lock-lockup", title: "Crate-lock lock-up", options: [
+          { id: "bottle-hand-cycling-crate-lock-lockup-original", original: true, label: "Leave the crate-lock door on a shared padlock after club hours", changeCost: 0, support: { students: 10, neighbours: 21, pandc: 32 } },
+          { id: "bottle-hand-cycling-crate-lock-lockup-steward", original: false, label: "Require a P&C steward to lock the crate-lock store before 23:30", changeCost: 3, support: { students: 46, neighbours: 71, pandc: 85 } },
+          { id: "bottle-hand-cycling-crate-lock-lockup-timer", original: false, label: "Add a timed lock on the crate-lock store after the last bottle-hand cycling session", changeCost: 2, support: { students: 35, neighbours: 38, pandc: 53 } },
         ],
       },
     ],

@@ -6,10 +6,12 @@ test("domestique cycling club hours keeps remaining 30 / 32 / 81 after soigneur"
   const app = (await readFile(new URL("../src/app.js", import.meta.url), "utf8")).replaceAll("\r\n", "\n");
   const html = (await readFile(new URL("../index.html", import.meta.url), "utf8")).replaceAll("\r\n", "\n");
   const domestiqueStart = app.indexOf('"domestique-cycling-club-hours"');
-  const domestiqueEnd = app.indexOf("let agreementReviewPacket", domestiqueStart);
+  const bottleHandStart = app.indexOf('"bottle-hand-cycling-club-hours"');
+  const domestiqueEnd = bottleHandStart;
   const domestique = app.slice(domestiqueStart, domestiqueEnd === -1 ? undefined : domestiqueEnd);
   const soigneurStart = app.indexOf('"soigneur-cycling-club-hours"');
   const soigneur = app.slice(soigneurStart, domestiqueStart);
+  assert.ok(bottleHandStart > domestiqueStart);
   assert.ok(domestiqueStart > soigneurStart);
   assert.match(domestique, /weight: 30/);
   assert.match(domestique, /weight: 32/);
@@ -30,6 +32,9 @@ test("domestique cycling club hours keeps remaining 30 / 32 / 81 after soigneur"
   assert.doesNotMatch(domestique, /musette-line/);
   assert.doesNotMatch(domestique, /sticky-bottle/);
   assert.doesNotMatch(domestique, /bottle-hand-up/);
+  assert.doesNotMatch(domestique, /bidon-pass/);
+  assert.doesNotMatch(domestique, /Car-window hours/);
+  assert.doesNotMatch(domestique, /Crate-lock lock-up/);
   assert.doesNotMatch(domestique, /bottle crew/);
   assert.doesNotMatch(domestique, /treatment-tent/);
   assert.doesNotMatch(domestique, /ice-pack-rota/);
