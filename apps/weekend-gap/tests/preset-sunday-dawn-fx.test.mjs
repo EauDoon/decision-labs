@@ -36,6 +36,7 @@ test("Sunday dawn FX open keeps the Normal Friday calendar with a Sunday dawn FX
   assert.equal(preset.sundaySunriseFxOpen, false);
   assert.equal(preset.sundayBreakfastFxOpen, false);
   assert.equal(preset.sundayBrunchFxOpen, false);
+  assert.equal(preset.sundayLunchFxOpen, false);
   assert.equal(preset.saturdayLateNightFxOpen, false);
   assert.equal(preset.saturdayNightFxOpen, false);
   assert.equal(preset.sundayLateNightFxOpen, false);
@@ -61,6 +62,7 @@ test("Sunday dawn FX open keeps the Normal Friday calendar with a Sunday dawn FX
   assert.notDeepEqual(preset, PRESETS.sundaySunriseFxOpen);
   assert.notDeepEqual(preset, PRESETS.sundayBreakfastFxOpen);
   assert.notDeepEqual(preset, PRESETS.sundayBrunchFxOpen);
+  assert.notDeepEqual(preset, PRESETS.sundayLunchFxOpen);
   assert.notDeepEqual(preset, PRESETS.saturdayLateNightFxOpen);
   assert.notDeepEqual(preset, PRESETS.saturdayNightFxOpen);
   assert.notDeepEqual(preset, PRESETS.sundayLateNightFxOpen);
