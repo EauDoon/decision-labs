@@ -941,6 +941,23 @@ export const presets = Object.freeze({
       offer("O02", "Tent Salad Run", "First-aid lunch pack", "Tent salad", 15, 15, 4, 42, 2),
       { ...offer("O03", "Hall First-aid Pickup", "First-aid lunch pack", "Triage water", 42, 45, 1, 64, 5), fulfillment: "pickup" }
     ]
+  },
+  feedZoneCyclingCarnivalLunch: {
+    title: "Feed-zone cycling carnival lunch",
+    currency: "AUD",
+    buyers: [
+      buyer("B01", "Musette-line crate", "Feed-zone lunch pack", 15, 23, 4, ["Feed-zone pie", "Musette salad"]),
+      buyer("B02", "Sticky-bottle bench", "Feed-zone lunch pack", 19, 19, 3, ["Feed-zone pie"]),
+      buyer("B03", "Bottle-hand-up hamper", "Feed-zone lunch pack", 15, 44, 5, ["Musette salad", "Bottle water"]),
+      buyer("B04", "Sideline cooler", "Feed-zone lunch pack", 34, 44, 2, ["Bottle water"]),
+      buyer("B05", "Scoreboard trolley", "Feed-zone lunch pack", 16, 22, 4, ["Feed-zone pie", "Bottle water"]),
+      buyer("B06", "Bench table", "Feed-zone lunch pack", 13, 20, 3, ["Musette salad", "Feed-zone pie"])
+    ],
+    offers: [
+      offer("O01", "Court-side Feed-zone Delivery", "Feed-zone lunch pack", "Feed-zone pie", 17, 17, 3, 54, 3),
+      offer("O02", "Musette Salad Run", "Feed-zone lunch pack", "Musette salad", 15, 15, 4, 42, 2),
+      { ...offer("O03", "Hall Feed-zone Pickup", "Feed-zone lunch pack", "Bottle water", 44, 47, 1, 64, 5), fulfillment: "pickup" }
+    ]
   }
 });
 
