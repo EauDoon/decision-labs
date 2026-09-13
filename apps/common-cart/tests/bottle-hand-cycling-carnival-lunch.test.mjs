@@ -152,13 +152,13 @@ test("bottle-hand cycling carnival lunch leftover fill is hall pickup and stays 
   assert.equal(keirinCycling.winner.offer.merchant, "Court-side Keirin Delivery");
   assert.equal(scratchCycling.winner.offer.merchant, "Court-side Scratch Delivery");
   assert.equal(leftoverOffer.capacity, 64);
-  assert.equal(leftoverFill.fulfilledUnits, 53);
+  assert.equal(leftoverFill.fulfilledUnits, 54);
   assert.equal(computeResidualCoverage(firstAidCycling.scenario).secondary.fulfilledUnits, 47);
   assert.equal(computeResidualCoverage(evaluateMarket(clonePreset("soigneurCyclingCarnivalLunch")).scenario).secondary.fulfilledUnits, 52);
   assert.equal(computeResidualCoverage(evaluateMarket(clonePreset("leadOutCyclingCarnivalLunch")).scenario).secondary.fulfilledUnits, 51);
   assert.equal(computeResidualCoverage(evaluateMarket(clonePreset("feedZoneCyclingCarnivalLunch")).scenario).secondary.fulfilledUnits, 49);
   assert.equal(computeResidualCoverage(teamSprintCycling.scenario).secondary.fulfilledUnits, 45);
-  assert.equal(leftoverOffer.capacity - leftoverFill.fulfilledUnits, 11);
+  assert.equal(leftoverOffer.capacity - leftoverFill.fulfilledUnits, 10);
   assert.notEqual(leftoverFill.fulfilledUnits, leftoverOffer.unitPrice);
   assert.notEqual(leftoverFill.fulfilledUnits, leftoverOffer.minimumUnits);
   assert.notEqual(leftoverFill.fulfilledUnits, leftoverOffer.capacity - leftoverFill.fulfilledUnits);
@@ -166,6 +166,7 @@ test("bottle-hand cycling carnival lunch leftover fill is hall pickup and stays 
   assert.notEqual(leftoverOffer.capacity, leftoverOffer.capacity - leftoverFill.fulfilledUnits);
   assert.notEqual(leftoverOffer.unitPrice, leftoverOffer.capacity - leftoverFill.fulfilledUnits);
   assert.notEqual(leftoverOffer.unitPrice, leftoverFill.fulfilledUnits);
+  assert.notEqual(leftoverFill.fulfilledUnits, 53);
   assert.notEqual(leftoverFill.fulfilledUnits, 52);
   assert.notEqual(leftoverFill.fulfilledUnits, 51);
   assert.notEqual(leftoverFill.fulfilledUnits, 49);
