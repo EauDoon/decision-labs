@@ -2035,6 +2035,39 @@ const presets = {
       },
     ],
   },
+  "domestique-cycling-club-hours": {
+    title: "Domestique cycling club hours: wheel-change, neutral-service hours, and team-car lock-up",
+    threshold: 70,
+    maxChangeCost: 8,
+    groups: [
+      { id: "students", name: "Students", weight: 30 },
+      { id: "neighbours", name: "Neighbours", weight: 19, veto: true },
+      { id: "pandc", name: "P&C", weight: 32 },
+    ],
+    clauses: [
+      {
+        id: "domestique-cycling-wheel-change", title: "Wheel-change", options: [
+          { id: "domestique-cycling-wheel-change-original", original: true, label: "Keep weekday wheel-change from 12:00 with no posted neutral-service card", changeCost: 0, support: { students: 19, neighbours: 75, pandc: 62 } },
+          { id: "domestique-cycling-wheel-change-late", original: false, label: "Open weekday wheel-change at 20:45 with a posted neutral-service card", changeCost: 2, support: { students: 84, neighbours: 23, pandc: 41 } },
+          { id: "domestique-cycling-wheel-change-weekend", original: false, label: "Hold Saturday morning wheel-change at 10:35 with a neutral-service booking card", changeCost: 4, support: { students: 69, neighbours: 31, pandc: 49 } },
+        ],
+      },
+      {
+        id: "domestique-cycling-neutral-service", title: "Neutral-service hours", options: [
+          { id: "domestique-cycling-neutral-service-original", original: true, label: "No posted neutral-service hours", changeCost: 0, support: { students: 59, neighbours: 15, pandc: 40 } },
+          { id: "domestique-cycling-neutral-service-cap", original: false, label: "Close neutral-service hours at 21:50 and keep car crew at the team-car shed", changeCost: 1, support: { students: 40, neighbours: 85, pandc: 66 } },
+          { id: "domestique-cycling-neutral-service-cut", original: false, label: "Serve car crew only after 15:55", changeCost: 5, support: { students: 22, neighbours: 83, pandc: 38 } },
+        ],
+      },
+      {
+        id: "domestique-cycling-team-car-lockup", title: "Team-car lock-up", options: [
+          { id: "domestique-cycling-team-car-lockup-original", original: true, label: "Leave the team-car door on a shared padlock after club hours", changeCost: 0, support: { students: 10, neighbours: 21, pandc: 32 } },
+          { id: "domestique-cycling-team-car-lockup-steward", original: false, label: "Require a P&C steward to lock the team-car store before 23:20", changeCost: 3, support: { students: 46, neighbours: 71, pandc: 85 } },
+          { id: "domestique-cycling-team-car-lockup-timer", original: false, label: "Add a timed lock on the team-car store after the last domestique cycling session", changeCost: 2, support: { students: 35, neighbours: 38, pandc: 53 } },
+        ],
+      },
+    ],
+  },
 };
 
 let agreementReviewPacket = null;
