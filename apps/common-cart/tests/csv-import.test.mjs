@@ -45,6 +45,19 @@ test("buyer CSV import names missing columns and invalid values", () => {
   assert.throws(() => parseBuyerCsv("note,category,quantity,max unit price,latest delivery days,variants\nA,B,1,2,3,C\n"), /unknown column: note/);
 });
 
+test("buyer CSV import accepts a leading plus on numeric cells", () => {
+  const csv = `${HEADER}\nStudio A,Desk chair,4,+30,14,Black,\n`;
+  const buyers = parseBuyerCsv(csv);
+  assert.equal(buyers[0].maxUnitPrice, 30);
+  const decimal = `${HEADER}\nStudio B,Desk chair,4,+5.5,14,Black,\n`;
+  const buyers2 = parseBuyerCsv(decimal);
+  assert.equal(buyers2[0].maxUnitPrice, 5.5);
+  assert.throws(
+    () => parseBuyerCsv(`${HEADER}\nOnly hall,Coffee beans,2,+,7,Medium roast,\n`),
+    /cannot be empty/
+  );
+});
+
 test("buyer CSV import accepts quoted commas and rejects an unclosed quote", () => {
   const csv = "label,category,quantity,max unit price,latest delivery days,variants\n\"Hall, north\",Coffee beans,2,30,7,\"Medium roast, Dark roast\"\n";
   const buyers = parseBuyerCsv(csv);

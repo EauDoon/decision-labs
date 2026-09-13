@@ -1912,7 +1912,9 @@ function requiredText(value, path, maxLength) {
 
 function finite(value, path, minimum, maximum) {
   if (typeof value === "string") {
-    const trimmed = value.trim();
+    let trimmed = value.trim();
+    if (trimmed === "") throw new ScenarioError(`${path} cannot be empty.`);
+    if (trimmed.startsWith("+")) trimmed = trimmed.slice(1);
     if (trimmed === "") throw new ScenarioError(`${path} cannot be empty.`);
     if (/^0[box]/i.test(trimmed) || /[eE+]/.test(trimmed)) {
       throw new ScenarioError(`${path} must be a number.`);
