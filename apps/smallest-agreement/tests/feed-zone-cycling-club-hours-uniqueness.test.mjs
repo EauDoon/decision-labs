@@ -2,12 +2,13 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { readFile } from "node:fs/promises";
 
-test("first-aid cycling club hours remaining 26 / 28 / 73 is distinct from team-sprint 25 / 27 / 71", async () => {
+test("feed-zone cycling club hours remaining 27 / 29 / 75 is distinct from first-aid 26 / 28 / 73", async () => {
   const app = (await readFile(new URL("../src/app.js", import.meta.url), "utf8")).replaceAll("\r\n", "\n");
-  const firstAidStart = app.indexOf('"first-aid-cycling-club-hours"');
   const feedZoneStart = app.indexOf('"feed-zone-cycling-club-hours"');
-  const firstAidEnd = feedZoneStart === -1 ? app.indexOf("let agreementReviewPacket", firstAidStart) : feedZoneStart;
-  const firstAid = app.slice(firstAidStart, firstAidEnd === -1 ? undefined : firstAidEnd);
+  const feedZoneEnd = app.indexOf("let agreementReviewPacket", feedZoneStart);
+  const feedZone = app.slice(feedZoneStart, feedZoneEnd === -1 ? undefined : feedZoneEnd);
+  const firstAidStart = app.indexOf('"first-aid-cycling-club-hours"');
+  const firstAid = app.slice(firstAidStart, feedZoneStart);
   const sprintStart = app.indexOf('"team-sprint-cycling-club-hours"');
   const sprint = app.slice(sprintStart, firstAidStart);
   const teamStart = app.indexOf('"team-pursuit-cycling-club-hours"');
@@ -16,9 +17,13 @@ test("first-aid cycling club hours remaining 26 / 28 / 73 is distinct from team-
   const pursuit = app.slice(pursuitStart, teamStart);
   const scratchStart = app.indexOf('"scratch-cycling-club-hours"');
   const scratch = app.slice(scratchStart, pursuitStart);
+  assert.ok(feedZoneStart > firstAidStart);
   assert.ok(firstAidStart > sprintStart);
   assert.ok(sprintStart > teamStart);
   assert.ok(teamStart > pursuitStart);
+  assert.match(feedZone, /weight: 27/);
+  assert.match(feedZone, /weight: 29/);
+  assert.match(feedZone, /bottle crew at the bottle-hand-up shed/);
   assert.match(firstAid, /weight: 26/);
   assert.match(firstAid, /weight: 28/);
   assert.match(firstAid, /ice-pack crew at the triage-board shed/);
@@ -32,14 +37,15 @@ test("first-aid cycling club hours remaining 26 / 28 / 73 is distinct from team-
   assert.match(pursuit, /weight: 25/);
   assert.match(scratch, /weight: 22/);
   assert.match(scratch, /weight: 24/);
-  assert.notEqual(firstAid.match(/weight: 26/)?.[0], sprint.match(/weight: 25/)?.[0]);
-  assert.notEqual(firstAid.match(/weight: 28/)?.[0], sprint.match(/weight: 27/)?.[0]);
-  assert.doesNotMatch(firstAid, /start-gate/);
-  assert.doesNotMatch(firstAid, /flying-relay/);
-  assert.doesNotMatch(firstAid, /trio-board/);
-  assert.doesNotMatch(sprint, /Ice-pack-rota hours/);
-  assert.doesNotMatch(sprint, /Triage-board lock-up/);
-  assert.doesNotMatch(team, /Ice-pack-rota hours/);
-  assert.doesNotMatch(pursuit, /Ice-pack-rota hours/);
-  assert.doesNotMatch(scratch, /Ice-pack-rota hours/);
+  assert.notEqual(feedZone.match(/weight: 27/)?.[0], firstAid.match(/weight: 26/)?.[0]);
+  assert.notEqual(feedZone.match(/weight: 29/)?.[0], firstAid.match(/weight: 28/)?.[0]);
+  assert.doesNotMatch(feedZone, /treatment-tent/);
+  assert.doesNotMatch(feedZone, /ice-pack-rota/);
+  assert.doesNotMatch(feedZone, /triage-board/);
+  assert.doesNotMatch(firstAid, /Sticky-bottle hours/);
+  assert.doesNotMatch(firstAid, /Bottle-hand-up lock-up/);
+  assert.doesNotMatch(sprint, /Sticky-bottle hours/);
+  assert.doesNotMatch(team, /Sticky-bottle hours/);
+  assert.doesNotMatch(pursuit, /Sticky-bottle hours/);
+  assert.doesNotMatch(scratch, /Sticky-bottle hours/);
 });
