@@ -72,7 +72,4 @@ test("first-aid cycling club hours keeps remaining 26 / 28 / 73 after team-sprin
   assert.match(sprint, /Flying-relay hours/);
   assert.doesNotMatch(sprint, /Ice-pack-rota hours/);
   assert.doesNotMatch(sprint, /Triage-board lock-up/);
-  assert.equal(app.includes('} else if (event.shiftKey && key === "F9") {\n    event.preventDefault();\n    jumpToHideLastGroupWithoutFloor();'), true);
-  assert.equal(app.includes('} else if (key === "F9") {\n    event.preventDefault();\n    jumpToHideLastGroupWithoutFloor();'), true);
-  assert.match(html, /<kbd>Shift\+F9<\/kbd> Jump to the hide-last-group-without-floor control, or the groups heading/);
 });

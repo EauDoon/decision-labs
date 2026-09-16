@@ -36,7 +36,4 @@ test("keirin cycling club hours keeps remaining 18 / 20 / 53 after hill-climb", 
   assert.match(hillClimb, /Summit-marshal hours/);
   assert.doesNotMatch(hillClimb, /Derny-pacer hours/);
   assert.doesNotMatch(hillClimb, /Keirin-chip lock-up/);
-  assert.equal(app.includes('} else if (event.shiftKey && key === "F9") {\n    event.preventDefault();\n    jumpToHideLastGroupWithoutFloor();'), true);
-  assert.equal(app.includes('} else if (key === "F9") {\n    event.preventDefault();\n    jumpToHideLastGroupWithoutFloor();'), true);
-  assert.match(html, /<kbd>Shift\+F9<\/kbd> Jump to the hide-last-group-without-floor control, or the groups heading/);
 });

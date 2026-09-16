@@ -543,32 +543,6 @@ footer {
         <li><kbd>2</kbd> Focus the tertiary-fill remaining copy control, or leftover heading if missing</li>
         <li><kbd>3</kbd> Focus hide last unserved buyer, or the buyer list if missing</li>
         <li><kbd>4</kbd> Copy tertiary fill maximum (organizer private)</li>
-        <li><kbd>Home</kbd> Focus the tertiary-fill maximum copy control, or leftover heading if missing</li>
-        <li><kbd>End</kbd> Focus hide first unserved buyer, or the buyer list if missing</li>
-        <li><kbd>PageUp</kbd> Copy leftover uncovered remaining (organizer private)</li>
-        <li><kbd>PageDown</kbd> Focus the leftover uncovered remaining copy control, or leftover heading if missing</li>
-        <li><kbd>ArrowUp</kbd> Focus hide last leftover-only buyer, or the buyer list if missing</li>
-        <li><kbd>Insert</kbd> Copy leftover uncovered maximum (organizer private)</li>
-        <li><kbd>ArrowDown</kbd> Focus the leftover uncovered maximum copy control, or leftover heading if missing</li>
-        <li><kbd>ArrowLeft</kbd> Focus hide first leftover-only buyer, or the buyer list if missing</li>
-        <li><kbd>Delete</kbd> Copy leftover uncovered minimum (organizer private)</li>
-        <li><kbd>F2</kbd> Focus the leftover uncovered minimum copy control, or leftover heading if missing</li>
-        <li><kbd>ArrowRight</kbd> Focus hide last winner-allocated buyer, or the buyer list if missing</li>
-        <li><kbd>F3</kbd> Copy leftover uncovered count (organizer private)</li>
-        <li><kbd>F4</kbd> Focus the leftover uncovered count copy control, or leftover heading if missing</li>
-        <li><kbd>Backspace</kbd> Focus hide first winner-allocated buyer, or the buyer list if missing</li>
-        <li><kbd>Shift+F7</kbd> Copy leftover uncovered leftover-only remaining (organizer private)</li>
-        <li><kbd>Shift+F8</kbd> Focus the leftover uncovered leftover-only remaining copy control, or leftover heading if missing</li>
-        <li><kbd>Shift+F9</kbd> Focus hide first leftover-only buyer, or the buyer list if missing</li>
-        <li><kbd>F7</kbd> Copy leftover uncovered leftover-only count (organizer private)</li>
-        <li><kbd>F8</kbd> Focus the leftover uncovered leftover-only count copy control, or leftover heading if missing</li>
-        <li><kbd>F9</kbd> Focus hide first uncovered leftover buyer, or the buyer list if missing</li>
-        <li><kbd>F10</kbd> Copy leftover uncovered leftover-only remaining (organizer private)</li>
-        <li><kbd>F11</kbd> Focus the leftover uncovered leftover-only remaining copy control, or leftover heading if missing</li>
-        <li><kbd>F12</kbd> Focus hide last uncovered leftover buyer, or the buyer list if missing</li>
-        <li><kbd>Shift+F10</kbd> Copy leftover uncovered leftover-only maximum (organizer private)</li>
-        <li><kbd>Shift+F11</kbd> Focus the leftover uncovered leftover-only maximum copy control, or leftover heading if missing</li>
-        <li><kbd>Shift+F12</kbd> Focus hide first uncovered leftover buyer, or the buyer list if missing</li>
         <li><kbd>Esc</kbd> Close help or the first-run guide</li>
       </ul>
       <p class="canvas-note">Shortcuts are ignored while you type in a field, list, or dialog.</p>
@@ -829,31 +803,31 @@ footer {
             Hide the last unserved buyer
           </label>
           <label class="checkbox-field">
-            <input id="hide-first-unserved-buyer" type="checkbox" aria-keyshortcuts="End">
+            <input id="hide-first-unserved-buyer" type="checkbox">
             Hide the first unserved buyer
           </label>
           <label class="checkbox-field">
-            <input id="hide-last-leftover-only-buyer" type="checkbox" aria-keyshortcuts="ArrowUp">
+            <input id="hide-last-leftover-only-buyer" type="checkbox">
             Hide the last leftover-only buyer
           </label>
           <label class="checkbox-field">
-            <input id="hide-first-leftover-only-buyer" type="checkbox" aria-keyshortcuts="ArrowLeft">
+            <input id="hide-first-leftover-only-buyer" type="checkbox">
             Hide the first leftover-only buyer
           </label>
           <label class="checkbox-field">
-            <input id="hide-last-winner-allocated-buyer" type="checkbox" aria-keyshortcuts="ArrowRight">
+            <input id="hide-last-winner-allocated-buyer" type="checkbox">
             Hide the last winner-allocated buyer
           </label>
           <label class="checkbox-field">
-            <input id="hide-first-winner-allocated-buyer" type="checkbox" aria-keyshortcuts="Backspace">
+            <input id="hide-first-winner-allocated-buyer" type="checkbox">
             Hide the first winner-allocated buyer
           </label>
           <label class="checkbox-field">
-            <input id="hide-first-uncovered-leftover-buyer" type="checkbox" aria-keyshortcuts="F9">
+            <input id="hide-first-uncovered-leftover-buyer" type="checkbox">
             Hide the first uncovered leftover buyer
           </label>
           <label class="checkbox-field">
-            <input id="hide-last-uncovered-leftover-buyer" type="checkbox" aria-keyshortcuts="F12">
+            <input id="hide-last-uncovered-leftover-buyer" type="checkbox">
             Hide the last uncovered leftover buyer
           </label>
           <p id="buyer-variant-filter-note">The filter hides rows on screen. Saved buyers and matching stay unchanged. Merchant views still show counts only. The last hide-excluded, hide-fully-filled, hide-buyers-with-leftover, hide-unserved-buyers, hide-leftover-only-buyers, hide-winner-allocated-buyers, hide-buyers-filled-by-leftover-fill, hide-last-buyer-filled-by-leftover-fill, hide-first-buyer-filled-by-leftover-fill, hide-first-buyer-filled-by-tertiary-fill, hide-last-buyer-filled-by-tertiary-fill, hide-last-unserved-buyer, hide-first-unserved-buyer, hide-last-leftover-only-buyer, hide-first-leftover-only-buyer, hide-last-winner-allocated-buyer, hide-first-winner-allocated-buyer, hide-first-uncovered-leftover-buyer, and hide-last-uncovered-leftover-buyer choices are kept in this browser's workspace file. Older workspace files without them still show every buyer.</p>
@@ -1055,13 +1029,13 @@ footer {
             <button id="copy-leftover-fill-maximum" class="print-chrome" type="button" aria-keyshortcuts="8">Copy leftover fill maximum (organizer private)</button>
             <button id="copy-tertiary-fill-remaining" class="print-chrome" type="button" aria-keyshortcuts="1">Copy tertiary fill remaining capacity (organizer private)</button>
             <button id="copy-tertiary-fill-maximum" class="print-chrome" type="button" aria-keyshortcuts="4">Copy tertiary fill maximum (organizer private)</button>
-            <button id="copy-leftover-uncovered-remaining" class="print-chrome" type="button" aria-keyshortcuts="PageUp">Copy leftover uncovered remaining (organizer private)</button>
-            <button id="copy-leftover-uncovered-maximum" class="print-chrome" type="button" aria-keyshortcuts="Insert">Copy leftover uncovered maximum (organizer private)</button>
-            <button id="copy-leftover-uncovered-minimum" class="print-chrome" type="button" aria-keyshortcuts="Delete">Copy leftover uncovered minimum (organizer private)</button>
-            <button id="copy-leftover-uncovered-count" class="print-chrome" type="button" aria-keyshortcuts="F3">Copy leftover uncovered count (organizer private)</button>
-            <button id="copy-leftover-uncovered-leftover-only-count" class="print-chrome" type="button" aria-keyshortcuts="F7">Copy leftover uncovered leftover-only count (organizer private)</button>
-            <button id="copy-leftover-uncovered-leftover-only-remaining" class="print-chrome" type="button" aria-keyshortcuts="Shift+F7 F10">Copy leftover uncovered leftover-only remaining (organizer private)</button>
-            <button id="copy-leftover-uncovered-leftover-only-maximum" class="print-chrome" type="button" aria-keyshortcuts="Shift+F10">Copy leftover uncovered leftover-only maximum (organizer private)</button>
+            <button id="copy-leftover-uncovered-remaining" class="print-chrome" type="button">Copy leftover uncovered remaining (organizer private)</button>
+            <button id="copy-leftover-uncovered-maximum" class="print-chrome" type="button">Copy leftover uncovered maximum (organizer private)</button>
+            <button id="copy-leftover-uncovered-minimum" class="print-chrome" type="button">Copy leftover uncovered minimum (organizer private)</button>
+            <button id="copy-leftover-uncovered-count" class="print-chrome" type="button">Copy leftover uncovered count (organizer private)</button>
+            <button id="copy-leftover-uncovered-leftover-only-count" class="print-chrome" type="button">Copy leftover uncovered leftover-only count (organizer private)</button>
+            <button id="copy-leftover-uncovered-leftover-only-remaining" class="print-chrome" type="button">Copy leftover uncovered leftover-only remaining (organizer private)</button>
+            <button id="copy-leftover-uncovered-leftover-only-maximum" class="print-chrome" type="button">Copy leftover uncovered leftover-only maximum (organizer private)</button>
             <button id="copy-leftover-uncovered-leftover-only-minimum" class="print-chrome" type="button">Copy leftover uncovered leftover-only minimum (organizer private)</button>
             <button id="copy-leftover-uncovered-leftover-only-headroom" class="print-chrome" type="button">Copy leftover uncovered leftover-only headroom (organizer private)</button>
             <button id="copy-leftover-uncovered-leftover-only-allocated" class="print-chrome" type="button">Copy leftover uncovered leftover-only allocated (organizer private)</button>
@@ -6598,136 +6572,6 @@ function handleShortcut(event) {
   if (key === "4") {
     event.preventDefault();
     copyTertiaryFillMaximum();
-    return;
-  }
-  if (key === "Home") {
-    event.preventDefault();
-    focusTertiaryFillMaximumCopy();
-    return;
-  }
-  if (key === "End") {
-    event.preventDefault();
-    focusHideFirstUnservedBuyer();
-    return;
-  }
-  if (key === "PageUp") {
-    event.preventDefault();
-    copyLeftoverUncoveredRemaining();
-    return;
-  }
-  if (key === "PageDown") {
-    event.preventDefault();
-    focusLeftoverUncoveredRemainingCopy();
-    return;
-  }
-  if (key === "ArrowUp") {
-    event.preventDefault();
-    focusHideLastLeftoverOnlyBuyer();
-    return;
-  }
-  if (key === "Insert") {
-    event.preventDefault();
-    copyLeftoverUncoveredMaximum();
-    return;
-  }
-  if (key === "ArrowDown") {
-    event.preventDefault();
-    focusLeftoverUncoveredMaximumCopy();
-    return;
-  }
-  if (key === "ArrowLeft") {
-    event.preventDefault();
-    focusHideFirstLeftoverOnlyBuyer();
-    return;
-  }
-  if (key === "Delete") {
-    event.preventDefault();
-    copyLeftoverUncoveredMinimum();
-    return;
-  }
-  if (key === "F2") {
-    event.preventDefault();
-    focusLeftoverUncoveredMinimumCopy();
-    return;
-  }
-  if (key === "ArrowRight") {
-    event.preventDefault();
-    focusHideLastWinnerAllocatedBuyer();
-    return;
-  }
-  if (key === "F3") {
-    event.preventDefault();
-    copyLeftoverUncoveredCount();
-    return;
-  }
-  if (key === "F4") {
-    event.preventDefault();
-    focusLeftoverUncoveredCountCopy();
-    return;
-  }
-  if (key === "Backspace") {
-    event.preventDefault();
-    focusHideFirstWinnerAllocatedBuyer();
-    return;
-  }
-  if (event.shiftKey && key === "F7") {
-    event.preventDefault();
-    copyLeftoverUncoveredLeftoverOnlyRemaining();
-    return;
-  }
-  if (event.shiftKey && key === "F8") {
-    event.preventDefault();
-    focusLeftoverUncoveredLeftoverOnlyRemainingCopy();
-    return;
-  }
-  if (event.shiftKey && key === "F9") {
-    event.preventDefault();
-    focusHideFirstLeftoverOnlyBuyer();
-    return;
-  }
-  if (key === "F7") {
-    event.preventDefault();
-    copyLeftoverUncoveredLeftoverOnlyCount();
-    return;
-  }
-  if (key === "F8") {
-    event.preventDefault();
-    focusLeftoverUncoveredLeftoverOnlyCountCopy();
-    return;
-  }
-  if (key === "F9") {
-    event.preventDefault();
-    focusHideFirstUncoveredLeftoverBuyer();
-    return;
-  }
-  if (event.shiftKey && key === "F10") {
-    event.preventDefault();
-    copyLeftoverUncoveredLeftoverOnlyMaximum();
-    return;
-  }
-  if (event.shiftKey && key === "F11") {
-    event.preventDefault();
-    focusLeftoverUncoveredLeftoverOnlyMaximumCopy();
-    return;
-  }
-  if (event.shiftKey && key === "F12") {
-    event.preventDefault();
-    focusHideFirstUncoveredLeftoverBuyer();
-    return;
-  }
-  if (key === "F10") {
-    event.preventDefault();
-    copyLeftoverUncoveredLeftoverOnlyRemaining();
-    return;
-  }
-  if (key === "F11") {
-    event.preventDefault();
-    focusLeftoverUncoveredLeftoverOnlyRemainingCopy();
-    return;
-  }
-  if (key === "F12") {
-    event.preventDefault();
-    focusHideLastUncoveredLeftoverBuyer();
     return;
   }
 }

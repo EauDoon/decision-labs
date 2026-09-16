@@ -10,5 +10,4 @@ test("team-pursuit cycling club hours sits after individual-pursuit cycling club
   assert.ok(scratch !== -1);
   assert.ok(pursuit > scratch);
   assert.ok(team > pursuit);
-  assert.match(html, /<kbd>Shift\+F9<\/kbd> Jump to the hide-last-group-without-floor control, or the groups heading/);
 });

@@ -3856,23 +3856,23 @@ function inputPanel(result) {
           <p class="notice">${rosterFilterNote}</p>
           <div class="button-row"><button type="button" id="hide-zero-share-participants" data-action="hide-zero-share-participants" aria-pressed="${hideZeroShareParticipants}">Hide participants with zero revenue share</button><button type="button" data-action="show-zero-share-participants" ${hideZeroShareParticipants ? '' : 'disabled'}>Show zero-share participants</button></div>
           <p class="notice">${zeroShareFilterNote}</p>
-          <div class="button-row"><button type="button" id="hide-first-zero-share-participant" data-action="hide-first-zero-share-participant" aria-keyshortcuts="ArrowRight" aria-pressed="${hideFirstZeroShareParticipant}">Hide the first participant with zero revenue share</button><button type="button" data-action="show-first-zero-share-participant" ${hideFirstZeroShareParticipant ? '' : 'disabled'}>Show the first participant with zero revenue share</button><button type="button" id="copy-first-zero-share-participant" data-action="copy-first-zero-share-participant" aria-keyshortcuts="F7">Copy first zero-share participant label</button><button type="button" id="copy-first-zero-share-remaining" data-action="copy-first-zero-share-remaining">Copy first zero-share remaining-to-hold</button><button type="button" id="copy-first-zero-share-volume" data-action="copy-first-zero-share-volume">Copy first zero-share volume-to-hold</button></div>
+          <div class="button-row"><button type="button" id="hide-first-zero-share-participant" data-action="hide-first-zero-share-participant" aria-pressed="${hideFirstZeroShareParticipant}">Hide the first participant with zero revenue share</button><button type="button" data-action="show-first-zero-share-participant" ${hideFirstZeroShareParticipant ? '' : 'disabled'}>Show the first participant with zero revenue share</button><button type="button" id="copy-first-zero-share-participant" data-action="copy-first-zero-share-participant">Copy first zero-share participant label</button><button type="button" id="copy-first-zero-share-remaining" data-action="copy-first-zero-share-remaining">Copy first zero-share remaining-to-hold</button><button type="button" id="copy-first-zero-share-volume" data-action="copy-first-zero-share-volume">Copy first zero-share volume-to-hold</button></div>
           <p class="notice">${firstZeroShareFilterNote}</p>
-          <div class="button-row"><button type="button" id="hide-last-zero-share-participant" data-action="hide-last-zero-share-participant" aria-keyshortcuts="Backspace" aria-pressed="${hideLastZeroShareParticipant}">Hide the last participant with zero revenue share</button><button type="button" data-action="show-last-zero-share-participant" ${hideLastZeroShareParticipant ? '' : 'disabled'}>Show the last participant with zero revenue share</button><button type="button" id="copy-last-zero-share-participant" data-action="copy-last-zero-share-participant" aria-keyshortcuts="F3">Copy last zero-share participant label</button><button type="button" id="copy-last-zero-share-remaining" data-action="copy-last-zero-share-remaining" aria-keyshortcuts="F10">Copy last zero-share remaining-to-hold</button><button type="button" id="copy-last-zero-share-volume" data-action="copy-last-zero-share-volume">Copy last zero-share volume-to-hold</button></div>
+          <div class="button-row"><button type="button" id="hide-last-zero-share-participant" data-action="hide-last-zero-share-participant" aria-pressed="${hideLastZeroShareParticipant}">Hide the last participant with zero revenue share</button><button type="button" data-action="show-last-zero-share-participant" ${hideLastZeroShareParticipant ? '' : 'disabled'}>Show the last participant with zero revenue share</button><button type="button" id="copy-last-zero-share-participant" data-action="copy-last-zero-share-participant">Copy last zero-share participant label</button><button type="button" id="copy-last-zero-share-remaining" data-action="copy-last-zero-share-remaining">Copy last zero-share remaining-to-hold</button><button type="button" id="copy-last-zero-share-volume" data-action="copy-last-zero-share-volume">Copy last zero-share volume-to-hold</button></div>
           <p class="notice">${lastZeroShareFilterNote}</p>
-          <div class="button-row"><button type="button" data-action="hide-over-capacity-participants" aria-pressed="${hideParticipantsOverCapacity}" ${result ? '' : 'disabled title="Resolve invalid inputs before filtering the roster"'}>Hide participants whose volume is above listed capacity</button><button type="button" data-action="show-over-capacity-participants" ${hideParticipantsOverCapacity ? '' : 'disabled'}>Show over-capacity participants</button><button type="button" id="copy-over-capacity-count" data-action="copy-over-capacity-count" aria-keyshortcuts='"'>Copy over-capacity participant count</button><button type="button" id="copy-first-over-capacity-label" data-action="copy-first-over-capacity-label" aria-keyshortcuts="}">Copy first over-capacity participant label</button><button type="button" id="copy-first-over-capacity-remaining" data-action="copy-first-over-capacity-remaining" aria-keyshortcuts="~">Copy first over-capacity remaining listed capacity</button><button type="button" id="copy-first-over-capacity-volume" data-action="copy-first-over-capacity-volume">Copy first over-capacity volume-to-hold</button><button type="button" id="copy-last-over-capacity-label" data-action="copy-last-over-capacity-label" aria-keyshortcuts="(">Copy last over-capacity participant label</button><button type="button" id="copy-last-over-capacity-remaining" data-action="copy-last-over-capacity-remaining" aria-keyshortcuts="* Shift+F7 Shift+F10">Copy last over-capacity remaining listed capacity</button><button type="button" id="copy-last-over-capacity-volume" data-action="copy-last-over-capacity-volume">Copy last over-capacity volume-to-hold</button></div>
+          <div class="button-row"><button type="button" data-action="hide-over-capacity-participants" aria-pressed="${hideParticipantsOverCapacity}" ${result ? '' : 'disabled title="Resolve invalid inputs before filtering the roster"'}>Hide participants whose volume is above listed capacity</button><button type="button" data-action="show-over-capacity-participants" ${hideParticipantsOverCapacity ? '' : 'disabled'}>Show over-capacity participants</button><button type="button" id="copy-over-capacity-count" data-action="copy-over-capacity-count" aria-keyshortcuts='"'>Copy over-capacity participant count</button><button type="button" id="copy-first-over-capacity-label" data-action="copy-first-over-capacity-label" aria-keyshortcuts="}">Copy first over-capacity participant label</button><button type="button" id="copy-first-over-capacity-remaining" data-action="copy-first-over-capacity-remaining" aria-keyshortcuts="~">Copy first over-capacity remaining listed capacity</button><button type="button" id="copy-first-over-capacity-volume" data-action="copy-first-over-capacity-volume">Copy first over-capacity volume-to-hold</button><button type="button" id="copy-last-over-capacity-label" data-action="copy-last-over-capacity-label" aria-keyshortcuts="(">Copy last over-capacity participant label</button><button type="button" id="copy-last-over-capacity-remaining" data-action="copy-last-over-capacity-remaining" aria-keyshortcuts="*">Copy last over-capacity remaining listed capacity</button><button type="button" id="copy-last-over-capacity-volume" data-action="copy-last-over-capacity-volume">Copy last over-capacity volume-to-hold</button></div>
           <p class="notice">${overCapacityFilterNote}</p>
           <div class="button-row"><button type="button" data-action="hide-at-hold-participants" aria-pressed="${hideParticipantsAtHold}" ${result ? '' : 'disabled title="Resolve invalid inputs before filtering the roster"'}>Hide participants at hold with no listed capacity breach</button><button type="button" data-action="show-at-hold-participants" ${hideParticipantsAtHold ? '' : 'disabled'}>Show at-hold participants</button></div>
           <p class="notice">${atHoldFilterNote}</p>
-          <div class="button-row"><button type="button" id="hide-last-at-hold-participant" data-action="hide-last-at-hold-participant" aria-keyshortcuts="ArrowUp" aria-pressed="${hideLastParticipantAtHold}" ${result ? '' : 'disabled title="Resolve invalid inputs before filtering the roster"'}>Hide the last participant at hold</button><button type="button" data-action="show-last-at-hold-participant" ${hideLastParticipantAtHold ? '' : 'disabled'}>Show the last participant at hold</button><button type="button" id="copy-last-at-hold-remaining" data-action="copy-last-at-hold-remaining" aria-keyshortcuts="Insert">Copy last at-hold remaining-to-hold</button></div>
+          <div class="button-row"><button type="button" id="hide-last-at-hold-participant" data-action="hide-last-at-hold-participant" aria-pressed="${hideLastParticipantAtHold}" ${result ? '' : 'disabled title="Resolve invalid inputs before filtering the roster"'}>Hide the last participant at hold</button><button type="button" data-action="show-last-at-hold-participant" ${hideLastParticipantAtHold ? '' : 'disabled'}>Show the last participant at hold</button><button type="button" id="copy-last-at-hold-remaining" data-action="copy-last-at-hold-remaining">Copy last at-hold remaining-to-hold</button></div>
           <p class="notice">${lastAtHoldFilterNote}</p>
-          <div class="button-row"><button type="button" id="hide-first-at-hold-participant" data-action="hide-first-at-hold-participant" aria-keyshortcuts="ArrowLeft" aria-pressed="${hideFirstParticipantAtHold}" ${result ? '' : 'disabled title="Resolve invalid inputs before filtering the roster"'}>Hide the first participant at hold</button><button type="button" data-action="show-first-at-hold-participant" ${hideFirstParticipantAtHold ? '' : 'disabled'}>Show the first participant at hold</button><button type="button" id="copy-first-at-hold-remaining" data-action="copy-first-at-hold-remaining" aria-keyshortcuts="Delete">Copy first at-hold remaining-to-hold</button></div>
+          <div class="button-row"><button type="button" id="hide-first-at-hold-participant" data-action="hide-first-at-hold-participant" aria-pressed="${hideFirstParticipantAtHold}" ${result ? '' : 'disabled title="Resolve invalid inputs before filtering the roster"'}>Hide the first participant at hold</button><button type="button" data-action="show-first-at-hold-participant" ${hideFirstParticipantAtHold ? '' : 'disabled'}>Show the first participant at hold</button><button type="button" id="copy-first-at-hold-remaining" data-action="copy-first-at-hold-remaining">Copy first at-hold remaining-to-hold</button></div>
           <p class="notice">${firstAtHoldFilterNote}</p>
           <div class="button-row"><button type="button" data-action="hide-without-capacity-participants" aria-pressed="${hideParticipantsWithoutCapacity}">Hide participants whose capacity is unbounded</button><button type="button" data-action="show-without-capacity-participants" ${hideParticipantsWithoutCapacity ? '' : 'disabled'}>Show participants without listed capacity</button></div>
           <p class="notice">${withoutCapacityFilterNote}</p>
           <div class="button-row"><button type="button" id="hide-last-without-capacity-participant" data-action="hide-last-without-capacity-participant" aria-keyshortcuts="3" aria-pressed="${hideLastParticipantWithoutCapacity}" ${result ? '' : 'disabled title="Resolve invalid inputs before filtering the roster"'}>Hide the last participant without listed capacity</button><button type="button" data-action="show-last-without-capacity-participant" ${hideLastParticipantWithoutCapacity ? '' : 'disabled'}>Show the last participant without listed capacity</button><button type="button" id="copy-last-unbounded-remaining" data-action="copy-last-unbounded-remaining" aria-keyshortcuts="4">Copy last unbounded remaining-to-hold</button></div>
           <p class="notice">${lastWithoutCapacityFilterNote}</p>
-          <div class="button-row"><button type="button" id="hide-first-without-capacity-participant" data-action="hide-first-without-capacity-participant" aria-keyshortcuts="End" aria-pressed="${hideFirstParticipantWithoutCapacity}" ${result ? '' : 'disabled title="Resolve invalid inputs before filtering the roster"'}>Hide the first participant without listed capacity</button><button type="button" data-action="show-first-without-capacity-participant" ${hideFirstParticipantWithoutCapacity ? '' : 'disabled'}>Show the first participant without listed capacity</button><button type="button" id="copy-first-unbounded-remaining" data-action="copy-first-unbounded-remaining" aria-keyshortcuts="PageUp">Copy first unbounded remaining-to-hold</button></div>
+          <div class="button-row"><button type="button" id="hide-first-without-capacity-participant" data-action="hide-first-without-capacity-participant" aria-pressed="${hideFirstParticipantWithoutCapacity}" ${result ? '' : 'disabled title="Resolve invalid inputs before filtering the roster"'}>Hide the first participant without listed capacity</button><button type="button" data-action="show-first-without-capacity-participant" ${hideFirstParticipantWithoutCapacity ? '' : 'disabled'}>Show the first participant without listed capacity</button><button type="button" id="copy-first-unbounded-remaining" data-action="copy-first-unbounded-remaining">Copy first unbounded remaining-to-hold</button></div>
           <p class="notice">${firstWithoutCapacityFilterNote}</p>
           <div class="button-row"><button type="button" data-action="hide-spare-capacity-participants" aria-pressed="${hideParticipantsWithSpareCapacity}" ${result ? '' : 'disabled title="Resolve invalid inputs before filtering the roster"'}>Hide participants with unused listed capacity</button><button type="button" data-action="show-spare-capacity-participants" ${hideParticipantsWithSpareCapacity ? '' : 'disabled'}>Show participants with spare capacity</button></div>
           <p class="notice">${spareCapacityFilterNote}</p>
@@ -3894,7 +3894,7 @@ function inputPanel(result) {
           <p class="notice">${lastBreakpointFilterNote}</p>
           <div class="button-row"><button type="button" id="hide-first-over-capacity-participant" data-action="hide-first-over-capacity-participant" aria-keyshortcuts="@" aria-pressed="${hideFirstOverCapacityParticipant}" ${result ? '' : 'disabled title="Resolve invalid inputs before filtering the roster"'}>Hide the first over-capacity participant</button><button type="button" data-action="show-first-over-capacity-participant" ${hideFirstOverCapacityParticipant ? '' : 'disabled'}>Show the first over-capacity participant</button></div>
           <p class="notice">${firstOverCapacityFilterNote}</p>
-          <div class="button-row"><button type="button" id="hide-last-over-capacity-participant" data-action="hide-last-over-capacity-participant" aria-keyshortcuts="# Shift+F9" aria-pressed="${hideLastOverCapacityParticipant}" ${result ? '' : 'disabled title="Resolve invalid inputs before filtering the roster"'}>Hide the last over-capacity participant</button><button type="button" data-action="show-last-over-capacity-participant" ${hideLastOverCapacityParticipant ? '' : 'disabled'}>Show the last over-capacity participant</button></div>
+          <div class="button-row"><button type="button" id="hide-last-over-capacity-participant" data-action="hide-last-over-capacity-participant" aria-keyshortcuts="#" aria-pressed="${hideLastOverCapacityParticipant}" ${result ? '' : 'disabled title="Resolve invalid inputs before filtering the roster"'}>Hide the last over-capacity participant</button><button type="button" data-action="show-last-over-capacity-participant" ${hideLastOverCapacityParticipant ? '' : 'disabled'}>Show the last over-capacity participant</button></div>
           <p class="notice">${lastOverCapacityFilterNote}</p>
           ${participantForms || rosterEmptyNotice}
           <div class="button-row"><button type="button" id="add-participant" data-action="add-participant" ${state.participants.length >= MAX_PARTICIPANTS ? 'disabled title="Participant limit reached"' : ''}>Add participant</button></div>
@@ -5536,14 +5536,6 @@ function handleShortcut(event) {
   if (event.key === '8') copyLastSpareCapacityRemaining();
   if (event.key === '1') copyFirstSpareCapacityRemaining();
   if (event.key === '4') copyLastUnboundedRemaining();
-  if (event.key === 'PageUp') copyFirstUnboundedRemaining();
-  if (event.key === 'Insert') copyLastAtHoldRemaining();
-  if (event.key === 'Delete') copyFirstAtHoldRemaining();
-  if (event.key === 'F3') copyLastZeroShareParticipant();
-  if (event.key === 'F7' && event.shiftKey) copyLastOverCapacityRemaining();
-  if (event.key === 'F7' && !event.shiftKey) copyFirstZeroShareParticipant();
-  if (event.key === 'F10' && event.shiftKey) copyLastOverCapacityRemaining();
-  if (event.key === 'F10' && !event.shiftKey) copyLastZeroShareRemaining();
   if (event.key === '.') {
     const target = document.querySelector('#copy-first-breakpoint-label') ?? document.querySelector('#first-breakpoint-title');
     target?.focus?.({ preventScroll: false });
@@ -5673,114 +5665,6 @@ function handleShortcut(event) {
   }
   if (event.key === '3') {
     const target = document.querySelector('#hide-last-without-capacity-participant')
-      ?? document.querySelector('#participant-inputs-title');
-    target?.focus?.({ preventScroll: false });
-    target?.scrollIntoView?.({ block: 'start' });
-  }
-  if (event.key === 'Home') {
-    const target = document.querySelector('#copy-last-unbounded-remaining')
-      ?? document.querySelector('#participant-inputs-title');
-    target?.focus?.({ preventScroll: false });
-    target?.scrollIntoView?.({ block: 'start' });
-  }
-  if (event.key === 'End') {
-    const target = document.querySelector('#hide-first-without-capacity-participant')
-      ?? document.querySelector('#participant-inputs-title');
-    target?.focus?.({ preventScroll: false });
-    target?.scrollIntoView?.({ block: 'start' });
-  }
-  if (event.key === 'PageDown') {
-    const target = document.querySelector('#copy-first-unbounded-remaining')
-      ?? document.querySelector('#participant-inputs-title');
-    target?.focus?.({ preventScroll: false });
-    target?.scrollIntoView?.({ block: 'start' });
-  }
-  if (event.key === 'ArrowUp') {
-    const target = document.querySelector('#hide-last-at-hold-participant')
-      ?? document.querySelector('#participant-inputs-title');
-    target?.focus?.({ preventScroll: false });
-    target?.scrollIntoView?.({ block: 'start' });
-  }
-  if (event.key === 'ArrowDown') {
-    const target = document.querySelector('#copy-last-at-hold-remaining')
-      ?? document.querySelector('#participant-inputs-title');
-    target?.focus?.({ preventScroll: false });
-    target?.scrollIntoView?.({ block: 'start' });
-  }
-  if (event.key === 'ArrowLeft') {
-    const target = document.querySelector('#hide-first-at-hold-participant')
-      ?? document.querySelector('#participant-inputs-title');
-    target?.focus?.({ preventScroll: false });
-    target?.scrollIntoView?.({ block: 'start' });
-  }
-  if (event.key === 'F2') {
-    const target = document.querySelector('#copy-first-at-hold-remaining')
-      ?? document.querySelector('#participant-inputs-title');
-    target?.focus?.({ preventScroll: false });
-    target?.scrollIntoView?.({ block: 'start' });
-  }
-  if (event.key === 'ArrowRight') {
-    const target = document.querySelector('#hide-first-zero-share-participant')
-      ?? document.querySelector('#participant-inputs-title');
-    target?.focus?.({ preventScroll: false });
-    target?.scrollIntoView?.({ block: 'start' });
-  }
-  if (event.key === 'F4') {
-    const target = document.querySelector('#copy-last-zero-share-participant')
-      ?? document.querySelector('#participant-inputs-title');
-    target?.focus?.({ preventScroll: false });
-    target?.scrollIntoView?.({ block: 'start' });
-  }
-  if (event.key === 'Backspace') {
-    const target = document.querySelector('#hide-last-zero-share-participant')
-      ?? document.querySelector('#participant-inputs-title');
-    target?.focus?.({ preventScroll: false });
-    target?.scrollIntoView?.({ block: 'start' });
-  }
-  if (event.key === 'F8' && event.shiftKey) {
-    const target = document.querySelector('#copy-last-over-capacity-remaining')
-      ?? document.querySelector('#participant-inputs-title');
-    target?.focus?.({ preventScroll: false });
-    target?.scrollIntoView?.({ block: 'start' });
-  }
-  if (event.key === 'F8' && !event.shiftKey) {
-    const target = document.querySelector('#copy-first-zero-share-participant')
-      ?? document.querySelector('#participant-inputs-title');
-    target?.focus?.({ preventScroll: false });
-    target?.scrollIntoView?.({ block: 'start' });
-  }
-  if (event.key === 'F9' && event.shiftKey) {
-    const target = document.querySelector('#hide-last-over-capacity-participant')
-      ?? document.querySelector('#participant-inputs-title');
-    target?.focus?.({ preventScroll: false });
-    target?.scrollIntoView?.({ block: 'start' });
-  }
-  if (event.key === 'F9' && !event.shiftKey) {
-    const target = document.querySelector('#hide-first-zero-share-participant')
-      ?? document.querySelector('#participant-inputs-title');
-    target?.focus?.({ preventScroll: false });
-    target?.scrollIntoView?.({ block: 'start' });
-  }
-  if (event.key === 'F11' && event.shiftKey) {
-    const target = document.querySelector('#copy-last-over-capacity-remaining')
-      ?? document.querySelector('#participant-inputs-title');
-    target?.focus?.({ preventScroll: false });
-    target?.scrollIntoView?.({ block: 'start' });
-  }
-  if (event.key === 'F11' && !event.shiftKey) {
-    const target = document.querySelector('#copy-last-zero-share-remaining')
-      ?? document.querySelector('#participant-inputs-title');
-    target?.focus?.({ preventScroll: false });
-    target?.scrollIntoView?.({ block: 'start' });
-  }
-  if (event.key === 'F12' && event.shiftKey) {
-    const target = document.querySelector('#hide-first-over-capacity-participant')
-      ?? document.querySelector('#participant-inputs-title');
-    target?.focus?.({ preventScroll: false });
-    target?.scrollIntoView?.({ block: 'start' });
-  }
-  if (event.key === 'F12' && !event.shiftKey) {
-    const target = document.querySelector('#hide-last-zero-share-participant')
       ?? document.querySelector('#participant-inputs-title');
     target?.focus?.({ preventScroll: false });
     target?.scrollIntoView?.({ block: 'start' });
@@ -8656,32 +8540,6 @@ function helpDialog() {
         <li><kbd>2</kbd> Jump to Copy first spare-capacity remaining listed capacity, or the results heading if missing</li>
         <li><kbd>3</kbd> Jump to Hide the last participant without listed capacity, or the Participants heading if missing</li>
         <li><kbd>4</kbd> Copy last unbounded remaining-to-hold as Markdown</li>
-        <li><kbd>PageUp</kbd> Copy first unbounded remaining-to-hold as Markdown</li>
-        <li><kbd>Insert</kbd> Copy last at-hold remaining-to-hold as Markdown</li>
-        <li><kbd>Delete</kbd> Copy first at-hold remaining-to-hold as Markdown</li>
-        <li><kbd>Home</kbd> Jump to Copy last unbounded remaining-to-hold, or the Participants heading if missing</li>
-        <li><kbd>PageDown</kbd> Jump to Copy first unbounded remaining-to-hold, or the Participants heading if missing</li>
-        <li><kbd>ArrowDown</kbd> Jump to Copy last at-hold remaining-to-hold, or the Participants heading if missing</li>
-        <li><kbd>F2</kbd> Jump to Copy first at-hold remaining-to-hold, or the Participants heading if missing</li>
-        <li><kbd>End</kbd> Jump to Hide the first participant without listed capacity, or the Participants heading if missing</li>
-        <li><kbd>ArrowUp</kbd> Jump to Hide the last participant at hold, or the Participants heading if missing</li>
-        <li><kbd>ArrowLeft</kbd> Jump to Hide the first participant at hold, or the Participants heading if missing</li>
-        <li><kbd>ArrowRight</kbd> Jump to Hide the first participant with zero revenue share, or the Participants heading if missing</li>
-        <li><kbd>F3</kbd> Copy last zero-share participant label as Markdown</li>
-        <li><kbd>F4</kbd> Jump to Copy last zero-share participant label, or the Participants heading if missing</li>
-        <li><kbd>Backspace</kbd> Jump to Hide the last participant with zero revenue share, or the Participants heading if missing</li>
-        <li><kbd>F7</kbd> Copy first zero-share participant label as Markdown</li>
-        <li><kbd>F8</kbd> Jump to Copy first zero-share participant label, or the Participants heading if missing</li>
-        <li><kbd>F9</kbd> Jump to Hide the first participant with zero revenue share, or the Participants heading if missing</li>
-        <li><kbd>F10</kbd> Copy last zero-share remaining-to-hold as Markdown</li>
-        <li><kbd>F11</kbd> Jump to Copy last zero-share remaining-to-hold, or the Participants heading if missing</li>
-        <li><kbd>F12</kbd> Jump to Hide the last participant with zero revenue share, or the Participants heading if missing</li>
-        <li><kbd>Shift+F7</kbd> Copy last over-capacity remaining listed capacity as Markdown</li>
-        <li><kbd>Shift+F8</kbd> Jump to Copy last over-capacity remaining listed capacity, or the Participants heading if missing</li>
-        <li><kbd>Shift+F9</kbd> Jump to Hide the last over-capacity participant, or the Participants heading if missing</li>
-        <li><kbd>Shift+F10</kbd> Copy last over-capacity remaining listed capacity as Markdown</li>
-        <li><kbd>Shift+F11</kbd> Jump to Copy last over-capacity remaining listed capacity, or the Participants heading if missing</li>
-        <li><kbd>Shift+F12</kbd> Jump to Hide the first over-capacity participant, or the Participants heading if missing</li>
         <li><kbd>+</kbd> Jump to Copy first over-capacity participant label, or the First breakpoint or Participants heading if missing</li>
         <li><kbd>!</kbd> Jump to Copy first over-capacity remaining listed capacity, or the First breakpoint or Participants heading if missing</li>
         <li><kbd>|</kbd> Jump to Hide the first-breakpoint participant, or the Participants heading if missing</li>

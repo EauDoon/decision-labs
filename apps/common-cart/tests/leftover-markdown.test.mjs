@@ -1299,8 +1299,6 @@ test("the buyer room copies leftover uncovered remaining with a textarea fallbac
   assert.match(app, /organizer-private Markdown/u);
   assert.match(app, /This is not a merchant export/u);
   assert.match(app, /Count only\. This is not a merchant export/u);
-  assert.match(app, /if \(key === "PageUp"\) \{\s*event\.preventDefault\(\);\s*copyLeftoverUncoveredRemaining\(\);/u);
-  assert.match(html, /aria-keyshortcuts="PageUp"/u);
 });
 
 test("leftover uncovered maximum Markdown is organizer-private leftover-fill offer capacity", () => {
@@ -1414,8 +1412,6 @@ test("the buyer room copies leftover uncovered maximum with a textarea fallback"
   assert.match(app, /organizer-private Markdown/u);
   assert.match(app, /This is not a merchant export/u);
   assert.match(app, /Count only\. This is not a merchant export/u);
-  assert.match(app, /if \(key === "Insert"\) \{\s*event\.preventDefault\(\);\s*copyLeftoverUncoveredMaximum\(\);/u);
-  assert.match(html, /aria-keyshortcuts="Insert"/u);
 });
 
 test("leftover uncovered minimum Markdown is organizer-private leftover-fill offer minimum units", () => {
@@ -1534,8 +1530,6 @@ test("the buyer room copies leftover uncovered minimum with a textarea fallback"
   assert.match(app, /organizer-private Markdown/u);
   assert.match(app, /This is not a merchant export/u);
   assert.match(app, /Count only\. This is not a merchant export/u);
-  assert.match(app, /if \(key === "Delete"\) \{\s*event\.preventDefault\(\);\s*copyLeftoverUncoveredMinimum\(\);/u);
-  assert.match(html, /aria-keyshortcuts="Delete"/u);
 });
 
 test("leftover uncovered count Markdown is organizer-private uncovered leftover buyer count", () => {
@@ -1627,8 +1621,6 @@ test("the buyer room copies leftover uncovered count with a textarea fallback", 
   assert.match(app, /organizer-private Markdown/u);
   assert.match(app, /This is not a merchant export/u);
   assert.match(app, /Count only\. This is not a merchant export/u);
-  assert.match(app, /if \(key === "F3"\) \{\s*event\.preventDefault\(\);\s*copyLeftoverUncoveredCount\(\);/u);
-  assert.match(html, /aria-keyshortcuts="F3"/u);
 });
 
 test("leftover uncovered leftover-only count Markdown is organizer-private leftover-only buyer count", () => {
@@ -1726,8 +1718,6 @@ test("the buyer room copies leftover uncovered leftover-only count with a textar
   assert.match(app, /organizer-private Markdown/u);
   assert.match(app, /This is not a merchant export/u);
   assert.match(app, /Count only\. This is not a merchant export/u);
-  assert.match(app, /if \(key === "F7"\) \{\s*event\.preventDefault\(\);\s*copyLeftoverUncoveredLeftoverOnlyCount\(\);/u);
-  assert.match(html, /aria-keyshortcuts="F7"/u);
 });
 
 test("leftover uncovered leftover-only remaining Markdown is organizer-private leftover-only buyer units", () => {
@@ -1837,9 +1827,6 @@ test("the buyer room copies leftover uncovered leftover-only remaining with a te
   assert.match(app, /organizer-private Markdown/u);
   assert.match(app, /This is not a merchant export/u);
   assert.match(app, /Count only\. This is not a merchant export/u);
-  assert.match(app, /if \(key === "F10"\) \{\s*event\.preventDefault\(\);\s*copyLeftoverUncoveredLeftoverOnlyRemaining\(\);/u);
-  assert.match(app, /if \(event\.shiftKey && key === "F7"\) \{\s*event\.preventDefault\(\);\s*copyLeftoverUncoveredLeftoverOnlyRemaining\(\);/u);
-  assert.match(html, /id="copy-leftover-uncovered-leftover-only-remaining"[^>]*aria-keyshortcuts="Shift\+F7 F10"/u);
 });
 
 test("leftover uncovered leftover-only maximum Markdown is organizer-private leftover-only buyer quantity maximum", () => {
@@ -1958,8 +1945,6 @@ test("the buyer room copies leftover uncovered leftover-only maximum with a text
   assert.match(app, /organizer-private Markdown/u);
   assert.match(app, /This is not a merchant export/u);
   assert.match(app, /Count only\. This is not a merchant export/u);
-  assert.match(app, /if \(event\.shiftKey && key === "F10"\) \{\s*event\.preventDefault\(\);\s*copyLeftoverUncoveredLeftoverOnlyMaximum\(\);/u);
-  assert.match(html, /aria-keyshortcuts="Shift\+F10"/u);
 });
 
 test("leftover uncovered leftover-only minimum Markdown is organizer-private leftover-only buyer quantity minimum", () => {
@@ -2092,7 +2077,6 @@ test("the buyer room copies leftover uncovered leftover-only minimum with a text
   assert.match(app, /organizer-private Markdown/u);
   assert.match(app, /This is not a merchant export/u);
   assert.match(app, /Count only\. This is not a merchant export/u);
-  assert.doesNotMatch(app, /if \(event\.shiftKey && key === "F7"\) \{\s*event\.preventDefault\(\);\s*copyLeftoverUncoveredLeftoverOnlyMinimum\(\);/u);
 });
 
 test("leftover uncovered leftover-only headroom Markdown is organizer-private leftover-fill remaining after leftover-only units", () => {
@@ -2236,9 +2220,6 @@ test("the buyer room copies leftover uncovered leftover-only headroom with a tex
   assert.match(app, /organizer-private Markdown/u);
   assert.match(app, /This is not a merchant export/u);
   assert.match(app, /Count only\. This is not a merchant export/u);
-  assert.match(app, /if \(event\.shiftKey && key === "F7"\) \{\s*event\.preventDefault\(\);\s*copyLeftoverUncoveredLeftoverOnlyRemaining\(\);/u);
-  assert.match(html, /id="copy-leftover-uncovered-leftover-only-remaining"[^>]*aria-keyshortcuts="Shift\+F7 F10"/u);
-  assert.doesNotMatch(html, /id="copy-leftover-uncovered-leftover-only-headroom"[^>]*aria-keyshortcuts="Shift\+F7"/u);
 });
 
 test("leftover uncovered leftover-only allocated Markdown is organizer-private leftover-only units assigned onto leftover-fill", () => {
@@ -2360,8 +2341,6 @@ test("the buyer room copies leftover uncovered leftover-only allocated with a te
   assert.match(app, /organizer-private Markdown/u);
   assert.match(app, /This is not a merchant export/u);
   assert.match(app, /Count only\. This is not a merchant export/u);
-  assert.match(app, /if \(event\.shiftKey && key === "F7"\) \{\s*event\.preventDefault\(\);\s*copyLeftoverUncoveredLeftoverOnlyRemaining\(\);/u);
-  assert.match(html, /id="copy-leftover-uncovered-leftover-only-remaining"[^>]*aria-keyshortcuts="Shift\+F7 F10"/u);
 });
 
 test("leftover uncovered leftover-only capacity Markdown is organizer-private leftover-fill offer capacity", () => {
@@ -2502,8 +2481,6 @@ test("the buyer room copies leftover uncovered leftover-only capacity with a tex
   assert.match(app, /organizer-private Markdown/u);
   assert.match(app, /This is not a merchant export/u);
   assert.match(app, /Count only\. This is not a merchant export/u);
-  assert.doesNotMatch(app, /if \(event\.shiftKey && key === "F7"\) \{\s*event\.preventDefault\(\);\s*copyLeftoverUncoveredLeftoverOnlyCapacity\(\);/u);
-  assert.doesNotMatch(html, /id="copy-leftover-uncovered-leftover-only-capacity"[^>]*aria-keyshortcuts="Shift\+F7"/u);
 });
 
 test("leftover uncovered leftover-only unit price Markdown is organizer-private leftover-fill offer unit price", () => {
@@ -3183,9 +3160,6 @@ test("the buyer room copies leftover uncovered leftover-only unit price with a t
   assert.match(app, /organizer-private Markdown/u);
   assert.match(app, /This is not a merchant export/u);
   assert.match(app, /Count only\. This is not a merchant export/u);
-  assert.doesNotMatch(app, /if \(event\.shiftKey && key === "F7"\) \{\s*event\.preventDefault\(\);\s*copyLeftoverUncoveredLeftoverOnlyUnitPrice\(\);/u);
-  assert.doesNotMatch(html, /id="copy-leftover-uncovered-leftover-only-unit-price"[^>]*aria-keyshortcuts="Shift\+F7"/u);
-  assert.match(html, /id="copy-leftover-uncovered-leftover-only-remaining"[^>]*aria-keyshortcuts="Shift\+F7 F10"/u);
 });
 
 test("winning remaining capacity Markdown is remaining units only", () => {

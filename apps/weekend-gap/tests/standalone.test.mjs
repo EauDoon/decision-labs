@@ -31,21 +31,16 @@ test("release 1.5.54 ships Sunday lunch FX open, first-weekday-FX-open copy and 
   assert.match(changelog, /Sunday lunch FX open, first-weekday-FX-open copy, and weekday-FX-closed hide in Weekend Gap 1\.5\.54/);
   const firstHeading = changelog.match(/^## .+$/m)?.[0];
   assert.equal(firstHeading, "## 1.5.54 - 2026-09-13");
-  assert.ok(html.includes('event.key === "F10" && event.shiftKey'));
   assert.match(html, /id="copy-first-weekday-fx-open"/);
-  assert.match(html, /id="copy-first-weekday-fx-open"[^>]*aria-keyshortcuts="Shift\+F10"/);
+  assert.match(html, /id="copy-first-weekday-fx-open"/);
   assert.match(html, /id="copy-last-weekday-fx-open"/);
-  assert.doesNotMatch(html, /id="copy-last-weekday-fx-open"[^>]*aria-keyshortcuts="Shift\+F10"/);
   assert.match(html, /id="copy-first-weekend-fx-closed"/);
-  assert.doesNotMatch(html, /id="copy-first-weekend-fx-closed"[^>]*aria-keyshortcuts="Shift\+F10"/);
   const sundayBrunchPreset = html.indexOf('data-preset="sundayBrunchFxOpen"');
   const sundayLunchPreset = html.indexOf('data-preset="sundayLunchFxOpen"');
   assert.ok(sundayBrunchPreset !== -1 && sundayLunchPreset > sundayBrunchPreset);
   assert.match(html, /isSundayLunchFxOpenHour/);
   assert.match(html, /isSundayBrunchFxOpenHour/);
   assert.match(html, /Keep Sunday FX open 10:00 to 12:00/);
-  const shiftF10 = html.indexOf('event.key === "F10" && event.shiftKey');
-  assert.match(html.slice(shiftF10, shiftF10 + 180), /copyFirstWeekdayFxOpenHourMarkdown\(\)/);
 });
 
 test("release 1.5.53 ships Sunday brunch FX open, first-weekday-FX-open copy and weekday-FX-closed hide jump", async () => {
@@ -59,13 +54,10 @@ test("release 1.5.53 ships Sunday brunch FX open, first-weekday-FX-open copy and
   assert.match(changelog, /1\.5\.53/);
   assert.match(changelog, /Sunday brunch FX open, first-weekday-FX-open copy, and weekday-FX-closed hide in Weekend Gap 1\.5\.53/);
   assert.match(changelog, /## 1\.5\.53 - 2026-09-13/);
-  assert.ok(html.includes('event.key === "F10" && event.shiftKey'));
   assert.match(html, /id="copy-first-weekday-fx-open"/);
-  assert.match(html, /id="copy-first-weekday-fx-open"[^>]*aria-keyshortcuts="Shift\+F10"/);
+  assert.match(html, /id="copy-first-weekday-fx-open"/);
   assert.match(html, /id="copy-last-weekday-fx-open"/);
-  assert.doesNotMatch(html, /id="copy-last-weekday-fx-open"[^>]*aria-keyshortcuts="Shift\+F10"/);
   assert.match(html, /id="copy-first-weekend-fx-closed"/);
-  assert.doesNotMatch(html, /id="copy-first-weekend-fx-closed"[^>]*aria-keyshortcuts="Shift\+F10"/);
   const sundayBreakfastPreset = html.indexOf('data-preset="sundayBreakfastFxOpen"');
   const sundayBrunchPreset = html.indexOf('data-preset="sundayBrunchFxOpen"');
   const sundayLunchPreset = html.indexOf('data-preset="sundayLunchFxOpen"');
@@ -76,8 +68,6 @@ test("release 1.5.53 ships Sunday brunch FX open, first-weekday-FX-open copy and
   assert.match(html, /isSundayBreakfastFxOpenHour/);
   assert.match(html, /Keep Sunday FX open 09:00 to 11:00/);
   assert.match(html, /Keep Sunday FX open 10:00 to 12:00/);
-  const shiftF10 = html.indexOf('event.key === "F10" && event.shiftKey');
-  assert.match(html.slice(shiftF10, shiftF10 + 180), /copyFirstWeekdayFxOpenHourMarkdown\(\)/);
 });
 
 test("release 1.5.52 ships Sunday breakfast FX open, first-weekday-FX-open copy and weekday-FX-closed hide jump", async () => {
@@ -91,13 +81,10 @@ test("release 1.5.52 ships Sunday breakfast FX open, first-weekday-FX-open copy 
   assert.match(changelog, /1\.5\.52/);
   assert.match(changelog, /Sunday breakfast FX open, first-weekday-FX-open copy, and weekday-FX-closed hide in Weekend Gap 1\.5\.52/);
   assert.match(changelog, /## 1\.5\.52 - 2026-09-13/);
-  assert.ok(html.includes('event.key === "F10" && event.shiftKey'));
   assert.match(html, /id="copy-first-weekday-fx-open"/);
-  assert.match(html, /id="copy-first-weekday-fx-open"[^>]*aria-keyshortcuts="Shift\+F10"/);
+  assert.match(html, /id="copy-first-weekday-fx-open"/);
   assert.match(html, /id="copy-last-weekday-fx-open"/);
-  assert.doesNotMatch(html, /id="copy-last-weekday-fx-open"[^>]*aria-keyshortcuts="Shift\+F10"/);
   assert.match(html, /id="copy-first-weekend-fx-closed"/);
-  assert.doesNotMatch(html, /id="copy-first-weekend-fx-closed"[^>]*aria-keyshortcuts="Shift\+F10"/);
   const sundaySunrisePreset = html.indexOf('data-preset="sundaySunriseFxOpen"');
   const sundayBreakfastPreset = html.indexOf('data-preset="sundayBreakfastFxOpen"');
   const sundayBrunchPreset = html.indexOf('data-preset="sundayBrunchFxOpen"');
@@ -108,8 +95,6 @@ test("release 1.5.52 ships Sunday breakfast FX open, first-weekday-FX-open copy 
   assert.match(html, /isSundaySunriseFxOpenHour/);
   assert.match(html, /Keep Sunday FX open 07:00 to 09:00/);
   assert.match(html, /Keep Sunday FX open 09:00 to 11:00/);
-  const shiftF10 = html.indexOf('event.key === "F10" && event.shiftKey');
-  assert.match(html.slice(shiftF10, shiftF10 + 180), /copyFirstWeekdayFxOpenHourMarkdown\(\)/);
 });
 
 test("release 1.5.51 ships Sunday sunrise FX open, first-weekday-FX-open copy and weekday-FX-closed hide jump", async () => {
@@ -123,13 +108,10 @@ test("release 1.5.51 ships Sunday sunrise FX open, first-weekday-FX-open copy an
   assert.match(changelog, /1\.5\.51/);
   assert.match(changelog, /Sunday sunrise FX open, first-weekday-FX-open copy, and weekday-FX-closed hide in Weekend Gap 1\.5\.51/);
   assert.match(changelog, /## 1\.5\.51 - 2026-09-13/);
-  assert.ok(html.includes('event.key === "F10" && event.shiftKey'));
   assert.match(html, /id="copy-first-weekday-fx-open"/);
-  assert.match(html, /id="copy-first-weekday-fx-open"[^>]*aria-keyshortcuts="Shift\+F10"/);
+  assert.match(html, /id="copy-first-weekday-fx-open"/);
   assert.match(html, /id="copy-last-weekday-fx-open"/);
-  assert.doesNotMatch(html, /id="copy-last-weekday-fx-open"[^>]*aria-keyshortcuts="Shift\+F10"/);
   assert.match(html, /id="copy-first-weekend-fx-closed"/);
-  assert.doesNotMatch(html, /id="copy-first-weekend-fx-closed"[^>]*aria-keyshortcuts="Shift\+F10"/);
   const sundayDaybreakPreset = html.indexOf('data-preset="sundayDaybreakFxOpen"');
   const sundaySunrisePreset = html.indexOf('data-preset="sundaySunriseFxOpen"');
   const sundayBreakfastPreset = html.indexOf('data-preset="sundayBreakfastFxOpen"');
@@ -144,8 +126,6 @@ test("release 1.5.51 ships Sunday sunrise FX open, first-weekday-FX-open copy an
   assert.match(html, /Keep Sunday FX open 06:00 to 08:00/);
   assert.match(html, /Keep Sunday FX open 07:00 to 09:00/);
   assert.match(html, /Keep Sunday FX open 09:00 to 11:00/);
-  const shiftF10 = html.indexOf('event.key === "F10" && event.shiftKey');
-  assert.match(html.slice(shiftF10, shiftF10 + 180), /copyFirstWeekdayFxOpenHourMarkdown\(\)/);
 });
 
 test("release 1.5.50 ships Sunday daybreak FX open, first-weekday-FX-open copy and weekday-FX-closed hide jump", async () => {
@@ -159,13 +139,10 @@ test("release 1.5.50 ships Sunday daybreak FX open, first-weekday-FX-open copy a
   assert.match(changelog, /1\.5\.50/);
   assert.match(changelog, /Sunday daybreak FX open, first-weekday-FX-open copy, and weekday-FX-closed hide in Weekend Gap 1\.5\.50/);
   assert.match(changelog, /## 1\.5\.50 - 2026-09-13/);
-  assert.ok(html.includes('event.key === "F10" && event.shiftKey'));
   assert.match(html, /id="copy-first-weekday-fx-open"/);
-  assert.match(html, /id="copy-first-weekday-fx-open"[^>]*aria-keyshortcuts="Shift\+F10"/);
+  assert.match(html, /id="copy-first-weekday-fx-open"/);
   assert.match(html, /id="copy-last-weekday-fx-open"/);
-  assert.doesNotMatch(html, /id="copy-last-weekday-fx-open"[^>]*aria-keyshortcuts="Shift\+F10"/);
   assert.match(html, /id="copy-first-weekend-fx-closed"/);
-  assert.doesNotMatch(html, /id="copy-first-weekend-fx-closed"[^>]*aria-keyshortcuts="Shift\+F10"/);
   const sundayDawnPreset = html.indexOf('data-preset="sundayDawnFxOpen"');
   const sundayDaybreakPreset = html.indexOf('data-preset="sundayDaybreakFxOpen"');
   const sundaySunrisePreset = html.indexOf('data-preset="sundaySunriseFxOpen"');
@@ -184,8 +161,6 @@ test("release 1.5.50 ships Sunday daybreak FX open, first-weekday-FX-open copy a
   assert.match(html, /Keep Sunday FX open 06:00 to 08:00/);
   assert.match(html, /Keep Sunday FX open 07:00 to 09:00/);
   assert.match(html, /Keep Sunday FX open 09:00 to 11:00/);
-  const shiftF10 = html.indexOf('event.key === "F10" && event.shiftKey');
-  assert.match(html.slice(shiftF10, shiftF10 + 180), /copyFirstWeekdayFxOpenHourMarkdown\(\)/);
 });
 
 test("release 1.5.49 ships Sunday dawn FX open, first-weekday-FX-open copy and weekday-FX-closed hide jump", async () => {
@@ -199,21 +174,16 @@ test("release 1.5.49 ships Sunday dawn FX open, first-weekday-FX-open copy and w
   assert.match(changelog, /1\.5\.49/);
   assert.match(changelog, /Sunday dawn FX open, first-weekday-FX-open copy, and weekday-FX-closed hide in Weekend Gap 1\.5\.49/);
   assert.match(changelog, /## 1\.5\.49/);
-  assert.ok(html.includes('event.key === "F10" && event.shiftKey'));
   assert.match(html, /id="copy-first-weekday-fx-open"/);
-  assert.match(html, /id="copy-first-weekday-fx-open"[^>]*aria-keyshortcuts="Shift\+F10"/);
+  assert.match(html, /id="copy-first-weekday-fx-open"/);
   assert.match(html, /id="copy-last-weekday-fx-open"/);
-  assert.doesNotMatch(html, /id="copy-last-weekday-fx-open"[^>]*aria-keyshortcuts="Shift\+F10"/);
   assert.match(html, /id="copy-first-weekend-fx-closed"/);
-  assert.doesNotMatch(html, /id="copy-first-weekend-fx-closed"[^>]*aria-keyshortcuts="Shift\+F10"/);
   const sundayPredawnPreset = html.indexOf('data-preset="sundayPredawnFxOpen"');
   const sundayDawnPreset = html.indexOf('data-preset="sundayDawnFxOpen"');
   assert.ok(sundayPredawnPreset !== -1 && sundayDawnPreset > sundayPredawnPreset);
   assert.match(html, /isSundayDawnFxOpenHour/);
   assert.match(html, /isSundayPredawnFxOpenHour/);
   assert.match(html, /Keep Sunday FX open 02:00 to 04:00/);
-  const shiftF10 = html.indexOf('event.key === "F10" && event.shiftKey');
-  assert.match(html.slice(shiftF10, shiftF10 + 180), /copyFirstWeekdayFxOpenHourMarkdown\(\)/);
 });
 
 test("release 1.5.48 ships Sunday predawn FX open, first-weekday-FX-open copy and weekday-FX-closed hide jump", async () => {
@@ -227,21 +197,16 @@ test("release 1.5.48 ships Sunday predawn FX open, first-weekday-FX-open copy an
   assert.match(changelog, /1\.5\.48/);
   assert.match(changelog, /Sunday predawn FX open, first-weekday-FX-open copy, and weekday-FX-closed hide in Weekend Gap 1\.5\.48/);
   assert.match(changelog, /## 1\.5\.48 - 2026-09-13/);
-  assert.ok(html.includes('event.key === "F10" && event.shiftKey'));
   assert.match(html, /id="copy-first-weekday-fx-open"/);
-  assert.match(html, /id="copy-first-weekday-fx-open"[^>]*aria-keyshortcuts="Shift\+F10"/);
+  assert.match(html, /id="copy-first-weekday-fx-open"/);
   assert.match(html, /id="copy-last-weekday-fx-open"/);
-  assert.doesNotMatch(html, /id="copy-last-weekday-fx-open"[^>]*aria-keyshortcuts="Shift\+F10"/);
   assert.match(html, /id="copy-first-weekend-fx-closed"/);
-  assert.doesNotMatch(html, /id="copy-first-weekend-fx-closed"[^>]*aria-keyshortcuts="Shift\+F10"/);
   const saturdayLateNightPreset = html.indexOf('data-preset="saturdayLateNightFxOpen"');
   const sundayPredawnPreset = html.indexOf('data-preset="sundayPredawnFxOpen"');
   assert.ok(saturdayLateNightPreset !== -1 && sundayPredawnPreset > saturdayLateNightPreset);
   assert.match(html, /isSundayPredawnFxOpenHour/);
   assert.match(html, /isSaturdayLateNightFxOpenHour/);
   assert.match(html, /Keep Sunday FX open 00:00 to 02:00/);
-  const shiftF10 = html.indexOf('event.key === "F10" && event.shiftKey');
-  assert.match(html.slice(shiftF10, shiftF10 + 180), /copyFirstWeekdayFxOpenHourMarkdown\(\)/);
 });
 
 test("release 1.5.47 ships Saturday late-night FX open, first-weekday-FX-open copy and weekday-FX-closed hide jump", async () => {
@@ -255,21 +220,16 @@ test("release 1.5.47 ships Saturday late-night FX open, first-weekday-FX-open co
   assert.match(changelog, /1\.5\.47/);
   assert.match(changelog, /Saturday late-night FX open, first-weekday-FX-open copy, and weekday-FX-closed hide in Weekend Gap 1\.5\.47/);
   assert.match(changelog, /## 1\.5\.47 - 2026-09-13/);
-  assert.ok(html.includes('event.key === "F10" && event.shiftKey'));
   assert.match(html, /id="copy-first-weekday-fx-open"/);
-  assert.match(html, /id="copy-first-weekday-fx-open"[^>]*aria-keyshortcuts="Shift\+F10"/);
+  assert.match(html, /id="copy-first-weekday-fx-open"/);
   assert.match(html, /id="copy-last-weekday-fx-open"/);
-  assert.doesNotMatch(html, /id="copy-last-weekday-fx-open"[^>]*aria-keyshortcuts="Shift\+F10"/);
   assert.match(html, /id="copy-first-weekend-fx-closed"/);
-  assert.doesNotMatch(html, /id="copy-first-weekend-fx-closed"[^>]*aria-keyshortcuts="Shift\+F10"/);
   const saturdayNightPreset = html.indexOf('data-preset="saturdayNightFxOpen"');
   const saturdayLateNightPreset = html.indexOf('data-preset="saturdayLateNightFxOpen"');
   assert.ok(saturdayNightPreset !== -1 && saturdayLateNightPreset > saturdayNightPreset);
   assert.match(html, /isSaturdayLateNightFxOpenHour/);
   assert.match(html, /isSaturdayNightFxOpenHour/);
   assert.match(html, /Keep Saturday FX open 22:00 to 24:00/);
-  const shiftF10 = html.indexOf('event.key === "F10" && event.shiftKey');
-  assert.match(html.slice(shiftF10, shiftF10 + 180), /copyFirstWeekdayFxOpenHourMarkdown\(\)/);
 });
 
 test("release 1.5.46 ships Saturday night FX open, first-weekday-FX-open copy and weekday-FX-closed hide jump", async () => {
@@ -283,21 +243,16 @@ test("release 1.5.46 ships Saturday night FX open, first-weekday-FX-open copy an
   assert.match(changelog, /1\.5\.46/);
   assert.match(changelog, /Saturday night FX open, first-weekday-FX-open copy, and weekday-FX-closed hide in Weekend Gap 1\.5\.46/);
   assert.match(changelog, /## 1\.5\.46 - 2026-09-13/);
-  assert.ok(html.includes('event.key === "F10" && event.shiftKey'));
   assert.match(html, /id="copy-first-weekday-fx-open"/);
-  assert.match(html, /id="copy-first-weekday-fx-open"[^>]*aria-keyshortcuts="Shift\+F10"/);
+  assert.match(html, /id="copy-first-weekday-fx-open"/);
   assert.match(html, /id="copy-last-weekday-fx-open"/);
-  assert.doesNotMatch(html, /id="copy-last-weekday-fx-open"[^>]*aria-keyshortcuts="Shift\+F10"/);
   assert.match(html, /id="copy-first-weekend-fx-closed"/);
-  assert.doesNotMatch(html, /id="copy-first-weekend-fx-closed"[^>]*aria-keyshortcuts="Shift\+F10"/);
   const sundayLateNightPreset = html.indexOf('data-preset="sundayLateNightFxOpen"');
   const saturdayNightPreset = html.indexOf('data-preset="saturdayNightFxOpen"');
   assert.ok(sundayLateNightPreset !== -1 && saturdayNightPreset > sundayLateNightPreset);
   assert.match(html, /isSaturdayNightFxOpenHour/);
   assert.match(html, /isSundayLateNightFxOpenHour/);
   assert.match(html, /Keep Saturday FX open 20:00 to 22:00/);
-  const shiftF10 = html.indexOf('event.key === "F10" && event.shiftKey');
-  assert.match(html.slice(shiftF10, shiftF10 + 180), /copyFirstWeekdayFxOpenHourMarkdown\(\)/);
 });
 
 test("release 1.5.45 ships Sunday late-night FX open, first-weekday-FX-open copy and weekday-FX-closed hide jump", async () => {
@@ -311,21 +266,16 @@ test("release 1.5.45 ships Sunday late-night FX open, first-weekday-FX-open copy
   assert.match(changelog, /1\.5\.45/);
   assert.match(changelog, /Sunday late-night FX open, first-weekday-FX-open copy, and weekday-FX-closed hide in Weekend Gap 1\.5\.45/);
   assert.match(changelog, /## 1\.5\.45 - 2026-09-13/);
-  assert.ok(html.includes('event.key === "F10" && event.shiftKey'));
   assert.match(html, /id="copy-first-weekday-fx-open"/);
-  assert.match(html, /id="copy-first-weekday-fx-open"[^>]*aria-keyshortcuts="Shift\+F10"/);
+  assert.match(html, /id="copy-first-weekday-fx-open"/);
   assert.match(html, /id="copy-last-weekday-fx-open"/);
-  assert.doesNotMatch(html, /id="copy-last-weekday-fx-open"[^>]*aria-keyshortcuts="Shift\+F10"/);
   assert.match(html, /id="copy-first-weekend-fx-closed"/);
-  assert.doesNotMatch(html, /id="copy-first-weekend-fx-closed"[^>]*aria-keyshortcuts="Shift\+F10"/);
   const sundayNightPreset = html.indexOf('data-preset="sundayNightFxOpen"');
   const sundayLateNightPreset = html.indexOf('data-preset="sundayLateNightFxOpen"');
   assert.ok(sundayNightPreset !== -1 && sundayLateNightPreset > sundayNightPreset);
   assert.match(html, /isSundayLateNightFxOpenHour/);
   assert.match(html, /isSundayNightFxOpenHour/);
   assert.match(html, /Keep Sunday FX open 22:00 to 24:00/);
-  const shiftF10 = html.indexOf('event.key === "F10" && event.shiftKey');
-  assert.match(html.slice(shiftF10, shiftF10 + 180), /copyFirstWeekdayFxOpenHourMarkdown\(\)/);
 });
 
 test("release 1.5.44 ships Sunday night FX open, first-weekday-FX-open copy and weekday-FX-closed hide jump", async () => {
@@ -339,21 +289,16 @@ test("release 1.5.44 ships Sunday night FX open, first-weekday-FX-open copy and 
   assert.match(changelog, /1\.5\.44/);
   assert.match(changelog, /Sunday night FX open, first-weekday-FX-open copy, and weekday-FX-closed hide in Weekend Gap 1\.5\.44/);
   assert.match(changelog, /## 1\.5\.44 - 2026-09-12/);
-  assert.ok(html.includes('event.key === "F10" && event.shiftKey'));
   assert.match(html, /id="copy-first-weekday-fx-open"/);
-  assert.match(html, /id="copy-first-weekday-fx-open"[^>]*aria-keyshortcuts="Shift\+F10"/);
+  assert.match(html, /id="copy-first-weekday-fx-open"/);
   assert.match(html, /id="copy-last-weekday-fx-open"/);
-  assert.doesNotMatch(html, /id="copy-last-weekday-fx-open"[^>]*aria-keyshortcuts="Shift\+F10"/);
   assert.match(html, /id="copy-first-weekend-fx-closed"/);
-  assert.doesNotMatch(html, /id="copy-first-weekend-fx-closed"[^>]*aria-keyshortcuts="Shift\+F10"/);
   const sundayEveningPreset = html.indexOf('data-preset="sundayEveningFxOpen"');
   const sundayNightPreset = html.indexOf('data-preset="sundayNightFxOpen"');
   assert.ok(sundayEveningPreset !== -1 && sundayNightPreset > sundayEveningPreset);
   assert.match(html, /isSundayNightFxOpenHour/);
   assert.match(html, /isSundayEveningFxOpenHour/);
   assert.match(html, /Keep Sunday FX open 20:00 to 22:00/);
-  const shiftF10 = html.indexOf('event.key === "F10" && event.shiftKey');
-  assert.match(html.slice(shiftF10, shiftF10 + 180), /copyFirstWeekdayFxOpenHourMarkdown\(\)/);
 });
 
 test("release 1.5.43 ships Sunday evening FX open, first-weekday-FX-open copy and weekday-FX-closed hide jump", async () => {
@@ -366,21 +311,16 @@ test("release 1.5.43 ships Sunday evening FX open, first-weekday-FX-open copy an
   assert.match(readme, /Sunday evening FX open, first-weekday-FX-open copy, and weekday-FX-closed hide in Weekend Gap 1\.5\.43/);
   assert.match(changelog, /1\.5\.43/);
   assert.match(changelog, /Sunday evening FX open, first-weekday-FX-open copy, and weekday-FX-closed hide in Weekend Gap 1\.5\.43/);
-  assert.ok(html.includes('event.key === "F10" && event.shiftKey'));
   assert.match(html, /id="copy-first-weekday-fx-open"/);
-  assert.match(html, /id="copy-first-weekday-fx-open"[^>]*aria-keyshortcuts="Shift\+F10"/);
+  assert.match(html, /id="copy-first-weekday-fx-open"/);
   assert.match(html, /id="copy-last-weekday-fx-open"/);
-  assert.doesNotMatch(html, /id="copy-last-weekday-fx-open"[^>]*aria-keyshortcuts="Shift\+F10"/);
   assert.match(html, /id="copy-first-weekend-fx-closed"/);
-  assert.doesNotMatch(html, /id="copy-first-weekend-fx-closed"[^>]*aria-keyshortcuts="Shift\+F10"/);
   const saturdayEveningPreset = html.indexOf('data-preset="saturdayEveningFxOpen"');
   const sundayEveningPreset = html.indexOf('data-preset="sundayEveningFxOpen"');
   assert.ok(saturdayEveningPreset !== -1 && sundayEveningPreset > saturdayEveningPreset);
   assert.match(html, /isSundayEveningFxOpenHour/);
   assert.match(html, /isSaturdayEveningFxOpenHour/);
   assert.match(html, /Keep Sunday FX open 18:00 to 20:00/);
-  const shiftF10 = html.indexOf('event.key === "F10" && event.shiftKey');
-  assert.match(html.slice(shiftF10, shiftF10 + 180), /copyFirstWeekdayFxOpenHourMarkdown\(\)/);
 });
 
 test("release 1.5.42 ships Saturday evening FX open, first-weekday-FX-open copy and weekday-FX-closed hide jump", async () => {
@@ -393,21 +333,16 @@ test("release 1.5.42 ships Saturday evening FX open, first-weekday-FX-open copy 
   assert.match(readme, /Saturday evening FX open, first-weekday-FX-open copy, and weekday-FX-closed hide in Weekend Gap 1\.5\.42/);
   assert.match(changelog, /1\.5\.42/);
   assert.match(changelog, /Saturday evening FX open, first-weekday-FX-open copy, and weekday-FX-closed hide in Weekend Gap 1\.5\.42/);
-  assert.ok(html.includes('event.key === "F10" && event.shiftKey'));
   assert.match(html, /id="copy-first-weekday-fx-open"/);
-  assert.match(html, /id="copy-first-weekday-fx-open"[^>]*aria-keyshortcuts="Shift\+F10"/);
+  assert.match(html, /id="copy-first-weekday-fx-open"/);
   assert.match(html, /id="copy-last-weekday-fx-open"/);
-  assert.doesNotMatch(html, /id="copy-last-weekday-fx-open"[^>]*aria-keyshortcuts="Shift\+F10"/);
   assert.match(html, /id="copy-first-weekend-fx-closed"/);
-  assert.doesNotMatch(html, /id="copy-first-weekend-fx-closed"[^>]*aria-keyshortcuts="Shift\+F10"/);
   const sundayMorningPreset = html.indexOf('data-preset="sundayMorningFxOpen"');
   const saturdayEveningPreset = html.indexOf('data-preset="saturdayEveningFxOpen"');
   assert.ok(sundayMorningPreset !== -1 && saturdayEveningPreset > sundayMorningPreset);
   assert.match(html, /isSaturdayEveningFxOpenHour/);
   assert.match(html, /isSundayMorningFxOpenHour/);
   assert.match(html, /Keep Saturday FX open 18:00 to 20:00/);
-  const shiftF10 = html.indexOf('event.key === "F10" && event.shiftKey');
-  assert.match(html.slice(shiftF10, shiftF10 + 180), /copyFirstWeekdayFxOpenHourMarkdown\(\)/);
 });
 
 test("release 1.5.41 ships Sunday morning FX open, first-weekday-FX-open copy and weekday-FX-closed hide jump", async () => {
@@ -420,21 +355,16 @@ test("release 1.5.41 ships Sunday morning FX open, first-weekday-FX-open copy an
   assert.match(readme, /Sunday morning FX open, first-weekday-FX-open copy, and weekday-FX-closed hide in Weekend Gap 1\.5\.41/);
   assert.match(changelog, /1\.5\.41/);
   assert.match(changelog, /Sunday morning FX open, first-weekday-FX-open copy, and weekday-FX-closed hide in Weekend Gap 1\.5\.41/);
-  assert.ok(html.includes('event.key === "F10" && event.shiftKey'));
   assert.match(html, /id="copy-first-weekday-fx-open"/);
-  assert.match(html, /id="copy-first-weekday-fx-open"[^>]*aria-keyshortcuts="Shift\+F10"/);
+  assert.match(html, /id="copy-first-weekday-fx-open"/);
   assert.match(html, /id="copy-last-weekday-fx-open"/);
-  assert.doesNotMatch(html, /id="copy-last-weekday-fx-open"[^>]*aria-keyshortcuts="Shift\+F10"/);
   assert.match(html, /id="copy-first-weekend-fx-closed"/);
-  assert.doesNotMatch(html, /id="copy-first-weekend-fx-closed"[^>]*aria-keyshortcuts="Shift\+F10"/);
   const sundayAfternoonPreset = html.indexOf('data-preset="sundayAfternoonFxOpen"');
   const sundayMorningPreset = html.indexOf('data-preset="sundayMorningFxOpen"');
   assert.ok(sundayAfternoonPreset !== -1 && sundayMorningPreset > sundayAfternoonPreset);
   assert.match(html, /isSundayMorningFxOpenHour/);
   assert.match(html, /isSundayAfternoonFxOpenHour/);
   assert.match(html, /Keep Sunday FX open 10:00 to 12:00/);
-  const shiftF10 = html.indexOf('event.key === "F10" && event.shiftKey');
-  assert.match(html.slice(shiftF10, shiftF10 + 180), /copyFirstWeekdayFxOpenHourMarkdown\(\)/);
 });
 
 test("release 1.5.40 ships Sunday afternoon FX open, first-weekday-FX-open copy and weekday-FX-closed hide jump", async () => {
@@ -447,21 +377,16 @@ test("release 1.5.40 ships Sunday afternoon FX open, first-weekday-FX-open copy 
   assert.match(readme, /Sunday afternoon FX open, first-weekday-FX-open copy, and weekday-FX-closed hide in Weekend Gap 1\.5\.40/);
   assert.match(changelog, /1\.5\.40/);
   assert.match(changelog, /Sunday afternoon FX open, first-weekday-FX-open copy, and weekday-FX-closed hide in Weekend Gap 1\.5\.40/);
-  assert.ok(html.includes('event.key === "F10" && event.shiftKey'));
   assert.match(html, /id="copy-first-weekday-fx-open"/);
-  assert.match(html, /id="copy-first-weekday-fx-open"[^>]*aria-keyshortcuts="Shift\+F10"/);
+  assert.match(html, /id="copy-first-weekday-fx-open"/);
   assert.match(html, /id="copy-last-weekday-fx-open"/);
-  assert.doesNotMatch(html, /id="copy-last-weekday-fx-open"[^>]*aria-keyshortcuts="Shift\+F10"/);
   assert.match(html, /id="copy-first-weekend-fx-closed"/);
-  assert.doesNotMatch(html, /id="copy-first-weekend-fx-closed"[^>]*aria-keyshortcuts="Shift\+F10"/);
   const saturdayAfternoonPreset = html.indexOf('data-preset="saturdayAfternoonFxOpen"');
   const sundayAfternoonPreset = html.indexOf('data-preset="sundayAfternoonFxOpen"');
   assert.ok(saturdayAfternoonPreset !== -1 && sundayAfternoonPreset > saturdayAfternoonPreset);
   assert.match(html, /isSundayAfternoonFxOpenHour/);
   assert.match(html, /isSaturdayAfternoonFxOpenHour/);
   assert.match(html, /Keep Sunday FX open 14:00 to 16:00/);
-  const shiftF10 = html.indexOf('event.key === "F10" && event.shiftKey');
-  assert.match(html.slice(shiftF10, shiftF10 + 180), /copyFirstWeekdayFxOpenHourMarkdown\(\)/);
 });
 
 test("release 1.5.39 ships Saturday afternoon FX open, first-weekday-FX-open copy and weekday-FX-closed hide jump", async () => {
@@ -474,15 +399,10 @@ test("release 1.5.39 ships Saturday afternoon FX open, first-weekday-FX-open cop
   assert.match(readme, /Saturday afternoon FX open, first-weekday-FX-open copy, and weekday-FX-closed hide in Weekend Gap 1\.5\.39/);
   assert.match(changelog, /1\.5\.39/);
   assert.match(changelog, /Saturday afternoon FX open, first-weekday-FX-open copy, and weekday-FX-closed hide in Weekend Gap 1\.5\.39/);
-  assert.ok(html.includes('event.key === "F10" && event.shiftKey'));
   assert.match(html, /id="copy-first-weekday-fx-open"/);
-  assert.match(html, /id="copy-first-weekday-fx-open"[^>]*aria-keyshortcuts="Shift\+F10"/);
+  assert.match(html, /id="copy-first-weekday-fx-open"/);
   assert.match(html, /id="copy-last-weekday-fx-open"/);
-  assert.doesNotMatch(html, /id="copy-last-weekday-fx-open"[^>]*aria-keyshortcuts="Shift\+F10"/);
   assert.match(html, /id="copy-first-weekend-fx-closed"/);
-  assert.doesNotMatch(html, /id="copy-first-weekend-fx-closed"[^>]*aria-keyshortcuts="Shift\+F10"/);
-  assert.ok(html.includes('event.key === "F11" && event.shiftKey'));
-  assert.ok(html.includes('event.key === "F12" && event.shiftKey'));
   assert.match(html, /id="gantt-hide-weekday-fx-closed"/);
   assert.match(html, /id="gantt-hide-weekday-fx-open"/);
   const saturdayPreset = html.indexOf('data-preset="saturdayMiddayFxOpen"');
@@ -496,21 +416,9 @@ test("release 1.5.39 ships Saturday afternoon FX open, first-weekday-FX-open cop
   assert.match(html, /isSaturdayAfternoonFxOpenHour/);
   assert.match(html, /isSundayMiddayFxOpenHour/);
   assert.match(html, /isSaturdayMiddayFxOpenHour/);
-  const shiftF10 = html.indexOf('event.key === "F10" && event.shiftKey');
-  const shiftF11 = html.indexOf('event.key === "F11" && event.shiftKey');
-  const shiftF12 = html.indexOf('event.key === "F12" && event.shiftKey');
-  assert.ok(shiftF10 !== -1);
-  assert.ok(shiftF11 !== -1);
-  assert.ok(shiftF12 !== -1);
-  assert.match(html.slice(shiftF10, shiftF10 + 180), /copyFirstWeekdayFxOpenHourMarkdown\(\)/);
-  assert.match(html.slice(shiftF11, shiftF11 + 180), /jumpToFirstWeekdayFxOpenCopy\(\)/);
-  assert.match(html.slice(shiftF12, shiftF12 + 180), /jumpToHideWeekdayFxClosedFilter\(\)/);
   assert.match(html, /ganttHourWeekdayFxClosed/);
   assert.match(html, /if \(event\.defaultPrevented\) return/);
   assert.match(html, /event\.key\.length === 1 \? event\.key\.toLowerCase\(\) : event\.key/);
-  assert.ok(html.includes('event.key === "F10"'));
-  assert.ok(html.includes('event.key === "F11"'));
-  assert.ok(html.includes('event.key === "F12"'));
   assert.match(html, /id="weekend-review"/);
   assert.match(html, /createWeekendReviewPacket/);
   assert.match(html, /WEEKEND_REVIEW_TOOLS/);
@@ -526,15 +434,10 @@ test("release 1.5.38 ships Sunday midday FX open, first-weekday-FX-open copy and
   assert.match(readme, /Sunday midday FX open, first-weekday-FX-open copy, and weekday-FX-closed hide in Weekend Gap 1\.5\.38/);
   assert.match(changelog, /1\.5\.38/);
   assert.match(changelog, /Sunday midday FX open, first-weekday-FX-open copy, and weekday-FX-closed hide in Weekend Gap 1\.5\.38/);
-  assert.ok(html.includes('event.key === "F10" && event.shiftKey'));
   assert.match(html, /id="copy-first-weekday-fx-open"/);
-  assert.match(html, /id="copy-first-weekday-fx-open"[^>]*aria-keyshortcuts="Shift\+F10"/);
+  assert.match(html, /id="copy-first-weekday-fx-open"/);
   assert.match(html, /id="copy-last-weekday-fx-open"/);
-  assert.doesNotMatch(html, /id="copy-last-weekday-fx-open"[^>]*aria-keyshortcuts="Shift\+F10"/);
   assert.match(html, /id="copy-first-weekend-fx-closed"/);
-  assert.doesNotMatch(html, /id="copy-first-weekend-fx-closed"[^>]*aria-keyshortcuts="Shift\+F10"/);
-  assert.ok(html.includes('event.key === "F11" && event.shiftKey'));
-  assert.ok(html.includes('event.key === "F12" && event.shiftKey'));
   assert.match(html, /id="gantt-hide-weekday-fx-closed"/);
   assert.match(html, /id="gantt-hide-weekday-fx-open"/);
   const fridayPreset = html.indexOf('data-preset="fridayEarlyFxOpen"');
@@ -548,21 +451,9 @@ test("release 1.5.38 ships Sunday midday FX open, first-weekday-FX-open copy and
   assert.match(html, /isSundayMiddayFxOpenHour/);
   assert.match(html, /isSaturdayMiddayFxOpenHour/);
   assert.match(html, /isFridayEarlyFxOpenHour/);
-  const shiftF10 = html.indexOf('event.key === "F10" && event.shiftKey');
-  const shiftF11 = html.indexOf('event.key === "F11" && event.shiftKey');
-  const shiftF12 = html.indexOf('event.key === "F12" && event.shiftKey');
-  assert.ok(shiftF10 !== -1);
-  assert.ok(shiftF11 !== -1);
-  assert.ok(shiftF12 !== -1);
-  assert.match(html.slice(shiftF10, shiftF10 + 180), /copyFirstWeekdayFxOpenHourMarkdown\(\)/);
-  assert.match(html.slice(shiftF11, shiftF11 + 180), /jumpToFirstWeekdayFxOpenCopy\(\)/);
-  assert.match(html.slice(shiftF12, shiftF12 + 180), /jumpToHideWeekdayFxClosedFilter\(\)/);
   assert.match(html, /ganttHourWeekdayFxClosed/);
   assert.match(html, /if \(event\.defaultPrevented\) return/);
   assert.match(html, /event\.key\.length === 1 \? event\.key\.toLowerCase\(\) : event\.key/);
-  assert.ok(html.includes('event.key === "F10"'));
-  assert.ok(html.includes('event.key === "F11"'));
-  assert.ok(html.includes('event.key === "F12"'));
   assert.match(html, /id="weekend-review"/);
   assert.match(html, /createWeekendReviewPacket/);
   assert.match(html, /WEEKEND_REVIEW_TOOLS/);
@@ -578,13 +469,9 @@ test("release 1.5.37 ships Saturday midday FX open, last-weekday-FX-open copy an
   assert.match(readme, /Saturday midday FX open, last-weekday-FX-open copy, and weekday-FX-closed hide in Weekend Gap 1\.5\.37/);
   assert.match(changelog, /1\.5\.37/);
   assert.match(changelog, /Saturday midday FX open, last-weekday-FX-open copy, and weekday-FX-closed hide in Weekend Gap 1\.5\.37/);
-  assert.ok(html.includes('event.key === "F10" && event.shiftKey'));
   assert.match(html, /id="copy-last-weekday-fx-open"/);
-  assert.match(html, /id="copy-first-weekday-fx-open"[^>]*aria-keyshortcuts="Shift\+F10"/);
+  assert.match(html, /id="copy-first-weekday-fx-open"/);
   assert.match(html, /id="copy-first-weekend-fx-closed"/);
-  assert.doesNotMatch(html, /id="copy-first-weekend-fx-closed"[^>]*aria-keyshortcuts="Shift\+F10"/);
-  assert.ok(html.includes('event.key === "F11" && event.shiftKey'));
-  assert.ok(html.includes('event.key === "F12" && event.shiftKey'));
   assert.match(html, /id="gantt-hide-weekday-fx-closed"/);
   assert.match(html, /id="gantt-hide-weekday-fx-open"/);
   const fridayPreset = html.indexOf('data-preset="fridayEarlyFxOpen"');
@@ -598,21 +485,9 @@ test("release 1.5.37 ships Saturday midday FX open, last-weekday-FX-open copy an
   assert.match(html, /isSaturdayMiddayFxOpenHour/);
   assert.match(html, /isSundayMiddayFxOpenHour/);
   assert.match(html, /isFridayEarlyFxOpenHour/);
-  const shiftF10 = html.indexOf('event.key === "F10" && event.shiftKey');
-  const shiftF11 = html.indexOf('event.key === "F11" && event.shiftKey');
-  const shiftF12 = html.indexOf('event.key === "F12" && event.shiftKey');
-  assert.ok(shiftF10 !== -1);
-  assert.ok(shiftF11 !== -1);
-  assert.ok(shiftF12 !== -1);
-  assert.match(html.slice(shiftF10, shiftF10 + 180), /copyFirstWeekdayFxOpenHourMarkdown\(\)/);
-  assert.match(html.slice(shiftF11, shiftF11 + 180), /jumpToFirstWeekdayFxOpenCopy\(\)/);
-  assert.match(html.slice(shiftF12, shiftF12 + 180), /jumpToHideWeekdayFxClosedFilter\(\)/);
   assert.match(html, /ganttHourWeekdayFxClosed/);
   assert.match(html, /if \(event\.defaultPrevented\) return/);
   assert.match(html, /event\.key\.length === 1 \? event\.key\.toLowerCase\(\) : event\.key/);
-  assert.ok(html.includes('event.key === "F10"'));
-  assert.ok(html.includes('event.key === "F11"'));
-  assert.ok(html.includes('event.key === "F12"'));
   assert.match(html, /id="weekend-review"/);
   assert.match(html, /createWeekendReviewPacket/);
   assert.match(html, /WEEKEND_REVIEW_TOOLS/);
@@ -628,11 +503,8 @@ test("release 1.5.36 ships Friday early FX open, first-weekend-FX-closed copy an
   assert.match(readme, /Friday early FX open, first-weekend-FX-closed copy, and weekday-FX-closed hide in Weekend Gap 1\.5\.36/);
   assert.match(changelog, /1\.5\.36/);
   assert.match(changelog, /Friday early FX open, first-weekend-FX-closed copy, and weekday-FX-closed hide in Weekend Gap 1\.5\.36/);
-  assert.ok(html.includes('event.key === "F10" && event.shiftKey'));
   assert.match(html, /id="copy-first-weekend-fx-closed"/);
   assert.match(html, /id="copy-first-weekend-fx-open"/);
-  assert.ok(html.includes('event.key === "F11" && event.shiftKey'));
-  assert.ok(html.includes('event.key === "F12" && event.shiftKey'));
   assert.match(html, /id="gantt-hide-weekday-fx-closed"/);
   assert.match(html, /id="gantt-hide-weekday-fx-open"/);
   const thursdayPreset = html.indexOf('data-preset="thursdayLateFxOpen"');
@@ -645,9 +517,6 @@ test("release 1.5.36 ships Friday early FX open, first-weekend-FX-closed copy an
   assert.match(html, /ganttHourWeekdayFxClosed/);
   assert.match(html, /if \(event\.defaultPrevented\) return/);
   assert.match(html, /event\.key\.length === 1 \? event\.key\.toLowerCase\(\) : event\.key/);
-  assert.ok(html.includes('event.key === "F10"'));
-  assert.ok(html.includes('event.key === "F11"'));
-  assert.ok(html.includes('event.key === "F12"'));
   assert.match(html, /id="weekend-review"/);
   assert.match(html, /createWeekendReviewPacket/);
   assert.match(html, /WEEKEND_REVIEW_TOOLS/);
@@ -663,10 +532,7 @@ test("release 1.5.35 ships Thursday late FX open, first-weekend-FX-open copy and
   assert.match(readme, /Thursday late FX open, first-weekend-FX-open copy, and weekday-FX-closed hide in Weekend Gap 1\.5\.35/);
   assert.match(changelog, /1\.5\.35/);
   assert.match(changelog, /Thursday late FX open, first-weekend-FX-open copy, and weekday-FX-closed hide in Weekend Gap 1\.5\.35/);
-  assert.ok(html.includes('event.key === "F10" && event.shiftKey'));
   assert.match(html, /id="copy-first-weekend-fx-open"/);
-  assert.ok(html.includes('event.key === "F11" && event.shiftKey'));
-  assert.ok(html.includes('event.key === "F12" && event.shiftKey'));
   assert.match(html, /id="gantt-hide-weekday-fx-closed"/);
   assert.match(html, /id="gantt-hide-weekday-fx-open"/);
   assert.match(html, /data-preset="thursdayLateFxOpen"/);
@@ -678,9 +544,6 @@ test("release 1.5.35 ships Thursday late FX open, first-weekend-FX-open copy and
   assert.match(html, /ganttHourWeekdayFxClosed/);
   assert.match(html, /if \(event\.defaultPrevented\) return/);
   assert.match(html, /event\.key\.length === 1 \? event\.key\.toLowerCase\(\) : event\.key/);
-  assert.ok(html.includes('event.key === "F10"'));
-  assert.ok(html.includes('event.key === "F11"'));
-  assert.ok(html.includes('event.key === "F12"'));
   assert.match(html, /id="weekend-review"/);
   assert.match(html, /createWeekendReviewPacket/);
   assert.match(html, /WEEKEND_REVIEW_TOOLS/);
@@ -696,10 +559,7 @@ test("release 1.5.34 ships Thursday early FX open, last-weekend-FX-open copy and
   assert.match(readme, /Thursday early FX open, last-weekend-FX-open copy, and weekday-FX-open hide in Weekend Gap 1\.5\.34/);
   assert.match(changelog, /1\.5\.34/);
   assert.match(changelog, /Thursday early FX open, last-weekend-FX-open copy, and weekday-FX-open hide in Weekend Gap 1\.5\.34/);
-  assert.ok(html.includes('event.key === "F10" && event.shiftKey'));
   assert.match(html, /id="copy-last-weekend-fx-open"/);
-  assert.ok(html.includes('event.key === "F11" && event.shiftKey'));
-  assert.ok(html.includes('event.key === "F12" && event.shiftKey'));
   assert.match(html, /id="gantt-hide-weekday-fx-open"/);
   assert.match(html, /data-preset="thursdayEarlyFxOpen"/);
   assert.match(html, /hideWeekdayFxOpenGanttHours/);
@@ -708,9 +568,6 @@ test("release 1.5.34 ships Thursday early FX open, last-weekend-FX-open copy and
   assert.match(html, /ganttHourWeekdayFxOpen/);
   assert.match(html, /if \(event\.defaultPrevented\) return/);
   assert.match(html, /event\.key\.length === 1 \? event\.key\.toLowerCase\(\) : event\.key/);
-  assert.ok(html.includes('event.key === "F10"'));
-  assert.ok(html.includes('event.key === "F11"'));
-  assert.ok(html.includes('event.key === "F12"'));
   assert.match(html, /id="weekend-review"/);
   assert.match(html, /createWeekendReviewPacket/);
   assert.match(html, /WEEKEND_REVIEW_TOOLS/);
@@ -726,10 +583,7 @@ test("release 1.5.33 ships Wednesday late FX open, last-weekend-FX-closed copy a
   assert.match(readme, /Wednesday late FX open, last-weekend-FX-closed copy, and weekend-FX-open hide in Weekend Gap 1\.5\.33/);
   assert.match(changelog, /1\.5\.33/);
   assert.match(changelog, /Wednesday late FX open, last-weekend-FX-closed copy, and weekend-FX-open hide in Weekend Gap 1\.5\.33/);
-  assert.ok(html.includes('event.key === "F10" && event.shiftKey'));
   assert.match(html, /id="copy-last-weekend-fx-closed"/);
-  assert.ok(html.includes('event.key === "F11" && event.shiftKey'));
-  assert.ok(html.includes('event.key === "F12" && event.shiftKey'));
   assert.match(html, /id="gantt-hide-weekend-fx-open"/);
   assert.match(html, /data-preset="wednesdayLateFxOpen"/);
   assert.match(html, /hideWeekendFxOpenGanttHours/);
@@ -738,9 +592,6 @@ test("release 1.5.33 ships Wednesday late FX open, last-weekend-FX-closed copy a
   assert.match(html, /ganttHourWeekendFxOpen/);
   assert.match(html, /if \(event\.defaultPrevented\) return/);
   assert.match(html, /event\.key\.length === 1 \? event\.key\.toLowerCase\(\) : event\.key/);
-  assert.ok(html.includes('event.key === "F10"'));
-  assert.ok(html.includes('event.key === "F11"'));
-  assert.ok(html.includes('event.key === "F12"'));
   assert.match(html, /id="weekend-review"/);
   assert.match(html, /createWeekendReviewPacket/);
   assert.match(html, /WEEKEND_REVIEW_TOOLS/);
@@ -756,10 +607,7 @@ test("release 1.5.32 ships Wednesday early FX open, first-weekend-FX-closed copy
   assert.match(readme, /Wednesday early FX open, first-weekend-FX-closed copy, and weekday-FX-open hide in Weekend Gap 1\.5\.32/);
   assert.match(changelog, /1\.5\.32/);
   assert.match(changelog, /Wednesday early FX open, first-weekend-FX-closed copy, and weekday-FX-open hide in Weekend Gap 1\.5\.32/);
-  assert.ok(html.includes('event.key === "F10" && event.shiftKey'));
   assert.match(html, /id="copy-first-weekend-fx-closed"/);
-  assert.ok(html.includes('event.key === "F11" && event.shiftKey'));
-  assert.ok(html.includes('event.key === "F12" && event.shiftKey'));
   assert.match(html, /id="gantt-hide-weekday-fx-open"/);
   assert.match(html, /data-preset="wednesdayEarlyFxOpen"/);
   assert.match(html, /hideWeekdayFxOpenGanttHours/);
@@ -768,9 +616,6 @@ test("release 1.5.32 ships Wednesday early FX open, first-weekend-FX-closed copy
   assert.match(html, /ganttHourWeekendFxClosed/);
   assert.match(html, /if \(event\.defaultPrevented\) return/);
   assert.match(html, /event\.key\.length === 1 \? event\.key\.toLowerCase\(\) : event\.key/);
-  assert.ok(html.includes('event.key === "F10"'));
-  assert.ok(html.includes('event.key === "F11"'));
-  assert.ok(html.includes('event.key === "F12"'));
   assert.match(html, /id="weekend-review"/);
   assert.match(html, /createWeekendReviewPacket/);
   assert.match(html, /WEEKEND_REVIEW_TOOLS/);
@@ -786,10 +631,7 @@ test("release 1.5.31 ships Tuesday late FX open, first-weekend-FX-open copy and 
   assert.match(readme, /Tuesday late FX open, first-weekend-FX-open copy, and weekday-FX-closed hide in Weekend Gap 1\.5\.31/);
   assert.match(changelog, /1\.5\.31/);
   assert.match(changelog, /Tuesday late FX open, first-weekend-FX-open copy, and weekday-FX-closed hide in Weekend Gap 1\.5\.31/);
-  assert.ok(html.includes('event.key === "F10" && event.shiftKey'));
   assert.match(html, /id="copy-first-weekend-fx-open"/);
-  assert.ok(html.includes('event.key === "F11" && event.shiftKey'));
-  assert.ok(html.includes('event.key === "F12" && event.shiftKey'));
   assert.match(html, /id="gantt-hide-weekday-fx-closed"/);
   assert.match(html, /data-preset="tuesdayLateFxOpen"/);
   assert.match(html, /hideWeekdayFxClosedGanttHours/);
@@ -798,9 +640,6 @@ test("release 1.5.31 ships Tuesday late FX open, first-weekend-FX-open copy and 
   assert.match(html, /ganttHourWeekendFxOpen/);
   assert.match(html, /if \(event\.defaultPrevented\) return/);
   assert.match(html, /event\.key\.length === 1 \? event\.key\.toLowerCase\(\) : event\.key/);
-  assert.ok(html.includes('event.key === "F10"'));
-  assert.ok(html.includes('event.key === "F11"'));
-  assert.ok(html.includes('event.key === "F12"'));
   assert.match(html, /id="weekend-review"/);
   assert.match(html, /createWeekendReviewPacket/);
   assert.match(html, /WEEKEND_REVIEW_TOOLS/);
@@ -816,10 +655,7 @@ test("release 1.5.30 ships Tuesday early FX open, first-weekday-FX-closed copy a
   assert.match(readme, /Tuesday early FX open, first-weekday-FX-closed copy, and weekday-FX-open hide in Weekend Gap 1\.5\.30/);
   assert.match(changelog, /1\.5\.30/);
   assert.match(changelog, /Tuesday early FX open, first-weekday-FX-closed copy, and weekday-FX-open hide in Weekend Gap 1\.5\.30/);
-  assert.ok(html.includes('event.key === "F10" && event.shiftKey'));
   assert.match(html, /id="copy-first-weekday-fx-closed"/);
-  assert.ok(html.includes('event.key === "F11" && event.shiftKey'));
-  assert.ok(html.includes('event.key === "F12" && event.shiftKey'));
   assert.match(html, /id="gantt-hide-weekday-fx-open"/);
   assert.match(html, /data-preset="tuesdayEarlyFxOpen"/);
   assert.match(html, /hideWeekdayFxOpenGanttHours/);
@@ -828,9 +664,6 @@ test("release 1.5.30 ships Tuesday early FX open, first-weekday-FX-closed copy a
   assert.match(html, /ganttHourWeekdayFxClosed/);
   assert.match(html, /if \(event\.defaultPrevented\) return/);
   assert.match(html, /event\.key\.length === 1 \? event\.key\.toLowerCase\(\) : event\.key/);
-  assert.ok(html.includes('event.key === "F10"'));
-  assert.ok(html.includes('event.key === "F11"'));
-  assert.ok(html.includes('event.key === "F12"'));
   assert.match(html, /id="weekend-review"/);
   assert.match(html, /createWeekendReviewPacket/);
   assert.match(html, /WEEKEND_REVIEW_TOOLS/);
@@ -846,10 +679,7 @@ test("release 1.5.29 ships Monday late FX open, first-weekday-FX-open copy and w
   assert.match(readme, /Monday late FX open, first-weekday-FX-open copy, and weekday-FX-closed hide in Weekend Gap 1\.5\.29/);
   assert.match(changelog, /1\.5\.29/);
   assert.match(changelog, /Monday late FX open, first-weekday-FX-open copy, and weekday-FX-closed hide in Weekend Gap 1\.5\.29/);
-  assert.ok(html.includes('event.key === "F10" && event.shiftKey'));
   assert.match(html, /id="copy-first-weekday-fx-open"/);
-  assert.ok(html.includes('event.key === "F11" && event.shiftKey'));
-  assert.ok(html.includes('event.key === "F12" && event.shiftKey'));
   assert.match(html, /id="gantt-hide-weekday-fx-closed"/);
   assert.match(html, /data-preset="mondayLateFxOpen"/);
   assert.match(html, /hideWeekdayFxClosedGanttHours/);
@@ -858,9 +688,6 @@ test("release 1.5.29 ships Monday late FX open, first-weekday-FX-open copy and w
   assert.match(html, /ganttHourWeekdayFxOpen/);
   assert.match(html, /if \(event\.defaultPrevented\) return/);
   assert.match(html, /event\.key\.length === 1 \? event\.key\.toLowerCase\(\) : event\.key/);
-  assert.ok(html.includes('event.key === "F10"'));
-  assert.ok(html.includes('event.key === "F11"'));
-  assert.ok(html.includes('event.key === "F12"'));
   assert.match(html, /id="weekend-review"/);
   assert.match(html, /createWeekendReviewPacket/);
   assert.match(html, /WEEKEND_REVIEW_TOOLS/);
@@ -876,10 +703,7 @@ test("release 1.5.28 ships Monday early FX open, last-weekday-FX-open copy and w
   assert.match(readme, /Monday early FX open, last-weekday-FX-open copy, and weekend-FX-closed hide in Weekend Gap 1\.5\.28/);
   assert.match(changelog, /1\.5\.28/);
   assert.match(changelog, /Monday early FX open, last-weekday-FX-open copy, and weekend-FX-closed hide in Weekend Gap 1\.5\.28/);
-  assert.ok(html.includes('event.key === "F10" && event.shiftKey'));
   assert.match(html, /id="copy-last-weekday-fx-open"/);
-  assert.ok(html.includes('event.key === "F11" && event.shiftKey'));
-  assert.ok(html.includes('event.key === "F12" && event.shiftKey'));
   assert.match(html, /id="gantt-hide-weekend-fx-closed"/);
   assert.match(html, /data-preset="mondayEarlyFxOpen"/);
   assert.match(html, /hideWeekendFxClosedGanttHours/);
@@ -888,9 +712,6 @@ test("release 1.5.28 ships Monday early FX open, last-weekday-FX-open copy and w
   assert.match(html, /ganttHourWeekdayFxOpen/);
   assert.match(html, /if \(event\.defaultPrevented\) return/);
   assert.match(html, /event\.key\.length === 1 \? event\.key\.toLowerCase\(\) : event\.key/);
-  assert.ok(html.includes('event.key === "F10"'));
-  assert.ok(html.includes('event.key === "F11"'));
-  assert.ok(html.includes('event.key === "F12"'));
   assert.match(html, /id="weekend-review"/);
   assert.match(html, /createWeekendReviewPacket/);
   assert.match(html, /WEEKEND_REVIEW_TOOLS/);
@@ -904,10 +725,7 @@ test("release 1.5.27 ships Sunday early FX open, last-weekend-FX-open copy and w
       assert.equal(pkg.version, "1.5.54");
   assert.match(readme, /New in v1\.5\.27/);
   assert.match(changelog, /1\.5\.27/);
-  assert.ok(html.includes('event.key === "F10" && event.shiftKey'));
   assert.match(html, /id="copy-last-weekend-fx-open"/);
-  assert.ok(html.includes('event.key === "F11" && event.shiftKey'));
-  assert.ok(html.includes('event.key === "F12" && event.shiftKey'));
   assert.match(html, /id="gantt-hide-weekday-fx-open"/);
   assert.match(html, /data-preset="sundayEarlyFxOpen"/);
   assert.match(html, /hideWeekdayFxOpenGanttHours/);
@@ -915,9 +733,6 @@ test("release 1.5.27 ships Sunday early FX open, last-weekend-FX-open copy and w
   assert.match(html, /isSundayEarlyFxOpenHour/);
   assert.match(html, /ganttHourWeekdayFxOpen/);
   assert.match(html, /if \(event\.defaultPrevented\) return/);
-  assert.ok(html.includes('event.key === "F10"'));
-  assert.ok(html.includes('event.key === "F11"'));
-  assert.ok(html.includes('event.key === "F12"'));
   assert.match(html, /id="weekend-review"/);
   assert.match(html, /createWeekendReviewPacket/);
   assert.match(html, /WEEKEND_REVIEW_TOOLS/);
@@ -931,19 +746,13 @@ test("release 1.5.26 ships Sunday late FX open, last-weekday-FX-closed copy and 
       assert.equal(pkg.version, "1.5.54");
   assert.match(readme, /New in v1\.5\.26/);
   assert.match(changelog, /1\.5\.26/);
-  assert.ok(html.includes('event.key === "F10"'));
   assert.match(html, /id="copy-last-weekday-fx-closed"/);
-  assert.ok(html.includes('event.key === "F11"'));
-  assert.ok(html.includes('event.key === "F12"'));
   assert.match(html, /id="gantt-hide-weekend-fx-open"/);
   assert.match(html, /data-preset="sundayLateFxOpen"/);
   assert.match(html, /hideWeekendFxOpenGanttHours/);
   assert.match(html, /lastWeekdayFxClosedHourToMarkdown/);
   assert.match(html, /isSundayLateFxOpenHour/);
   assert.match(html, /if \(event\.defaultPrevented\) return/);
-  assert.ok(html.includes('event.key === "F7"'));
-  assert.ok(html.includes('event.key === "F8"'));
-  assert.ok(html.includes('event.key === "F9"'));
   assert.match(html, /id="weekend-review"/);
   assert.match(html, /createWeekendReviewPacket/);
   assert.match(html, /WEEKEND_REVIEW_TOOLS/);
@@ -957,10 +766,7 @@ test("release 1.5.25 ships Saturday late FX open, last-weekend-FX-closed copy an
       assert.equal(pkg.version, "1.5.54");
   assert.match(readme, /New in v1\.5\.25/);
   assert.match(changelog, /1\.5\.25/);
-  assert.ok(html.includes('event.key === "F7"'));
   assert.match(html, /id="copy-last-weekend-fx-closed"/);
-  assert.ok(html.includes('event.key === "F8"'));
-  assert.ok(html.includes('event.key === "F9"'));
   assert.match(html, /id="gantt-hide-weekday-fx-closed"/);
   assert.match(html, /data-preset="saturdayLateFxOpen"/);
   assert.match(html, /hideWeekdayFxClosedGanttHours/);
@@ -979,10 +785,7 @@ test("release 1.5.24 ships Friday late FX open, last-closed-payout copy and week
       assert.equal(pkg.version, "1.5.54");
   assert.match(readme, /New in v1\.5\.24/);
   assert.match(changelog, /1\.5\.24/);
-  assert.ok(html.includes('event.key === "F3"'));
   assert.match(html, /id="copy-last-closed-payout"/);
-  assert.ok(html.includes('event.key === "F4"'));
-  assert.match(html, /event\.key === "Backspace"/);
   assert.match(html, /id="gantt-hide-weekend-fx-closed"/);
   assert.match(html, /data-preset="fridayLateFxOpen"/);
   assert.match(html, /hideWeekendFxClosedGanttHours/);
@@ -1001,10 +804,7 @@ test("release 1.5.23 ships Friday late bank open, last-closed-FX copy and weeken
         assert.equal(pkg.version, "1.5.54");
   assert.match(readme, /New in v1\.5\.23/);
   assert.match(changelog, /1\.5\.23/);
-  assert.ok(html.includes('event.key === "Delete"'));
   assert.match(html, /id="copy-last-closed-fx"/);
-  assert.ok(html.includes('event.key === "F2"'));
-  assert.match(html, /event\.key === "ArrowRight"/);
   assert.match(html, /id="gantt-hide-weekend-payout-closed"/);
   assert.match(html, /data-preset="fridayLateBankOpen"/);
   assert.match(html, /hideWeekendPayoutClosedGanttHours/);
@@ -1023,10 +823,7 @@ test("release 1.5.22 ships Saturday late bank open, last-open-FX copy and weeken
         assert.equal(pkg.version, "1.5.54");
   assert.match(readme, /New in v1\.5\.22/);
   assert.match(changelog, /1\.5\.22/);
-  assert.ok(html.includes('event.key === "Insert"'));
   assert.match(html, /id="copy-last-open-fx"/);
-  assert.ok(html.includes('event.key === "ArrowDown"'));
-  assert.match(html, /event\.key === "ArrowLeft"/);
   assert.match(html, /id="gantt-hide-weekend-fx-open"/);
   assert.match(html, /data-preset="saturdayLateBankOpen"/);
   assert.match(html, /hideWeekendFxOpenGanttHours/);
@@ -1045,10 +842,7 @@ test("release 1.5.21 ships Friday early bank open, last-open-payout copy and wee
         assert.equal(pkg.version, "1.5.54");
   assert.match(readme, /New in v1\.5\.21/);
   assert.match(changelog, /1\.5\.21/);
-  assert.ok(html.includes('event.key === "PageUp"'));
   assert.match(html, /id="copy-last-open-payout"/);
-  assert.ok(html.includes('event.key === "PageDown"'));
-  assert.match(html, /event\.key === "ArrowUp"/);
   assert.match(html, /id="gantt-hide-weekend-payout-open"/);
   assert.match(html, /data-preset="fridayEarlyBankOpen"/);
   assert.match(html, /hideWeekendPayoutOpenGanttHours/);
@@ -1069,8 +863,6 @@ test("release 1.5.20 ships Saturday early bank open, last-open-bank copy and wee
   assert.match(changelog, /1\.5\.20/);
   assert.ok(html.includes('event.key === "4"'));
   assert.match(html, /id="copy-last-open-bank"/);
-  assert.ok(html.includes('event.key === "Home"'));
-  assert.match(html, /event\.key === "End"/);
   assert.match(html, /id="gantt-hide-weekend-bank-open"/);
   assert.match(html, /data-preset="saturdayEarlyBankOpen"/);
   assert.match(html, /hideWeekendBankOpenGanttHours/);

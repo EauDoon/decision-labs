@@ -9,5 +9,4 @@ test("time-trial cycling club hours sits after criterium cycling club hours in t
   const timeTrial = html.indexOf('<option value="time-trial-cycling-club-hours">Time-trial cycling club hours</option>');
   assert.ok(road !== -1 && criterium > road);
   assert.ok(timeTrial > criterium);
-  assert.match(html, /<kbd>Shift\+F9<\/kbd> Jump to the hide-last-group-without-floor control, or the groups heading/);
 });

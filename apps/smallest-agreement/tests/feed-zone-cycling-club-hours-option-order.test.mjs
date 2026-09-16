@@ -11,5 +11,4 @@ test("feed-zone cycling club hours sits after first-aid cycling club hours in th
   assert.ok(sprint !== -1);
   assert.ok(feedZone > firstAid);
   assert.ok(firstAid > sprint);
-  assert.match(html, /<kbd>Shift\+F9<\/kbd> Jump to the hide-last-group-without-floor control, or the groups heading/);
 });

@@ -28,7 +28,4 @@ test("time-trial cycling club hours keeps remaining 16 / 18 / 47 after criterium
   assert.match(criterium, /Pit-lane hours/);
   assert.doesNotMatch(criterium, /Start-ramp hours/);
   assert.doesNotMatch(criterium, /Timing-chip lock-up/);
-  assert.equal(app.includes('} else if (event.shiftKey && key === "F9") {\n    event.preventDefault();\n    jumpToHideLastGroupWithoutFloor();'), true);
-  assert.equal(app.includes('} else if (key === "F9") {\n    event.preventDefault();\n    jumpToHideLastGroupWithoutFloor();'), true);
-  assert.match(html, /<kbd>Shift\+F9<\/kbd> Jump to the hide-last-group-without-floor control, or the groups heading/);
 });

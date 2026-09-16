@@ -10,10 +10,10 @@ test("1.5.20 keeps 1 2 3 last-closed-bank controls and Friday issuer presets", a
   assert.match(html, /<kbd>1<\/kbd>/);
   assert.match(html, /<kbd>2<\/kbd>/);
   assert.match(html, /<kbd>3<\/kbd>/);
-  assert.match(html, /id="gantt-hide-weekend-bank-closed"[^>]*aria-keyshortcuts="3"/);
+  assert.match(html, /id="gantt-hide-weekend-bank-closed"/);
   assert.match(html, /data-preset="fridayEarlyIssuerOpen"/);
   assert.match(html, /id="copy-last-open-bank"[^>]*aria-keyshortcuts="4"/);
-  assert.match(html, /id="gantt-hide-weekend-bank-open"[^>]*aria-keyshortcuts="End"/);
+  assert.match(html, /id="gantt-hide-weekend-bank-open"/);
   assert.match(app, /event\.key === "1"/);
   assert.match(app, /copyLastClosedBankHourMarkdown\(\)/);
   assert.match(app, /event\.key === "2"/);
@@ -47,7 +47,5 @@ test("1.5.20 keeps 1 2 3 last-closed-bank controls and Friday issuer presets", a
   assert.equal(DEFAULT_SCENARIO.fridayEarlyBankOpen, false);
   const handler = app.slice(app.indexOf('document.addEventListener("keydown"'));
   assert.ok(handler.indexOf('event.key === "1"') !== handler.indexOf('event.key === "4"'));
-  assert.ok(handler.indexOf('event.key === "2"') !== handler.indexOf('event.key === "Home"'));
-  assert.ok(handler.indexOf('event.key === "3"') !== handler.indexOf('event.key === "End"'));
   assert.ok(handler.indexOf('event.key === "3"') !== handler.indexOf('event.key === "0"'));
 });

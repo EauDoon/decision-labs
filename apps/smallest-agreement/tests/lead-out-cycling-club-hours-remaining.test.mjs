@@ -78,7 +78,4 @@ test("lead-out cycling club hours keeps remaining 28 / 30 / 77 after feed-zone",
   assert.match(feedZone, /Sticky-bottle hours/);
   assert.doesNotMatch(feedZone, /Last-rider hours/);
   assert.doesNotMatch(feedZone, /Sprinter-launch lock-up/);
-  assert.equal(app.includes('} else if (event.shiftKey && key === "F9") {\n    event.preventDefault();\n    jumpToHideLastGroupWithoutFloor();'), true);
-  assert.equal(app.includes('} else if (key === "F9") {\n    event.preventDefault();\n    jumpToHideLastGroupWithoutFloor();'), true);
-  assert.match(html, /<kbd>Shift\+F9<\/kbd> Jump to the hide-last-group-without-floor control, or the groups heading/);
 });

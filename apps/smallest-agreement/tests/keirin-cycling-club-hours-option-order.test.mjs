@@ -9,5 +9,4 @@ test("keirin cycling club hours sits after hill-climb cycling club hours in the 
   const keirin = html.indexOf('<option value="keirin-cycling-club-hours">Keirin cycling club hours</option>');
   assert.ok(timeTrial !== -1 && hillClimb > timeTrial);
   assert.ok(keirin > hillClimb);
-  assert.match(html, /<kbd>Shift\+F9<\/kbd> Jump to the hide-last-group-without-floor control, or the groups heading/);
 });

@@ -13,5 +13,4 @@ test("criterium cycling club hours sits after road cycling club hours in the pre
   assert.ok(road > gravel);
   assert.ok(criterium > road);
   assert.ok(timeTrial > criterium);
-  assert.match(html, /<kbd>Shift\+F9<\/kbd> Jump to the hide-last-group-without-floor control, or the groups heading/);
 });

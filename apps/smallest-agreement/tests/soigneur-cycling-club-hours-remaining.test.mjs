@@ -82,7 +82,4 @@ test("soigneur cycling club hours keeps remaining 29 / 31 / 79 after lead-out", 
   assert.match(leadOut, /Last-rider hours/);
   assert.doesNotMatch(leadOut, /Cape-bag hours/);
   assert.doesNotMatch(leadOut, /Rice-cake lock-up/);
-  assert.equal(app.includes('} else if (event.shiftKey && key === "F9") {\n    event.preventDefault();\n    jumpToHideLastGroupWithoutFloor();'), true);
-  assert.equal(app.includes('} else if (key === "F9") {\n    event.preventDefault();\n    jumpToHideLastGroupWithoutFloor();'), true);
-  assert.match(html, /<kbd>Shift\+F9<\/kbd> Jump to the hide-last-group-without-floor control, or the groups heading/);
 });

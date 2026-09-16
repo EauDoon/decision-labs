@@ -2870,41 +2870,6 @@ document.addEventListener("keydown", (event) => {
     copyLastOpenBankHourMarkdown();
     return;
   }
-  if (event.key === "PageUp") {
-    event.preventDefault();
-    copyLastOpenPayoutHourMarkdown();
-    return;
-  }
-  if (event.key === "Insert") {
-    event.preventDefault();
-    copyLastOpenFxHourMarkdown();
-    return;
-  }
-  if (event.key === "Delete") {
-    event.preventDefault();
-    copyLastClosedFxHourMarkdown();
-    return;
-  }
-  if (event.key === "F3") {
-    event.preventDefault();
-    copyLastClosedPayoutHourMarkdown();
-    return;
-  }
-  if (event.key === "F7") {
-    event.preventDefault();
-    copyLastWeekendFxClosedHourMarkdown();
-    return;
-  }
-  if (event.key === "F10" && event.shiftKey) {
-    event.preventDefault();
-    copyFirstWeekdayFxOpenHourMarkdown();
-    return;
-  }
-  if (event.key === "F10") {
-    event.preventDefault();
-    copyLastWeekdayFxClosedHourMarkdown();
-    return;
-  }
   if (event.key === "<") {
     event.preventDefault();
     jumpToFirstClosedBankCopy();
@@ -2960,46 +2925,6 @@ document.addEventListener("keydown", (event) => {
     jumpToLastClosedBankCopy();
     return;
   }
-  if (event.key === "Home") {
-    event.preventDefault();
-    jumpToLastOpenBankCopy();
-    return;
-  }
-  if (event.key === "PageDown") {
-    event.preventDefault();
-    jumpToLastOpenPayoutCopy();
-    return;
-  }
-  if (event.key === "ArrowDown") {
-    event.preventDefault();
-    jumpToLastOpenFxCopy();
-    return;
-  }
-  if (event.key === "F2") {
-    event.preventDefault();
-    jumpToLastClosedFxCopy();
-    return;
-  }
-  if (event.key === "F4") {
-    event.preventDefault();
-    jumpToLastClosedPayoutCopy();
-    return;
-  }
-  if (event.key === "F8") {
-    event.preventDefault();
-    jumpToLastWeekendFxClosedCopy();
-    return;
-  }
-  if (event.key === "F11" && event.shiftKey) {
-    event.preventDefault();
-    jumpToFirstWeekdayFxOpenCopy();
-    return;
-  }
-  if (event.key === "F11") {
-    event.preventDefault();
-    jumpToLastWeekdayFxClosedCopy();
-    return;
-  }
   if (event.key === ">") {
     event.preventDefault();
     jumpToHideZeroQueueFilter();
@@ -3053,46 +2978,6 @@ document.addEventListener("keydown", (event) => {
   if (event.key === "3") {
     event.preventDefault();
     jumpToHideWeekendBankClosedFilter();
-    return;
-  }
-  if (event.key === "End") {
-    event.preventDefault();
-    jumpToHideWeekendBankOpenFilter();
-    return;
-  }
-  if (event.key === "ArrowUp") {
-    event.preventDefault();
-    jumpToHideWeekendPayoutOpenFilter();
-    return;
-  }
-  if (event.key === "ArrowLeft") {
-    event.preventDefault();
-    jumpToHideWeekendFxOpenFilter();
-    return;
-  }
-  if (event.key === "ArrowRight") {
-    event.preventDefault();
-    jumpToHideWeekendPayoutClosedFilter();
-    return;
-  }
-  if (event.key === "Backspace") {
-    event.preventDefault();
-    jumpToHideWeekendFxClosedFilter();
-    return;
-  }
-  if (event.key === "F9") {
-    event.preventDefault();
-    jumpToHideWeekdayFxClosedFilter();
-    return;
-  }
-  if (event.key === "F12" && event.shiftKey) {
-    event.preventDefault();
-    jumpToHideWeekdayFxClosedFilter();
-    return;
-  }
-  if (event.key === "F12") {
-    event.preventDefault();
-    jumpToHideWeekendFxOpenFilter();
     return;
   }
   if (event.key === "n" || event.key === "N") {

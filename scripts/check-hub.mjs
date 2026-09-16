@@ -13,7 +13,7 @@ const scripts = [
   'scripts/check-hub.mjs',
   ...tests,
 ];
-const copy = ['index.html', 'README.md', 'package.json', '.github/workflows/decision-labs.yml', ...scripts];
+const copy = ['index.html', '404.html', 'README.md', 'package.json', '.github/workflows/decision-labs.yml', ...scripts];
 
 let failed = 0;
 for (const file of scripts) {

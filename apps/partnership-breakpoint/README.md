@@ -1,5 +1,7 @@
 # Partnership Breakpoint
 
+> **Current keyboard behavior:** Home, End, Page Up, Page Down, arrow keys, Insert, Delete, Backspace, and F1 through F12 keep their native browser behavior. Older descriptions of those key bindings below are historical and no longer apply. Use the visible controls with Tab and Enter, or open the in-app shortcut help for retained application shortcuts.
+
 Partnership Breakpoint is a static browser workbench for locating participant-level exit thresholds in a shared commercial arrangement, then ranking the smallest adverse percentage movements in volume, fee, or variable cost that reach those boundaries. A reachable capacity limit is ranked as a volume-increase shock.
 
 It is useful when a negotiated revenue split looks acceptable in aggregate but may fail for one participant after costs, capacity, commitments, or a modest commercial shock are included. The workbench does not assign probabilities. The viability card names the participant with the least volume headroom. First breakpoint is a separate ranking by relative shock size and can name a different participant.

@@ -31,7 +31,4 @@ test("hill-climb cycling club hours keeps remaining 17 / 19 / 50 after time-tria
   assert.match(timeTrial, /Start-ramp hours/);
   assert.doesNotMatch(timeTrial, /Summit-marshal hours/);
   assert.doesNotMatch(timeTrial, /Climb-chip lock-up/);
-  assert.equal(app.includes('} else if (event.shiftKey && key === "F9") {\n    event.preventDefault();\n    jumpToHideLastGroupWithoutFloor();'), true);
-  assert.equal(app.includes('} else if (key === "F9") {\n    event.preventDefault();\n    jumpToHideLastGroupWithoutFloor();'), true);
-  assert.match(html, /<kbd>Shift\+F9<\/kbd> Jump to the hide-last-group-without-floor control, or the groups heading/);
 });
