@@ -143,16 +143,16 @@ SOFTWARE.
         <button class="button button-secondary" type="button" id="copy-last-below-threshold-group-button" aria-keyshortcuts="8">Copy last below-threshold group</button>
         <button class="button button-secondary" type="button" id="copy-first-below-threshold-group-button" aria-keyshortcuts="1">Copy first below-threshold group</button>
         <button class="button button-secondary" type="button" id="copy-last-group-at-or-above-threshold-button" aria-keyshortcuts="4">Copy last at-or-above-threshold group</button>
-        <button class="button button-secondary" type="button" id="copy-first-group-at-or-above-threshold-button" aria-keyshortcuts="PageUp">Copy first at-or-above-threshold group</button>
-        <button class="button button-secondary" type="button" id="copy-last-group-at-floor-button" aria-keyshortcuts="Insert">Copy last at-floor group</button>
-        <button class="button button-secondary" type="button" id="copy-first-group-at-floor-button" aria-keyshortcuts="F3">Copy first at-floor group</button>
-        <button class="button button-secondary" type="button" id="copy-last-below-floor-group-button" aria-keyshortcuts="Delete">Copy last below-floor group</button>
-        <button class="button button-secondary" type="button" id="copy-last-group-without-floor-button" aria-keyshortcuts="F7">Copy last group without a support floor</button>
-        <button class="button button-secondary" type="button" id="copy-first-group-without-floor-button" aria-keyshortcuts="F10">Copy first group without a support floor</button>
-        <button class="button button-secondary" type="button" id="copy-groups-without-floor-count-button" aria-keyshortcuts="Shift+F10">Copy groups-without-floor count</button>
+        <button class="button button-secondary" type="button" id="copy-first-group-at-or-above-threshold-button">Copy first at-or-above-threshold group</button>
+        <button class="button button-secondary" type="button" id="copy-last-group-at-floor-button">Copy last at-floor group</button>
+        <button class="button button-secondary" type="button" id="copy-first-group-at-floor-button">Copy first at-floor group</button>
+        <button class="button button-secondary" type="button" id="copy-last-below-floor-group-button">Copy last below-floor group</button>
+        <button class="button button-secondary" type="button" id="copy-last-group-without-floor-button">Copy last group without a support floor</button>
+        <button class="button button-secondary" type="button" id="copy-first-group-without-floor-button">Copy first group without a support floor</button>
+        <button class="button button-secondary" type="button" id="copy-groups-without-floor-count-button">Copy groups-without-floor count</button>
         <button class="button button-secondary" type="button" id="copy-groups-without-floor-remaining-button">Copy groups-without-floor remaining</button>
         <button class="button button-secondary" type="button" id="copy-last-group-without-floor-remaining-button">Copy last-without-floor remaining</button>
-        <button class="button button-secondary" type="button" id="copy-first-group-without-floor-remaining-button" aria-keyshortcuts="Shift+F7">Copy first-without-floor remaining</button>
+        <button class="button button-secondary" type="button" id="copy-first-group-without-floor-remaining-button">Copy first-without-floor remaining</button>
         <button class="button button-secondary" type="button" id="copy-first-group-without-floor-cost-button">Copy first-without-floor cost</button>
         <button class="button button-secondary" type="button" id="copy-last-group-without-floor-cost-button">Copy last-without-floor cost</button>
         <button class="button button-secondary" type="button" id="copy-change-cost-button">Copy change-cost table</button>
@@ -243,19 +243,19 @@ SOFTWARE.
           <p id="hide-first-group-below-threshold-filter-note" class="field-note">Hides only the first group whose average support on the inspected package is below the numeric approval threshold. Hidden groups still count in the model. The solver is unchanged. Distinct from hideGroupsBelowThreshold, hideLastGroupBelowThreshold, and hideLastNonVetoGroup. Workspace JSON persists this optional boolean. Older files omit the key and show all groups.</p>
           <label class="hide-last-group-at-or-above-threshold-filter" for="hide-last-group-at-or-above-threshold"><input id="hide-last-group-at-or-above-threshold" type="checkbox" aria-keyshortcuts="3"> Hide last group currently at or above the approval threshold</label>
           <p id="hide-last-group-at-or-above-threshold-filter-note" class="field-note">Hides only the last group whose average support on the inspected package is at or above the numeric approval threshold. Hidden groups still count in the model. The solver is unchanged. Distinct from hideFirstGroupAtOrAboveThreshold, hideFirstGroupBelowThreshold, hideLastGroupBelowThreshold, and hideGroupsMeetingThreshold. Workspace JSON persists this optional boolean. Older files omit the key and show all groups.</p>
-          <label class="hide-first-group-at-or-above-threshold-filter" for="hide-first-group-at-or-above-threshold"><input id="hide-first-group-at-or-above-threshold" type="checkbox" aria-keyshortcuts="End"> Hide first group currently at or above the approval threshold</label>
+          <label class="hide-first-group-at-or-above-threshold-filter" for="hide-first-group-at-or-above-threshold"><input id="hide-first-group-at-or-above-threshold" type="checkbox"> Hide first group currently at or above the approval threshold</label>
           <p id="hide-first-group-at-or-above-threshold-filter-note" class="field-note">Hides only the first group whose average support on the inspected package is at or above the numeric approval threshold. Hidden groups still count in the model. The solver is unchanged. Distinct from hideLastGroupAtOrAboveThreshold, hideGroupsMeetingThreshold, and hideFirstGroupBelowThreshold. Workspace JSON persists this optional boolean. Older files omit the key and show all groups.</p>
-          <label class="hide-last-group-at-floor-filter" for="hide-last-group-at-floor"><input id="hide-last-group-at-floor" type="checkbox" aria-keyshortcuts="ArrowUp"> Hide last group currently meeting their support floor</label>
+          <label class="hide-last-group-at-floor-filter" for="hide-last-group-at-floor"><input id="hide-last-group-at-floor" type="checkbox"> Hide last group currently meeting their support floor</label>
           <p id="hide-last-group-at-floor-filter-note" class="field-note">Hides only the last group whose average support on the inspected package currently meets their declared support floor. Hidden groups still count in the model. The solver is unchanged. Distinct from hideGroupsAtFloor, hideFirstGroupAtFloor, hideFirstGroupAtOrAboveThreshold, and hideLastGroupAtOrAboveThreshold. Workspace JSON persists this optional boolean. Older files omit the key and show all groups. A floor is a number you entered, not a legal quorum.</p>
-          <label class="hide-first-group-at-floor-filter" for="hide-first-group-at-floor"><input id="hide-first-group-at-floor" type="checkbox" aria-keyshortcuts="ArrowLeft"> Hide first group currently meeting their support floor</label>
+          <label class="hide-first-group-at-floor-filter" for="hide-first-group-at-floor"><input id="hide-first-group-at-floor" type="checkbox"> Hide first group currently meeting their support floor</label>
           <p id="hide-first-group-at-floor-filter-note" class="field-note">Hides only the first group whose average support on the inspected package currently meets their declared support floor. Hidden groups still count in the model. The solver is unchanged. Distinct from hideLastGroupAtFloor, hideGroupsAtFloor, and hideFirstGroupAtOrAboveThreshold. Workspace JSON persists this optional boolean. Older files omit the key and show all groups. A floor is a number you entered, not a legal quorum.</p>
-          <label class="hide-first-group-below-floor-filter" for="hide-first-group-below-floor"><input id="hide-first-group-below-floor" type="checkbox" aria-keyshortcuts="ArrowRight"> Hide first group currently below their support floor</label>
+          <label class="hide-first-group-below-floor-filter" for="hide-first-group-below-floor"><input id="hide-first-group-below-floor" type="checkbox"> Hide first group currently below their support floor</label>
           <p id="hide-first-group-below-floor-filter-note" class="field-note">Hides only the first group whose average support on the inspected package is currently below their declared support floor. Hidden groups still count in the model. The solver is unchanged. Distinct from hideFirstGroupAtFloor, hideLastGroupAtFloor, hideGroupsAtFloor, hideFirstGroupBelowThreshold, hideLastGroupBelowFloor, and belowFloorGroupsOnly. Workspace JSON persists this optional boolean. Older files omit the key and show all groups. A floor is a number you entered, not a legal quorum.</p>
-          <label class="hide-last-group-below-floor-filter" for="hide-last-group-below-floor"><input id="hide-last-group-below-floor" type="checkbox" aria-keyshortcuts="Backspace"> Hide last group currently below their support floor</label>
+          <label class="hide-last-group-below-floor-filter" for="hide-last-group-below-floor"><input id="hide-last-group-below-floor" type="checkbox"> Hide last group currently below their support floor</label>
           <p id="hide-last-group-below-floor-filter-note" class="field-note">Hides only the last group whose average support on the inspected package is currently below their declared support floor. Hidden groups still count in the model. The solver is unchanged. Distinct from hideFirstGroupBelowFloor, hideLastGroupBelowThreshold, hideLastGroupAtFloor, hideGroupsAtFloor, hideLastGroupWithoutFloor, and belowFloorGroupsOnly. Workspace JSON persists this optional boolean. Older files omit the key and show all groups. A floor is a number you entered, not a legal quorum.</p>
-          <label class="hide-last-group-without-floor-filter" for="hide-last-group-without-floor"><input id="hide-last-group-without-floor" type="checkbox" aria-keyshortcuts="F9"> Hide last group without a support floor</label>
+          <label class="hide-last-group-without-floor-filter" for="hide-last-group-without-floor"><input id="hide-last-group-without-floor" type="checkbox"> Hide last group without a support floor</label>
           <p id="hide-last-group-without-floor-filter-note" class="field-note">Hides only the last group that has no declared support floor. Hidden groups still count in the model. The solver is unchanged. Distinct from hideGroupsWithoutFloors, hideLastGroupBelowFloor, and hideFirstGroupWithoutFloor. Workspace JSON persists this optional boolean. Older files omit the key and show all groups. A floor is a number you entered, not a legal quorum.</p>
-          <label class="hide-first-group-without-floor-filter" for="hide-first-group-without-floor"><input id="hide-first-group-without-floor" type="checkbox" aria-keyshortcuts="F12"> Hide first group without a support floor</label>
+          <label class="hide-first-group-without-floor-filter" for="hide-first-group-without-floor"><input id="hide-first-group-without-floor" type="checkbox"> Hide first group without a support floor</label>
           <p id="hide-first-group-without-floor-filter-note" class="field-note">Hides only the first group that has no declared support floor. Hidden groups still count in the model. The solver is unchanged. Distinct from hideGroupsWithoutFloors, hideLastGroupWithoutFloor, hideLastGroupBelowFloor, hideFirstGroupBelowFloor, hideGroupsAtFloor, and hideLastGroupAtFloor. Workspace JSON persists this optional boolean. Older files omit the key and show all groups. A floor is a number you entered, not a legal quorum.</p>
           <p id="veto-groups-status" class="visually-hidden" role="status" aria-live="polite"></p>
           <label class="groups-paste-label" for="groups-paste">Paste participant groups TSV or CSV</label>
@@ -623,32 +623,6 @@ SOFTWARE.
           <li><kbd>2</kbd> Jump to the first below-threshold group copy control, or the groups heading</li>
           <li><kbd>3</kbd> Jump to the hide-last-group-at-or-above-threshold control, or the groups heading</li>
           <li><kbd>4</kbd> Copy the last at-or-above-threshold group label as one-line Markdown</li>
-          <li><kbd>Home</kbd> Jump to the last at-or-above-threshold group copy control, or the groups heading</li>
-          <li><kbd>End</kbd> Jump to the hide-first-group-at-or-above-threshold control, or the groups heading</li>
-          <li><kbd>PageUp</kbd> Copy the first at-or-above-threshold group label as one-line Markdown</li>
-          <li><kbd>PageDown</kbd> Jump to the first at-or-above-threshold group copy control, or the groups heading</li>
-          <li><kbd>ArrowUp</kbd> Jump to the hide-last-group-at-floor control, or the groups heading</li>
-          <li><kbd>Insert</kbd> Copy the last at-floor group label as one-line Markdown</li>
-          <li><kbd>ArrowDown</kbd> Jump to the last at-floor group copy control, or the groups heading</li>
-          <li><kbd>ArrowLeft</kbd> Jump to the hide-first-group-at-floor control, or the groups heading</li>
-          <li><kbd>F3</kbd> Copy the first at-floor group label as one-line Markdown</li>
-          <li><kbd>F4</kbd> Jump to the first at-floor group copy control, or the groups heading</li>
-          <li><kbd>Delete</kbd> Copy the last below-floor group label as one-line Markdown</li>
-          <li><kbd>F2</kbd> Jump to the last below-floor group copy control, or the groups heading</li>
-          <li><kbd>ArrowRight</kbd> Jump to the hide-first-group-below-floor control, or the groups heading</li>
-          <li><kbd>Backspace</kbd> Jump to the hide-last-group-below-floor control, or the groups heading</li>
-          <li><kbd>F7</kbd> Copy the last group-without-floor label as one-line Markdown</li>
-          <li><kbd>F8</kbd> Jump to the last group-without-floor copy control, or the groups heading</li>
-          <li><kbd>F9</kbd> Jump to the hide-last-group-without-floor control, or the groups heading</li>
-          <li><kbd>F10</kbd> Copy the first group-without-floor label as one-line Markdown</li>
-          <li><kbd>F11</kbd> Jump to the first group-without-floor copy control, or the groups heading</li>
-          <li><kbd>F12</kbd> Jump to the hide-first-group-without-floor control, or the groups heading</li>
-          <li><kbd>Shift+F7</kbd> Copy the first-without-floor remaining as one-line Markdown</li>
-          <li><kbd>Shift+F8</kbd> Jump to the first-without-floor remaining copy control, or the groups heading</li>
-          <li><kbd>Shift+F9</kbd> Jump to the hide-last-group-without-floor control, or the groups heading</li>
-          <li><kbd>Shift+F10</kbd> Copy the groups-without-floor count as one-line Markdown</li>
-          <li><kbd>Shift+F11</kbd> Jump to the groups-without-floor count copy control, or the groups heading</li>
-          <li><kbd>Shift+F12</kbd> Jump to the hide-first-group-without-floor control, or the groups heading</li>
           <li><kbd>Esc</kbd> Close help or the tour</li>
         </ul>
         <button class="button button-brick" type="button" id="shortcut-close">Close</button>

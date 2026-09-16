@@ -8,5 +8,4 @@ test("scratch cycling club hours sits after points-race cycling club hours in th
   const scratch = html.indexOf('<option value="scratch-cycling-club-hours">Scratch cycling club hours</option>');
   assert.ok(pointsRace !== -1);
   assert.ok(scratch > pointsRace);
-  assert.match(html, /<kbd>Shift\+F9<\/kbd> Jump to the hide-last-group-without-floor control, or the groups heading/);
 });

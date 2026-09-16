@@ -1,5 +1,7 @@
 # The Smallest Agreement
 
+> **Current keyboard behavior:** Home, End, Page Up, Page Down, arrow keys, Insert, Delete, Backspace, and F1 through F12 keep their native browser behavior. Older descriptions of those key bindings below are historical and no longer apply. Use the visible controls with Tab and Enter, or open the in-app shortcut help for retained application shortcuts.
+
 The Smallest Agreement is a local, static workshop for a group that wants to test structured clause changes against a chosen approval threshold. It finds the lowest-cost combination that also respects optional group support floors, optional veto groups, a change-cost budget, and locked clause choices.
 
 It is deliberately a decision aid, not a decision maker. People define the groups, weights, support scores, clauses, alternatives, and change costs. The app does not interpret policy text or infer what an option means.

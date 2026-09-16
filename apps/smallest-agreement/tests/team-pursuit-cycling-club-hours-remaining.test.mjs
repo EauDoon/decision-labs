@@ -65,7 +65,4 @@ test("team-pursuit cycling club hours keeps remaining 24 / 26 / 69 after individ
   assert.match(pursuit, /Catch-bell hours/);
   assert.doesNotMatch(pursuit, /Changeover-bell hours/);
   assert.doesNotMatch(pursuit, /Quartet-board lock-up/);
-  assert.equal(app.includes('} else if (event.shiftKey && key === "F9") {\n    event.preventDefault();\n    jumpToHideLastGroupWithoutFloor();'), true);
-  assert.equal(app.includes('} else if (key === "F9") {\n    event.preventDefault();\n    jumpToHideLastGroupWithoutFloor();'), true);
-  assert.match(html, /<kbd>Shift\+F9<\/kbd> Jump to the hide-last-group-without-floor control, or the groups heading/);
 });

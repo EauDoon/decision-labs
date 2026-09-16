@@ -9,5 +9,4 @@ test("omnium cycling club hours sits after madison cycling club hours in the pre
   const omnium = html.indexOf('<option value="omnium-cycling-club-hours">Omnium cycling club hours</option>');
   assert.ok(keirin !== -1 && madison > keirin);
   assert.ok(omnium > madison);
-  assert.match(html, /<kbd>Shift\+F9<\/kbd> Jump to the hide-last-group-without-floor control, or the groups heading/);
 });

@@ -11,5 +11,4 @@ test("bottle-hand cycling club hours sits after domestique cycling club hours in
   assert.ok(soigneur !== -1);
   assert.ok(bottleHand > domestique);
   assert.ok(domestique > soigneur);
-  assert.match(html, /<kbd>Shift\+F9<\/kbd> Jump to the hide-last-group-without-floor control, or the groups heading/);
 });

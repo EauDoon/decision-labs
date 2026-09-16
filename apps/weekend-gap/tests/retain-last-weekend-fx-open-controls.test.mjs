@@ -3,16 +3,13 @@ import test from "node:test";
 import { readFile } from "node:fs/promises";
 import { DEFAULT_SCENARIO, PRESETS } from "../src/model.js";
 
-test("1.5.29 keeps F10 F11 F12 last-weekday-FX-closed controls, last-weekend-FX-open copy, and F7 F8 F9", async () => {
+test("1.5.29 retains weekend FX controls and the weekday FX preset chain", async () => {
   const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
   const app = await readFile(new URL("../src/app.js", import.meta.url), "utf8");
-  assert.match(html, /id="copy-last-weekday-fx-closed"[^>]*aria-keyshortcuts="F10"/);
-  assert.match(html, /<kbd>F10<\/kbd>/);
-  assert.match(html, /<kbd>F11<\/kbd>/);
-  assert.match(html, /<kbd>F12<\/kbd>/);
-  assert.match(html, /id="gantt-hide-weekend-fx-open"[^>]*aria-keyshortcuts="ArrowLeft F12"/);
-  assert.match(html, /id="copy-last-weekend-fx-closed"[^>]*aria-keyshortcuts="F7"/);
-  assert.match(html, /id="gantt-hide-weekday-fx-closed"[^>]*aria-keyshortcuts="F9 Shift\+F12"/);
+  assert.match(html, /id="copy-last-weekday-fx-closed"/);
+  assert.match(html, /id="gantt-hide-weekend-fx-open"/);
+  assert.match(html, /id="copy-last-weekend-fx-closed"/);
+  assert.match(html, /id="gantt-hide-weekday-fx-closed"/);
   assert.match(html, /id="copy-last-weekend-fx-open"/);
   assert.match(html, /id="copy-last-weekday-fx-open"/);
   assert.match(html, /data-preset="sundayLateFxOpen"/);
@@ -44,13 +41,9 @@ test("1.5.29 keeps F10 F11 F12 last-weekday-FX-closed controls, last-weekend-FX-
   assert.match(html, /data-preset="sundayBreakfastFxOpen"/);
   assert.match(html, /data-preset="sundayBrunchFxOpen"/);
   assert.match(html, /data-preset="sundayLunchFxOpen"/);
-  assert.match(app, /event\.key === "F10"/);
   assert.match(app, /copyLastWeekdayFxClosedHourMarkdown\(\)/);
-  assert.match(app, /event\.key === "F11"/);
   assert.match(app, /jumpToLastWeekdayFxClosedCopy\(\)/);
-  assert.match(app, /event\.key === "F12"/);
   assert.match(app, /jumpToHideWeekendFxOpenFilter\(\)/);
-  assert.match(app, /event\.key === "F7"/);
   assert.match(app, /copyLastWeekendFxClosedHourMarkdown\(\)/);
   assert.match(app, /function copyLastWeekendFxOpenHourMarkdown/);
   assert.match(app, /function copyLastWeekdayFxOpenHourMarkdown/);
@@ -205,11 +198,4 @@ test("1.5.29 keeps F10 F11 F12 last-weekday-FX-closed controls, last-weekend-FX-
   assert.equal(PRESETS.sundayLunchFxOpen.sundayBrunchFxOpen, false);
   assert.equal(PRESETS.sundayLunchFxOpen.sundayBreakfastFxOpen, false);
   assert.equal(PRESETS.sundayLunchFxOpen.sundaySunriseFxOpen, false);
-  const handler = app.slice(app.indexOf('document.addEventListener("keydown"'));
-  const unshiftedF12 = handler.lastIndexOf('event.key === "F12"');
-  const f12Slice = handler.slice(unshiftedF12, unshiftedF12 + 180);
-  assert.match(f12Slice, /jumpToHideWeekendFxOpenFilter/);
-  assert.doesNotMatch(f12Slice, /jumpToHideWeekdayFxOpenFilter/);
-  assert.doesNotMatch(f12Slice, /jumpToHideWeekendFxClosedFilter/);
-  assert.ok(handler.indexOf('event.key === "F10" && event.shiftKey') < handler.lastIndexOf('event.key === "F10"'));
 });

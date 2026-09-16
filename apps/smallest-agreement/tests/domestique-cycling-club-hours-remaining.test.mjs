@@ -91,7 +91,4 @@ test("domestique cycling club hours keeps remaining 30 / 32 / 81 after soigneur"
   assert.match(soigneur, /Cape-bag hours/);
   assert.doesNotMatch(soigneur, /Neutral-service hours/);
   assert.doesNotMatch(soigneur, /Team-car lock-up/);
-  assert.equal(app.includes('} else if (event.shiftKey && key === "F9") {\n    event.preventDefault();\n    jumpToHideLastGroupWithoutFloor();'), true);
-  assert.equal(app.includes('} else if (key === "F9") {\n    event.preventDefault();\n    jumpToHideLastGroupWithoutFloor();'), true);
-  assert.match(html, /<kbd>Shift\+F9<\/kbd> Jump to the hide-last-group-without-floor control, or the groups heading/);
 });

@@ -73,7 +73,4 @@ test("bottle-hand cycling club hours keeps remaining 31 / 33 / 83 after domestiq
   assert.match(soigneur, /Cape-bag hours/);
   assert.doesNotMatch(soigneur, /Bidon-pass/);
   assert.doesNotMatch(soigneur, /Car-window hours/);
-  assert.equal(app.includes('} else if (event.shiftKey && key === "F9") {\n    event.preventDefault();\n    jumpToHideLastGroupWithoutFloor();'), true);
-  assert.equal(app.includes('} else if (key === "F9") {\n    event.preventDefault();\n    jumpToHideLastGroupWithoutFloor();'), true);
-  assert.match(html, /<kbd>Shift\+F9<\/kbd> Jump to the hide-last-group-without-floor control, or the groups heading/);
 });

@@ -46,7 +46,4 @@ test("omnium cycling club hours keeps remaining 20 / 22 / 59 after madison", asy
   assert.match(madison, /Handsling hours/);
   assert.doesNotMatch(madison, /Flying-200 hours/);
   assert.doesNotMatch(madison, /Tempo-board lock-up/);
-  assert.equal(app.includes('} else if (event.shiftKey && key === "F9") {\n    event.preventDefault();\n    jumpToHideLastGroupWithoutFloor();'), true);
-  assert.equal(app.includes('} else if (key === "F9") {\n    event.preventDefault();\n    jumpToHideLastGroupWithoutFloor();'), true);
-  assert.match(html, /<kbd>Shift\+F9<\/kbd> Jump to the hide-last-group-without-floor control, or the groups heading/);
 });

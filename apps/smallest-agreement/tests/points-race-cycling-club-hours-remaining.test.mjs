@@ -49,7 +49,4 @@ test("points-race cycling club hours keeps remaining 21 / 23 / 62 after omnium",
   assert.match(omnium, /Flying-200 hours/);
   assert.doesNotMatch(omnium, /Bell-lap hours/);
   assert.doesNotMatch(omnium, /Prime-board lock-up/);
-  assert.equal(app.includes('} else if (event.shiftKey && key === "F9") {\n    event.preventDefault();\n    jumpToHideLastGroupWithoutFloor();'), true);
-  assert.equal(app.includes('} else if (key === "F9") {\n    event.preventDefault();\n    jumpToHideLastGroupWithoutFloor();'), true);
-  assert.match(html, /<kbd>Shift\+F9<\/kbd> Jump to the hide-last-group-without-floor control, or the groups heading/);
 });
