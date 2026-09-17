@@ -5,6 +5,7 @@ import { readFileSync } from 'node:fs';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 
+import { APPS, APP_PATHS } from '../scripts/apps.mjs';
 import {
   CONTENT_SECURITY_POLICY,
   PUBLIC_PATHS,
@@ -73,9 +74,9 @@ test('launcher serves the catalog and four standalone workbenches with security 
   assert.equal(page.headers['x-content-type-options'], 'nosniff');
   assert.equal(page.headers['x-frame-options'], 'DENY');
   assert.equal(page.headers['referrer-policy'], 'no-referrer');
-  for (const app of ['partnership-breakpoint', 'common-cart', 'smallest-agreement', 'weekend-gap']) {
-    const response = await call(server, `/apps/${app}/standalone.html`);
-    assert.equal(response.status, 200, app);
+  for (const { id } of APPS) {
+    const response = await call(server, `/apps/${id}/standalone.html`);
+    assert.equal(response.status, 200, id);
     assert.match(response.body, /<!doctype html>/i);
   }
   for (const path of ['/.git/config', '/package.json', '/apps/common-cart/src/app.js', '/apps/common-cart/../../.git/config', '/%2e%2e/.git/config', '/apps/missing/standalone.html']) {
@@ -85,14 +86,7 @@ test('launcher serves the catalog and four standalone workbenches with security 
 
 test('launcher allowlist, methods, hosts, queries, and HEAD semantics stay closed', async (t) => {
   const server = await runningServer(t);
-  assert.deepEqual(PUBLIC_PATHS, [
-    '/',
-    '/index.html',
-    '/apps/partnership-breakpoint/standalone.html',
-    '/apps/common-cart/standalone.html',
-    '/apps/smallest-agreement/standalone.html',
-    '/apps/weekend-gap/standalone.html',
-  ]);
+  assert.deepEqual(PUBLIC_PATHS, ['/', '/index.html', ...APP_PATHS]);
   assert.equal(publicFile('/'), 'index.html');
   assert.equal(publicFile('/index.html'), 'index.html');
   assert.equal(publicFile('/apps/weekend-gap/standalone.html'), 'apps/weekend-gap/standalone.html');

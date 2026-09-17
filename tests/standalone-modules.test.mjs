@@ -3,9 +3,11 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { spawnSync } from 'node:child_process';
 
-for (const app of ['partnership-breakpoint', 'common-cart', 'smallest-agreement', 'weekend-gap']) {
-  test(`${app}: standalone scripts parse in their browser script mode`, () => {
-    const html = readFileSync(new URL(`../apps/${app}/standalone.html`, import.meta.url), 'utf8');
+import { APPS } from '../scripts/apps.mjs';
+
+for (const { id } of APPS) {
+  test(`${id}: standalone scripts parse in their browser script mode`, () => {
+    const html = readFileSync(new URL(`../apps/${id}/standalone.html`, import.meta.url), 'utf8');
     const scripts = [...html.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script>/g)];
     assert.ok(scripts.length, 'A bundled application script must exist.');
     for (const [, attributes, source] of scripts) {

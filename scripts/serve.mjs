@@ -3,17 +3,12 @@ import { readFileSync } from 'node:fs';
 import { readFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 
+import { APP_PATHS, catalogVersionLine } from './apps.mjs';
+
 const root = new URL('../', import.meta.url);
 
 // Exact public surface. Add a path here only together with a launcher test.
-export const PUBLIC_PATHS = Object.freeze([
-  '/',
-  '/index.html',
-  '/apps/partnership-breakpoint/standalone.html',
-  '/apps/common-cart/standalone.html',
-  '/apps/smallest-agreement/standalone.html',
-  '/apps/weekend-gap/standalone.html',
-]);
+export const PUBLIC_PATHS = Object.freeze(['/', '/index.html', ...APP_PATHS]);
 
 export const CONTENT_SECURITY_POLICY = "default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data:; connect-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'";
 
@@ -22,18 +17,7 @@ export function publicFile(pathname) {
   return pathname === '/' ? 'index.html' : pathname.slice(1);
 }
 
-export function catalogVersionLine() {
-  const apps = [
-    ['partnership-breakpoint', 'Partnership Breakpoint'],
-    ['common-cart', 'Common Cart'],
-    ['smallest-agreement', 'The Smallest Agreement'],
-    ['weekend-gap', 'Weekend Gap'],
-  ];
-  return apps.map(([id, label]) => {
-    const version = JSON.parse(readFileSync(new URL(`apps/${id}/package.json`, root), 'utf8')).version;
-    return `${label} ${version}`;
-  }).join(', ');
-}
+export { catalogVersionLine };
 
 export function notFoundPage() {
   return readFileSync(new URL('404.html', root), 'utf8');
