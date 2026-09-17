@@ -2,6 +2,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 
+import { APPS } from '../scripts/apps.mjs';
+
 const html = readFileSync(new URL('../index.html', import.meta.url), 'utf8');
 const readme = readFileSync(new URL('../README.md', import.meta.url), 'utf8');
 
@@ -54,8 +56,8 @@ test('catalog keeps the worked case and concise operating guidance', () => {
 });
 
 test('README keeps direct links to each source model document', () => {
-  for (const app of ['partnership-breakpoint', 'common-cart', 'smallest-agreement', 'weekend-gap']) {
-    assert.match(readme, new RegExp(`\\]\\(apps/${app}\\/MODEL\\.md\\)`));
+  for (const { id } of APPS) {
+    assert.match(readme, new RegExp(`\\]\\(apps/${id}\\/MODEL\\.md\\)`));
   }
 });
 

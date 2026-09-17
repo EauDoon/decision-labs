@@ -1,6 +1,8 @@
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 
+import { APPS } from './apps.mjs';
+
 const commands = new Set(['test', 'check', 'build:standalone']);
 const command = process.argv[2];
 if (!commands.has(command) || process.argv.length !== 3) {
@@ -13,13 +15,13 @@ if (!npm) {
   process.exit(1);
 }
 let failures = 0;
-for (const app of ['partnership-breakpoint', 'common-cart', 'smallest-agreement', 'weekend-gap']) {
-  console.log(`\n${app}: ${command}`);
-  const cwd = fileURLToPath(new URL(`../apps/${app}/`, import.meta.url));
+for (const { id } of APPS) {
+  console.log(`\n${id}: ${command}`);
+  const cwd = fileURLToPath(new URL(`../apps/${id}/`, import.meta.url));
   const result = spawnSync(process.execPath, [npm, 'run', command], { cwd, stdio: 'inherit' });
   if (result.error || result.status !== 0) {
     failures += 1;
-    console.error(`${app}: ${command} failed.`);
+    console.error(`${id}: ${command} failed.`);
   }
 }
 process.exitCode = failures ? 1 : 0;

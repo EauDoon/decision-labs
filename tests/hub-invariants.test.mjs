@@ -2,6 +2,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 
+import { APP_PATHS, APP_ROUTES } from '../scripts/apps.mjs';
+
 const root = new URL('../', import.meta.url);
 const html = readFileSync(new URL('index.html', root), 'utf8');
 const notFound = readFileSync(new URL('404.html', root), 'utf8');
@@ -23,12 +25,7 @@ test('catalog IDs are unique and all local hrefs stay in the intended surface', 
   const repositoryCaseStudy = 'https://github.com/EauDoon/decision-labs/blob/main/docs/CASE_STUDY.md';
   const repositoryReadme = 'https://github.com/EauDoon/decision-labs/blob/main/README.md';
   const repositoryDocs = new Set([repositoryCaseStudy, repositoryReadme]);
-  const localRoutes = new Set([
-    'apps/partnership-breakpoint/standalone.html',
-    'apps/common-cart/standalone.html',
-    'apps/smallest-agreement/standalone.html',
-    'apps/weekend-gap/standalone.html',
-  ]);
+  const localRoutes = new Set(APP_ROUTES);
   assert.equal(hrefs.filter((href) => href === repositoryCaseStudy).length, 2);
   assert.equal(hrefs.filter((href) => href === repositoryReadme).length, 1);
   for (const href of hrefs) {
@@ -55,12 +52,7 @@ test('404 is a small static navigation page and remains outside the public allow
   assert.match(notFound, /href="\/"/);
   assert.match(notFound, /That page is not in the catalog/);
   assert.doesNotMatch(notFound, /<script\b|keydown|preventDefault|copy-|Keyboard shortcuts|What's new/i);
-  for (const entry of [
-    '/apps/partnership-breakpoint/standalone.html',
-    '/apps/common-cart/standalone.html',
-    '/apps/smallest-agreement/standalone.html',
-    '/apps/weekend-gap/standalone.html',
-  ]) assert.match(notFound, new RegExp(`href="${entry.replaceAll('/', '\\/')}"`));
+  for (const entry of APP_PATHS) assert.match(notFound, new RegExp(`href="${entry.replaceAll('/', '\\/')}"`));
   assert.match(serve, /PUBLIC_PATHS = Object\.freeze\(\[/);
   assert.doesNotMatch(serve, /['"]\/404\.html['"]/);
 });
