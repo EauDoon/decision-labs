@@ -171,7 +171,7 @@ export function approvalForOptions(groups, options) {
   return maximum === 0 ? 0 : (totalSupport / maximum) * 100;
 }
 
-export function approvalByGroup(groups, options) {
+function approvalByGroup(groups, options) {
   return groups.map((group) => ({
     id: group.id,
     name: group.name,
@@ -233,7 +233,7 @@ export function clauseContributions(proposal, options) {
   };
 }
 
-export function selectionSummary(proposal, options, baselineOptions = getOriginalOptions(proposal)) {
+function selectionSummary(proposal, options, baselineOptions = getOriginalOptions(proposal)) {
   const changes = options
     .map((option, index) => ({ clause: proposal.clauses[index], option, baseline: baselineOptions[index] }))
     .filter(({ option, baseline }) => option.id !== baseline.id)
@@ -288,7 +288,7 @@ function compareText(a, b) {
  * Best-first ordering for passing candidates:
  * lower cost, fewer changed clauses, higher approval, then option ids by clause order.
  */
-export function compareAgreements(a, b) {
+function compareAgreements(a, b) {
   if (Math.abs(a.changeCost - b.changeCost) > EPSILON) return a.changeCost - b.changeCost;
   if (a.changedClauseCount !== b.changedClauseCount) return a.changedClauseCount - b.changedClauseCount;
   if (Math.abs(a.approval - b.approval) > EPSILON) return b.approval - a.approval;
@@ -300,7 +300,7 @@ export function compareAgreements(a, b) {
 }
 
 /** Near misses prioritize closest approval gap, then the same deterministic agreement order. */
-export function compareNearMisses(threshold, a, b) {
+function compareNearMisses(threshold, a, b) {
   const gapA = threshold - a.approval;
   const gapB = threshold - b.approval;
   if (Math.abs(gapA - gapB) > EPSILON) return gapA - gapB;
@@ -378,7 +378,7 @@ export function explorePackageGaps(proposal, result) {
   };
 }
 
-export function combinationCount(clauses, cap = Number.MAX_SAFE_INTEGER) {
+function combinationCount(clauses, cap = Number.MAX_SAFE_INTEGER) {
   let count = 1;
   for (const clause of clauses) {
     const choices = clause.lockedOptionId === undefined ? clause.options.length : 1;
@@ -1243,7 +1243,7 @@ function serializeCsv(rows) {
 }
 
 /** Strip a leading apostrophe added for spreadsheet safety. */
-export function neutralizeCsvCell(raw) {
+function neutralizeCsvCell(raw) {
   const text = String(raw ?? "");
   return text.startsWith("'") ? text.slice(1) : text;
 }
