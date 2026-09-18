@@ -1688,7 +1688,7 @@ export function neutralizeCsvCell(value) {
  * @param {string} [delimiter]
  * @returns {string[][]}
  */
-export function parseDelimited(text, delimiter = ',') {
+function parseDelimited(text, delimiter = ',') {
   if (typeof text !== 'string') {
     throw new ValidationError(['CSV must be text.']);
   }
@@ -1758,7 +1758,7 @@ export function parseCsv(text) {
  * @param {unknown} text
  * @returns {','|'\t'}
  */
-export function detectRosterDelimiter(text) {
+function detectRosterDelimiter(text) {
   if (typeof text !== 'string') return ',';
   const source = text.replace(/^\uFEFF/, '');
   const end = source.search(/\r\n|\n|\r/);
