@@ -83,11 +83,49 @@ Started 2026-09-12. Branch: `improve/consolidation-and-depth-20260912`.
   and Growth-at-a-Cost (disagreement, via share link) cases.
 - file:// standalone operation verified via headless Chrome on all four apps.
 
+## Depth campaign M1-M8 (2026-09-12, commits 9771384f-8fd880c9-db00eb1a)
+
+Substantive capability milestones, one version bump each, all with model/UI/CLI/docs/tests and rebuilt standalones:
+
+### M1. Partnership Breakpoint 1.7.0 (commit 9771384f)
+- Multi-period commercial planning: cash lags, recovery/funding, review/CLI/brief/CSV.
+
+### M2. Partnership Breakpoint 1.8.0 (commit 79473a79)
+- Negotiation alternatives on a declared grid (fee levels, share modes, commitment relief, up to 3 capacity investments); grids above 120 rejected; apply flow with undo; CSV export.
+
+### M3. Common Cart 1.5.0 (commit 402ebfc8)
+- Bounded exact multi-merchant procurement planner (250k-node bound), reference agreement, privacy-safe merchant summary.
+
+### M4. Common Cart 1.6.0 (commit 134744b3)
+- Supplier contingency experiments, standard withdrawal set, organizer/merchant exports, review/CLI.
+
+### M5. The Smallest Agreement 1.5.35 (commit 7ce28939)
+- Explicit option relationships: requires/excludes/linked, validation, search integration, editor, reference tests.
+
+### M6. The Smallest Agreement 1.6.0 (commit 0bcd8dc6)
+- Negotiation rounds with immutable baselines, human notes/decision separation, workspace rounds, CLI rounds.
+
+### M7. Weekend Gap 1.7.0 (commit 8fd880c9)
+- Configurable horizons (24-336 whole hours, default 72 byte-identical) and calendar overrides (max 32, half-open ranges, later-wins-per-field, reject-don't-clamp). Fixed mid-verification: override editor escaping the scenario form (typing reset rows), focus loss on valid edits, invalid-range status messaging.
+- Catalog/README versions bumped; hub whats-new pin test tracks the release.
+
+### M8. Weekend Gap 1.8.0 (commit db00eb1a)
+- Scheduled funding tranches (max 16) with cost accounting; costs never reduce reserve; planner deadline-scoped; comparisons list schedule changes; CLI `funding` command; CLI accepts dated schedule fields (previously rejected `calendarOverrides` files).
+- Also fixed: review tools hardcoded to 72h (crashed below 72, rejected scheduled scenarios), comparison change lists omitting schedule keys, horizon-pinned labels and headings.
+- Caught during verification: unconditional hourly cent-rounding of the reserve broke the planner's cent-exact recurrence; fixed to add-only-when-funded so no-tranche runs stay byte-identical.
+
+## Final review M9 (2026-09-12)
+
+- Root `npm test`: hub 37 (36 pass, 1 skip) + apps 523 + 917 + 448 + 454, all pass, 0 fail. Root `npm run check`: green; all standalones current.
+- Headless Chrome (CDP drives, zero deps), served and `file://`: hub 4 version cards, all four standalones render with 0 resource requests and no console errors; 12-button click sweep plus an input edit on partnership/agreement/cart clean.
+- Finding: Common Cart standalone was dead on load since M4 - `let contingencyRuns` sat after the load-time `refresh()` call, so every load died with a temporal-dead-zone ReferenceError. Cart tests only read app.js as text; nothing executed it. Fixed by moving the declaration above first use; verified in-browser (contingency experiment runs) and via a new executing regression test with a negative control.
+- Gap closed: partnership, cart, and agreement had no test executing their app modules (only weekend-gap did). Each now has an `app-boots` test that evaluates the real module top-to-bottom in a stub DOM and fails on any load-time throw. Stubs are deliberately tolerant (unknown selectors yield generic nodes): they guard evaluation order, not behavior.
+- file:// verified for all four standalones after the fix.
+
 ## Remaining limitations and next actions
 
-1. Common Cart retains its own hide-first/last checkbox clusters and copy
-   controls (17 buyer filters, ~15 leftover copies). Same consolidation recipe
-   applies; not done this session.
+1. Common Cart retains many hide-first/last filter controls and copy buttons
+   (M3/M4 shipped around them). Same consolidation recipe applies.
 2. Weekend-gap bottleneck card: reserve vs timing vs throughput distinction is
    documented but could get a dedicated constraint analysis card.
 3. App-local keyboard sets in partnership/smallest-agreement still have some
@@ -95,8 +133,12 @@ Started 2026-09-12. Branch: `improve/consolidation-and-depth-20260912`.
 4. Smallest-agreement outcome taxonomy is covered by copy-level alert text and
    now by reference tests; a dedicated status chip in the result header is an
    optional polish.
+5. Boot-test stubs are tolerant by design: they catch load-time evaluation
+   crashes, not behavioral regressions. Behavioral coverage still rests on
+   model tests, markup tests, and browser drives.
 
 ## Next concrete action
 
-Run the same consolidation recipe on Common Cart's buyer filters and leftover
-copy controls (tests first: replace markup mirrors with outcome tests).
+Campaign complete on branch `improve/consolidation-and-depth-20260912`.
+Suggested next work: Common Cart filter/copy consolidation (item 1), or merge
+the branch after review.

@@ -195,6 +195,7 @@ let hideFirstUncoveredLeftoverBuyer = false;
 let hideLastUncoveredLeftoverBuyer = false;
 let lastRemovedBuyer = null;
 let saveTimer;
+let contingencyRuns = [];
 renderEditor();
 refresh();
 bindStaticEvents();
@@ -4579,8 +4580,6 @@ function clearMultiMerchantPlan() {
     if (body) body.replaceChildren();
   }
 }
-
-let contingencyRuns = [];
 
 function contingencyExperimentFromBuilder() {
   const type = document.querySelector("#contingency-type")?.value;
