@@ -10,6 +10,15 @@ It is a working research prototype for a simple question: can shared demand crea
 
 *Built-in synthetic coffee scenario.*
 
+## Consolidated display (v1.7.0)
+
+Common Cart 1.7.0 is a maintainability release. It does not change the matching math. Peak allocations, settled totals, and scenario files are computed exactly as in 1.6.0.
+
+1. The twelve first/last buyer hide checkboxes become six edge-row selects: leftover-fill, tertiary-fill, unserved, leftover-only, winner-allocated, and uncovered leftover buyers each offer show all, hide first, hide last, or hide first and last. The underlying row filters are unchanged.
+2. Thirty-five single-field copy buttons become eleven evidence buttons. Leftover-fill, uncovered-leftover, leftover-only, tertiary-fill, and winning-offer evidence documents replace the one-field copies; coverage, headroom, inspector, requested-units, exclusion-counts, and winner-aggregates copies stay as separate buttons. Twenty-one print paragraphs become seven evidence blocks.
+3. The keyboard set is trimmed to letters, `?`, and `Esc`. Punctuation, digit, and shifted keys bound to the retired controls are retired. Normal browser behavior (Find, fullscreen, dev tools, scrolling) is no longer intercepted.
+4. Workspace JSON gains six `edge*` keys and stops writing the twelve first/last flags. Older workspace files still open: each legacy pair maps onto the closest edge value, and files without the new keys show every buyer.
+
 ## Supplier contingency (v1.6.0)
 
 The **Supplier contingency** panel tests one declared supplier change at a time — withdraw an offer, reduce a capacity, scale prices, or delay delivery — against identical demand, and shows which orders lose coverage, which become feasible, and how landed cost moves. Withdraw each planned merchant runs the standard dependency set. Export the experiments as organizer-private JSON or the merchant summary with aggregates only. The CLI accepts `contingency --input scenario.json --experiment '{"type":"withdraw","offerId":"O01"}'`. Editing the room clears experiment results so stale runs are never shown.

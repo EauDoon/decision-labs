@@ -123,22 +123,19 @@ test("hide first tertiary-fill buyer rejects prototype-like flags", () => {
   assert.throws(() => filterBuyerIdsHidingFirstBuyerFilledByTertiaryFill(scenario, 1), ScenarioError);
 });
 
-test("the organizer hide first tertiary-fill buyer filter is not on the merchant table", async () => {
+test("the organizer tertiary-fill edge select is not on the merchant table", async () => {
   const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
   const app = await readFile(new URL("../src/app.js", import.meta.url), "utf8");
   const buyerPanel = html.slice(html.indexOf('id="buyer-panel"'), html.indexOf('id="merchant-panel"'));
   const merchantPanel = html.slice(html.indexOf('id="merchant-panel"'), html.indexOf('id="method-panel"'));
-  assert.match(buyerPanel, /id="hide-first-buyer-filled-by-tertiary-fill"/u);
-  assert.match(buyerPanel, /Hide the first buyer filled by tertiary fill/u);
-  assert.match(buyerPanel, /id="hide-first-buyer-filled-by-leftover-fill"/u);
+  assert.match(buyerPanel, /id="edge-tertiary-fill"/u);
+  assert.match(buyerPanel, /Show all/u);
+  assert.match(buyerPanel, /Hide first and last/u);
   assert.match(buyerPanel, /Merchant views still show counts only/u);
-  assert.equal(merchantPanel.includes("hide-first-buyer-filled-by-tertiary-fill"), false);
-  assert.equal(merchantPanel.includes("hideFirstBuyerFilledByTertiaryFill"), false);
-  assert.equal(merchantPanel.includes("copy-leftover-fill-minimum"), false);
+  assert.equal(merchantPanel.includes("edge-tertiary-fill"), false);
   assert.match(app, /function applyBuyerDisplayFilters\(/u);
-  assert.match(app, /filterBuyerIdsHidingFirstBuyerFilledByTertiaryFill\(/u);
-  assert.match(app, /hideFirstBuyerFilledByTertiaryFill/u);
+  assert.match(app, /edgeTertiaryFill/u);
   assert.match(app, /persistWorkspaceDisplaySettings\(/u);
-  assert.match(html, /hide-first-buyer-filled-by-leftover-fill, hide-first-buyer-filled-by-tertiary-fill, hide-last-buyer-filled-by-tertiary-fill, hide-last-unserved-buyer, hide-first-unserved-buyer, hide-last-leftover-only-buyer, hide-first-leftover-only-buyer, hide-last-winner-allocated-buyer, hide-first-winner-allocated-buyer, hide-first-uncovered-leftover-buyer, and hide-last-uncovered-leftover-buyer choices are kept/u);
-  assert.match(html, /Older workspace files without them still show every buyer/u);
+  assert.match(html, /edge-leftover-fill, edge-tertiary-fill, edge-unserved, edge-leftover-only, edge-winner-allocated, and edge-uncovered-leftover choices are kept/u);
+  assert.match(html, /retired first\/last checkbox pairs map onto the matching edge select/u);
 });

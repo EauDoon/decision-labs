@@ -29,7 +29,7 @@ body {
 button, input, select, textarea { font: inherit; }
 button { cursor: pointer; }
 button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible, a:focus-visible,
-#offers-list:focus, #buyers-list:focus, #winner-summary:focus, #inspector-summary:focus, #merchant-inspector-region:focus, #residual-title:focus, #leftover-coverage-rows tr:focus, #leftover-buyer-rows tr:focus, #uncovered-leftover:focus, #variant-overlap-region:focus, #paste-buyers:focus, #leftover-print-fill:focus {
+#offers-list:focus, #buyers-list:focus, #winner-summary:focus, #inspector-summary:focus, #merchant-inspector-region:focus, #residual-title:focus, #leftover-coverage-rows tr:focus, #leftover-buyer-rows tr:focus, #uncovered-leftover:focus, #variant-overlap-region:focus, #paste-buyers:focus, #leftover-print-fill-evidence:focus {
   outline: 3px solid rgba(243, 111, 61, 0.55);
   outline-offset: 2px;
 }
@@ -382,24 +382,10 @@ footer {
   body.print-leftover .residual-panel,
   body.print-leftover #leftover-coverage,
   body.print-leftover #leftover-print-overlap,
-  body.print-leftover #leftover-print-uncovered,
-  body.print-leftover #leftover-print-uncovered-units,
-  body.print-leftover #leftover-print-uncovered-remaining,
-  body.print-leftover #leftover-print-uncovered-maximum,
-  body.print-leftover #leftover-print-uncovered-minimum,
-  body.print-leftover #leftover-print-uncovered-count,
+  body.print-leftover #leftover-print-uncovered-evidence,
   body.print-leftover #leftover-print-requested,
-  body.print-leftover #leftover-print-fill,
-  body.print-leftover #leftover-print-fill-merchant,
-  body.print-leftover #leftover-print-fill-remaining,
-  body.print-leftover #leftover-print-fill-fulfillment,
-  body.print-leftover #leftover-print-fill-delivery,
-  body.print-leftover #leftover-print-fill-pickup,
-  body.print-leftover #leftover-print-fill-label,
-  body.print-leftover #leftover-print-fill-minimum,
-  body.print-leftover #leftover-print-fill-maximum,
-  body.print-leftover #leftover-print-tertiary-remaining,
-  body.print-leftover #leftover-print-tertiary-maximum,
+  body.print-leftover #leftover-print-fill-evidence,
+  body.print-leftover #leftover-print-tertiary-evidence,
   body.print-leftover .scoreboard .metric.feature {
     display: block !important;
   }

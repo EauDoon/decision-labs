@@ -120,27 +120,19 @@ test("hide last leftover-fill buyer rejects prototype-like flags", () => {
   assert.throws(() => filterBuyerIdsHidingLastBuyerFilledByLeftoverFill(scenario, 1), ScenarioError);
 });
 
-test("the organizer hide last leftover-fill buyer filter is not on the merchant table", async () => {
+test("the organizer leftover-fill edge select is not on the merchant table", async () => {
   const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
   const app = await readFile(new URL("../src/app.js", import.meta.url), "utf8");
   const buyerPanel = html.slice(html.indexOf('id="buyer-panel"'), html.indexOf('id="merchant-panel"'));
   const merchantPanel = html.slice(html.indexOf('id="merchant-panel"'), html.indexOf('id="method-panel"'));
-  assert.match(buyerPanel, /id="hide-last-buyer-filled-by-leftover-fill"/u);
-  assert.match(buyerPanel, /Hide the last buyer filled by leftover fill/u);
-  assert.match(buyerPanel, /id="hide-buyers-filled-by-leftover-fill"/u);
-  assert.match(buyerPanel, /id="hide-winner-allocated-buyers"/u);
-  assert.match(buyerPanel, /id="hide-leftover-only-buyers"/u);
-  assert.match(buyerPanel, /id="hide-unserved-buyers"/u);
-  assert.match(buyerPanel, /id="hide-buyers-with-leftover"/u);
-  assert.match(buyerPanel, /id="hide-fully-filled-buyers"/u);
-  assert.match(buyerPanel, /id="hide-excluded-buyers"/u);
+  assert.match(buyerPanel, /id="edge-leftover-fill"/u);
+  assert.match(buyerPanel, /Show all/u);
+  assert.match(buyerPanel, /Hide first and last/u);
   assert.match(buyerPanel, /Merchant views still show counts only/u);
-  assert.equal(merchantPanel.includes("hide-last-buyer-filled-by-leftover-fill"), false);
-  assert.equal(merchantPanel.includes("hideLastBuyerFilledByLeftoverFill"), false);
+  assert.equal(merchantPanel.includes("edge-leftover-fill"), false);
   assert.match(app, /function applyBuyerDisplayFilters\(/u);
-  assert.match(app, /filterBuyerIdsHidingLastBuyerFilledByLeftoverFill\(/u);
-  assert.match(app, /hideLastBuyerFilledByLeftoverFill/u);
+  assert.match(app, /edgeLeftoverFill/u);
   assert.match(app, /persistWorkspaceDisplaySettings\(/u);
-  assert.match(html, /hide-last-buyer-filled-by-leftover-fill, hide-first-buyer-filled-by-leftover-fill, hide-first-buyer-filled-by-tertiary-fill, hide-last-buyer-filled-by-tertiary-fill, hide-last-unserved-buyer, hide-first-unserved-buyer, hide-last-leftover-only-buyer, hide-first-leftover-only-buyer, hide-last-winner-allocated-buyer, hide-first-winner-allocated-buyer, hide-first-uncovered-leftover-buyer, and hide-last-uncovered-leftover-buyer choices are kept/u);
-  assert.match(html, /Older workspace files without them still show every buyer/u);
+  assert.match(html, /edge-leftover-fill, edge-tertiary-fill, edge-unserved, edge-leftover-only, edge-winner-allocated, and edge-uncovered-leftover choices are kept/u);
+  assert.match(html, /retired first\/last checkbox pairs map onto the matching edge select/u);
 });
