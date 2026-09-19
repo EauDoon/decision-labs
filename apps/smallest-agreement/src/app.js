@@ -1410,6 +1410,702 @@ const presets = {
       },
     ],
   },
+  "cyclo-cross-club-hours": {
+    title: "Cyclo-cross club hours: cyclo-cross course booking, start-grid hours, and pit-box lock-up",
+    threshold: 70,
+    maxChangeCost: 8,
+    groups: [
+      { id: "students", name: "Students", weight: 11 },
+      { id: "neighbours", name: "Neighbours", weight: 10, veto: true },
+      { id: "pandc", name: "P&C", weight: 13 },
+    ],
+    clauses: [
+      {
+        id: "cyclo-cross-course-booking", title: "Cyclo-cross course booking", options: [
+          { id: "cyclo-cross-course-booking-original", original: true, label: "Keep weekday cyclo-cross course from 10:40 with no posted start-grid rota", changeCost: 0, support: { students: 2, neighbours: 89, pandc: 62 } },
+          { id: "cyclo-cross-course-booking-late", original: false, label: "Open weekday cyclo-cross course at 16:50 with a posted start-grid rota", changeCost: 2, support: { students: 91, neighbours: 29, pandc: 41 } },
+          { id: "cyclo-cross-course-booking-weekend", original: false, label: "Hold Saturday morning cyclo-cross course at 08:05 with a start-grid booking card", changeCost: 4, support: { students: 76, neighbours: 37, pandc: 49 } },
+        ],
+      },
+      {
+        id: "cyclo-cross-start-grid", title: "Start-grid hours", options: [
+          { id: "cyclo-cross-start-grid-original", original: true, label: "No posted start-grid hours", changeCost: 0, support: { students: 67, neighbours: 15, pandc: 32 } },
+          { id: "cyclo-cross-start-grid-cap", original: false, label: "Close start-grid at 18:15 and keep marshals at the cyclo-cross hut", changeCost: 1, support: { students: 40, neighbours: 85, pandc: 64 } },
+          { id: "cyclo-cross-start-grid-cut", original: false, label: "Serve marshals only after 13:30", changeCost: 5, support: { students: 22, neighbours: 89, pandc: 38 } },
+        ],
+      },
+      {
+        id: "cyclo-cross-pit-box-lockup", title: "Pit-box lock-up", options: [
+          { id: "cyclo-cross-pit-box-lockup-original", original: true, label: "Leave the pit-box door on a shared padlock after club hours", changeCost: 0, support: { students: 7, neighbours: 27, pandc: 32 } },
+          { id: "cyclo-cross-pit-box-lockup-steward", original: false, label: "Require a P&C steward to lock the pit-box store before 19:55", changeCost: 3, support: { students: 54, neighbours: 59, pandc: 79 } },
+          { id: "cyclo-cross-pit-box-lockup-timer", original: false, label: "Add a timed lock on the pit-box store after the last cyclo-cross session", changeCost: 2, support: { students: 43, neighbours: 46, pandc: 63 } },
+        ],
+      },
+    ],
+  },
+  "track-cycling-club-hours": {
+    title: "Track cycling club hours: sprint track booking, timing-hut hours, and wheel-box lock-up",
+    threshold: 70,
+    maxChangeCost: 8,
+    groups: [
+      { id: "students", name: "Students", weight: 12 },
+      { id: "neighbours", name: "Neighbours", weight: 11, veto: true },
+      { id: "pandc", name: "P&C", weight: 14 },
+    ],
+    clauses: [
+      {
+        id: "track-cycling-sprint-track-booking", title: "Sprint track booking", options: [
+          { id: "track-cycling-sprint-track-booking-original", original: true, label: "Keep weekday sprint track from 09:50 with no posted timing-hut rota", changeCost: 0, support: { students: 1, neighbours: 88, pandc: 63 } },
+          { id: "track-cycling-sprint-track-booking-late", original: false, label: "Open weekday sprint track at 17:35 with a posted timing-hut rota", changeCost: 2, support: { students: 92, neighbours: 28, pandc: 40 } },
+          { id: "track-cycling-sprint-track-booking-weekend", original: false, label: "Hold Sunday morning sprint track at 07:25 with a timing-hut booking card", changeCost: 4, support: { students: 77, neighbours: 36, pandc: 48 } },
+        ],
+      },
+      {
+        id: "track-cycling-timing-hut", title: "Timing-hut hours", options: [
+          { id: "track-cycling-timing-hut-original", original: true, label: "No posted timing-hut hours", changeCost: 0, support: { students: 66, neighbours: 14, pandc: 33 } },
+          { id: "track-cycling-timing-hut-cap", original: false, label: "Close timing-hut at 20:25 and keep commissaires at the sprint track hut", changeCost: 1, support: { students: 39, neighbours: 86, pandc: 65 } },
+          { id: "track-cycling-timing-hut-cut", original: false, label: "Serve commissaires only after 12:45", changeCost: 5, support: { students: 21, neighbours: 90, pandc: 37 } },
+        ],
+      },
+      {
+        id: "track-cycling-wheel-box-lockup", title: "Wheel-box lock-up", options: [
+          { id: "track-cycling-wheel-box-lockup-original", original: true, label: "Leave the wheel-box door on a shared padlock after club hours", changeCost: 0, support: { students: 6, neighbours: 26, pandc: 31 } },
+          { id: "track-cycling-wheel-box-lockup-steward", original: false, label: "Require a P&C steward to lock the wheel-box store before 21:10", changeCost: 3, support: { students: 53, neighbours: 60, pandc: 80 } },
+          { id: "track-cycling-wheel-box-lockup-timer", original: false, label: "Add a timed lock on the wheel-box store after the last track cycling session", changeCost: 2, support: { students: 42, neighbours: 45, pandc: 62 } },
+        ],
+      },
+    ],
+  },
+  "gravel-cycling-club-hours": {
+    title: "Gravel cycling club hours: gravel course booking, feed-zone hours, and drop-bag lock-up",
+    threshold: 70,
+    maxChangeCost: 8,
+    groups: [
+      { id: "students", name: "Students", weight: 13 },
+      { id: "neighbours", name: "Neighbours", weight: 12, veto: true },
+      { id: "pandc", name: "P&C", weight: 15 },
+    ],
+    clauses: [
+      {
+        id: "gravel-cycling-course-booking", title: "Gravel course booking", options: [
+          { id: "gravel-cycling-course-booking-original", original: true, label: "Keep weekday gravel course from 09:10 with no posted feed-zone rota", changeCost: 0, support: { students: 3, neighbours: 87, pandc: 64 } },
+          { id: "gravel-cycling-course-booking-late", original: false, label: "Open weekday gravel course at 16:20 with a posted feed-zone rota", changeCost: 2, support: { students: 90, neighbours: 27, pandc: 39 } },
+          { id: "gravel-cycling-course-booking-weekend", original: false, label: "Hold Saturday morning gravel course at 08:40 with a feed-zone booking card", changeCost: 4, support: { students: 75, neighbours: 35, pandc: 47 } },
+        ],
+      },
+      {
+        id: "gravel-cycling-feed-zone", title: "Feed-zone hours", options: [
+          { id: "gravel-cycling-feed-zone-original", original: true, label: "No posted feed-zone hours", changeCost: 0, support: { students: 65, neighbours: 13, pandc: 34 } },
+          { id: "gravel-cycling-feed-zone-cap", original: false, label: "Close feed-zone at 19:05 and keep marshals at the gravel hut", changeCost: 1, support: { students: 38, neighbours: 87, pandc: 66 } },
+          { id: "gravel-cycling-feed-zone-cut", original: false, label: "Serve marshals only after 13:10", changeCost: 5, support: { students: 20, neighbours: 91, pandc: 36 } },
+        ],
+      },
+      {
+        id: "gravel-cycling-drop-bag-lockup", title: "Drop-bag lock-up", options: [
+          { id: "gravel-cycling-drop-bag-lockup-original", original: true, label: "Leave the drop-bag door on a shared padlock after club hours", changeCost: 0, support: { students: 5, neighbours: 25, pandc: 30 } },
+          { id: "gravel-cycling-drop-bag-lockup-steward", original: false, label: "Require a P&C steward to lock the drop-bag store before 20:40", changeCost: 3, support: { students: 52, neighbours: 61, pandc: 81 } },
+          { id: "gravel-cycling-drop-bag-lockup-timer", original: false, label: "Add a timed lock on the drop-bag store after the last gravel cycling session", changeCost: 2, support: { students: 41, neighbours: 44, pandc: 61 } },
+        ],
+      },
+    ],
+  },
+  "road-cycling-club-hours": {
+    title: "Road cycling club hours: road course booking, feed-station hours, and wheel-bag lock-up",
+    threshold: 70,
+    maxChangeCost: 8,
+    groups: [
+      { id: "students", name: "Students", weight: 14 },
+      { id: "neighbours", name: "Neighbours", weight: 13, veto: true },
+      { id: "pandc", name: "P&C", weight: 16 },
+    ],
+    clauses: [
+      {
+        id: "road-cycling-course-booking", title: "Road course booking", options: [
+          { id: "road-cycling-course-booking-original", original: true, label: "Keep weekday road course from 08:25 with no posted feed-station rota", changeCost: 0, support: { students: 4, neighbours: 86, pandc: 65 } },
+          { id: "road-cycling-course-booking-late", original: false, label: "Open weekday road course at 17:55 with a posted feed-station rota", changeCost: 2, support: { students: 89, neighbours: 26, pandc: 38 } },
+          { id: "road-cycling-course-booking-weekend", original: false, label: "Hold Sunday morning road course at 07:40 with a feed-station booking card", changeCost: 4, support: { students: 74, neighbours: 34, pandc: 46 } },
+        ],
+      },
+      {
+        id: "road-cycling-feed-station", title: "Feed-station hours", options: [
+          { id: "road-cycling-feed-station-original", original: true, label: "No posted feed-station hours", changeCost: 0, support: { students: 64, neighbours: 12, pandc: 35 } },
+          { id: "road-cycling-feed-station-cap", original: false, label: "Close feed-station at 20:50 and keep soigneurs at the road hut", changeCost: 1, support: { students: 37, neighbours: 88, pandc: 67 } },
+          { id: "road-cycling-feed-station-cut", original: false, label: "Serve soigneurs only after 12:20", changeCost: 5, support: { students: 19, neighbours: 92, pandc: 35 } },
+        ],
+      },
+      {
+        id: "road-cycling-wheel-bag-lockup", title: "Wheel-bag lock-up", options: [
+          { id: "road-cycling-wheel-bag-lockup-original", original: true, label: "Leave the wheel-bag door on a shared padlock after club hours", changeCost: 0, support: { students: 4, neighbours: 24, pandc: 29 } },
+          { id: "road-cycling-wheel-bag-lockup-steward", original: false, label: "Require a P&C steward to lock the wheel-bag store before 21:25", changeCost: 3, support: { students: 51, neighbours: 62, pandc: 82 } },
+          { id: "road-cycling-wheel-bag-lockup-timer", original: false, label: "Add a timed lock on the wheel-bag store after the last road cycling session", changeCost: 2, support: { students: 40, neighbours: 43, pandc: 60 } },
+        ],
+      },
+    ],
+  },
+  "criterium-cycling-club-hours": {
+    title: "Criterium cycling club hours: criterium course booking, pit-lane hours, and number-board lock-up",
+    threshold: 70,
+    maxChangeCost: 8,
+    groups: [
+      { id: "students", name: "Students", weight: 15 },
+      { id: "neighbours", name: "Neighbours", weight: 14, veto: true },
+      { id: "pandc", name: "P&C", weight: 17 },
+    ],
+    clauses: [
+      {
+        id: "criterium-cycling-course-booking", title: "Criterium course booking", options: [
+          { id: "criterium-cycling-course-booking-original", original: true, label: "Keep weekday criterium course from 09:35 with no posted pit-lane rota", changeCost: 0, support: { students: 5, neighbours: 85, pandc: 66 } },
+          { id: "criterium-cycling-course-booking-late", original: false, label: "Open weekday criterium course at 18:05 with a posted pit-lane rota", changeCost: 2, support: { students: 88, neighbours: 25, pandc: 37 } },
+          { id: "criterium-cycling-course-booking-weekend", original: false, label: "Hold Saturday morning criterium course at 08:10 with a pit-lane booking card", changeCost: 4, support: { students: 73, neighbours: 33, pandc: 45 } },
+        ],
+      },
+      {
+        id: "criterium-cycling-pit-lane", title: "Pit-lane hours", options: [
+          { id: "criterium-cycling-pit-lane-original", original: true, label: "No posted pit-lane hours", changeCost: 0, support: { students: 63, neighbours: 11, pandc: 36 } },
+          { id: "criterium-cycling-pit-lane-cap", original: false, label: "Close pit-lane at 19:20 and keep commissaires at the circuit hut", changeCost: 1, support: { students: 36, neighbours: 89, pandc: 68 } },
+          { id: "criterium-cycling-pit-lane-cut", original: false, label: "Serve commissaires only after 13:25", changeCost: 5, support: { students: 18, neighbours: 93, pandc: 34 } },
+        ],
+      },
+      {
+        id: "criterium-cycling-number-board-lockup", title: "Number-board lock-up", options: [
+          { id: "criterium-cycling-number-board-lockup-original", original: true, label: "Leave the number-board door on a shared padlock after club hours", changeCost: 0, support: { students: 3, neighbours: 23, pandc: 28 } },
+          { id: "criterium-cycling-number-board-lockup-steward", original: false, label: "Require a P&C steward to lock the number-board store before 20:55", changeCost: 3, support: { students: 50, neighbours: 63, pandc: 83 } },
+          { id: "criterium-cycling-number-board-lockup-timer", original: false, label: "Add a timed lock on the number-board store after the last criterium cycling session", changeCost: 2, support: { students: 39, neighbours: 42, pandc: 59 } },
+        ],
+      },
+    ],
+  },
+  "time-trial-cycling-club-hours": {
+    title: "Time-trial cycling club hours: time-trial course booking, start-ramp hours, and timing-chip lock-up",
+    threshold: 70,
+    maxChangeCost: 8,
+    groups: [
+      { id: "students", name: "Students", weight: 16 },
+      { id: "neighbours", name: "Neighbours", weight: 13, veto: true },
+      { id: "pandc", name: "P&C", weight: 18 },
+    ],
+    clauses: [
+      {
+        id: "time-trial-cycling-course-booking", title: "Time-trial course booking", options: [
+          { id: "time-trial-cycling-course-booking-original", original: true, label: "Keep weekday time-trial course from 09:40 with no posted start-ramp rota", changeCost: 0, support: { students: 6, neighbours: 84, pandc: 65 } },
+          { id: "time-trial-cycling-course-booking-late", original: false, label: "Open weekday time-trial course at 18:15 with a posted start-ramp rota", changeCost: 2, support: { students: 87, neighbours: 24, pandc: 36 } },
+          { id: "time-trial-cycling-course-booking-weekend", original: false, label: "Hold Saturday morning time-trial course at 08:15 with a start-ramp booking card", changeCost: 4, support: { students: 72, neighbours: 32, pandc: 44 } },
+        ],
+      },
+      {
+        id: "time-trial-cycling-start-ramp", title: "Start-ramp hours", options: [
+          { id: "time-trial-cycling-start-ramp-original", original: true, label: "No posted start-ramp hours", changeCost: 0, support: { students: 62, neighbours: 10, pandc: 35 } },
+          { id: "time-trial-cycling-start-ramp-cap", original: false, label: "Close start-ramp at 19:25 and keep timekeepers at the start-ramp hut", changeCost: 1, support: { students: 35, neighbours: 88, pandc: 67 } },
+          { id: "time-trial-cycling-start-ramp-cut", original: false, label: "Serve timekeepers only after 13:30", changeCost: 5, support: { students: 17, neighbours: 92, pandc: 33 } },
+        ],
+      },
+      {
+        id: "time-trial-cycling-timing-chip-lockup", title: "Timing-chip lock-up", options: [
+          { id: "time-trial-cycling-timing-chip-lockup-original", original: true, label: "Leave the timing-chip door on a shared padlock after club hours", changeCost: 0, support: { students: 2, neighbours: 22, pandc: 27 } },
+          { id: "time-trial-cycling-timing-chip-lockup-steward", original: false, label: "Require a P&C steward to lock the timing-chip store before 21:00", changeCost: 3, support: { students: 49, neighbours: 64, pandc: 84 } },
+          { id: "time-trial-cycling-timing-chip-lockup-timer", original: false, label: "Add a timed lock on the timing-chip store after the last time-trial cycling session", changeCost: 2, support: { students: 38, neighbours: 41, pandc: 58 } },
+        ],
+      },
+    ],
+  },
+  "hill-climb-cycling-club-hours": {
+    title: "Hill-climb cycling club hours: hill-climb course booking, summit-marshal hours, and climb-chip lock-up",
+    threshold: 70,
+    maxChangeCost: 8,
+    groups: [
+      { id: "students", name: "Students", weight: 17 },
+      { id: "neighbours", name: "Neighbours", weight: 14, veto: true },
+      { id: "pandc", name: "P&C", weight: 19 },
+    ],
+    clauses: [
+      {
+        id: "hill-climb-cycling-course-booking", title: "Hill-climb course booking", options: [
+          { id: "hill-climb-cycling-course-booking-original", original: true, label: "Keep weekday hill-climb course from 09:45 with no posted summit-marshal rota", changeCost: 0, support: { students: 7, neighbours: 83, pandc: 64 } },
+          { id: "hill-climb-cycling-course-booking-late", original: false, label: "Open weekday hill-climb course at 18:25 with a posted summit-marshal rota", changeCost: 2, support: { students: 86, neighbours: 23, pandc: 35 } },
+          { id: "hill-climb-cycling-course-booking-weekend", original: false, label: "Hold Saturday morning hill-climb course at 08:20 with a summit-marshal booking card", changeCost: 4, support: { students: 71, neighbours: 31, pandc: 43 } },
+        ],
+      },
+      {
+        id: "hill-climb-cycling-summit-marshal", title: "Summit-marshal hours", options: [
+          { id: "hill-climb-cycling-summit-marshal-original", original: true, label: "No posted summit-marshal hours", changeCost: 0, support: { students: 61, neighbours: 9, pandc: 34 } },
+          { id: "hill-climb-cycling-summit-marshal-cap", original: false, label: "Close summit-marshal hours at 19:30 and keep timekeepers at the summit-marshal hut", changeCost: 1, support: { students: 34, neighbours: 87, pandc: 66 } },
+          { id: "hill-climb-cycling-summit-marshal-cut", original: false, label: "Serve timekeepers only after 13:35", changeCost: 5, support: { students: 16, neighbours: 91, pandc: 32 } },
+        ],
+      },
+      {
+        id: "hill-climb-cycling-climb-chip-lockup", title: "Climb-chip lock-up", options: [
+          { id: "hill-climb-cycling-climb-chip-lockup-original", original: true, label: "Leave the climb-chip door on a shared padlock after club hours", changeCost: 0, support: { students: 1, neighbours: 21, pandc: 26 } },
+          { id: "hill-climb-cycling-climb-chip-lockup-steward", original: false, label: "Require a P&C steward to lock the climb-chip store before 21:05", changeCost: 3, support: { students: 48, neighbours: 65, pandc: 85 } },
+          { id: "hill-climb-cycling-climb-chip-lockup-timer", original: false, label: "Add a timed lock on the climb-chip store after the last hill-climb cycling session", changeCost: 2, support: { students: 37, neighbours: 40, pandc: 57 } },
+        ],
+      },
+    ],
+  },
+  "keirin-cycling-club-hours": {
+    title: "Keirin cycling club hours: keirin course booking, derny-pacer hours, and keirin-chip lock-up",
+    threshold: 70,
+    maxChangeCost: 8,
+    groups: [
+      { id: "students", name: "Students", weight: 18 },
+      { id: "neighbours", name: "Neighbours", weight: 15, veto: true },
+      { id: "pandc", name: "P&C", weight: 20 },
+    ],
+    clauses: [
+      {
+        id: "keirin-cycling-course-booking", title: "Keirin course booking", options: [
+          { id: "keirin-cycling-course-booking-original", original: true, label: "Keep weekday keirin course from 09:50 with no posted derny-pacer rota", changeCost: 0, support: { students: 8, neighbours: 82, pandc: 63 } },
+          { id: "keirin-cycling-course-booking-late", original: false, label: "Open weekday keirin course at 18:35 with a posted derny-pacer rota", changeCost: 2, support: { students: 85, neighbours: 22, pandc: 34 } },
+          { id: "keirin-cycling-course-booking-weekend", original: false, label: "Hold Saturday morning keirin course at 08:25 with a derny-pacer booking card", changeCost: 4, support: { students: 70, neighbours: 30, pandc: 42 } },
+        ],
+      },
+      {
+        id: "keirin-cycling-derny-pacer", title: "Derny-pacer hours", options: [
+          { id: "keirin-cycling-derny-pacer-original", original: true, label: "No posted derny-pacer hours", changeCost: 0, support: { students: 60, neighbours: 8, pandc: 33 } },
+          { id: "keirin-cycling-derny-pacer-cap", original: false, label: "Close derny-pacer hours at 19:40 and keep pacer crew at the derny-pacer shed", changeCost: 1, support: { students: 33, neighbours: 86, pandc: 65 } },
+          { id: "keirin-cycling-derny-pacer-cut", original: false, label: "Serve pacer crew only after 13:45", changeCost: 5, support: { students: 15, neighbours: 90, pandc: 31 } },
+        ],
+      },
+      {
+        id: "keirin-cycling-keirin-chip-lockup", title: "Keirin-chip lock-up", options: [
+          { id: "keirin-cycling-keirin-chip-lockup-original", original: true, label: "Leave the keirin-chip door on a shared padlock after club hours", changeCost: 0, support: { students: 1, neighbours: 20, pandc: 25 } },
+          { id: "keirin-cycling-keirin-chip-lockup-steward", original: false, label: "Require a P&C steward to lock the keirin-chip store before 21:15", changeCost: 3, support: { students: 47, neighbours: 66, pandc: 86 } },
+          { id: "keirin-cycling-keirin-chip-lockup-timer", original: false, label: "Add a timed lock on the keirin-chip store after the last keirin cycling session", changeCost: 2, support: { students: 36, neighbours: 39, pandc: 56 } },
+        ],
+      },
+    ],
+  },
+  "madison-cycling-club-hours": {
+    title: "Madison cycling club hours: madison course booking, handsling hours, and pairing-board lock-up",
+    threshold: 70,
+    maxChangeCost: 8,
+    groups: [
+      { id: "students", name: "Students", weight: 19 },
+      { id: "neighbours", name: "Neighbours", weight: 16, veto: true },
+      { id: "pandc", name: "P&C", weight: 21 },
+    ],
+    clauses: [
+      {
+        id: "madison-cycling-course-booking", title: "Madison course booking", options: [
+          { id: "madison-cycling-course-booking-original", original: true, label: "Keep weekday madison course from 10:05 with no posted handsling rota", changeCost: 0, support: { students: 9, neighbours: 81, pandc: 62 } },
+          { id: "madison-cycling-course-booking-late", original: false, label: "Open weekday madison course at 18:50 with a posted handsling rota", changeCost: 2, support: { students: 84, neighbours: 21, pandc: 33 } },
+          { id: "madison-cycling-course-booking-weekend", original: false, label: "Hold Saturday morning madison course at 08:40 with a handsling booking card", changeCost: 4, support: { students: 69, neighbours: 29, pandc: 41 } },
+        ],
+      },
+      {
+        id: "madison-cycling-handsling", title: "Handsling hours", options: [
+          { id: "madison-cycling-handsling-original", original: true, label: "No posted handsling hours", changeCost: 0, support: { students: 59, neighbours: 7, pandc: 32 } },
+          { id: "madison-cycling-handsling-cap", original: false, label: "Close handsling hours at 19:55 and keep pairing crew at the handsling shed", changeCost: 1, support: { students: 32, neighbours: 85, pandc: 64 } },
+          { id: "madison-cycling-handsling-cut", original: false, label: "Serve pairing crew only after 14:00", changeCost: 5, support: { students: 14, neighbours: 89, pandc: 30 } },
+        ],
+      },
+      {
+        id: "madison-cycling-pairing-board-lockup", title: "Pairing-board lock-up", options: [
+          { id: "madison-cycling-pairing-board-lockup-original", original: true, label: "Leave the pairing-board door on a shared padlock after club hours", changeCost: 0, support: { students: 1, neighbours: 19, pandc: 24 } },
+          { id: "madison-cycling-pairing-board-lockup-steward", original: false, label: "Require a P&C steward to lock the pairing-board store before 21:30", changeCost: 3, support: { students: 46, neighbours: 67, pandc: 87 } },
+          { id: "madison-cycling-pairing-board-lockup-timer", original: false, label: "Add a timed lock on the pairing-board store after the last madison cycling session", changeCost: 2, support: { students: 35, neighbours: 38, pandc: 55 } },
+        ],
+      },
+    ],
+  },
+  "omnium-cycling-club-hours": {
+    title: "Omnium cycling club hours: omnium course booking, flying-200 hours, and tempo-board lock-up",
+    threshold: 70,
+    maxChangeCost: 8,
+    groups: [
+      { id: "students", name: "Students", weight: 20 },
+      { id: "neighbours", name: "Neighbours", weight: 17, veto: true },
+      { id: "pandc", name: "P&C", weight: 22 },
+    ],
+    clauses: [
+      {
+        id: "omnium-cycling-course-booking", title: "Omnium course booking", options: [
+          { id: "omnium-cycling-course-booking-original", original: true, label: "Keep weekday omnium course from 10:20 with no posted flying-200 rota", changeCost: 0, support: { students: 10, neighbours: 80, pandc: 61 } },
+          { id: "omnium-cycling-course-booking-late", original: false, label: "Open weekday omnium course at 19:05 with a posted flying-200 rota", changeCost: 2, support: { students: 83, neighbours: 20, pandc: 32 } },
+          { id: "omnium-cycling-course-booking-weekend", original: false, label: "Hold Saturday morning omnium course at 08:55 with a flying-200 booking card", changeCost: 4, support: { students: 68, neighbours: 28, pandc: 40 } },
+        ],
+      },
+      {
+        id: "omnium-cycling-flying-200", title: "Flying-200 hours", options: [
+          { id: "omnium-cycling-flying-200-original", original: true, label: "No posted flying-200 hours", changeCost: 0, support: { students: 58, neighbours: 6, pandc: 31 } },
+          { id: "omnium-cycling-flying-200-cap", original: false, label: "Close flying-200 hours at 20:10 and keep tempo crew at the flying-200 shed", changeCost: 1, support: { students: 31, neighbours: 84, pandc: 63 } },
+          { id: "omnium-cycling-flying-200-cut", original: false, label: "Serve tempo crew only after 14:15", changeCost: 5, support: { students: 13, neighbours: 88, pandc: 29 } },
+        ],
+      },
+      {
+        id: "omnium-cycling-tempo-board-lockup", title: "Tempo-board lock-up", options: [
+          { id: "omnium-cycling-tempo-board-lockup-original", original: true, label: "Leave the tempo-board door on a shared padlock after club hours", changeCost: 0, support: { students: 1, neighbours: 18, pandc: 23 } },
+          { id: "omnium-cycling-tempo-board-lockup-steward", original: false, label: "Require a P&C steward to lock the tempo-board store before 21:45", changeCost: 3, support: { students: 45, neighbours: 68, pandc: 88 } },
+          { id: "omnium-cycling-tempo-board-lockup-timer", original: false, label: "Add a timed lock on the tempo-board store after the last omnium cycling session", changeCost: 2, support: { students: 34, neighbours: 37, pandc: 54 } },
+        ],
+      },
+    ],
+  },
+
+  "points-race-cycling-club-hours": {
+    title: "Points-race cycling club hours: points-race course booking, bell-lap hours, and prime-board lock-up",
+    threshold: 70,
+    maxChangeCost: 8,
+    groups: [
+      { id: "students", name: "Students", weight: 21 },
+      { id: "neighbours", name: "Neighbours", weight: 18, veto: true },
+      { id: "pandc", name: "P&C", weight: 23 },
+    ],
+    clauses: [
+      {
+        id: "points-race-cycling-course-booking", title: "Points-race course booking", options: [
+          { id: "points-race-cycling-course-booking-original", original: true, label: "Keep weekday points-race course from 10:30 with no posted points-sprint rota", changeCost: 0, support: { students: 11, neighbours: 79, pandc: 60 } },
+          { id: "points-race-cycling-course-booking-late", original: false, label: "Open weekday points-race course at 19:15 with a posted points-sprint rota", changeCost: 2, support: { students: 82, neighbours: 21, pandc: 33 } },
+          { id: "points-race-cycling-course-booking-weekend", original: false, label: "Hold Saturday morning points-race course at 09:05 with a points-sprint booking card", changeCost: 4, support: { students: 67, neighbours: 29, pandc: 41 } },
+        ],
+      },
+      {
+        id: "points-race-cycling-bell-lap", title: "Bell-lap hours", options: [
+          { id: "points-race-cycling-bell-lap-original", original: true, label: "No posted bell-lap hours", changeCost: 0, support: { students: 57, neighbours: 7, pandc: 32 } },
+          { id: "points-race-cycling-bell-lap-cap", original: false, label: "Close bell-lap hours at 20:20 and keep bell crew at the bell-lap shed", changeCost: 1, support: { students: 32, neighbours: 83, pandc: 64 } },
+          { id: "points-race-cycling-bell-lap-cut", original: false, label: "Serve bell crew only after 14:25", changeCost: 5, support: { students: 14, neighbours: 87, pandc: 30 } },
+        ],
+      },
+      {
+        id: "points-race-cycling-prime-board-lockup", title: "Prime-board lock-up", options: [
+          { id: "points-race-cycling-prime-board-lockup-original", original: true, label: "Leave the prime-board door on a shared padlock after club hours", changeCost: 0, support: { students: 2, neighbours: 19, pandc: 24 } },
+          { id: "points-race-cycling-prime-board-lockup-steward", original: false, label: "Require a P&C steward to lock the prime-board store before 21:50", changeCost: 3, support: { students: 44, neighbours: 69, pandc: 89 } },
+          { id: "points-race-cycling-prime-board-lockup-timer", original: false, label: "Add a timed lock on the prime-board store after the last points-race cycling session", changeCost: 2, support: { students: 33, neighbours: 36, pandc: 55 } },
+        ],
+      },
+    ],
+  },
+
+  "scratch-cycling-club-hours": {
+    title: "Scratch cycling club hours: scratch-bunch rota, bunch-finish hours, and scratch-chip lock-up",
+    threshold: 70,
+    maxChangeCost: 8,
+    groups: [
+      { id: "students", name: "Students", weight: 22 },
+      { id: "neighbours", name: "Neighbours", weight: 19, veto: true },
+      { id: "pandc", name: "P&C", weight: 24 },
+    ],
+    clauses: [
+      {
+        id: "scratch-cycling-bunch-rota", title: "Scratch-bunch rota", options: [
+          { id: "scratch-cycling-bunch-rota-original", original: true, label: "Keep weekday scratch-bunch from 10:40 with no posted bunch-finish card", changeCost: 0, support: { students: 12, neighbours: 78, pandc: 59 } },
+          { id: "scratch-cycling-bunch-rota-late", original: false, label: "Open weekday scratch-bunch at 19:25 with a posted bunch-finish card", changeCost: 2, support: { students: 81, neighbours: 22, pandc: 34 } },
+          { id: "scratch-cycling-bunch-rota-weekend", original: false, label: "Hold Saturday morning scratch-bunch at 09:15 with a bunch-finish booking card", changeCost: 4, support: { students: 66, neighbours: 30, pandc: 42 } },
+        ],
+      },
+      {
+        id: "scratch-cycling-bunch-finish", title: "Bunch-finish hours", options: [
+          { id: "scratch-cycling-bunch-finish-original", original: true, label: "No posted bunch-finish hours", changeCost: 0, support: { students: 56, neighbours: 8, pandc: 33 } },
+          { id: "scratch-cycling-bunch-finish-cap", original: false, label: "Close bunch-finish hours at 20:30 and keep bunch crew at the scratch-chip shed", changeCost: 1, support: { students: 33, neighbours: 82, pandc: 65 } },
+          { id: "scratch-cycling-bunch-finish-cut", original: false, label: "Serve bunch crew only after 14:35", changeCost: 5, support: { students: 15, neighbours: 86, pandc: 31 } },
+        ],
+      },
+      {
+        id: "scratch-cycling-scratch-chip-lockup", title: "Scratch-chip lock-up", options: [
+          { id: "scratch-cycling-scratch-chip-lockup-original", original: true, label: "Leave the scratch-chip door on a shared padlock after club hours", changeCost: 0, support: { students: 3, neighbours: 20, pandc: 25 } },
+          { id: "scratch-cycling-scratch-chip-lockup-steward", original: false, label: "Require a P&C steward to lock the scratch-chip store before 22:00", changeCost: 3, support: { students: 43, neighbours: 70, pandc: 88 } },
+          { id: "scratch-cycling-scratch-chip-lockup-timer", original: false, label: "Add a timed lock on the scratch-chip store after the last scratch cycling session", changeCost: 2, support: { students: 32, neighbours: 37, pandc: 56 } },
+        ],
+      },
+    ],
+  },
+
+  "individual-pursuit-cycling-club-hours": {
+    title: "Individual-pursuit cycling club hours: pursuit-line rota, catch-bell hours, and pursuit-chip lock-up",
+    threshold: 70,
+    maxChangeCost: 8,
+    groups: [
+      { id: "students", name: "Students", weight: 23 },
+      { id: "neighbours", name: "Neighbours", weight: 19, veto: true },
+      { id: "pandc", name: "P&C", weight: 25 },
+    ],
+    clauses: [
+      {
+        id: "individual-pursuit-cycling-pursuit-line", title: "Pursuit-line rota", options: [
+          { id: "individual-pursuit-cycling-pursuit-line-original", original: true, label: "Keep weekday pursuit-line from 10:50 with no posted catch-bell card", changeCost: 0, support: { students: 13, neighbours: 77, pandc: 58 } },
+          { id: "individual-pursuit-cycling-pursuit-line-late", original: false, label: "Open weekday pursuit-line at 19:35 with a posted catch-bell card", changeCost: 2, support: { students: 80, neighbours: 23, pandc: 35 } },
+          { id: "individual-pursuit-cycling-pursuit-line-weekend", original: false, label: "Hold Saturday morning pursuit-line at 09:25 with a catch-bell booking card", changeCost: 4, support: { students: 65, neighbours: 31, pandc: 43 } },
+        ],
+      },
+      {
+        id: "individual-pursuit-cycling-catch-bell", title: "Catch-bell hours", options: [
+          { id: "individual-pursuit-cycling-catch-bell-original", original: true, label: "No posted catch-bell hours", changeCost: 0, support: { students: 55, neighbours: 9, pandc: 34 } },
+          { id: "individual-pursuit-cycling-catch-bell-cap", original: false, label: "Close catch-bell hours at 20:40 and keep pursuit crew at the pursuit-chip shed", changeCost: 1, support: { students: 34, neighbours: 81, pandc: 66 } },
+          { id: "individual-pursuit-cycling-catch-bell-cut", original: false, label: "Serve pursuit crew only after 14:45", changeCost: 5, support: { students: 16, neighbours: 85, pandc: 32 } },
+        ],
+      },
+      {
+        id: "individual-pursuit-cycling-pursuit-chip-lockup", title: "Pursuit-chip lock-up", options: [
+          { id: "individual-pursuit-cycling-pursuit-chip-lockup-original", original: true, label: "Leave the pursuit-chip door on a shared padlock after club hours", changeCost: 0, support: { students: 4, neighbours: 21, pandc: 26 } },
+          { id: "individual-pursuit-cycling-pursuit-chip-lockup-steward", original: false, label: "Require a P&C steward to lock the pursuit-chip store before 22:10", changeCost: 3, support: { students: 42, neighbours: 71, pandc: 87 } },
+          { id: "individual-pursuit-cycling-pursuit-chip-lockup-timer", original: false, label: "Add a timed lock on the pursuit-chip store after the last individual-pursuit cycling session", changeCost: 2, support: { students: 31, neighbours: 38, pandc: 55 } },
+        ],
+      },
+    ],
+  },
+  "team-pursuit-cycling-club-hours": {
+    title: "Team-pursuit cycling club hours: team-pursuit-rota, changeover-bell hours, and quartet-board lock-up",
+    threshold: 70,
+    maxChangeCost: 8,
+    groups: [
+      { id: "students", name: "Students", weight: 24 },
+      { id: "neighbours", name: "Neighbours", weight: 19, veto: true },
+      { id: "pandc", name: "P&C", weight: 26 },
+    ],
+    clauses: [
+      {
+        id: "team-pursuit-cycling-team-pursuit-rota", title: "Team-pursuit-rota", options: [
+          { id: "team-pursuit-cycling-team-pursuit-rota-original", original: true, label: "Keep weekday team-pursuit-rota from 11:00 with no posted changeover-bell card", changeCost: 0, support: { students: 14, neighbours: 76, pandc: 57 } },
+          { id: "team-pursuit-cycling-team-pursuit-rota-late", original: false, label: "Open weekday team-pursuit-rota at 19:45 with a posted changeover-bell card", changeCost: 2, support: { students: 79, neighbours: 24, pandc: 36 } },
+          { id: "team-pursuit-cycling-team-pursuit-rota-weekend", original: false, label: "Hold Saturday morning team-pursuit-rota at 09:35 with a changeover-bell booking card", changeCost: 4, support: { students: 64, neighbours: 32, pandc: 44 } },
+        ],
+      },
+      {
+        id: "team-pursuit-cycling-changeover-bell", title: "Changeover-bell hours", options: [
+          { id: "team-pursuit-cycling-changeover-bell-original", original: true, label: "No posted changeover-bell hours", changeCost: 0, support: { students: 54, neighbours: 10, pandc: 35 } },
+          { id: "team-pursuit-cycling-changeover-bell-cap", original: false, label: "Close changeover-bell hours at 20:50 and keep changeover crew at the quartet-board shed", changeCost: 1, support: { students: 35, neighbours: 80, pandc: 67 } },
+          { id: "team-pursuit-cycling-changeover-bell-cut", original: false, label: "Serve changeover crew only after 14:55", changeCost: 5, support: { students: 17, neighbours: 84, pandc: 33 } },
+        ],
+      },
+      {
+        id: "team-pursuit-cycling-quartet-board-lockup", title: "Quartet-board lock-up", options: [
+          { id: "team-pursuit-cycling-quartet-board-lockup-original", original: true, label: "Leave the quartet-board door on a shared padlock after club hours", changeCost: 0, support: { students: 5, neighbours: 22, pandc: 27 } },
+          { id: "team-pursuit-cycling-quartet-board-lockup-steward", original: false, label: "Require a P&C steward to lock the quartet-board store before 22:20", changeCost: 3, support: { students: 41, neighbours: 72, pandc: 86 } },
+          { id: "team-pursuit-cycling-quartet-board-lockup-timer", original: false, label: "Add a timed lock on the quartet-board store after the last team-pursuit cycling session", changeCost: 2, support: { students: 30, neighbours: 39, pandc: 54 } },
+        ],
+      },
+    ],
+  },
+  "team-sprint-cycling-club-hours": {
+    title: "Team-sprint cycling club hours: start-gate, flying-relay hours, and trio-board lock-up",
+    threshold: 70,
+    maxChangeCost: 8,
+    groups: [
+      { id: "students", name: "Students", weight: 25 },
+      { id: "neighbours", name: "Neighbours", weight: 19, veto: true },
+      { id: "pandc", name: "P&C", weight: 27 },
+    ],
+    clauses: [
+      {
+        id: "team-sprint-cycling-start-gate", title: "Start-gate", options: [
+          { id: "team-sprint-cycling-start-gate-original", original: true, label: "Keep weekday start-gate from 11:10 with no posted flying-relay card", changeCost: 0, support: { students: 15, neighbours: 75, pandc: 58 } },
+          { id: "team-sprint-cycling-start-gate-late", original: false, label: "Open weekday start-gate at 19:55 with a posted flying-relay card", changeCost: 2, support: { students: 80, neighbours: 23, pandc: 37 } },
+          { id: "team-sprint-cycling-start-gate-weekend", original: false, label: "Hold Saturday morning start-gate at 09:45 with a flying-relay booking card", changeCost: 4, support: { students: 65, neighbours: 31, pandc: 45 } },
+        ],
+      },
+      {
+        id: "team-sprint-cycling-flying-relay", title: "Flying-relay hours", options: [
+          { id: "team-sprint-cycling-flying-relay-original", original: true, label: "No posted flying-relay hours", changeCost: 0, support: { students: 55, neighbours: 11, pandc: 36 } },
+          { id: "team-sprint-cycling-flying-relay-cap", original: false, label: "Close flying-relay hours at 21:00 and keep relay crew at the trio-board shed", changeCost: 1, support: { students: 36, neighbours: 81, pandc: 66 } },
+          { id: "team-sprint-cycling-flying-relay-cut", original: false, label: "Serve relay crew only after 15:05", changeCost: 5, support: { students: 18, neighbours: 83, pandc: 34 } },
+        ],
+      },
+      {
+        id: "team-sprint-cycling-trio-board-lockup", title: "Trio-board lock-up", options: [
+          { id: "team-sprint-cycling-trio-board-lockup-original", original: true, label: "Leave the trio-board door on a shared padlock after club hours", changeCost: 0, support: { students: 6, neighbours: 21, pandc: 28 } },
+          { id: "team-sprint-cycling-trio-board-lockup-steward", original: false, label: "Require a P&C steward to lock the trio-board store before 22:30", changeCost: 3, support: { students: 42, neighbours: 71, pandc: 85 } },
+          { id: "team-sprint-cycling-trio-board-lockup-timer", original: false, label: "Add a timed lock on the trio-board store after the last team-sprint cycling session", changeCost: 2, support: { students: 31, neighbours: 38, pandc: 53 } },
+        ],
+      },
+    ],
+  },
+  "first-aid-cycling-club-hours": {
+    title: "First-aid cycling club hours: treatment-tent, ice-pack-rota hours, and triage-board lock-up",
+    threshold: 70,
+    maxChangeCost: 8,
+    groups: [
+      { id: "students", name: "Students", weight: 26 },
+      { id: "neighbours", name: "Neighbours", weight: 19, veto: true },
+      { id: "pandc", name: "P&C", weight: 28 },
+    ],
+    clauses: [
+      {
+        id: "first-aid-cycling-treatment-tent", title: "Treatment-tent", options: [
+          { id: "first-aid-cycling-treatment-tent-original", original: true, label: "Keep weekday treatment-tent from 11:20 with no posted ice-pack-rota card", changeCost: 0, support: { students: 16, neighbours: 74, pandc: 59 } },
+          { id: "first-aid-cycling-treatment-tent-late", original: false, label: "Open weekday treatment-tent at 20:05 with a posted ice-pack-rota card", changeCost: 2, support: { students: 81, neighbours: 22, pandc: 38 } },
+          { id: "first-aid-cycling-treatment-tent-weekend", original: false, label: "Hold Saturday morning treatment-tent at 09:55 with an ice-pack-rota booking card", changeCost: 4, support: { students: 66, neighbours: 30, pandc: 46 } },
+        ],
+      },
+      {
+        id: "first-aid-cycling-ice-pack-rota", title: "Ice-pack-rota hours", options: [
+          { id: "first-aid-cycling-ice-pack-rota-original", original: true, label: "No posted ice-pack-rota hours", changeCost: 0, support: { students: 56, neighbours: 12, pandc: 37 } },
+          { id: "first-aid-cycling-ice-pack-rota-cap", original: false, label: "Close ice-pack-rota hours at 21:10 and keep ice-pack crew at the triage-board shed", changeCost: 1, support: { students: 37, neighbours: 82, pandc: 65 } },
+          { id: "first-aid-cycling-ice-pack-rota-cut", original: false, label: "Serve ice-pack crew only after 15:15", changeCost: 5, support: { students: 19, neighbours: 82, pandc: 35 } },
+        ],
+      },
+      {
+        id: "first-aid-cycling-triage-board-lockup", title: "Triage-board lock-up", options: [
+          { id: "first-aid-cycling-triage-board-lockup-original", original: true, label: "Leave the triage-board door on a shared padlock after club hours", changeCost: 0, support: { students: 7, neighbours: 20, pandc: 29 } },
+          { id: "first-aid-cycling-triage-board-lockup-steward", original: false, label: "Require a P&C steward to lock the triage-board store before 22:40", changeCost: 3, support: { students: 43, neighbours: 70, pandc: 84 } },
+          { id: "first-aid-cycling-triage-board-lockup-timer", original: false, label: "Add a timed lock on the triage-board store after the last first-aid cycling session", changeCost: 2, support: { students: 32, neighbours: 37, pandc: 52 } },
+        ],
+      },
+    ],
+  },
+  "feed-zone-cycling-club-hours": {
+    title: "Feed-zone cycling club hours: musette-line, sticky-bottle hours, and bottle-hand-up lock-up",
+    threshold: 70,
+    maxChangeCost: 8,
+    groups: [
+      { id: "students", name: "Students", weight: 27 },
+      { id: "neighbours", name: "Neighbours", weight: 19, veto: true },
+      { id: "pandc", name: "P&C", weight: 29 },
+    ],
+    clauses: [
+      {
+        id: "feed-zone-cycling-musette-line", title: "Musette-line", options: [
+          { id: "feed-zone-cycling-musette-line-original", original: true, label: "Keep weekday musette-line from 11:30 with no posted sticky-bottle card", changeCost: 0, support: { students: 17, neighbours: 73, pandc: 60 } },
+          { id: "feed-zone-cycling-musette-line-late", original: false, label: "Open weekday musette-line at 20:15 with a posted sticky-bottle card", changeCost: 2, support: { students: 82, neighbours: 21, pandc: 39 } },
+          { id: "feed-zone-cycling-musette-line-weekend", original: false, label: "Hold Saturday morning musette-line at 10:05 with a sticky-bottle booking card", changeCost: 4, support: { students: 67, neighbours: 29, pandc: 47 } },
+        ],
+      },
+      {
+        id: "feed-zone-cycling-sticky-bottle", title: "Sticky-bottle hours", options: [
+          { id: "feed-zone-cycling-sticky-bottle-original", original: true, label: "No posted sticky-bottle hours", changeCost: 0, support: { students: 57, neighbours: 13, pandc: 38 } },
+          { id: "feed-zone-cycling-sticky-bottle-cap", original: false, label: "Close sticky-bottle hours at 21:20 and keep bottle crew at the bottle-hand-up shed", changeCost: 1, support: { students: 38, neighbours: 83, pandc: 64 } },
+          { id: "feed-zone-cycling-sticky-bottle-cut", original: false, label: "Serve bottle crew only after 15:25", changeCost: 5, support: { students: 20, neighbours: 81, pandc: 36 } },
+        ],
+      },
+      {
+        id: "feed-zone-cycling-bottle-hand-up-lockup", title: "Bottle-hand-up lock-up", options: [
+          { id: "feed-zone-cycling-bottle-hand-up-lockup-original", original: true, label: "Leave the bottle-hand-up door on a shared padlock after club hours", changeCost: 0, support: { students: 8, neighbours: 19, pandc: 30 } },
+          { id: "feed-zone-cycling-bottle-hand-up-lockup-steward", original: false, label: "Require a P&C steward to lock the bottle-hand-up store before 22:50", changeCost: 3, support: { students: 44, neighbours: 69, pandc: 83 } },
+          { id: "feed-zone-cycling-bottle-hand-up-lockup-timer", original: false, label: "Add a timed lock on the bottle-hand-up store after the last feed-zone cycling session", changeCost: 2, support: { students: 33, neighbours: 36, pandc: 51 } },
+        ],
+      },
+    ],
+  },
+  "lead-out-cycling-club-hours": {
+    title: "Lead-out cycling club hours: train-line, last-rider hours, and sprinter-launch lock-up",
+    threshold: 70,
+    maxChangeCost: 8,
+    groups: [
+      { id: "students", name: "Students", weight: 28 },
+      { id: "neighbours", name: "Neighbours", weight: 19, veto: true },
+      { id: "pandc", name: "P&C", weight: 30 },
+    ],
+    clauses: [
+      {
+        id: "lead-out-cycling-train-line", title: "Train-line", options: [
+          { id: "lead-out-cycling-train-line-original", original: true, label: "Keep weekday train-line from 11:40 with no posted last-rider card", changeCost: 0, support: { students: 18, neighbours: 74, pandc: 61 } },
+          { id: "lead-out-cycling-train-line-late", original: false, label: "Open weekday train-line at 20:25 with a posted last-rider card", changeCost: 2, support: { students: 83, neighbours: 22, pandc: 40 } },
+          { id: "lead-out-cycling-train-line-weekend", original: false, label: "Hold Saturday morning train-line at 10:15 with a last-rider booking card", changeCost: 4, support: { students: 68, neighbours: 30, pandc: 48 } },
+        ],
+      },
+      {
+        id: "lead-out-cycling-last-rider", title: "Last-rider hours", options: [
+          { id: "lead-out-cycling-last-rider-original", original: true, label: "No posted last-rider hours", changeCost: 0, support: { students: 58, neighbours: 14, pandc: 39 } },
+          { id: "lead-out-cycling-last-rider-cap", original: false, label: "Close last-rider hours at 21:30 and keep launch crew at the sprinter-launch shed", changeCost: 1, support: { students: 39, neighbours: 84, pandc: 65 } },
+          { id: "lead-out-cycling-last-rider-cut", original: false, label: "Serve launch crew only after 15:35", changeCost: 5, support: { students: 21, neighbours: 82, pandc: 37 } },
+        ],
+      },
+      {
+        id: "lead-out-cycling-sprinter-launch-lockup", title: "Sprinter-launch lock-up", options: [
+          { id: "lead-out-cycling-sprinter-launch-lockup-original", original: true, label: "Leave the sprinter-launch door on a shared padlock after club hours", changeCost: 0, support: { students: 9, neighbours: 20, pandc: 31 } },
+          { id: "lead-out-cycling-sprinter-launch-lockup-steward", original: false, label: "Require a P&C steward to lock the sprinter-launch store before 23:00", changeCost: 3, support: { students: 45, neighbours: 70, pandc: 84 } },
+          { id: "lead-out-cycling-sprinter-launch-lockup-timer", original: false, label: "Add a timed lock on the sprinter-launch store after the last lead-out cycling session", changeCost: 2, support: { students: 34, neighbours: 37, pandc: 52 } },
+        ],
+      },
+    ],
+  },
+  "soigneur-cycling-club-hours": {
+    title: "Soigneur cycling club hours: soigneur-station, cape-bag hours, and rice-cake lock-up",
+    threshold: 70,
+    maxChangeCost: 8,
+    groups: [
+      { id: "students", name: "Students", weight: 29 },
+      { id: "neighbours", name: "Neighbours", weight: 19, veto: true },
+      { id: "pandc", name: "P&C", weight: 31 },
+    ],
+    clauses: [
+      {
+        id: "soigneur-cycling-soigneur-station", title: "Soigneur-station", options: [
+          { id: "soigneur-cycling-soigneur-station-original", original: true, label: "Keep weekday soigneur-station from 11:50 with no posted cape-bag card", changeCost: 0, support: { students: 19, neighbours: 75, pandc: 62 } },
+          { id: "soigneur-cycling-soigneur-station-late", original: false, label: "Open weekday soigneur-station at 20:35 with a posted cape-bag card", changeCost: 2, support: { students: 84, neighbours: 23, pandc: 41 } },
+          { id: "soigneur-cycling-soigneur-station-weekend", original: false, label: "Hold Saturday morning soigneur-station at 10:25 with a cape-bag booking card", changeCost: 4, support: { students: 69, neighbours: 31, pandc: 49 } },
+        ],
+      },
+      {
+        id: "soigneur-cycling-cape-bag", title: "Cape-bag hours", options: [
+          { id: "soigneur-cycling-cape-bag-original", original: true, label: "No posted cape-bag hours", changeCost: 0, support: { students: 59, neighbours: 15, pandc: 40 } },
+          { id: "soigneur-cycling-cape-bag-cap", original: false, label: "Close cape-bag hours at 21:40 and keep cake crew at the rice-cake shed", changeCost: 1, support: { students: 40, neighbours: 85, pandc: 66 } },
+          { id: "soigneur-cycling-cape-bag-cut", original: false, label: "Serve cake crew only after 15:45", changeCost: 5, support: { students: 22, neighbours: 83, pandc: 38 } },
+        ],
+      },
+      {
+        id: "soigneur-cycling-rice-cake-lockup", title: "Rice-cake lock-up", options: [
+          { id: "soigneur-cycling-rice-cake-lockup-original", original: true, label: "Leave the rice-cake door on a shared padlock after club hours", changeCost: 0, support: { students: 10, neighbours: 21, pandc: 32 } },
+          { id: "soigneur-cycling-rice-cake-lockup-steward", original: false, label: "Require a P&C steward to lock the rice-cake store before 23:10", changeCost: 3, support: { students: 46, neighbours: 71, pandc: 85 } },
+          { id: "soigneur-cycling-rice-cake-lockup-timer", original: false, label: "Add a timed lock on the rice-cake store after the last soigneur cycling session", changeCost: 2, support: { students: 35, neighbours: 38, pandc: 53 } },
+        ],
+      },
+    ],
+  },
+  "domestique-cycling-club-hours": {
+    title: "Domestique cycling club hours: wheel-change, neutral-service hours, and team-car lock-up",
+    threshold: 70,
+    maxChangeCost: 8,
+    groups: [
+      { id: "students", name: "Students", weight: 30 },
+      { id: "neighbours", name: "Neighbours", weight: 19, veto: true },
+      { id: "pandc", name: "P&C", weight: 32 },
+    ],
+    clauses: [
+      {
+        id: "domestique-cycling-wheel-change", title: "Wheel-change", options: [
+          { id: "domestique-cycling-wheel-change-original", original: true, label: "Keep weekday wheel-change from 12:00 with no posted neutral-service card", changeCost: 0, support: { students: 19, neighbours: 75, pandc: 62 } },
+          { id: "domestique-cycling-wheel-change-late", original: false, label: "Open weekday wheel-change at 20:45 with a posted neutral-service card", changeCost: 2, support: { students: 84, neighbours: 23, pandc: 41 } },
+          { id: "domestique-cycling-wheel-change-weekend", original: false, label: "Hold Saturday morning wheel-change at 10:35 with a neutral-service booking card", changeCost: 4, support: { students: 69, neighbours: 31, pandc: 49 } },
+        ],
+      },
+      {
+        id: "domestique-cycling-neutral-service", title: "Neutral-service hours", options: [
+          { id: "domestique-cycling-neutral-service-original", original: true, label: "No posted neutral-service hours", changeCost: 0, support: { students: 59, neighbours: 15, pandc: 40 } },
+          { id: "domestique-cycling-neutral-service-cap", original: false, label: "Close neutral-service hours at 21:50 and keep car crew at the team-car shed", changeCost: 1, support: { students: 40, neighbours: 85, pandc: 66 } },
+          { id: "domestique-cycling-neutral-service-cut", original: false, label: "Serve car crew only after 15:55", changeCost: 5, support: { students: 22, neighbours: 83, pandc: 38 } },
+        ],
+      },
+      {
+        id: "domestique-cycling-team-car-lockup", title: "Team-car lock-up", options: [
+          { id: "domestique-cycling-team-car-lockup-original", original: true, label: "Leave the team-car door on a shared padlock after club hours", changeCost: 0, support: { students: 10, neighbours: 21, pandc: 32 } },
+          { id: "domestique-cycling-team-car-lockup-steward", original: false, label: "Require a P&C steward to lock the team-car store before 23:20", changeCost: 3, support: { students: 46, neighbours: 71, pandc: 85 } },
+          { id: "domestique-cycling-team-car-lockup-timer", original: false, label: "Add a timed lock on the team-car store after the last domestique cycling session", changeCost: 2, support: { students: 35, neighbours: 38, pandc: 53 } },
+        ],
+      },
+    ],
+  },
+  "bottle-hand-cycling-club-hours": {
+    title: "Bottle-hand cycling club hours: bidon-pass, car-window hours, and crate-lock lock-up",
+    threshold: 70,
+    maxChangeCost: 8,
+    groups: [
+      { id: "students", name: "Students", weight: 31 },
+      { id: "neighbours", name: "Neighbours", weight: 19, veto: true },
+      { id: "pandc", name: "P&C", weight: 33 },
+    ],
+    clauses: [
+      {
+        id: "bottle-hand-cycling-bidon-pass", title: "Bidon-pass", options: [
+          { id: "bottle-hand-cycling-bidon-pass-original", original: true, label: "Keep weekday bidon-pass from 12:10 with no posted car-window card", changeCost: 0, support: { students: 19, neighbours: 75, pandc: 62 } },
+          { id: "bottle-hand-cycling-bidon-pass-late", original: false, label: "Open weekday bidon-pass at 20:55 with a posted car-window card", changeCost: 2, support: { students: 84, neighbours: 23, pandc: 41 } },
+          { id: "bottle-hand-cycling-bidon-pass-weekend", original: false, label: "Hold Saturday morning bidon-pass at 10:45 with a car-window booking card", changeCost: 4, support: { students: 69, neighbours: 31, pandc: 49 } },
+        ],
+      },
+      {
+        id: "bottle-hand-cycling-car-window", title: "Car-window hours", options: [
+          { id: "bottle-hand-cycling-car-window-original", original: true, label: "No posted car-window hours", changeCost: 0, support: { students: 59, neighbours: 15, pandc: 40 } },
+          { id: "bottle-hand-cycling-car-window-cap", original: false, label: "Close car-window hours at 22:00 and keep crate crew at the crate-lock shed", changeCost: 1, support: { students: 40, neighbours: 85, pandc: 66 } },
+          { id: "bottle-hand-cycling-car-window-cut", original: false, label: "Serve crate crew only after 16:05", changeCost: 5, support: { students: 22, neighbours: 83, pandc: 38 } },
+        ],
+      },
+      {
+        id: "bottle-hand-cycling-crate-lock-lockup", title: "Crate-lock lock-up", options: [
+          { id: "bottle-hand-cycling-crate-lock-lockup-original", original: true, label: "Leave the crate-lock door on a shared padlock after club hours", changeCost: 0, support: { students: 10, neighbours: 21, pandc: 32 } },
+          { id: "bottle-hand-cycling-crate-lock-lockup-steward", original: false, label: "Require a P&C steward to lock the crate-lock store before 23:30", changeCost: 3, support: { students: 46, neighbours: 71, pandc: 85 } },
+          { id: "bottle-hand-cycling-crate-lock-lockup-timer", original: false, label: "Add a timed lock on the crate-lock store after the last bottle-hand cycling session", changeCost: 2, support: { students: 35, neighbours: 38, pandc: 53 } },
+        ],
+      },
+    ],
+  },
 };
 
 let agreementReviewPacket = null;
@@ -6318,84 +7014,6 @@ document.addEventListener("keydown", (event) => {
   } else if (key === "4") {
     event.preventDefault();
     copyLastGroupAtOrAboveThreshold();
-  } else if (key === "Home") {
-    event.preventDefault();
-    jumpToLastGroupAtOrAboveThresholdCopy();
-  } else if (key === "End") {
-    event.preventDefault();
-    jumpToHideFirstGroupAtOrAboveThreshold();
-  } else if (key === "PageUp") {
-    event.preventDefault();
-    copyFirstGroupAtOrAboveThreshold();
-  } else if (key === "PageDown") {
-    event.preventDefault();
-    jumpToFirstGroupAtOrAboveThresholdCopy();
-  } else if (key === "ArrowUp") {
-    event.preventDefault();
-    jumpToHideLastGroupAtFloor();
-  } else if (key === "Insert") {
-    event.preventDefault();
-    copyLastGroupAtFloor();
-  } else if (key === "ArrowDown") {
-    event.preventDefault();
-    jumpToLastGroupAtFloorCopy();
-  } else if (key === "ArrowLeft") {
-    event.preventDefault();
-    jumpToHideFirstGroupAtFloor();
-  } else if (key === "F3") {
-    event.preventDefault();
-    copyFirstGroupAtFloor();
-  } else if (key === "F4") {
-    event.preventDefault();
-    jumpToFirstGroupAtFloorCopy();
-  } else if (key === "Delete") {
-    event.preventDefault();
-    copyLastBelowFloorGroup();
-  } else if (key === "F2") {
-    event.preventDefault();
-    jumpToLastBelowFloorGroupCopy();
-  } else if (key === "ArrowRight") {
-    event.preventDefault();
-    jumpToHideFirstGroupBelowFloor();
-  } else if (key === "Backspace") {
-    event.preventDefault();
-    jumpToHideLastGroupBelowFloor();
-  } else if (event.shiftKey && key === "F7") {
-    event.preventDefault();
-    copyLastGroupWithoutFloorCost();
-  } else if (event.shiftKey && key === "F8") {
-    event.preventDefault();
-    jumpToLastGroupWithoutFloorCostCopy();
-  } else if (event.shiftKey && key === "F9") {
-    event.preventDefault();
-    jumpToHideLastGroupWithoutFloor();
-  } else if (key === "F7") {
-    event.preventDefault();
-    copyLastGroupWithoutFloor();
-  } else if (key === "F8") {
-    event.preventDefault();
-    jumpToLastGroupWithoutFloorCopy();
-  } else if (key === "F9") {
-    event.preventDefault();
-    jumpToHideLastGroupWithoutFloor();
-  } else if (event.shiftKey && key === "F10") {
-    event.preventDefault();
-    copyGroupsWithoutFloorCount();
-  } else if (event.shiftKey && key === "F11") {
-    event.preventDefault();
-    jumpToGroupsWithoutFloorCountCopy();
-  } else if (event.shiftKey && key === "F12") {
-    event.preventDefault();
-    jumpToHideFirstGroupWithoutFloor();
-  } else if (key === "F10") {
-    event.preventDefault();
-    copyFirstGroupWithoutFloor();
-  } else if (key === "F11") {
-    event.preventDefault();
-    jumpToFirstGroupWithoutFloorCopy();
-  } else if (key === "F12") {
-    event.preventDefault();
-    jumpToHideFirstGroupWithoutFloor();
   }
 });
 

@@ -543,32 +543,6 @@ footer {
         <li><kbd>2</kbd> Focus the tertiary-fill remaining copy control, or leftover heading if missing</li>
         <li><kbd>3</kbd> Focus hide last unserved buyer, or the buyer list if missing</li>
         <li><kbd>4</kbd> Copy tertiary fill maximum (organizer private)</li>
-        <li><kbd>Home</kbd> Focus the tertiary-fill maximum copy control, or leftover heading if missing</li>
-        <li><kbd>End</kbd> Focus hide first unserved buyer, or the buyer list if missing</li>
-        <li><kbd>PageUp</kbd> Copy leftover uncovered remaining (organizer private)</li>
-        <li><kbd>PageDown</kbd> Focus the leftover uncovered remaining copy control, or leftover heading if missing</li>
-        <li><kbd>ArrowUp</kbd> Focus hide last leftover-only buyer, or the buyer list if missing</li>
-        <li><kbd>Insert</kbd> Copy leftover uncovered maximum (organizer private)</li>
-        <li><kbd>ArrowDown</kbd> Focus the leftover uncovered maximum copy control, or leftover heading if missing</li>
-        <li><kbd>ArrowLeft</kbd> Focus hide first leftover-only buyer, or the buyer list if missing</li>
-        <li><kbd>Delete</kbd> Copy leftover uncovered minimum (organizer private)</li>
-        <li><kbd>F2</kbd> Focus the leftover uncovered minimum copy control, or leftover heading if missing</li>
-        <li><kbd>ArrowRight</kbd> Focus hide last winner-allocated buyer, or the buyer list if missing</li>
-        <li><kbd>F3</kbd> Copy leftover uncovered count (organizer private)</li>
-        <li><kbd>F4</kbd> Focus the leftover uncovered count copy control, or leftover heading if missing</li>
-        <li><kbd>Backspace</kbd> Focus hide first winner-allocated buyer, or the buyer list if missing</li>
-        <li><kbd>Shift+F7</kbd> Copy leftover uncovered leftover-only headroom (organizer private)</li>
-        <li><kbd>Shift+F8</kbd> Focus the leftover uncovered leftover-only headroom copy control, or leftover heading if missing</li>
-        <li><kbd>Shift+F9</kbd> Focus hide first leftover-only buyer, or the buyer list if missing</li>
-        <li><kbd>F7</kbd> Copy leftover uncovered leftover-only count (organizer private)</li>
-        <li><kbd>F8</kbd> Focus the leftover uncovered leftover-only count copy control, or leftover heading if missing</li>
-        <li><kbd>F9</kbd> Focus hide first uncovered leftover buyer, or the buyer list if missing</li>
-        <li><kbd>F10</kbd> Copy leftover uncovered leftover-only remaining (organizer private)</li>
-        <li><kbd>F11</kbd> Focus the leftover uncovered leftover-only remaining copy control, or leftover heading if missing</li>
-        <li><kbd>F12</kbd> Focus hide last uncovered leftover buyer, or the buyer list if missing</li>
-        <li><kbd>Shift+F10</kbd> Copy leftover uncovered leftover-only maximum (organizer private)</li>
-        <li><kbd>Shift+F11</kbd> Focus the leftover uncovered leftover-only maximum copy control, or leftover heading if missing</li>
-        <li><kbd>Shift+F12</kbd> Focus hide first uncovered leftover buyer, or the buyer list if missing</li>
         <li><kbd>Esc</kbd> Close help or the first-run guide</li>
       </ul>
       <p class="canvas-note">Shortcuts are ignored while you type in a field, list, or dialog.</p>
@@ -648,6 +622,27 @@ footer {
           <button class="preset" data-preset="cyclingCarnivalLunch" type="button">Cycling carnival</button>
           <button class="preset" data-preset="mountainBikeCarnivalLunch" type="button">Mountain bike carnival</button>
           <button class="preset" data-preset="bmxCarnivalLunch" type="button">BMX carnival</button>
+          <button class="preset" data-preset="cycloCrossCarnivalLunch" type="button">Cyclo-cross carnival</button>
+          <button class="preset" data-preset="trackCyclingCarnivalLunch" type="button">Track cycling carnival</button>
+          <button class="preset" data-preset="gravelCyclingCarnivalLunch" type="button">Gravel cycling carnival</button>
+          <button class="preset" data-preset="roadCyclingCarnivalLunch" type="button">Road cycling carnival</button>
+          <button class="preset" data-preset="criteriumCyclingCarnivalLunch" type="button">Criterium cycling carnival</button>
+          <button class="preset" data-preset="timeTrialCyclingCarnivalLunch" type="button">Time-trial cycling carnival</button>
+          <button class="preset" data-preset="hillClimbCyclingCarnivalLunch" type="button">Hill-climb cycling carnival</button>
+          <button class="preset" data-preset="keirinCyclingCarnivalLunch" type="button">Keirin cycling carnival</button>
+          <button class="preset" data-preset="madisonCyclingCarnivalLunch" type="button">Madison cycling carnival</button>
+          <button class="preset" data-preset="omniumCyclingCarnivalLunch" type="button">Omnium cycling carnival</button>
+          <button class="preset" data-preset="pointsRaceCyclingCarnivalLunch" type="button">Points-race cycling carnival</button>
+          <button class="preset" data-preset="scratchCyclingCarnivalLunch" type="button">Scratch cycling carnival</button>
+          <button class="preset" data-preset="individualPursuitCyclingCarnivalLunch" type="button">Individual-pursuit cycling carnival</button>
+          <button class="preset" data-preset="teamPursuitCyclingCarnivalLunch" type="button">Team-pursuit cycling carnival</button>
+          <button class="preset" data-preset="teamSprintCyclingCarnivalLunch" type="button">Team-sprint cycling carnival</button>
+          <button class="preset" data-preset="firstAidCyclingCarnivalLunch" type="button">First-aid cycling carnival</button>
+          <button class="preset" data-preset="feedZoneCyclingCarnivalLunch" type="button">Feed-zone cycling carnival</button>
+          <button class="preset" data-preset="leadOutCyclingCarnivalLunch" type="button">Lead-out cycling carnival</button>
+          <button class="preset" data-preset="soigneurCyclingCarnivalLunch" type="button">Soigneur cycling carnival</button>
+          <button class="preset" data-preset="domestiqueCyclingCarnivalLunch" type="button">Domestique cycling carnival</button>
+          <button class="preset" data-preset="bottleHandCyclingCarnivalLunch" type="button">Bottle-hand cycling carnival</button>
           <button class="preset" data-preset="tiers" type="button">Price ladder</button>
         </div>
       </div>
@@ -808,31 +803,31 @@ footer {
             Hide the last unserved buyer
           </label>
           <label class="checkbox-field">
-            <input id="hide-first-unserved-buyer" type="checkbox" aria-keyshortcuts="End">
+            <input id="hide-first-unserved-buyer" type="checkbox">
             Hide the first unserved buyer
           </label>
           <label class="checkbox-field">
-            <input id="hide-last-leftover-only-buyer" type="checkbox" aria-keyshortcuts="ArrowUp">
+            <input id="hide-last-leftover-only-buyer" type="checkbox">
             Hide the last leftover-only buyer
           </label>
           <label class="checkbox-field">
-            <input id="hide-first-leftover-only-buyer" type="checkbox" aria-keyshortcuts="ArrowLeft">
+            <input id="hide-first-leftover-only-buyer" type="checkbox">
             Hide the first leftover-only buyer
           </label>
           <label class="checkbox-field">
-            <input id="hide-last-winner-allocated-buyer" type="checkbox" aria-keyshortcuts="ArrowRight">
+            <input id="hide-last-winner-allocated-buyer" type="checkbox">
             Hide the last winner-allocated buyer
           </label>
           <label class="checkbox-field">
-            <input id="hide-first-winner-allocated-buyer" type="checkbox" aria-keyshortcuts="Backspace">
+            <input id="hide-first-winner-allocated-buyer" type="checkbox">
             Hide the first winner-allocated buyer
           </label>
           <label class="checkbox-field">
-            <input id="hide-first-uncovered-leftover-buyer" type="checkbox" aria-keyshortcuts="F9">
+            <input id="hide-first-uncovered-leftover-buyer" type="checkbox">
             Hide the first uncovered leftover buyer
           </label>
           <label class="checkbox-field">
-            <input id="hide-last-uncovered-leftover-buyer" type="checkbox" aria-keyshortcuts="F12">
+            <input id="hide-last-uncovered-leftover-buyer" type="checkbox">
             Hide the last uncovered leftover buyer
           </label>
           <p id="buyer-variant-filter-note">The filter hides rows on screen. Saved buyers and matching stay unchanged. Merchant views still show counts only. The last hide-excluded, hide-fully-filled, hide-buyers-with-leftover, hide-unserved-buyers, hide-leftover-only-buyers, hide-winner-allocated-buyers, hide-buyers-filled-by-leftover-fill, hide-last-buyer-filled-by-leftover-fill, hide-first-buyer-filled-by-leftover-fill, hide-first-buyer-filled-by-tertiary-fill, hide-last-buyer-filled-by-tertiary-fill, hide-last-unserved-buyer, hide-first-unserved-buyer, hide-last-leftover-only-buyer, hide-first-leftover-only-buyer, hide-last-winner-allocated-buyer, hide-first-winner-allocated-buyer, hide-first-uncovered-leftover-buyer, and hide-last-uncovered-leftover-buyer choices are kept in this browser's workspace file. Older workspace files without them still show every buyer.</p>
@@ -1034,15 +1029,15 @@ footer {
             <button id="copy-leftover-fill-maximum" class="print-chrome" type="button" aria-keyshortcuts="8">Copy leftover fill maximum (organizer private)</button>
             <button id="copy-tertiary-fill-remaining" class="print-chrome" type="button" aria-keyshortcuts="1">Copy tertiary fill remaining capacity (organizer private)</button>
             <button id="copy-tertiary-fill-maximum" class="print-chrome" type="button" aria-keyshortcuts="4">Copy tertiary fill maximum (organizer private)</button>
-            <button id="copy-leftover-uncovered-remaining" class="print-chrome" type="button" aria-keyshortcuts="PageUp">Copy leftover uncovered remaining (organizer private)</button>
-            <button id="copy-leftover-uncovered-maximum" class="print-chrome" type="button" aria-keyshortcuts="Insert">Copy leftover uncovered maximum (organizer private)</button>
-            <button id="copy-leftover-uncovered-minimum" class="print-chrome" type="button" aria-keyshortcuts="Delete">Copy leftover uncovered minimum (organizer private)</button>
-            <button id="copy-leftover-uncovered-count" class="print-chrome" type="button" aria-keyshortcuts="F3">Copy leftover uncovered count (organizer private)</button>
-            <button id="copy-leftover-uncovered-leftover-only-count" class="print-chrome" type="button" aria-keyshortcuts="F7">Copy leftover uncovered leftover-only count (organizer private)</button>
-            <button id="copy-leftover-uncovered-leftover-only-remaining" class="print-chrome" type="button" aria-keyshortcuts="F10">Copy leftover uncovered leftover-only remaining (organizer private)</button>
-            <button id="copy-leftover-uncovered-leftover-only-maximum" class="print-chrome" type="button" aria-keyshortcuts="Shift+F10">Copy leftover uncovered leftover-only maximum (organizer private)</button>
+            <button id="copy-leftover-uncovered-remaining" class="print-chrome" type="button">Copy leftover uncovered remaining (organizer private)</button>
+            <button id="copy-leftover-uncovered-maximum" class="print-chrome" type="button">Copy leftover uncovered maximum (organizer private)</button>
+            <button id="copy-leftover-uncovered-minimum" class="print-chrome" type="button">Copy leftover uncovered minimum (organizer private)</button>
+            <button id="copy-leftover-uncovered-count" class="print-chrome" type="button">Copy leftover uncovered count (organizer private)</button>
+            <button id="copy-leftover-uncovered-leftover-only-count" class="print-chrome" type="button">Copy leftover uncovered leftover-only count (organizer private)</button>
+            <button id="copy-leftover-uncovered-leftover-only-remaining" class="print-chrome" type="button">Copy leftover uncovered leftover-only remaining (organizer private)</button>
+            <button id="copy-leftover-uncovered-leftover-only-maximum" class="print-chrome" type="button">Copy leftover uncovered leftover-only maximum (organizer private)</button>
             <button id="copy-leftover-uncovered-leftover-only-minimum" class="print-chrome" type="button">Copy leftover uncovered leftover-only minimum (organizer private)</button>
-            <button id="copy-leftover-uncovered-leftover-only-headroom" class="print-chrome" type="button" aria-keyshortcuts="Shift+F7">Copy leftover uncovered leftover-only headroom (organizer private)</button>
+            <button id="copy-leftover-uncovered-leftover-only-headroom" class="print-chrome" type="button">Copy leftover uncovered leftover-only headroom (organizer private)</button>
             <button id="copy-leftover-uncovered-leftover-only-allocated" class="print-chrome" type="button">Copy leftover uncovered leftover-only allocated (organizer private)</button>
             <button id="copy-leftover-uncovered-leftover-only-capacity" class="print-chrome" type="button">Copy leftover uncovered leftover-only capacity (organizer private)</button>
             <button id="copy-leftover-uncovered-leftover-only-unit-price" class="print-chrome" type="button">Copy leftover uncovered leftover-only unit price (organizer private)</button>
@@ -2049,6 +2044,363 @@ const presets = Object.freeze({
       offer("O01", "Court-side BMX Delivery", "BMX lunch pack", "BMX pie", 17, 17, 3, 54, 3),
       offer("O02", "Pump Salad Run", "BMX lunch pack", "Pump salad", 15, 15, 4, 42, 2),
       { ...offer("O03", "Hall BMX Pickup", "BMX lunch pack", "Pump water", 21, 26, 1, 52, 5), fulfillment: "pickup" }
+    ]
+  },
+  cycloCrossCarnivalLunch: {
+    title: "Cyclo-cross carnival lunch",
+    currency: "AUD",
+    buyers: [
+      buyer("B01", "Pit-rack crate", "Cyclo-cross lunch pack", 15, 23, 4, ["Cyclo-cross pie", "Barrier salad"]),
+      buyer("B02", "Board-bag bench", "Cyclo-cross lunch pack", 19, 19, 3, ["Cyclo-cross pie"]),
+      buyer("B03", "Break hamper", "Cyclo-cross lunch pack", 15, 22, 5, ["Barrier salad", "Pit water"]),
+      buyer("B04", "Sideline cooler", "Cyclo-cross lunch pack", 13, 22, 2, ["Pit water"]),
+      buyer("B05", "Scoreboard trolley", "Cyclo-cross lunch pack", 16, 22, 4, ["Cyclo-cross pie", "Pit water"]),
+      buyer("B06", "Bench table", "Cyclo-cross lunch pack", 14, 20, 3, ["Barrier salad", "Cyclo-cross pie"])
+    ],
+    offers: [
+      offer("O01", "Court-side Cyclo-cross Delivery", "Cyclo-cross lunch pack", "Cyclo-cross pie", 17, 17, 3, 54, 3),
+      offer("O02", "Barrier Salad Run", "Cyclo-cross lunch pack", "Barrier salad", 15, 15, 4, 42, 2),
+      { ...offer("O03", "Hall Cyclo-cross Pickup", "Cyclo-cross lunch pack", "Pit water", 22, 27, 1, 54, 5), fulfillment: "pickup" }
+    ]
+  },
+  trackCyclingCarnivalLunch: {
+    title: "Track cycling carnival lunch",
+    currency: "AUD",
+    buyers: [
+      buyer("B01", "Sprint-rack crate", "Track cycling lunch pack", 15, 23, 4, ["Keirin pie", "Sprint salad"]),
+      buyer("B02", "Board-bag bench", "Track cycling lunch pack", 19, 19, 3, ["Keirin pie"]),
+      buyer("B03", "Break hamper", "Track cycling lunch pack", 15, 23, 5, ["Sprint salad", "Keirin water"]),
+      buyer("B04", "Sideline cooler", "Track cycling lunch pack", 14, 23, 2, ["Keirin water"]),
+      buyer("B05", "Scoreboard trolley", "Track cycling lunch pack", 16, 22, 4, ["Keirin pie", "Keirin water"]),
+      buyer("B06", "Bench table", "Track cycling lunch pack", 13, 20, 3, ["Sprint salad", "Keirin pie"])
+    ],
+    offers: [
+      offer("O01", "Court-side Track Cycling Delivery", "Track cycling lunch pack", "Keirin pie", 17, 17, 3, 54, 3),
+      offer("O02", "Sprint Salad Run", "Track cycling lunch pack", "Sprint salad", 15, 15, 4, 42, 2),
+      { ...offer("O03", "Hall Track Cycling Pickup", "Track cycling lunch pack", "Keirin water", 23, 28, 1, 56, 5), fulfillment: "pickup" }
+    ]
+  },
+  gravelCyclingCarnivalLunch: {
+    title: "Gravel cycling carnival lunch",
+    currency: "AUD",
+    buyers: [
+      buyer("B01", "Gravel-rack crate", "Gravel cycling lunch pack", 15, 23, 4, ["Gravel pie", "Feed-zone salad"]),
+      buyer("B02", "Drop-bar bench", "Gravel cycling lunch pack", 19, 19, 3, ["Gravel pie"]),
+      buyer("B03", "Feed-zone hamper", "Gravel cycling lunch pack", 15, 24, 5, ["Feed-zone salad", "Neutral water"]),
+      buyer("B04", "Sideline cooler", "Gravel cycling lunch pack", 15, 24, 2, ["Neutral water"]),
+      buyer("B05", "Scoreboard trolley", "Gravel cycling lunch pack", 16, 22, 4, ["Gravel pie", "Neutral water"]),
+      buyer("B06", "Bench table", "Gravel cycling lunch pack", 13, 20, 3, ["Feed-zone salad", "Gravel pie"])
+    ],
+    offers: [
+      offer("O01", "Court-side Gravel Cycling Delivery", "Gravel cycling lunch pack", "Gravel pie", 17, 17, 3, 54, 3),
+      offer("O02", "Feed-zone Salad Run", "Gravel cycling lunch pack", "Feed-zone salad", 15, 15, 4, 42, 2),
+      { ...offer("O03", "Hall Gravel Cycling Pickup", "Gravel cycling lunch pack", "Neutral water", 24, 29, 1, 58, 5), fulfillment: "pickup" }
+    ]
+  },
+  roadCyclingCarnivalLunch: {
+    title: "Road cycling carnival lunch",
+    currency: "AUD",
+    buyers: [
+      buyer("B01", "Hood-rack crate", "Road cycling lunch pack", 15, 23, 4, ["Road pie", "Peloton salad"]),
+      buyer("B02", "Brake-hood bench", "Road cycling lunch pack", 19, 19, 3, ["Road pie"]),
+      buyer("B03", "Feed-station hamper", "Road cycling lunch pack", 15, 25, 5, ["Peloton salad", "Bottle water"]),
+      buyer("B04", "Sideline cooler", "Road cycling lunch pack", 16, 25, 2, ["Bottle water"]),
+      buyer("B05", "Scoreboard trolley", "Road cycling lunch pack", 16, 22, 4, ["Road pie", "Bottle water"]),
+      buyer("B06", "Bench table", "Road cycling lunch pack", 13, 20, 3, ["Peloton salad", "Road pie"])
+    ],
+    offers: [
+      offer("O01", "Court-side Road Cycling Delivery", "Road cycling lunch pack", "Road pie", 17, 17, 3, 54, 3),
+      offer("O02", "Peloton Salad Run", "Road cycling lunch pack", "Peloton salad", 15, 15, 4, 42, 2),
+      { ...offer("O03", "Hall Road Cycling Pickup", "Road cycling lunch pack", "Bottle water", 25, 30, 1, 60, 5), fulfillment: "pickup" }
+    ]
+  },
+  criteriumCyclingCarnivalLunch: {
+    title: "Criterium cycling carnival lunch",
+    currency: "AUD",
+    buyers: [
+      buyer("B01", "Circuit-rack crate", "Criterium lunch pack", 15, 23, 4, ["Criterium pie", "Circuit salad"]),
+      buyer("B02", "Apex-bar bench", "Criterium lunch pack", 19, 19, 3, ["Criterium pie"]),
+      buyer("B03", "Pit-lane hamper", "Criterium lunch pack", 15, 26, 5, ["Circuit salad", "Circuit water"]),
+      buyer("B04", "Sideline cooler", "Criterium lunch pack", 17, 26, 2, ["Circuit water"]),
+      buyer("B05", "Scoreboard trolley", "Criterium lunch pack", 16, 22, 4, ["Criterium pie", "Circuit water"]),
+      buyer("B06", "Bench table", "Criterium lunch pack", 13, 20, 3, ["Circuit salad", "Criterium pie"])
+    ],
+    offers: [
+      offer("O01", "Court-side Criterium Delivery", "Criterium lunch pack", "Criterium pie", 17, 17, 3, 54, 3),
+      offer("O02", "Circuit Salad Run", "Criterium lunch pack", "Circuit salad", 15, 15, 4, 42, 2),
+      { ...offer("O03", "Hall Criterium Pickup", "Criterium lunch pack", "Circuit water", 26, 31, 1, 62, 5), fulfillment: "pickup" }
+    ]
+  },
+  timeTrialCyclingCarnivalLunch: {
+    title: "Time-trial cycling carnival lunch",
+    currency: "AUD",
+    buyers: [
+      buyer("B01", "Start-ramp crate", "Time-trial lunch pack", 15, 23, 4, ["Time-trial pie", "Ramp salad"]),
+      buyer("B02", "Timing-hut bench", "Time-trial lunch pack", 19, 19, 3, ["Time-trial pie"]),
+      buyer("B03", "Time-check hamper", "Time-trial lunch pack", 15, 27, 5, ["Ramp salad", "Ramp water"]),
+      buyer("B04", "Sideline cooler", "Time-trial lunch pack", 18, 27, 2, ["Ramp water"]),
+      buyer("B05", "Scoreboard trolley", "Time-trial lunch pack", 16, 22, 4, ["Time-trial pie", "Ramp water"]),
+      buyer("B06", "Bench table", "Time-trial lunch pack", 13, 20, 3, ["Ramp salad", "Time-trial pie"])
+    ],
+    offers: [
+      offer("O01", "Court-side Time Trial Delivery", "Time-trial lunch pack", "Time-trial pie", 17, 17, 3, 54, 3),
+      offer("O02", "Ramp Salad Run", "Time-trial lunch pack", "Ramp salad", 15, 15, 4, 42, 2),
+      { ...offer("O03", "Hall Time Trial Pickup", "Time-trial lunch pack", "Ramp water", 27, 32, 1, 64, 5), fulfillment: "pickup" }
+    ]
+  },
+  hillClimbCyclingCarnivalLunch: {
+    title: "Hill-climb cycling carnival lunch",
+    currency: "AUD",
+    buyers: [
+      buyer("B01", "Hairpin crate", "Hill-climb lunch pack", 15, 23, 4, ["Hill-climb pie", "Hairpin salad"]),
+      buyer("B02", "Summit-marshal bench", "Hill-climb lunch pack", 19, 19, 3, ["Hill-climb pie"]),
+      buyer("B03", "Hairpin hamper", "Hill-climb lunch pack", 15, 28, 5, ["Hairpin salad", "Hairpin water"]),
+      buyer("B04", "Sideline cooler", "Hill-climb lunch pack", 19, 28, 2, ["Hairpin water"]),
+      buyer("B05", "Scoreboard trolley", "Hill-climb lunch pack", 16, 22, 4, ["Hill-climb pie", "Hairpin water"]),
+      buyer("B06", "Bench table", "Hill-climb lunch pack", 13, 20, 3, ["Hairpin salad", "Hill-climb pie"])
+    ],
+    offers: [
+      offer("O01", "Court-side Hill Climb Delivery", "Hill-climb lunch pack", "Hill-climb pie", 17, 17, 3, 54, 3),
+      offer("O02", "Hairpin Salad Run", "Hill-climb lunch pack", "Hairpin salad", 15, 15, 4, 42, 2),
+      { ...offer("O03", "Hall Hill Climb Pickup", "Hill-climb lunch pack", "Hairpin water", 28, 33, 1, 64, 5), fulfillment: "pickup" }
+    ]
+  },
+  keirinCyclingCarnivalLunch: {
+    title: "Keirin cycling carnival lunch",
+    currency: "AUD",
+    buyers: [
+      buyer("B01", "Derny crate", "Keirin lunch pack", 15, 23, 4, ["Keirin pie", "Derny salad"]),
+      buyer("B02", "Keirin-gate bench", "Keirin lunch pack", 19, 19, 3, ["Keirin pie"]),
+      buyer("B03", "Pacer hamper", "Keirin lunch pack", 15, 30, 5, ["Derny salad", "Derny water"]),
+      buyer("B04", "Sideline cooler", "Keirin lunch pack", 20, 30, 2, ["Derny water"]),
+      buyer("B05", "Scoreboard trolley", "Keirin lunch pack", 16, 22, 4, ["Keirin pie", "Derny water"]),
+      buyer("B06", "Bench table", "Keirin lunch pack", 13, 20, 3, ["Derny salad", "Keirin pie"])
+    ],
+    offers: [
+      offer("O01", "Court-side Keirin Delivery", "Keirin lunch pack", "Keirin pie", 17, 17, 3, 54, 3),
+      offer("O02", "Derny Salad Run", "Keirin lunch pack", "Derny salad", 15, 15, 4, 42, 2),
+      { ...offer("O03", "Hall Keirin Pickup", "Keirin lunch pack", "Derny water", 30, 34, 1, 64, 5), fulfillment: "pickup" }
+    ]
+  },
+  madisonCyclingCarnivalLunch: {
+    title: "Madison cycling carnival lunch",
+    currency: "AUD",
+    buyers: [
+      buyer("B01", "Madison-pair crate", "Madison lunch pack", 15, 23, 4, ["Madison pie", "Handsling salad"]),
+      buyer("B02", "Handsling bench", "Madison lunch pack", 19, 19, 3, ["Madison pie"]),
+      buyer("B03", "Pairing hamper", "Madison lunch pack", 15, 31, 5, ["Handsling salad", "Handsling water"]),
+      buyer("B04", "Sideline cooler", "Madison lunch pack", 21, 31, 2, ["Handsling water"]),
+      buyer("B05", "Scoreboard trolley", "Madison lunch pack", 16, 22, 4, ["Madison pie", "Handsling water"]),
+      buyer("B06", "Bench table", "Madison lunch pack", 13, 20, 3, ["Handsling salad", "Madison pie"])
+    ],
+    offers: [
+      offer("O01", "Court-side Madison Delivery", "Madison lunch pack", "Madison pie", 17, 17, 3, 54, 3),
+      offer("O02", "Handsling Salad Run", "Madison lunch pack", "Handsling salad", 15, 15, 4, 42, 2),
+      { ...offer("O03", "Hall Madison Pickup", "Madison lunch pack", "Handsling water", 31, 35, 1, 64, 5), fulfillment: "pickup" }
+    ]
+  },
+  omniumCyclingCarnivalLunch: {
+    title: "Omnium cycling carnival lunch",
+    currency: "AUD",
+    buyers: [
+      buyer("B01", "Omnium-board crate", "Omnium lunch pack", 15, 23, 4, ["Omnium pie", "Tempo salad"]),
+      buyer("B02", "Flying-200 bench", "Omnium lunch pack", 19, 19, 3, ["Omnium pie"]),
+      buyer("B03", "Elimination hamper", "Omnium lunch pack", 15, 32, 5, ["Tempo salad", "Tempo water"]),
+      buyer("B04", "Sideline cooler", "Omnium lunch pack", 22, 32, 2, ["Tempo water"]),
+      buyer("B05", "Scoreboard trolley", "Omnium lunch pack", 16, 22, 4, ["Omnium pie", "Tempo water"]),
+      buyer("B06", "Bench table", "Omnium lunch pack", 13, 20, 3, ["Tempo salad", "Omnium pie"])
+    ],
+    offers: [
+      offer("O01", "Court-side Omnium Delivery", "Omnium lunch pack", "Omnium pie", 17, 17, 3, 54, 3),
+      offer("O02", "Tempo Salad Run", "Omnium lunch pack", "Tempo salad", 15, 15, 4, 42, 2),
+      { ...offer("O03", "Hall Omnium Pickup", "Omnium lunch pack", "Tempo water", 32, 36, 1, 64, 5), fulfillment: "pickup" }
+    ]
+  },
+  pointsRaceCyclingCarnivalLunch: {
+    title: "Points-race cycling carnival lunch",
+    currency: "AUD",
+    buyers: [
+      buyer("B01", "Points-sprint crate", "Points-race lunch pack", 15, 23, 4, ["Points-race pie", "Bell salad"]),
+      buyer("B02", "Bell-lap bench", "Points-race lunch pack", 19, 19, 3, ["Points-race pie"]),
+      buyer("B03", "Prime-board hamper", "Points-race lunch pack", 15, 33, 5, ["Bell salad", "Prime water"]),
+      buyer("B04", "Sideline cooler", "Points-race lunch pack", 23, 33, 2, ["Prime water"]),
+      buyer("B05", "Scoreboard trolley", "Points-race lunch pack", 16, 22, 4, ["Points-race pie", "Prime water"]),
+      buyer("B06", "Bench table", "Points-race lunch pack", 13, 20, 3, ["Bell salad", "Points-race pie"])
+    ],
+    offers: [
+      offer("O01", "Court-side Points-race Delivery", "Points-race lunch pack", "Points-race pie", 17, 17, 3, 54, 3),
+      offer("O02", "Bell Salad Run", "Points-race lunch pack", "Bell salad", 15, 15, 4, 42, 2),
+      { ...offer("O03", "Hall Points-race Pickup", "Points-race lunch pack", "Prime water", 33, 37, 1, 64, 5), fulfillment: "pickup" }
+    ]
+  },
+  scratchCyclingCarnivalLunch: {
+    title: "Scratch cycling carnival lunch",
+    currency: "AUD",
+    buyers: [
+      buyer("B01", "Scratch-bunch crate", "Scratch lunch pack", 15, 23, 4, ["Scratch pie", "Bunch salad"]),
+      buyer("B02", "Bunch-finish bench", "Scratch lunch pack", 19, 19, 3, ["Scratch pie"]),
+      buyer("B03", "Scratch-chip hamper", "Scratch lunch pack", 15, 34, 5, ["Bunch salad", "Chip water"]),
+      buyer("B04", "Sideline cooler", "Scratch lunch pack", 24, 34, 2, ["Chip water"]),
+      buyer("B05", "Scoreboard trolley", "Scratch lunch pack", 16, 22, 4, ["Scratch pie", "Chip water"]),
+      buyer("B06", "Bench table", "Scratch lunch pack", 13, 20, 3, ["Bunch salad", "Scratch pie"])
+    ],
+    offers: [
+      offer("O01", "Court-side Scratch Delivery", "Scratch lunch pack", "Scratch pie", 17, 17, 3, 54, 3),
+      offer("O02", "Bunch Salad Run", "Scratch lunch pack", "Bunch salad", 15, 15, 4, 42, 2),
+      { ...offer("O03", "Hall Scratch Pickup", "Scratch lunch pack", "Chip water", 34, 38, 1, 64, 5), fulfillment: "pickup" }
+    ]
+  },
+  individualPursuitCyclingCarnivalLunch: {
+    title: "Individual-pursuit cycling carnival lunch",
+    currency: "AUD",
+    buyers: [
+      buyer("B01", "Pursuit-line crate", "Individual-pursuit lunch pack", 15, 23, 4, ["Individual-pursuit pie", "Catch salad"]),
+      buyer("B02", "Catch-bell bench", "Individual-pursuit lunch pack", 19, 19, 3, ["Individual-pursuit pie"]),
+      buyer("B03", "Pursuit-chip hamper", "Individual-pursuit lunch pack", 15, 36, 5, ["Catch salad", "Pursuit water"]),
+      buyer("B04", "Sideline cooler", "Individual-pursuit lunch pack", 26, 36, 2, ["Pursuit water"]),
+      buyer("B05", "Scoreboard trolley", "Individual-pursuit lunch pack", 16, 22, 4, ["Individual-pursuit pie", "Pursuit water"]),
+      buyer("B06", "Bench table", "Individual-pursuit lunch pack", 13, 20, 3, ["Catch salad", "Individual-pursuit pie"])
+    ],
+    offers: [
+      offer("O01", "Court-side Individual-pursuit Delivery", "Individual-pursuit lunch pack", "Individual-pursuit pie", 17, 17, 3, 54, 3),
+      offer("O02", "Catch Salad Run", "Individual-pursuit lunch pack", "Catch salad", 15, 15, 4, 42, 2),
+      { ...offer("O03", "Hall Individual-pursuit Pickup", "Individual-pursuit lunch pack", "Pursuit water", 36, 40, 1, 64, 5), fulfillment: "pickup" }
+    ]
+  },
+  teamPursuitCyclingCarnivalLunch: {
+    title: "Team-pursuit cycling carnival lunch",
+    currency: "AUD",
+    buyers: [
+      buyer("B01", "Changeover-bell crate", "Team-pursuit lunch pack", 15, 23, 4, ["Team-pursuit pie", "Changeover salad"]),
+      buyer("B02", "Quartet-board bench", "Team-pursuit lunch pack", 19, 19, 3, ["Team-pursuit pie"]),
+      buyer("B03", "Team-pursuit-rota hamper", "Team-pursuit lunch pack", 15, 38, 5, ["Changeover salad", "Quartet water"]),
+      buyer("B04", "Sideline cooler", "Team-pursuit lunch pack", 28, 38, 2, ["Quartet water"]),
+      buyer("B05", "Scoreboard trolley", "Team-pursuit lunch pack", 16, 22, 4, ["Team-pursuit pie", "Quartet water"]),
+      buyer("B06", "Bench table", "Team-pursuit lunch pack", 13, 20, 3, ["Changeover salad", "Team-pursuit pie"])
+    ],
+    offers: [
+      offer("O01", "Court-side Team-pursuit Delivery", "Team-pursuit lunch pack", "Team-pursuit pie", 17, 17, 3, 54, 3),
+      offer("O02", "Changeover Salad Run", "Team-pursuit lunch pack", "Changeover salad", 15, 15, 4, 42, 2),
+      { ...offer("O03", "Hall Team-pursuit Pickup", "Team-pursuit lunch pack", "Quartet water", 38, 42, 1, 64, 5), fulfillment: "pickup" }
+    ]
+  },
+  teamSprintCyclingCarnivalLunch: {
+    title: "Team-sprint cycling carnival lunch",
+    currency: "AUD",
+    buyers: [
+      buyer("B01", "Start-gate crate", "Team-sprint lunch pack", 15, 23, 4, ["Team-sprint pie", "Relay salad"]),
+      buyer("B02", "Flying-relay bench", "Team-sprint lunch pack", 19, 19, 3, ["Team-sprint pie"]),
+      buyer("B03", "Trio-board hamper", "Team-sprint lunch pack", 15, 40, 5, ["Relay salad", "Trio water"]),
+      buyer("B04", "Sideline cooler", "Team-sprint lunch pack", 30, 40, 2, ["Trio water"]),
+      buyer("B05", "Scoreboard trolley", "Team-sprint lunch pack", 16, 22, 4, ["Team-sprint pie", "Trio water"]),
+      buyer("B06", "Bench table", "Team-sprint lunch pack", 13, 20, 3, ["Relay salad", "Team-sprint pie"])
+    ],
+    offers: [
+      offer("O01", "Court-side Team-sprint Delivery", "Team-sprint lunch pack", "Team-sprint pie", 17, 17, 3, 54, 3),
+      offer("O02", "Relay Salad Run", "Team-sprint lunch pack", "Relay salad", 15, 15, 4, 42, 2),
+      { ...offer("O03", "Hall Team-sprint Pickup", "Team-sprint lunch pack", "Trio water", 40, 43, 1, 64, 5), fulfillment: "pickup" }
+    ]
+  },
+  firstAidCyclingCarnivalLunch: {
+    title: "First-aid cycling carnival lunch",
+    currency: "AUD",
+    buyers: [
+      buyer("B01", "Treatment-tent crate", "First-aid lunch pack", 15, 23, 4, ["First-aid pie", "Tent salad"]),
+      buyer("B02", "Ice-pack-rota bench", "First-aid lunch pack", 19, 19, 3, ["First-aid pie"]),
+      buyer("B03", "Triage-board hamper", "First-aid lunch pack", 15, 42, 5, ["Tent salad", "Triage water"]),
+      buyer("B04", "Sideline cooler", "First-aid lunch pack", 32, 42, 2, ["Triage water"]),
+      buyer("B05", "Scoreboard trolley", "First-aid lunch pack", 16, 22, 4, ["First-aid pie", "Triage water"]),
+      buyer("B06", "Bench table", "First-aid lunch pack", 13, 20, 3, ["Tent salad", "First-aid pie"])
+    ],
+    offers: [
+      offer("O01", "Court-side First-aid Delivery", "First-aid lunch pack", "First-aid pie", 17, 17, 3, 54, 3),
+      offer("O02", "Tent Salad Run", "First-aid lunch pack", "Tent salad", 15, 15, 4, 42, 2),
+      { ...offer("O03", "Hall First-aid Pickup", "First-aid lunch pack", "Triage water", 42, 45, 1, 64, 5), fulfillment: "pickup" }
+    ]
+  },
+  feedZoneCyclingCarnivalLunch: {
+    title: "Feed-zone cycling carnival lunch",
+    currency: "AUD",
+    buyers: [
+      buyer("B01", "Musette-line crate", "Feed-zone lunch pack", 15, 23, 4, ["Feed-zone pie", "Musette salad"]),
+      buyer("B02", "Sticky-bottle bench", "Feed-zone lunch pack", 19, 19, 3, ["Feed-zone pie"]),
+      buyer("B03", "Bottle-hand-up hamper", "Feed-zone lunch pack", 15, 44, 5, ["Musette salad", "Bottle water"]),
+      buyer("B04", "Sideline cooler", "Feed-zone lunch pack", 34, 44, 2, ["Bottle water"]),
+      buyer("B05", "Scoreboard trolley", "Feed-zone lunch pack", 16, 22, 4, ["Feed-zone pie", "Bottle water"]),
+      buyer("B06", "Bench table", "Feed-zone lunch pack", 13, 20, 3, ["Musette salad", "Feed-zone pie"])
+    ],
+    offers: [
+      offer("O01", "Court-side Feed-zone Delivery", "Feed-zone lunch pack", "Feed-zone pie", 17, 17, 3, 54, 3),
+      offer("O02", "Musette Salad Run", "Feed-zone lunch pack", "Musette salad", 15, 15, 4, 42, 2),
+      { ...offer("O03", "Hall Feed-zone Pickup", "Feed-zone lunch pack", "Bottle water", 44, 47, 1, 64, 5), fulfillment: "pickup" }
+    ]
+  },
+  leadOutCyclingCarnivalLunch: {
+    title: "Lead-out cycling carnival lunch",
+    currency: "AUD",
+    buyers: [
+      buyer("B01", "Train-line crate", "Lead-out lunch pack", 17, 23, 4, ["Lead-out pie", "Train salad"]),
+      buyer("B02", "Last-rider bench", "Lead-out lunch pack", 19, 19, 3, ["Lead-out pie"]),
+      buyer("B03", "Sprinter-launch hamper", "Lead-out lunch pack", 15, 46, 5, ["Train salad", "Launch water"]),
+      buyer("B04", "Sideline cooler", "Lead-out lunch pack", 36, 46, 2, ["Launch water"]),
+      buyer("B05", "Scoreboard trolley", "Lead-out lunch pack", 16, 22, 4, ["Lead-out pie", "Launch water"]),
+      buyer("B06", "Bench table", "Lead-out lunch pack", 13, 20, 3, ["Train salad", "Lead-out pie"])
+    ],
+    offers: [
+      offer("O01", "Court-side Lead-out Delivery", "Lead-out lunch pack", "Lead-out pie", 17, 17, 3, 54, 3),
+      offer("O02", "Train Salad Run", "Lead-out lunch pack", "Train salad", 15, 15, 4, 42, 2),
+      { ...offer("O03", "Hall Lead-out Pickup", "Lead-out lunch pack", "Launch water", 46, 49, 1, 64, 5), fulfillment: "pickup" }
+    ]
+  },
+  soigneurCyclingCarnivalLunch: {
+    title: "Soigneur cycling carnival lunch",
+    currency: "AUD",
+    buyers: [
+      buyer("B01", "Soigneur-station crate", "Soigneur lunch pack", 18, 23, 4, ["Soigneur pie", "Station salad"]),
+      buyer("B02", "Cape-bag bench", "Soigneur lunch pack", 19, 19, 3, ["Soigneur pie"]),
+      buyer("B03", "Rice-cake hamper", "Soigneur lunch pack", 15, 48, 5, ["Station salad", "Cake water"]),
+      buyer("B04", "Sideline cooler", "Soigneur lunch pack", 37, 48, 2, ["Cake water"]),
+      buyer("B05", "Scoreboard trolley", "Soigneur lunch pack", 16, 22, 4, ["Soigneur pie", "Cake water"]),
+      buyer("B06", "Bench table", "Soigneur lunch pack", 13, 20, 3, ["Station salad", "Soigneur pie"])
+    ],
+    offers: [
+      offer("O01", "Court-side Soigneur Delivery", "Soigneur lunch pack", "Soigneur pie", 17, 17, 3, 54, 3),
+      offer("O02", "Station Salad Run", "Soigneur lunch pack", "Station salad", 15, 15, 4, 42, 2),
+      { ...offer("O03", "Hall Soigneur Pickup", "Soigneur lunch pack", "Cake water", 48, 51, 1, 64, 5), fulfillment: "pickup" }
+    ]
+  },
+  domestiqueCyclingCarnivalLunch: {
+    title: "Domestique cycling carnival lunch",
+    currency: "AUD",
+    buyers: [
+      buyer("B01", "Wheel-change crate", "Domestique lunch pack", 18, 23, 4, ["Domestique pie", "Neutral salad"]),
+      buyer("B02", "Neutral-service bench", "Domestique lunch pack", 19, 19, 3, ["Domestique pie"]),
+      buyer("B03", "Team-car hamper", "Domestique lunch pack", 15, 48, 5, ["Neutral salad", "Car water"]),
+      buyer("B04", "Sideline cooler", "Domestique lunch pack", 38, 48, 2, ["Car water"]),
+      buyer("B05", "Scoreboard trolley", "Domestique lunch pack", 17, 22, 4, ["Domestique pie", "Car water"]),
+      buyer("B06", "Bench table", "Domestique lunch pack", 13, 20, 3, ["Neutral salad", "Domestique pie"])
+    ],
+    offers: [
+      offer("O01", "Court-side Domestique Delivery", "Domestique lunch pack", "Domestique pie", 17, 17, 3, 55, 3),
+      offer("O02", "Neutral Salad Run", "Domestique lunch pack", "Neutral salad", 15, 15, 4, 42, 2),
+      { ...offer("O03", "Hall Domestique Pickup", "Domestique lunch pack", "Car water", 48, 52, 1, 64, 5), fulfillment: "pickup" }
+    ]
+  },
+  bottleHandCyclingCarnivalLunch: {
+    title: "Bottle-hand cycling carnival lunch",
+    currency: "AUD",
+    buyers: [
+      buyer("B01", "Bidon-pass crate", "Bottle-hand lunch pack", 18, 23, 4, ["Bottle-hand pie", "Bidon salad"]),
+      buyer("B02", "Car-window bench", "Bottle-hand lunch pack", 19, 19, 3, ["Bottle-hand pie"]),
+      buyer("B03", "Crate-lock hamper", "Bottle-hand lunch pack", 15, 48, 5, ["Bidon salad", "Crate water"]),
+      buyer("B04", "Sideline cooler", "Bottle-hand lunch pack", 39, 48, 2, ["Crate water"]),
+      buyer("B05", "Scoreboard trolley", "Bottle-hand lunch pack", 17, 22, 4, ["Bottle-hand pie", "Crate water"]),
+      buyer("B06", "Bench table", "Bottle-hand lunch pack", 13, 20, 3, ["Bidon salad", "Bottle-hand pie"])
+    ],
+    offers: [
+      offer("O01", "Court-side Bottle-hand Delivery", "Bottle-hand lunch pack", "Bottle-hand pie", 17, 17, 3, 55, 3),
+      offer("O02", "Bidon Salad Run", "Bottle-hand lunch pack", "Bidon salad", 15, 15, 4, 42, 2),
+      { ...offer("O03", "Hall Bottle-hand Pickup", "Bottle-hand lunch pack", "Crate water", 48, 53, 1, 64, 5), fulfillment: "pickup" }
     ]
   }
 });
@@ -4218,7 +4570,9 @@ function requiredText(value, path, maxLength) {
 
 function finite(value, path, minimum, maximum) {
   if (typeof value === "string") {
-    const trimmed = value.trim();
+    let trimmed = value.trim();
+    if (trimmed === "") throw new ScenarioError(`${path} cannot be empty.`);
+    if (trimmed.startsWith("+")) trimmed = trimmed.slice(1);
     if (trimmed === "") throw new ScenarioError(`${path} cannot be empty.`);
     if (/^0[box]/i.test(trimmed) || /[eE+]/.test(trimmed)) {
       throw new ScenarioError(`${path} must be a number.`);
@@ -6755,136 +7109,6 @@ function handleShortcut(event) {
   if (key === "4") {
     event.preventDefault();
     copyTertiaryFillMaximum();
-    return;
-  }
-  if (key === "Home") {
-    event.preventDefault();
-    focusTertiaryFillMaximumCopy();
-    return;
-  }
-  if (key === "End") {
-    event.preventDefault();
-    focusHideFirstUnservedBuyer();
-    return;
-  }
-  if (key === "PageUp") {
-    event.preventDefault();
-    copyLeftoverUncoveredRemaining();
-    return;
-  }
-  if (key === "PageDown") {
-    event.preventDefault();
-    focusLeftoverUncoveredRemainingCopy();
-    return;
-  }
-  if (key === "ArrowUp") {
-    event.preventDefault();
-    focusHideLastLeftoverOnlyBuyer();
-    return;
-  }
-  if (key === "Insert") {
-    event.preventDefault();
-    copyLeftoverUncoveredMaximum();
-    return;
-  }
-  if (key === "ArrowDown") {
-    event.preventDefault();
-    focusLeftoverUncoveredMaximumCopy();
-    return;
-  }
-  if (key === "ArrowLeft") {
-    event.preventDefault();
-    focusHideFirstLeftoverOnlyBuyer();
-    return;
-  }
-  if (key === "Delete") {
-    event.preventDefault();
-    copyLeftoverUncoveredMinimum();
-    return;
-  }
-  if (key === "F2") {
-    event.preventDefault();
-    focusLeftoverUncoveredMinimumCopy();
-    return;
-  }
-  if (key === "ArrowRight") {
-    event.preventDefault();
-    focusHideLastWinnerAllocatedBuyer();
-    return;
-  }
-  if (key === "F3") {
-    event.preventDefault();
-    copyLeftoverUncoveredCount();
-    return;
-  }
-  if (key === "F4") {
-    event.preventDefault();
-    focusLeftoverUncoveredCountCopy();
-    return;
-  }
-  if (key === "Backspace") {
-    event.preventDefault();
-    focusHideFirstWinnerAllocatedBuyer();
-    return;
-  }
-  if (event.shiftKey && key === "F7") {
-    event.preventDefault();
-    copyLeftoverUncoveredLeftoverOnlyHeadroom();
-    return;
-  }
-  if (event.shiftKey && key === "F8") {
-    event.preventDefault();
-    focusLeftoverUncoveredLeftoverOnlyHeadroomCopy();
-    return;
-  }
-  if (event.shiftKey && key === "F9") {
-    event.preventDefault();
-    focusHideFirstLeftoverOnlyBuyer();
-    return;
-  }
-  if (key === "F7") {
-    event.preventDefault();
-    copyLeftoverUncoveredLeftoverOnlyCount();
-    return;
-  }
-  if (key === "F8") {
-    event.preventDefault();
-    focusLeftoverUncoveredLeftoverOnlyCountCopy();
-    return;
-  }
-  if (key === "F9") {
-    event.preventDefault();
-    focusHideFirstUncoveredLeftoverBuyer();
-    return;
-  }
-  if (event.shiftKey && key === "F10") {
-    event.preventDefault();
-    copyLeftoverUncoveredLeftoverOnlyMaximum();
-    return;
-  }
-  if (event.shiftKey && key === "F11") {
-    event.preventDefault();
-    focusLeftoverUncoveredLeftoverOnlyMaximumCopy();
-    return;
-  }
-  if (event.shiftKey && key === "F12") {
-    event.preventDefault();
-    focusHideFirstUncoveredLeftoverBuyer();
-    return;
-  }
-  if (key === "F10") {
-    event.preventDefault();
-    copyLeftoverUncoveredLeftoverOnlyRemaining();
-    return;
-  }
-  if (key === "F11") {
-    event.preventDefault();
-    focusLeftoverUncoveredLeftoverOnlyRemainingCopy();
-    return;
-  }
-  if (key === "F12") {
-    event.preventDefault();
-    focusHideLastUncoveredLeftoverBuyer();
     return;
   }
 }

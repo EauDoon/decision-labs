@@ -1,0 +1,31 @@
+import assert from "node:assert/strict";
+import test from "node:test";
+import { readFile } from "node:fs/promises";
+
+test("time-trial cycling club hours keeps remaining 16 / 18 / 47 after criterium", async () => {
+  const app = (await readFile(new URL("../src/app.js", import.meta.url), "utf8")).replaceAll("\r\n", "\n");
+  const html = (await readFile(new URL("../index.html", import.meta.url), "utf8")).replaceAll("\r\n", "\n");
+  const timeTrialStart = app.indexOf('"time-trial-cycling-club-hours"');
+  const hillClimbStart = app.indexOf('"hill-climb-cycling-club-hours"');
+  const timeTrialEnd = hillClimbStart === -1 ? app.indexOf("let agreementReviewPacket", timeTrialStart) : hillClimbStart;
+  const timeTrial = app.slice(timeTrialStart, timeTrialEnd === -1 ? undefined : timeTrialEnd);
+  const criteriumStart = app.indexOf('"criterium-cycling-club-hours"');
+  const criterium = app.slice(criteriumStart, timeTrialStart);
+  assert.ok(timeTrialStart > criteriumStart);
+  assert.match(timeTrial, /weight: 16/);
+  assert.match(timeTrial, /weight: 18/);
+  assert.match(timeTrial, /Start-ramp hours/);
+  assert.match(timeTrial, /Timing-chip lock-up/);
+  assert.match(timeTrial, /timekeepers at the start-ramp hut/);
+  assert.doesNotMatch(timeTrial, /timing-hut/);
+  assert.doesNotMatch(timeTrial, /pit-lane/);
+  assert.doesNotMatch(timeTrial, /commissaires/);
+  assert.doesNotMatch(timeTrial, /sealed-road/);
+  assert.doesNotMatch(timeTrial, /feed-zone/);
+  assert.doesNotMatch(timeTrial, /circuit hut/);
+  assert.match(criterium, /weight: 15/);
+  assert.match(criterium, /weight: 17/);
+  assert.match(criterium, /Pit-lane hours/);
+  assert.doesNotMatch(criterium, /Start-ramp hours/);
+  assert.doesNotMatch(criterium, /Timing-chip lock-up/);
+});

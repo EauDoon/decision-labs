@@ -451,6 +451,195 @@ export const PRESETS = Object.freeze({
       { id: 'bmx-first-aid', name: 'First-aid', revenueShare: 0.25, variableCostPerTransaction: 1.52, fixedMonthlyCost: 1470, minimumAcceptableProfit: 550, capacity: 5200, minimumCommitment: 0, riskCost: 320 },
     ],
   },
+  cycloCrossCarnivalSplit: {
+    name: 'Cyclo-cross carnival split',
+    deal: { monthlyVolume: 5300, feePerTransaction: 8, addressableVolume: 6500, volumeShockPct: 0 },
+    participants: [
+      { id: 'cyclo-cross-committee', name: 'Carnival committee', revenueShare: 0.37, variableCostPerTransaction: 1.86, fixedMonthlyCost: 3740, minimumAcceptableProfit: 1450, capacity: 6200, minimumCommitment: 0, riskCost: 554 },
+      { id: 'cyclo-cross-club-hire', name: 'Cyclo-cross club hire', revenueShare: 0.38, variableCostPerTransaction: 1.98, fixedMonthlyCost: 2860, minimumAcceptableProfit: 990, capacity: 7300, minimumCommitment: 440, riskCost: 450 },
+      { id: 'cyclo-cross-first-aid', name: 'First-aid', revenueShare: 0.25, variableCostPerTransaction: 1.56, fixedMonthlyCost: 1500, minimumAcceptableProfit: 560, capacity: 5300, minimumCommitment: 0, riskCost: 330 },
+    ],
+  },
+  trackCyclingCarnivalSplit: {
+    name: 'Track cycling carnival split',
+    deal: { monthlyVolume: 5400, feePerTransaction: 8, addressableVolume: 6600, volumeShockPct: 0 },
+    participants: [
+      { id: 'track-cycling-committee', name: 'Carnival committee', revenueShare: 0.37, variableCostPerTransaction: 1.87, fixedMonthlyCost: 3750, minimumAcceptableProfit: 1460, capacity: 6300, minimumCommitment: 0, riskCost: 556 },
+      { id: 'track-cycling-club-hire', name: 'Track cycling club hire', revenueShare: 0.38, variableCostPerTransaction: 1.96, fixedMonthlyCost: 2920, minimumAcceptableProfit: 1000, capacity: 7400, minimumCommitment: 450, riskCost: 460 },
+      { id: 'track-cycling-first-aid', name: 'First-aid', revenueShare: 0.25, variableCostPerTransaction: 1.50, fixedMonthlyCost: 1530, minimumAcceptableProfit: 570, capacity: 5400, minimumCommitment: 0, riskCost: 340 },
+    ],
+  },
+  gravelCyclingCarnivalSplit: {
+    name: 'Gravel cycling carnival split',
+    deal: { monthlyVolume: 5500, feePerTransaction: 8, addressableVolume: 6700, volumeShockPct: 0 },
+    participants: [
+      { id: 'gravel-cycling-committee', name: 'Carnival committee', revenueShare: 0.37, variableCostPerTransaction: 1.88, fixedMonthlyCost: 3760, minimumAcceptableProfit: 1470, capacity: 6400, minimumCommitment: 0, riskCost: 558 },
+      { id: 'gravel-cycling-club-hire', name: 'Gravel cycling club hire', revenueShare: 0.38, variableCostPerTransaction: 1.94, fixedMonthlyCost: 2980, minimumAcceptableProfit: 1010, capacity: 7500, minimumCommitment: 460, riskCost: 470 },
+      { id: 'gravel-cycling-first-aid', name: 'First-aid', revenueShare: 0.25, variableCostPerTransaction: 1.54, fixedMonthlyCost: 1560, minimumAcceptableProfit: 580, capacity: 5500, minimumCommitment: 0, riskCost: 350 },
+    ],
+  },
+  roadCyclingCarnivalSplit: {
+    name: 'Road cycling carnival split',
+    deal: { monthlyVolume: 5600, feePerTransaction: 8, addressableVolume: 6800, volumeShockPct: 0 },
+    participants: [
+      { id: 'road-cycling-committee', name: 'Carnival committee', revenueShare: 0.37, variableCostPerTransaction: 1.89, fixedMonthlyCost: 3770, minimumAcceptableProfit: 1480, capacity: 6500, minimumCommitment: 0, riskCost: 560 },
+      { id: 'road-cycling-club-hire', name: 'Road cycling club hire', revenueShare: 0.38, variableCostPerTransaction: 1.92, fixedMonthlyCost: 3040, minimumAcceptableProfit: 1020, capacity: 7600, minimumCommitment: 470, riskCost: 480 },
+      { id: 'road-cycling-first-aid', name: 'First-aid', revenueShare: 0.25, variableCostPerTransaction: 1.52, fixedMonthlyCost: 1590, minimumAcceptableProfit: 590, capacity: 5600, minimumCommitment: 0, riskCost: 360 },
+    ],
+  },
+  criteriumCyclingCarnivalSplit: {
+    name: 'Criterium cycling carnival split',
+    deal: { monthlyVolume: 5700, feePerTransaction: 8, addressableVolume: 6900, volumeShockPct: 0 },
+    participants: [
+      { id: 'criterium-cycling-committee', name: 'Carnival committee', revenueShare: 0.37, variableCostPerTransaction: 1.90, fixedMonthlyCost: 3780, minimumAcceptableProfit: 1490, capacity: 6600, minimumCommitment: 0, riskCost: 570 },
+      { id: 'criterium-cycling-club-hire', name: 'Criterium cycling club hire', revenueShare: 0.38, variableCostPerTransaction: 1.91, fixedMonthlyCost: 3050, minimumAcceptableProfit: 1030, capacity: 7700, minimumCommitment: 480, riskCost: 490 },
+      { id: 'criterium-cycling-first-aid', name: 'First-aid', revenueShare: 0.25, variableCostPerTransaction: 1.50, fixedMonthlyCost: 1620, minimumAcceptableProfit: 600, capacity: 5700, minimumCommitment: 0, riskCost: 370 },
+    ],
+  },
+  timeTrialCyclingCarnivalSplit: {
+    name: 'Time-trial cycling carnival split',
+    deal: { monthlyVolume: 5800, feePerTransaction: 8, addressableVolume: 7000, volumeShockPct: 0 },
+    participants: [
+      { id: 'time-trial-cycling-committee', name: 'Carnival committee', revenueShare: 0.37, variableCostPerTransaction: 1.91, fixedMonthlyCost: 3790, minimumAcceptableProfit: 1500, capacity: 6700, minimumCommitment: 0, riskCost: 572 },
+      { id: 'time-trial-cycling-club-hire', name: 'Time-trial cycling club hire', revenueShare: 0.38, variableCostPerTransaction: 1.89, fixedMonthlyCost: 3060, minimumAcceptableProfit: 1040, capacity: 7800, minimumCommitment: 490, riskCost: 500 },
+      { id: 'time-trial-cycling-first-aid', name: 'First-aid', revenueShare: 0.25, variableCostPerTransaction: 1.48, fixedMonthlyCost: 1650, minimumAcceptableProfit: 610, capacity: 5800, minimumCommitment: 0, riskCost: 380 },
+    ],
+  },
+  hillClimbCyclingCarnivalSplit: {
+    name: 'Hill-climb cycling carnival split',
+    deal: { monthlyVolume: 5900, feePerTransaction: 8, addressableVolume: 7100, volumeShockPct: 0 },
+    participants: [
+      { id: 'hill-climb-cycling-committee', name: 'Carnival committee', revenueShare: 0.37, variableCostPerTransaction: 1.92, fixedMonthlyCost: 3800, minimumAcceptableProfit: 1510, capacity: 6900, minimumCommitment: 0, riskCost: 574 },
+      { id: 'hill-climb-cycling-club-hire', name: 'Hill-climb cycling club hire', revenueShare: 0.38, variableCostPerTransaction: 1.87, fixedMonthlyCost: 3070, minimumAcceptableProfit: 1050, capacity: 8000, minimumCommitment: 500, riskCost: 510 },
+      { id: 'hill-climb-cycling-first-aid', name: 'First-aid', revenueShare: 0.25, variableCostPerTransaction: 1.46, fixedMonthlyCost: 1680, minimumAcceptableProfit: 620, capacity: 5900, minimumCommitment: 0, riskCost: 390 },
+    ],
+  },
+  keirinCyclingCarnivalSplit: {
+    name: 'Keirin cycling carnival split',
+    deal: { monthlyVolume: 6000, feePerTransaction: 8, addressableVolume: 7200, volumeShockPct: 0 },
+    participants: [
+      { id: 'keirin-cycling-committee', name: 'Carnival committee', revenueShare: 0.37, variableCostPerTransaction: 1.93, fixedMonthlyCost: 3810, minimumAcceptableProfit: 1520, capacity: 7000, minimumCommitment: 0, riskCost: 576 },
+      { id: 'keirin-cycling-club-hire', name: 'Keirin cycling club hire', revenueShare: 0.38, variableCostPerTransaction: 1.85, fixedMonthlyCost: 3080, minimumAcceptableProfit: 1060, capacity: 8100, minimumCommitment: 510, riskCost: 520 },
+      { id: 'keirin-cycling-first-aid', name: 'First-aid', revenueShare: 0.25, variableCostPerTransaction: 1.44, fixedMonthlyCost: 1710, minimumAcceptableProfit: 630, capacity: 6000, minimumCommitment: 0, riskCost: 400 },
+    ],
+  },
+  madisonCyclingCarnivalSplit: {
+    name: 'Madison cycling carnival split',
+    deal: { monthlyVolume: 6100, feePerTransaction: 8, addressableVolume: 7300, volumeShockPct: 0 },
+    participants: [
+      { id: 'madison-cycling-committee', name: 'Carnival committee', revenueShare: 0.37, variableCostPerTransaction: 1.94, fixedMonthlyCost: 3820, minimumAcceptableProfit: 1530, capacity: 7100, minimumCommitment: 0, riskCost: 578 },
+      { id: 'madison-cycling-club-hire', name: 'Madison cycling club hire', revenueShare: 0.38, variableCostPerTransaction: 1.83, fixedMonthlyCost: 3090, minimumAcceptableProfit: 1070, capacity: 8200, minimumCommitment: 520, riskCost: 530 },
+      { id: 'madison-cycling-first-aid', name: 'First-aid', revenueShare: 0.25, variableCostPerTransaction: 1.42, fixedMonthlyCost: 1720, minimumAcceptableProfit: 640, capacity: 6100, minimumCommitment: 0, riskCost: 410 },
+    ],
+  },
+  omniumCyclingCarnivalSplit: {
+    name: 'Omnium cycling carnival split',
+    deal: { monthlyVolume: 6200, feePerTransaction: 8, addressableVolume: 7400, volumeShockPct: 0 },
+    participants: [
+      { id: 'omnium-cycling-committee', name: 'Carnival committee', revenueShare: 0.37, variableCostPerTransaction: 1.95, fixedMonthlyCost: 3830, minimumAcceptableProfit: 1540, capacity: 7200, minimumCommitment: 0, riskCost: 580 },
+      { id: 'omnium-cycling-club-hire', name: 'Omnium cycling club hire', revenueShare: 0.38, variableCostPerTransaction: 1.81, fixedMonthlyCost: 3100, minimumAcceptableProfit: 1080, capacity: 8300, minimumCommitment: 530, riskCost: 540 },
+      { id: 'omnium-cycling-first-aid', name: 'First-aid', revenueShare: 0.25, variableCostPerTransaction: 1.40, fixedMonthlyCost: 1730, minimumAcceptableProfit: 650, capacity: 6200, minimumCommitment: 0, riskCost: 420 },
+    ],
+  },
+  pointsRaceCyclingCarnivalSplit: {
+    name: 'Points-race cycling carnival split',
+    deal: { monthlyVolume: 6300, feePerTransaction: 8, addressableVolume: 7500, volumeShockPct: 0 },
+    participants: [
+      { id: 'points-race-cycling-committee', name: 'Carnival committee', revenueShare: 0.37, variableCostPerTransaction: 1.96, fixedMonthlyCost: 3840, minimumAcceptableProfit: 1550, capacity: 7350, minimumCommitment: 0, riskCost: 582 },
+      { id: 'points-race-cycling-club-hire', name: 'Points-race cycling club hire', revenueShare: 0.38, variableCostPerTransaction: 1.79, fixedMonthlyCost: 3110, minimumAcceptableProfit: 1090, capacity: 8450, minimumCommitment: 540, riskCost: 550 },
+      { id: 'points-race-cycling-first-aid', name: 'First-aid', revenueShare: 0.25, variableCostPerTransaction: 1.38, fixedMonthlyCost: 1740, minimumAcceptableProfit: 660, capacity: 6300, minimumCommitment: 0, riskCost: 430 },
+    ],
+  },
+  scratchCyclingCarnivalSplit: {
+    name: 'Scratch cycling carnival split',
+    deal: { monthlyVolume: 6400, feePerTransaction: 8, addressableVolume: 7700, volumeShockPct: 0 },
+    participants: [
+      { id: 'scratch-cycling-committee', name: 'Carnival committee', revenueShare: 0.37, variableCostPerTransaction: 1.97, fixedMonthlyCost: 3850, minimumAcceptableProfit: 1560, capacity: 7500, minimumCommitment: 0, riskCost: 584 },
+      { id: 'scratch-cycling-club-hire', name: 'Scratch cycling club hire', revenueShare: 0.38, variableCostPerTransaction: 1.77, fixedMonthlyCost: 3120, minimumAcceptableProfit: 1100, capacity: 8600, minimumCommitment: 550, riskCost: 560 },
+      { id: 'scratch-cycling-first-aid', name: 'First-aid', revenueShare: 0.25, variableCostPerTransaction: 1.36, fixedMonthlyCost: 1750, minimumAcceptableProfit: 670, capacity: 6400, minimumCommitment: 0, riskCost: 440 },
+    ],
+  },
+  individualPursuitCyclingCarnivalSplit: {
+    name: 'Individual-pursuit cycling carnival split',
+    deal: { monthlyVolume: 6500, feePerTransaction: 8, addressableVolume: 7900, volumeShockPct: 0 },
+    participants: [
+      { id: 'individual-pursuit-cycling-committee', name: 'Carnival committee', revenueShare: 0.37, variableCostPerTransaction: 1.98, fixedMonthlyCost: 3860, minimumAcceptableProfit: 1570, capacity: 7650, minimumCommitment: 0, riskCost: 586 },
+      { id: 'individual-pursuit-cycling-club-hire', name: 'Individual-pursuit cycling club hire', revenueShare: 0.38, variableCostPerTransaction: 1.75, fixedMonthlyCost: 3130, minimumAcceptableProfit: 1110, capacity: 8750, minimumCommitment: 560, riskCost: 570 },
+      { id: 'individual-pursuit-cycling-first-aid', name: 'First-aid', revenueShare: 0.25, variableCostPerTransaction: 1.34, fixedMonthlyCost: 1760, minimumAcceptableProfit: 680, capacity: 6500, minimumCommitment: 0, riskCost: 450 },
+    ],
+  },
+  teamPursuitCyclingCarnivalSplit: {
+    name: 'Team-pursuit cycling carnival split',
+    deal: { monthlyVolume: 6600, feePerTransaction: 8, addressableVolume: 8100, volumeShockPct: 0 },
+    participants: [
+      { id: 'team-pursuit-cycling-committee', name: 'Carnival committee', revenueShare: 0.37, variableCostPerTransaction: 1.99, fixedMonthlyCost: 3870, minimumAcceptableProfit: 1580, capacity: 7800, minimumCommitment: 0, riskCost: 588 },
+      { id: 'team-pursuit-cycling-club-hire', name: 'Team-pursuit cycling club hire', revenueShare: 0.38, variableCostPerTransaction: 1.73, fixedMonthlyCost: 3140, minimumAcceptableProfit: 1120, capacity: 8900, minimumCommitment: 570, riskCost: 580 },
+      { id: 'team-pursuit-cycling-first-aid', name: 'First-aid', revenueShare: 0.25, variableCostPerTransaction: 1.32, fixedMonthlyCost: 1770, minimumAcceptableProfit: 690, capacity: 6600, minimumCommitment: 0, riskCost: 460 },
+    ],
+  },
+  teamSprintCyclingCarnivalSplit: {
+    name: 'Team-sprint cycling carnival split',
+    deal: { monthlyVolume: 6700, feePerTransaction: 8, addressableVolume: 8300, volumeShockPct: 0 },
+    participants: [
+      { id: 'team-sprint-cycling-committee', name: 'Carnival committee', revenueShare: 0.37, variableCostPerTransaction: 2.00, fixedMonthlyCost: 3880, minimumAcceptableProfit: 1590, capacity: 7950, minimumCommitment: 0, riskCost: 590 },
+      { id: 'team-sprint-cycling-club-hire', name: 'Team-sprint cycling club hire', revenueShare: 0.38, variableCostPerTransaction: 1.71, fixedMonthlyCost: 3150, minimumAcceptableProfit: 1130, capacity: 9050, minimumCommitment: 580, riskCost: 592 },
+      { id: 'team-sprint-cycling-first-aid', name: 'First-aid', revenueShare: 0.25, variableCostPerTransaction: 1.30, fixedMonthlyCost: 1780, minimumAcceptableProfit: 700, capacity: 6700, minimumCommitment: 0, riskCost: 470 },
+    ],
+  },
+  firstAidCyclingCarnivalSplit: {
+    name: 'First-aid cycling carnival split',
+    deal: { monthlyVolume: 6800, feePerTransaction: 8, addressableVolume: 8500, volumeShockPct: 0 },
+    participants: [
+      { id: 'first-aid-cycling-committee', name: 'Carnival committee', revenueShare: 0.37, variableCostPerTransaction: 2.01, fixedMonthlyCost: 3890, minimumAcceptableProfit: 1600, capacity: 8100, minimumCommitment: 0, riskCost: 594 },
+      { id: 'first-aid-cycling-club-hire', name: 'First-aid cycling club hire', revenueShare: 0.38, variableCostPerTransaction: 1.69, fixedMonthlyCost: 3160, minimumAcceptableProfit: 1140, capacity: 9200, minimumCommitment: 590, riskCost: 604 },
+      { id: 'first-aid-cycling-first-aid', name: 'First-aid', revenueShare: 0.25, variableCostPerTransaction: 1.28, fixedMonthlyCost: 1790, minimumAcceptableProfit: 710, capacity: 6800, minimumCommitment: 0, riskCost: 480 },
+    ],
+  },
+  feedZoneCyclingCarnivalSplit: {
+    name: 'Feed-zone cycling carnival split',
+    deal: { monthlyVolume: 6900, feePerTransaction: 8, addressableVolume: 8700, volumeShockPct: 0 },
+    participants: [
+      { id: 'feed-zone-cycling-committee', name: 'Carnival committee', revenueShare: 0.37, variableCostPerTransaction: 2.02, fixedMonthlyCost: 3900, minimumAcceptableProfit: 1610, capacity: 8250, minimumCommitment: 0, riskCost: 598 },
+      { id: 'feed-zone-cycling-club-hire', name: 'Feed-zone cycling club hire', revenueShare: 0.38, variableCostPerTransaction: 1.67, fixedMonthlyCost: 3170, minimumAcceptableProfit: 1150, capacity: 9350, minimumCommitment: 600, riskCost: 614 },
+      { id: 'feed-zone-cycling-first-aid', name: 'First-aid', revenueShare: 0.25, variableCostPerTransaction: 1.26, fixedMonthlyCost: 1800, minimumAcceptableProfit: 720, capacity: 6900, minimumCommitment: 0, riskCost: 490 },
+    ],
+  },
+  leadOutCyclingCarnivalSplit: {
+    name: 'Lead-out cycling carnival split',
+    deal: { monthlyVolume: 7000, feePerTransaction: 8, addressableVolume: 8900, volumeShockPct: 0 },
+    participants: [
+      { id: 'lead-out-cycling-committee', name: 'Carnival committee', revenueShare: 0.37, variableCostPerTransaction: 2.03, fixedMonthlyCost: 3910, minimumAcceptableProfit: 1620, capacity: 8400, minimumCommitment: 0, riskCost: 602 },
+      { id: 'lead-out-cycling-club-hire', name: 'Lead-out cycling club hire', revenueShare: 0.38, variableCostPerTransaction: 1.65, fixedMonthlyCost: 3180, minimumAcceptableProfit: 1160, capacity: 9500, minimumCommitment: 610, riskCost: 618 },
+      { id: 'lead-out-cycling-first-aid', name: 'First-aid', revenueShare: 0.25, variableCostPerTransaction: 1.24, fixedMonthlyCost: 1810, minimumAcceptableProfit: 730, capacity: 7000, minimumCommitment: 0, riskCost: 500 },
+    ],
+  },
+  soigneurCyclingCarnivalSplit: {
+    name: 'Soigneur cycling carnival split',
+    deal: { monthlyVolume: 7100, feePerTransaction: 8, addressableVolume: 9100, volumeShockPct: 0 },
+    participants: [
+      { id: 'soigneur-cycling-committee', name: 'Carnival committee', revenueShare: 0.37, variableCostPerTransaction: 2.04, fixedMonthlyCost: 3920, minimumAcceptableProfit: 1630, capacity: 8550, minimumCommitment: 0, riskCost: 606 },
+      { id: 'soigneur-cycling-club-hire', name: 'Soigneur cycling club hire', revenueShare: 0.38, variableCostPerTransaction: 1.63, fixedMonthlyCost: 3190, minimumAcceptableProfit: 1170, capacity: 9650, minimumCommitment: 620, riskCost: 622 },
+      { id: 'soigneur-cycling-first-aid', name: 'First-aid', revenueShare: 0.25, variableCostPerTransaction: 1.22, fixedMonthlyCost: 1820, minimumAcceptableProfit: 740, capacity: 7100, minimumCommitment: 0, riskCost: 510 },
+    ],
+  },
+  domestiqueCyclingCarnivalSplit: {
+    name: 'Domestique cycling carnival split',
+    deal: { monthlyVolume: 7200, feePerTransaction: 8, addressableVolume: 9200, volumeShockPct: 0 },
+    participants: [
+      { id: 'domestique-cycling-committee', name: 'Carnival committee', revenueShare: 0.37, variableCostPerTransaction: 2.06, fixedMonthlyCost: 3930, minimumAcceptableProfit: 1640, capacity: 8750, minimumCommitment: 0, riskCost: 608 },
+      { id: 'domestique-cycling-club-hire', name: 'Domestique cycling club hire', revenueShare: 0.38, variableCostPerTransaction: 1.65, fixedMonthlyCost: 3200, minimumAcceptableProfit: 1180, capacity: 9850, minimumCommitment: 620, riskCost: 624 },
+      { id: 'domestique-cycling-first-aid', name: 'First-aid', revenueShare: 0.25, variableCostPerTransaction: 1.20, fixedMonthlyCost: 1830, minimumAcceptableProfit: 750, capacity: 7200, minimumCommitment: 0, riskCost: 512 },
+    ],
+  },
+  bottleHandCyclingCarnivalSplit: {
+    name: 'Bottle-hand cycling carnival split',
+    deal: { monthlyVolume: 7300, feePerTransaction: 8, addressableVolume: 9300, volumeShockPct: 0 },
+    participants: [
+      { id: 'bottle-hand-cycling-committee', name: 'Carnival committee', revenueShare: 0.37, variableCostPerTransaction: 2.08, fixedMonthlyCost: 3950, minimumAcceptableProfit: 1660, capacity: 8850, minimumCommitment: 0, riskCost: 618 },
+      { id: 'bottle-hand-cycling-club-hire', name: 'Bottle-hand cycling club hire', revenueShare: 0.38, variableCostPerTransaction: 1.67, fixedMonthlyCost: 3220, minimumAcceptableProfit: 1200, capacity: 9950, minimumCommitment: 630, riskCost: 634 },
+      { id: 'bottle-hand-cycling-first-aid', name: 'First-aid', revenueShare: 0.25, variableCostPerTransaction: 1.18, fixedMonthlyCost: 1850, minimumAcceptableProfit: 760, capacity: 7300, minimumCommitment: 0, riskCost: 522 },
+    ],
+  },
 });
 
 function isFiniteNumber(value) {
@@ -2090,7 +2279,7 @@ export function neutralizeCsvCell(value) {
  * @param {string} [delimiter]
  * @returns {string[][]}
  */
-export function parseDelimited(text, delimiter = ',') {
+function parseDelimited(text, delimiter = ',') {
   if (typeof text !== 'string') {
     throw new ValidationError(['CSV must be text.']);
   }
@@ -2160,7 +2349,7 @@ export function parseCsv(text) {
  * @param {unknown} text
  * @returns {','|'\t'}
  */
-export function detectRosterDelimiter(text) {
+function detectRosterDelimiter(text) {
   if (typeof text !== 'string') return ',';
   const source = text.replace(/^\uFEFF/, '');
   const end = source.search(/\r\n|\n|\r/);

@@ -33,7 +33,7 @@ async function boot(storage = new Map(), { blockedStorage = false, hash = "", re
     nodes.set(match[1], node);
   }
   for (const match of html.matchAll(/<select\b[^>]*id="([^"]+)"[^>]*>\s*<option value="([^"]*)"/g)) nodes.get(match[1]).value = match[2];
-  const presets = ["normal", "weekendRush", "marketStress", "thinFxTightWindows", "longWeekendFridayStart", "compressedFridayClose", "paydayFridayBurst", "publicHolidayMonday", "saturdayMarketBurst", "sundayStallClose", "thinSaturdayFx", "earlyMondayBankOpen", "fridayLateFxClose", "mondayLateIssuerOpen", "saturdayEarlyFxOpen", "sundayLateBankClose", "sundayLatePayoutClose", "saturdayEarlyPayoutOpen", "fridayEarlyPayoutOpen", "saturdayLatePayoutOpen", "sundayEarlyPayoutOpen", "sundayLateIssuerClose", "sundayEarlyIssuerOpen", "saturdayEarlyIssuerOpen", "fridayEarlyIssuerOpen", "saturdayEarlyBankOpen", "fridayEarlyBankOpen", "saturdayLateBankOpen", "fridayLateBankOpen", "fridayLateFxOpen", "saturdayLateFxOpen", "sundayLateFxOpen", "sundayEarlyFxOpen", "mondayEarlyFxOpen", "mondayLateFxOpen", "tuesdayEarlyFxOpen", "tuesdayLateFxOpen", "wednesdayEarlyFxOpen", "wednesdayLateFxOpen"].map(key => { const element = new Element(); element.dataset.preset = key; return element; });
+  const presets = ["normal", "weekendRush", "marketStress", "thinFxTightWindows", "longWeekendFridayStart", "compressedFridayClose", "paydayFridayBurst", "publicHolidayMonday", "saturdayMarketBurst", "sundayStallClose", "thinSaturdayFx", "earlyMondayBankOpen", "fridayLateFxClose", "mondayLateIssuerOpen", "saturdayEarlyFxOpen", "sundayLateBankClose", "sundayLatePayoutClose", "saturdayEarlyPayoutOpen", "fridayEarlyPayoutOpen", "saturdayLatePayoutOpen", "sundayEarlyPayoutOpen", "sundayLateIssuerClose", "sundayEarlyIssuerOpen", "saturdayEarlyIssuerOpen", "fridayEarlyIssuerOpen", "saturdayEarlyBankOpen", "fridayEarlyBankOpen", "saturdayLateBankOpen", "fridayLateBankOpen", "fridayLateFxOpen", "saturdayLateFxOpen", "sundayLateFxOpen", "sundayEarlyFxOpen", "mondayEarlyFxOpen", "mondayLateFxOpen", "tuesdayEarlyFxOpen", "tuesdayLateFxOpen", "wednesdayEarlyFxOpen", "wednesdayLateFxOpen", "thursdayEarlyFxOpen", "thursdayLateFxOpen", "fridayEarlyFxOpen", "saturdayMiddayFxOpen", "sundayMiddayFxOpen", "saturdayAfternoonFxOpen", "sundayAfternoonFxOpen", "sundayMorningFxOpen", "saturdayEveningFxOpen", "sundayEveningFxOpen", "sundayNightFxOpen", "sundayLateNightFxOpen", "saturdayNightFxOpen", "saturdayLateNightFxOpen", "sundayPredawnFxOpen", "sundayDawnFxOpen", "sundayDaybreakFxOpen", "sundaySunriseFxOpen", "sundayBreakfastFxOpen", "sundayBrunchFxOpen", "sundayLunchFxOpen"].map(key => { const element = new Element(); element.dataset.preset = key; return element; });
   const document = {
     documentElement: { dataset: {} }, body: new Element(),
     handlers: {},
@@ -62,16 +62,28 @@ async function boot(storage = new Map(), { blockedStorage = false, hash = "", re
     storage,
     async edit(id, value, type = "input") { const node = nodes.get(id); node.value = String(value); await node.emit(type); },
     async keydown(key, target = { tagName: "BODY" }, extra = {}) {
+      let prevented = false;
       await document.emit("keydown", {
         key,
         shiftKey: extra.shiftKey === true,
         target: { tagName: target.tagName, isContentEditable: Boolean(target.isContentEditable), closest() { return null; } },
-        preventDefault() {},
+        preventDefault() { prevented = true; },
         defaultPrevented: extra.defaultPrevented === true
       });
+      return prevented;
     }
   };
 }
+
+test("standard navigation and function keys keep their browser behavior outside fields", async () => {
+  const ui = await boot(new Map([["weekend-gap:coach:v1", "dismissed"]]));
+  const keys = ["Home", "End", "PageUp", "PageDown", "ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", "Delete", "Insert", "Backspace",
+    "F1", "F2", "F3", "F4", "F5", "F6", "F7", "F8", "F9", "F10", "F11", "F12"];
+  for (const key of keys) {
+    assert.equal(await ui.keydown(key), false, `${key} should not be prevented on the document`);
+    assert.equal(await ui.keydown(key, { tagName: "BODY" }, { shiftKey: true }), false, `Shift+${key} should not be prevented on the document`);
+  }
+});
 
 test("source mode runs library, sensitivity, undo, hourly table and workspace reload workflows", async () => {
   const ui = await boot();

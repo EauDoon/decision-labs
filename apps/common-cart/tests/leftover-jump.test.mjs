@@ -578,7 +578,7 @@ test("tertiary fill maximum copy stays on the organizer leftover control", async
   assert.match(html, /aria-keyshortcuts="4"/u);
 });
 
-test("tertiary fill maximum copy jump stays on the organizer tertiary maximum control", async () => {
+test("tertiary fill maximum copy stays on the organizer tertiary maximum control", async () => {
   const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
   const app = await readFile(new URL("../src/app.js", import.meta.url), "utf8");
   const buyerPanel = html.slice(html.indexOf('id="buyer-panel"'), html.indexOf('id="merchant-panel"'));
@@ -590,12 +590,9 @@ test("tertiary fill maximum copy jump stays on the organizer tertiary maximum co
   assert.match(app, /function focusTertiaryFillMaximumCopy\(/u);
   assert.match(app, /#copy-tertiary-fill-maximum/u);
   assert.match(app, /#residual-title/u);
-  assert.match(app, /if \(key === "Home"\)/u);
-  assert.doesNotMatch(app, /if \(key === "Home"\) \{\s*event\.preventDefault\(\);\s*copyTertiaryFillMaximum/u);
-  assert.doesNotMatch(app, /if \(key === "Home"\) \{\s*event\.preventDefault\(\);\s*focusTertiaryFillRemainingCopy/u);
 });
 
-test("hide first unserved buyer jump stays on the organizer first-unserved control", async () => {
+test("hide first unserved buyer stays on the organizer first-unserved control", async () => {
   const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
   const app = await readFile(new URL("../src/app.js", import.meta.url), "utf8");
   const buyerPanel = html.slice(html.indexOf('id="buyer-panel"'), html.indexOf('id="merchant-panel"'));
@@ -607,8 +604,6 @@ test("hide first unserved buyer jump stays on the organizer first-unserved contr
   assert.match(app, /function focusHideFirstUnservedBuyer\(/u);
   assert.match(app, /#hide-first-unserved-buyer/u);
   assert.match(app, /#buyers-list/u);
-  assert.match(app, /if \(key === "End"\)/u);
-  assert.doesNotMatch(app, /if \(key === "End"\) \{\s*event\.preventDefault\(\);\s*focusHideLastUnservedBuyer/u);
 });
 
 test("leftover print jump stays on the leftover print control", async () => {

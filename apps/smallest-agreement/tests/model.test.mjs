@@ -4387,6 +4387,137 @@ test("first-without-floor cost Markdown is one line, honest 0 when none, and dis
   const bmxAggregate = formatGroupsWithoutFloorRemainingMarkdown(bmx, getOriginalOptions(bmx));
   assert.equal(bmxAggregate.remaining, 31);
   assert.doesNotMatch(bmxAggregate.text, /First-without-floor cost/u);
+  const cycloCross = proposal({
+    title: "Cyclo-cross club hours: cyclo-cross course booking, start-grid hours, and pit-box lock-up",
+    threshold: 70,
+    groups: [
+      { id: "students", name: "Students", weight: 11 },
+      { id: "neighbours", name: "Neighbours", weight: 10, veto: true },
+      { id: "pandc", name: "P&C", weight: 13 },
+    ],
+    clauses: [{ id: "cyclo-cross-course-booking", title: "Cyclo-cross course booking", options: [
+      option("cyclo-cross-course-booking-original", true, { students: 2, neighbours: 89, pandc: 62 }),
+      option("cyclo-cross-course-booking-late", false, { students: 91, neighbours: 29, pandc: 41 }, 2),
+      option("cyclo-cross-course-booking-weekend", false, { students: 76, neighbours: 37, pandc: 49 }, 4),
+    ] }],
+  });
+  const cycloCopied = formatFirstGroupWithoutFloorCostMarkdown(cycloCross, getOriginalOptions(cycloCross));
+  assert.equal(cycloCopied.status, "ok");
+  assert.equal(cycloCopied.cost, 11);
+  assert.equal(cycloCopied.text, "First-without-floor cost: 11. A floor is a number you entered, not a legal quorum.\n");
+  assert.doesNotMatch(cycloCopied.text, /Last-without-floor cost/u);
+  assert.doesNotMatch(cycloCopied.text, /First-without-floor remaining/u);
+  assert.doesNotMatch(cycloCopied.text, /Last-without-floor remaining/u);
+  assert.doesNotMatch(cycloCopied.text, /Groups-without-floor remaining/u);
+  assert.doesNotMatch(cycloCopied.text, /Students/u);
+  const cycloRemaining = formatFirstGroupWithoutFloorRemainingMarkdown(cycloCross, getOriginalOptions(cycloCross));
+  assert.equal(cycloRemaining.remaining, 11);
+  assert.notEqual(cycloCopied.text, cycloRemaining.text);
+  const cycloLast = formatLastGroupWithoutFloorRemainingMarkdown(cycloCross, getOriginalOptions(cycloCross));
+  assert.equal(cycloLast.remaining, 13);
+  assert.doesNotMatch(cycloLast.text, /First-without-floor cost/u);
+  const cycloAggregate = formatGroupsWithoutFloorRemainingMarkdown(cycloCross, getOriginalOptions(cycloCross));
+  assert.equal(cycloAggregate.remaining, 34);
+  assert.doesNotMatch(cycloAggregate.text, /First-without-floor cost/u);
+  const trackCycling = proposal({
+    title: "Track cycling club hours: sprint track booking, timing-hut hours, and wheel-box lock-up",
+    threshold: 70,
+    groups: [
+      { id: "students", name: "Students", weight: 12 },
+      { id: "neighbours", name: "Neighbours", weight: 11, veto: true },
+      { id: "pandc", name: "P&C", weight: 14 },
+    ],
+    clauses: [{ id: "track-cycling-sprint-track-booking", title: "Sprint track booking", options: [
+      option("track-cycling-sprint-track-booking-original", true, { students: 1, neighbours: 88, pandc: 63 }),
+      option("track-cycling-sprint-track-booking-late", false, { students: 92, neighbours: 28, pandc: 40 }, 2),
+      option("track-cycling-sprint-track-booking-weekend", false, { students: 77, neighbours: 36, pandc: 48 }, 4),
+    ] }],
+  });
+  const trackCopied = formatFirstGroupWithoutFloorCostMarkdown(trackCycling, getOriginalOptions(trackCycling));
+  assert.equal(trackCopied.status, "ok");
+  assert.equal(trackCopied.cost, 12);
+  assert.equal(trackCopied.text, "First-without-floor cost: 12. A floor is a number you entered, not a legal quorum.\n");
+  assert.doesNotMatch(trackCopied.text, /Last-without-floor cost/u);
+  assert.doesNotMatch(trackCopied.text, /First-without-floor remaining/u);
+  assert.doesNotMatch(trackCopied.text, /Last-without-floor remaining/u);
+  assert.doesNotMatch(trackCopied.text, /Groups-without-floor remaining/u);
+  assert.doesNotMatch(trackCopied.text, /Students/u);
+  const trackRemaining = formatFirstGroupWithoutFloorRemainingMarkdown(trackCycling, getOriginalOptions(trackCycling));
+  assert.equal(trackRemaining.remaining, 12);
+  assert.equal(trackRemaining.text, "First-without-floor remaining: 12. A floor is a number you entered, not a legal quorum.\n");
+  assert.notEqual(trackCopied.text, trackRemaining.text);
+  const trackLast = formatLastGroupWithoutFloorRemainingMarkdown(trackCycling, getOriginalOptions(trackCycling));
+  assert.equal(trackLast.remaining, 14);
+  assert.notEqual(trackRemaining.text, trackLast.text);
+  const trackAggregate = formatGroupsWithoutFloorRemainingMarkdown(trackCycling, getOriginalOptions(trackCycling));
+  assert.equal(trackAggregate.remaining, 37);
+  assert.doesNotMatch(trackAggregate.text, /First-without-floor remaining/u);
+  const gravelCycling = proposal({
+    title: "Gravel cycling club hours: gravel course booking, feed-zone hours, and drop-bag lock-up",
+    threshold: 70,
+    groups: [
+      { id: "students", name: "Students", weight: 13 },
+      { id: "neighbours", name: "Neighbours", weight: 12, veto: true },
+      { id: "pandc", name: "P&C", weight: 15 },
+    ],
+    clauses: [{ id: "gravel-cycling-course-booking", title: "Gravel course booking", options: [
+      option("gravel-cycling-course-booking-original", true, { students: 3, neighbours: 87, pandc: 64 }),
+      option("gravel-cycling-course-booking-late", false, { students: 90, neighbours: 27, pandc: 39 }, 2),
+      option("gravel-cycling-course-booking-weekend", false, { students: 75, neighbours: 35, pandc: 47 }, 4),
+    ] }],
+  });
+  const gravelCopied = formatFirstGroupWithoutFloorCostMarkdown(gravelCycling, getOriginalOptions(gravelCycling));
+  assert.equal(gravelCopied.status, "ok");
+  assert.equal(gravelCopied.cost, 13);
+  assert.equal(gravelCopied.text, "First-without-floor cost: 13. A floor is a number you entered, not a legal quorum.\n");
+  assert.doesNotMatch(gravelCopied.text, /Last-without-floor cost/u);
+  assert.doesNotMatch(gravelCopied.text, /First-without-floor remaining/u);
+  assert.doesNotMatch(gravelCopied.text, /Last-without-floor remaining/u);
+  assert.doesNotMatch(gravelCopied.text, /Groups-without-floor remaining/u);
+  assert.doesNotMatch(gravelCopied.text, /Students/u);
+  const gravelRemaining = formatFirstGroupWithoutFloorRemainingMarkdown(gravelCycling, getOriginalOptions(gravelCycling));
+  assert.equal(gravelRemaining.remaining, 13);
+  assert.equal(gravelRemaining.text, "First-without-floor remaining: 13. A floor is a number you entered, not a legal quorum.\n");
+  assert.notEqual(gravelCopied.text, gravelRemaining.text);
+  const gravelLast = formatLastGroupWithoutFloorRemainingMarkdown(gravelCycling, getOriginalOptions(gravelCycling));
+  assert.equal(gravelLast.remaining, 15);
+  assert.notEqual(gravelRemaining.text, gravelLast.text);
+  const gravelAggregate = formatGroupsWithoutFloorRemainingMarkdown(gravelCycling, getOriginalOptions(gravelCycling));
+  assert.equal(gravelAggregate.remaining, 40);
+  assert.doesNotMatch(gravelAggregate.text, /First-without-floor remaining/u);
+  const roadCycling = proposal({
+    title: "Road cycling club hours: road course booking, feed-station hours, and wheel-bag lock-up",
+    threshold: 70,
+    groups: [
+      { id: "students", name: "Students", weight: 14 },
+      { id: "neighbours", name: "Neighbours", weight: 13, veto: true },
+      { id: "pandc", name: "P&C", weight: 16 },
+    ],
+    clauses: [{ id: "road-cycling-course-booking", title: "Road course booking", options: [
+      option("road-cycling-course-booking-original", true, { students: 4, neighbours: 86, pandc: 65 }),
+      option("road-cycling-course-booking-late", false, { students: 89, neighbours: 26, pandc: 38 }, 2),
+      option("road-cycling-course-booking-weekend", false, { students: 74, neighbours: 34, pandc: 46 }, 4),
+    ] }],
+  });
+  const roadCopied = formatFirstGroupWithoutFloorCostMarkdown(roadCycling, getOriginalOptions(roadCycling));
+  assert.equal(roadCopied.status, "ok");
+  assert.equal(roadCopied.cost, 14);
+  assert.equal(roadCopied.text, "First-without-floor cost: 14. A floor is a number you entered, not a legal quorum.\n");
+  assert.doesNotMatch(roadCopied.text, /Last-without-floor cost/u);
+  assert.doesNotMatch(roadCopied.text, /First-without-floor remaining/u);
+  assert.doesNotMatch(roadCopied.text, /Last-without-floor remaining/u);
+  assert.doesNotMatch(roadCopied.text, /Groups-without-floor remaining/u);
+  assert.doesNotMatch(roadCopied.text, /Students/u);
+  const roadRemaining = formatFirstGroupWithoutFloorRemainingMarkdown(roadCycling, getOriginalOptions(roadCycling));
+  assert.equal(roadRemaining.remaining, 14);
+  assert.equal(roadRemaining.text, "First-without-floor remaining: 14. A floor is a number you entered, not a legal quorum.\n");
+  assert.notEqual(roadCopied.text, roadRemaining.text);
+  const roadLast = formatLastGroupWithoutFloorRemainingMarkdown(roadCycling, getOriginalOptions(roadCycling));
+  assert.equal(roadLast.remaining, 16);
+  assert.notEqual(roadRemaining.text, roadLast.text);
+  const roadAggregate = formatGroupsWithoutFloorRemainingMarkdown(roadCycling, getOriginalOptions(roadCycling));
+  assert.equal(roadAggregate.remaining, 43);
+  assert.doesNotMatch(roadAggregate.text, /First-without-floor remaining/u);
 });
 
 test("last-without-floor cost Markdown is one line, honest 0 when none, and distinct from first cost and remaining", async () => {
@@ -4598,6 +4729,106 @@ test("last-without-floor cost Markdown is one line, honest 0 when none, and dist
   const bmxFirst = formatFirstGroupWithoutFloorCostMarkdown(bmx, getOriginalOptions(bmx));
   assert.equal(bmxFirst.cost, 10);
   assert.notEqual(bmxCopied.text, bmxFirst.text);
+  const cycloCross = proposal({
+    title: "Cyclo-cross club hours: cyclo-cross course booking, start-grid hours, and pit-box lock-up",
+    threshold: 70,
+    groups: [
+      { id: "students", name: "Students", weight: 11 },
+      { id: "neighbours", name: "Neighbours", weight: 10, veto: true },
+      { id: "pandc", name: "P&C", weight: 13 },
+    ],
+    clauses: [{ id: "cyclo-cross-course-booking", title: "Cyclo-cross course booking", options: [
+      option("cyclo-cross-course-booking-original", true, { students: 2, neighbours: 89, pandc: 62 }),
+      option("cyclo-cross-course-booking-late", false, { students: 91, neighbours: 29, pandc: 41 }, 2),
+      option("cyclo-cross-course-booking-weekend", false, { students: 76, neighbours: 37, pandc: 49 }, 4),
+    ] }],
+  });
+  const cycloCopied = formatLastGroupWithoutFloorCostMarkdown(cycloCross, getOriginalOptions(cycloCross));
+  assert.equal(cycloCopied.status, "ok");
+  assert.equal(cycloCopied.cost, 13);
+  assert.equal(cycloCopied.text, "Last-without-floor cost: 13. A floor is a number you entered, not a legal quorum.\n");
+  assert.doesNotMatch(cycloCopied.text, /First-without-floor cost/u);
+  assert.doesNotMatch(cycloCopied.text, /Last-without-floor remaining/u);
+  assert.doesNotMatch(cycloCopied.text, /Students/u);
+  assert.doesNotMatch(cycloCopied.text, /P&C/u);
+  const cycloFirst = formatFirstGroupWithoutFloorCostMarkdown(cycloCross, getOriginalOptions(cycloCross));
+  assert.equal(cycloFirst.cost, 11);
+  assert.notEqual(cycloCopied.text, cycloFirst.text);
+  const trackCycling = proposal({
+    title: "Track cycling club hours: sprint track booking, timing-hut hours, and wheel-box lock-up",
+    threshold: 70,
+    groups: [
+      { id: "students", name: "Students", weight: 12 },
+      { id: "neighbours", name: "Neighbours", weight: 11, veto: true },
+      { id: "pandc", name: "P&C", weight: 14 },
+    ],
+    clauses: [{ id: "track-cycling-sprint-track-booking", title: "Sprint track booking", options: [
+      option("track-cycling-sprint-track-booking-original", true, { students: 1, neighbours: 88, pandc: 63 }),
+      option("track-cycling-sprint-track-booking-late", false, { students: 92, neighbours: 28, pandc: 40 }, 2),
+      option("track-cycling-sprint-track-booking-weekend", false, { students: 77, neighbours: 36, pandc: 48 }, 4),
+    ] }],
+  });
+  const trackCopied = formatLastGroupWithoutFloorCostMarkdown(trackCycling, getOriginalOptions(trackCycling));
+  assert.equal(trackCopied.status, "ok");
+  assert.equal(trackCopied.cost, 14);
+  assert.equal(trackCopied.text, "Last-without-floor cost: 14. A floor is a number you entered, not a legal quorum.\n");
+  assert.doesNotMatch(trackCopied.text, /First-without-floor cost/u);
+  assert.doesNotMatch(trackCopied.text, /Last-without-floor remaining/u);
+  assert.doesNotMatch(trackCopied.text, /Students/u);
+  assert.doesNotMatch(trackCopied.text, /P&C/u);
+  const trackFirst = formatFirstGroupWithoutFloorCostMarkdown(trackCycling, getOriginalOptions(trackCycling));
+  assert.equal(trackFirst.cost, 12);
+  assert.notEqual(trackCopied.text, trackFirst.text);
+  const gravelCycling = proposal({
+    title: "Gravel cycling club hours: gravel course booking, feed-zone hours, and drop-bag lock-up",
+    threshold: 70,
+    groups: [
+      { id: "students", name: "Students", weight: 13 },
+      { id: "neighbours", name: "Neighbours", weight: 12, veto: true },
+      { id: "pandc", name: "P&C", weight: 15 },
+    ],
+    clauses: [{ id: "gravel-cycling-course-booking", title: "Gravel course booking", options: [
+      option("gravel-cycling-course-booking-original", true, { students: 3, neighbours: 87, pandc: 64 }),
+      option("gravel-cycling-course-booking-late", false, { students: 90, neighbours: 27, pandc: 39 }, 2),
+      option("gravel-cycling-course-booking-weekend", false, { students: 75, neighbours: 35, pandc: 47 }, 4),
+    ] }],
+  });
+  const gravelCopied = formatLastGroupWithoutFloorCostMarkdown(gravelCycling, getOriginalOptions(gravelCycling));
+  assert.equal(gravelCopied.status, "ok");
+  assert.equal(gravelCopied.cost, 15);
+  assert.equal(gravelCopied.text, "Last-without-floor cost: 15. A floor is a number you entered, not a legal quorum.\n");
+  assert.doesNotMatch(gravelCopied.text, /First-without-floor cost/u);
+  assert.doesNotMatch(gravelCopied.text, /Last-without-floor remaining/u);
+  assert.doesNotMatch(gravelCopied.text, /Students/u);
+  assert.doesNotMatch(gravelCopied.text, /P&C/u);
+  const gravelFirst = formatFirstGroupWithoutFloorCostMarkdown(gravelCycling, getOriginalOptions(gravelCycling));
+  assert.equal(gravelFirst.cost, 13);
+  assert.notEqual(gravelCopied.text, gravelFirst.text);
+  const roadCycling = proposal({
+    title: "Road cycling club hours: road course booking, feed-station hours, and wheel-bag lock-up",
+    threshold: 70,
+    groups: [
+      { id: "students", name: "Students", weight: 14 },
+      { id: "neighbours", name: "Neighbours", weight: 13, veto: true },
+      { id: "pandc", name: "P&C", weight: 16 },
+    ],
+    clauses: [{ id: "road-cycling-course-booking", title: "Road course booking", options: [
+      option("road-cycling-course-booking-original", true, { students: 4, neighbours: 86, pandc: 65 }),
+      option("road-cycling-course-booking-late", false, { students: 89, neighbours: 26, pandc: 38 }, 2),
+      option("road-cycling-course-booking-weekend", false, { students: 74, neighbours: 34, pandc: 46 }, 4),
+    ] }],
+  });
+  const roadCopied = formatLastGroupWithoutFloorCostMarkdown(roadCycling, getOriginalOptions(roadCycling));
+  assert.equal(roadCopied.status, "ok");
+  assert.equal(roadCopied.cost, 16);
+  assert.equal(roadCopied.text, "Last-without-floor cost: 16. A floor is a number you entered, not a legal quorum.\n");
+  assert.doesNotMatch(roadCopied.text, /First-without-floor cost/u);
+  assert.doesNotMatch(roadCopied.text, /Last-without-floor remaining/u);
+  assert.doesNotMatch(roadCopied.text, /Students/u);
+  assert.doesNotMatch(roadCopied.text, /P&C/u);
+  const roadFirst = formatFirstGroupWithoutFloorCostMarkdown(roadCycling, getOriginalOptions(roadCycling));
+  assert.equal(roadFirst.cost, 14);
+  assert.notEqual(roadCopied.text, roadFirst.text);
 });
 
 test("first veto group label Markdown escapes the group name and is not a legal right", () => {

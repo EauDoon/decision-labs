@@ -1,5 +1,3 @@
-# Changelog
-
 ## 1.8.0 - 2026-09-12
 
 Scheduled funding tranches with cost accounting in Weekend Gap 1.8.0
@@ -52,7 +50,278 @@ A maintainability release on 1.5.33. The simulation math is unchanged. Weekend G
 - Scenario JSON and share links still carry only the current scenario. Analysis JSON is a report, not an importable scenario, and has no timestamps.
 - All presets from 1.5.1 through 1.5.33, the timing review panel, comparisons, reserve planner, CSV exports and the standalone build format are unchanged.
 
-# Changelog
+## 1.5.54 - 2026-09-13
+
+Sunday lunch FX open, first-weekday-FX-open copy, and weekday-FX-closed hide in Weekend Gap 1.5.54
+
+A workshop follow-up on 1.5.53. Weekend Gap remains a local-first decision aid, not a decision maker. Hatched Gantt rows are a local drawing. They do not connect to a bank or a live redemption queue. Timing review packets from 1.5.0 and the 1.5.1-1.5.53 review UI stay in place. Analysis JSON still has no timestamps.
+
+### Added
+
+- Keyboard `Shift+F10` copies first weekday-FX-open hour through the existing first-weekday-FX-open copy control, using one-line Markdown. Honest empty when none. Ignored while typing. Distinct from unshifted `F10` last-weekday-FX-closed copy, last-weekend-FX-open copy, last-weekend-FX-closed copy, first-weekend-FX-closed copy, first-weekend-FX-open copy, first-weekday-FX-closed copy, last-weekday-FX-open copy, `F7` last-weekend-FX-closed copy and `Delete` last-closed-FX copy. Shift is handled before unshifted `F10`. Last-weekday-FX-open copy remains as a button without `Shift+F10`.
+- Keyboard `Shift+F11` jumps to the first-weekday-FX-open-hour copy control, or the Gantt heading if that control is missing. Does not copy. Ignored while typing. Distinct from unshifted `F11` last-weekday-FX-closed jump and `F8` last-weekend-FX-closed jump. Last-weekday-FX-open jump stays without `Shift+F11`.
+- Keyboard `Shift+F12` jumps to the existing hide-weekday-FX-closed Gantt filter (`hideWeekdayFxClosedGanttHours`), which keeps `F9` as well, or the Gantt heading if that control is missing. Ignored while typing. Distinct from 1.5.34 `Shift+F12` hide-weekday-FX-open. Unshifted `F12` and `ArrowLeft` still jump to hide-weekend-FX-open. `Backspace` still jumps to hide-weekend-FX-closed. Hide-weekday-FX-open stays.
+- Sunday lunch FX open (synthetic) preset: same 72-hour calendar as Normal Friday, Sunday 10:00 to 12:00 treats FX as weekday-depth / open through `isSundayLunchFxOpenHour`. Distinct from Sunday brunch FX open (the previous preset remains), Sunday breakfast FX open, Sunday sunrise FX open, Sunday daybreak FX open, Sunday predawn FX open, Saturday late-night FX open, Saturday night FX open, Sunday late-night FX open, Sunday night FX open, Sunday evening FX open, Saturday evening FX open, Sunday morning FX open, Saturday late FX open, Saturday afternoon FX open, Saturday midday FX open, Saturday early FX open, Sunday afternoon FX open, Sunday midday FX open, Sunday late FX open, Friday early FX open, and Friday late FX open. Named overlap with Sunday brunch (09:00-11:00) and Sunday morning (10:00-12:00), not a new even 2h window. Synthetic. Not an FX feed.
+
+## 1.5.53 - 2026-09-13
+
+Sunday brunch FX open, first-weekday-FX-open copy, and weekday-FX-closed hide in Weekend Gap 1.5.53
+
+A workshop follow-up on 1.5.52. Weekend Gap remains a local-first decision aid, not a decision maker. Hatched Gantt rows are a local drawing. They do not connect to a bank or a live redemption queue. Timing review packets from 1.5.0 and the 1.5.1-1.5.52 review UI stay in place. Analysis JSON still has no timestamps.
+
+### Added
+
+- Keyboard `Shift+F10` copies first weekday-FX-open hour through the existing first-weekday-FX-open copy control, using one-line Markdown. Honest empty when none. Ignored while typing. Distinct from unshifted `F10` last-weekday-FX-closed copy, last-weekend-FX-open copy, last-weekend-FX-closed copy, first-weekend-FX-closed copy, first-weekend-FX-open copy, first-weekday-FX-closed copy, last-weekday-FX-open copy, `F7` last-weekend-FX-closed copy and `Delete` last-closed-FX copy. Shift is handled before unshifted `F10`. Last-weekday-FX-open copy remains as a button without `Shift+F10`.
+- Keyboard `Shift+F11` jumps to the first-weekday-FX-open-hour copy control, or the Gantt heading if that control is missing. Does not copy. Ignored while typing. Distinct from unshifted `F11` last-weekday-FX-closed jump and `F8` last-weekend-FX-closed jump. Last-weekday-FX-open jump stays without `Shift+F11`.
+- Keyboard `Shift+F12` jumps to the existing hide-weekday-FX-closed Gantt filter (`hideWeekdayFxClosedGanttHours`), which keeps `F9` as well, or the Gantt heading if that control is missing. Ignored while typing. Distinct from 1.5.34 `Shift+F12` hide-weekday-FX-open. Unshifted `F12` and `ArrowLeft` still jump to hide-weekend-FX-open. `Backspace` still jumps to hide-weekend-FX-closed. Hide-weekday-FX-open stays.
+- Sunday brunch FX open (synthetic) preset: same 72-hour calendar as Normal Friday, Sunday 09:00 to 11:00 treats FX as weekday-depth / open through `isSundayBrunchFxOpenHour`. Distinct from Sunday breakfast FX open (the previous preset remains), Sunday sunrise FX open, Sunday daybreak FX open, Sunday predawn FX open, Saturday late-night FX open, Saturday night FX open, Sunday late-night FX open, Sunday night FX open, Sunday evening FX open, Saturday evening FX open, Sunday morning FX open, Saturday late FX open, Saturday afternoon FX open, Saturday midday FX open, Saturday early FX open, Sunday afternoon FX open, Sunday midday FX open, Sunday late FX open, Friday early FX open, and Friday late FX open. Named overlap with Sunday early (08:00-10:00) and Sunday morning (10:00-12:00), not a new even 2h window. Synthetic. Not an FX feed.
+
+## 1.5.52 - 2026-09-13
+
+Sunday breakfast FX open, first-weekday-FX-open copy, and weekday-FX-closed hide in Weekend Gap 1.5.52
+
+A workshop follow-up on 1.5.51. Weekend Gap remains a local-first decision aid, not a decision maker. Hatched Gantt rows are a local drawing. They do not connect to a bank or a live redemption queue. Timing review packets from 1.5.0 and the 1.5.1-1.5.51 review UI stay in place. Analysis JSON still has no timestamps.
+
+### Added
+
+- Keyboard `Shift+F10` copies first weekday-FX-open hour through the existing first-weekday-FX-open copy control, using one-line Markdown. Honest empty when none. Ignored while typing. Distinct from unshifted `F10` last-weekday-FX-closed copy, last-weekend-FX-open copy, last-weekend-FX-closed copy, first-weekend-FX-closed copy, first-weekend-FX-open copy, first-weekday-FX-closed copy, last-weekday-FX-open copy, `F7` last-weekend-FX-closed copy and `Delete` last-closed-FX copy. Shift is handled before unshifted `F10`. Last-weekday-FX-open copy remains as a button without `Shift+F10`.
+- Keyboard `Shift+F11` jumps to the first-weekday-FX-open-hour copy control, or the Gantt heading if that control is missing. Does not copy. Ignored while typing. Distinct from unshifted `F11` last-weekday-FX-closed jump and `F8` last-weekend-FX-closed jump. Last-weekday-FX-open jump stays without `Shift+F11`.
+- Keyboard `Shift+F12` jumps to the existing hide-weekday-FX-closed Gantt filter (`hideWeekdayFxClosedGanttHours`), which keeps `F9` as well, or the Gantt heading if that control is missing. Ignored while typing. Distinct from 1.5.34 `Shift+F12` hide-weekday-FX-open. Unshifted `F12` and `ArrowLeft` still jump to hide-weekend-FX-open. `Backspace` still jumps to hide-weekend-FX-closed. Hide-weekday-FX-open stays.
+- Sunday breakfast FX open (synthetic) preset: same 72-hour calendar as Normal Friday, Sunday 07:00 to 09:00 treats FX as weekday-depth / open through `isSundayBreakfastFxOpenHour`. Distinct from Sunday sunrise FX open (the previous preset remains), Sunday daybreak FX open, Sunday predawn FX open, Saturday late-night FX open, Saturday night FX open, Sunday late-night FX open, Sunday night FX open, Sunday evening FX open, Saturday evening FX open, Sunday morning FX open, Saturday late FX open, Saturday afternoon FX open, Saturday midday FX open, Saturday early FX open, Sunday afternoon FX open, Sunday midday FX open, Sunday late FX open, Friday early FX open, and Friday late FX open. Synthetic. Not an FX feed.
+
+## 1.5.51 - 2026-09-13
+
+Sunday sunrise FX open, first-weekday-FX-open copy, and weekday-FX-closed hide in Weekend Gap 1.5.51
+
+A workshop follow-up on 1.5.50. Weekend Gap remains a local-first decision aid, not a decision maker. Hatched Gantt rows are a local drawing. They do not connect to a bank or a live redemption queue. Timing review packets from 1.5.0 and the 1.5.1-1.5.50 review UI stay in place. Analysis JSON still has no timestamps.
+
+### Added
+
+- Keyboard `Shift+F10` copies first weekday-FX-open hour through the existing first-weekday-FX-open copy control, using one-line Markdown. Honest empty when none. Ignored while typing. Distinct from unshifted `F10` last-weekday-FX-closed copy, last-weekend-FX-open copy, last-weekend-FX-closed copy, first-weekend-FX-closed copy, first-weekend-FX-open copy, first-weekday-FX-closed copy, last-weekday-FX-open copy, `F7` last-weekend-FX-closed copy and `Delete` last-closed-FX copy. Shift is handled before unshifted `F10`. Last-weekday-FX-open copy remains as a button without `Shift+F10`.
+- Keyboard `Shift+F11` jumps to the first-weekday-FX-open-hour copy control, or the Gantt heading if that control is missing. Does not copy. Ignored while typing. Distinct from unshifted `F11` last-weekday-FX-closed jump and `F8` last-weekend-FX-closed jump. Last-weekday-FX-open jump stays without `Shift+F11`.
+- Keyboard `Shift+F12` jumps to the existing hide-weekday-FX-closed Gantt filter (`hideWeekdayFxClosedGanttHours`), which keeps `F9` as well, or the Gantt heading if that control is missing. Ignored while typing. Distinct from 1.5.34 `Shift+F12` hide-weekday-FX-open. Unshifted `F12` and `ArrowLeft` still jump to hide-weekend-FX-open. `Backspace` still jumps to hide-weekend-FX-closed. Hide-weekday-FX-open stays.
+- Sunday sunrise FX open (synthetic) preset: same 72-hour calendar as Normal Friday, Sunday 06:00 to 08:00 treats FX as weekday-depth / open through `isSundaySunriseFxOpenHour`. Distinct from Sunday daybreak FX open (the previous preset remains), Sunday predawn FX open, Saturday late-night FX open, Saturday night FX open, Sunday late-night FX open, Sunday night FX open, Sunday evening FX open, Saturday evening FX open, Sunday morning FX open, Saturday late FX open, Saturday afternoon FX open, Saturday midday FX open, Saturday early FX open, Sunday afternoon FX open, Sunday midday FX open, Sunday late FX open, Friday early FX open, and Friday late FX open. Synthetic. Not an FX feed.
+
+## 1.5.50 - 2026-09-13
+
+Sunday daybreak FX open, first-weekday-FX-open copy, and weekday-FX-closed hide in Weekend Gap 1.5.50
+
+A workshop follow-up on 1.5.49. Weekend Gap remains a local-first decision aid, not a decision maker. Hatched Gantt rows are a local drawing. They do not connect to a bank or a live redemption queue. Timing review packets from 1.5.0 and the 1.5.1-1.5.49 review UI stay in place. Analysis JSON still has no timestamps.
+
+### Added
+
+- Keyboard `Shift+F10` copies first weekday-FX-open hour through the existing first-weekday-FX-open copy control, using one-line Markdown. Honest empty when none. Ignored while typing. Distinct from unshifted `F10` last-weekday-FX-closed copy, last-weekend-FX-open copy, last-weekend-FX-closed copy, first-weekend-FX-closed copy, first-weekend-FX-open copy, first-weekday-FX-closed copy, last-weekday-FX-open copy, `F7` last-weekend-FX-closed copy and `Delete` last-closed-FX copy. Shift is handled before unshifted `F10`. Last-weekday-FX-open copy remains as a button without `Shift+F10`.
+- Keyboard `Shift+F11` jumps to the first-weekday-FX-open-hour copy control, or the Gantt heading if that control is missing. Does not copy. Ignored while typing. Distinct from unshifted `F11` last-weekday-FX-closed jump and `F8` last-weekend-FX-closed jump. Last-weekday-FX-open jump stays without `Shift+F11`.
+- Keyboard `Shift+F12` jumps to the existing hide-weekday-FX-closed Gantt filter (`hideWeekdayFxClosedGanttHours`), which keeps `F9` as well, or the Gantt heading if that control is missing. Ignored while typing. Distinct from 1.5.34 `Shift+F12` hide-weekday-FX-open. Unshifted `F12` and `ArrowLeft` still jump to hide-weekend-FX-open. `Backspace` still jumps to hide-weekend-FX-closed. Hide-weekday-FX-open stays.
+- Sunday daybreak FX open (synthetic) preset: same 72-hour calendar as Normal Friday, Sunday 04:00 to 06:00 treats FX as weekday-depth / open through `isSundayDaybreakFxOpenHour`. Distinct from Sunday dawn FX open (the previous preset remains), Sunday predawn FX open, Saturday late-night FX open, Saturday night FX open, Sunday late-night FX open, Sunday night FX open, Sunday evening FX open, Saturday evening FX open, Sunday morning FX open, Saturday late FX open, Saturday afternoon FX open, Saturday midday FX open, Saturday early FX open, Sunday afternoon FX open, Sunday midday FX open, Sunday late FX open, Friday early FX open, and Friday late FX open. Synthetic. Not an FX feed.
+
+## 1.5.49 - 2026-09-13
+
+Sunday dawn FX open, first-weekday-FX-open copy, and weekday-FX-closed hide in Weekend Gap 1.5.49
+
+A workshop follow-up on 1.5.48. Weekend Gap remains a local-first decision aid, not a decision maker. Hatched Gantt rows are a local drawing. They do not connect to a bank or a live redemption queue. Timing review packets from 1.5.0 and the 1.5.1-1.5.48 review UI stay in place. Analysis JSON still has no timestamps.
+
+### Added
+
+- Keyboard `Shift+F10` copies first weekday-FX-open hour through the existing first-weekday-FX-open copy control, using one-line Markdown. Honest empty when none. Ignored while typing. Distinct from unshifted `F10` last-weekday-FX-closed copy, last-weekend-FX-open copy, last-weekend-FX-closed copy, first-weekend-FX-closed copy, first-weekend-FX-open copy, first-weekday-FX-closed copy, last-weekday-FX-open copy, `F7` last-weekend-FX-closed copy and `Delete` last-closed-FX copy. Shift is handled before unshifted `F10`. Last-weekday-FX-open copy remains as a button without `Shift+F10`.
+- Keyboard `Shift+F11` jumps to the first-weekday-FX-open-hour copy control, or the Gantt heading if that control is missing. Does not copy. Ignored while typing. Distinct from unshifted `F11` last-weekday-FX-closed jump and `F8` last-weekend-FX-closed jump. Last-weekday-FX-open jump stays without `Shift+F11`.
+- Keyboard `Shift+F12` jumps to the existing hide-weekday-FX-closed Gantt filter (`hideWeekdayFxClosedGanttHours`), which keeps `F9` as well, or the Gantt heading if that control is missing. Ignored while typing. Distinct from 1.5.34 `Shift+F12` hide-weekday-FX-open. Unshifted `F12` and `ArrowLeft` still jump to hide-weekend-FX-open. `Backspace` still jumps to hide-weekend-FX-closed. Hide-weekday-FX-open stays.
+- Sunday dawn FX open (synthetic) preset: same 72-hour calendar as Normal Friday, Sunday 02:00 to 04:00 treats FX as weekday-depth / open through `isSundayDawnFxOpenHour`. Distinct from Sunday predawn FX open (the previous preset remains), Saturday late-night FX open, Saturday night FX open, Sunday late-night FX open, Sunday night FX open, Sunday evening FX open, Saturday evening FX open, Sunday morning FX open, Saturday late FX open, Saturday afternoon FX open, Saturday midday FX open, Saturday early FX open, Sunday afternoon FX open, Sunday midday FX open, Sunday late FX open, Friday early FX open, and Friday late FX open. Synthetic. Not an FX feed.
+
+## 1.5.48 - 2026-09-13
+
+Sunday predawn FX open, first-weekday-FX-open copy, and weekday-FX-closed hide in Weekend Gap 1.5.48
+
+A workshop follow-up on 1.5.47. Weekend Gap remains a local-first decision aid, not a decision maker. Hatched Gantt rows are a local drawing. They do not connect to a bank or a live redemption queue. Timing review packets from 1.5.0 and the 1.5.1-1.5.47 review UI stay in place. Analysis JSON still has no timestamps.
+
+### Added
+
+- Keyboard `Shift+F10` copies first weekday-FX-open hour through the existing first-weekday-FX-open copy control, using one-line Markdown. Honest empty when none. Ignored while typing. Distinct from unshifted `F10` last-weekday-FX-closed copy, last-weekend-FX-open copy, last-weekend-FX-closed copy, first-weekend-FX-closed copy, first-weekend-FX-open copy, first-weekday-FX-closed copy, last-weekday-FX-open copy, `F7` last-weekend-FX-closed copy and `Delete` last-closed-FX copy. Shift is handled before unshifted `F10`. Last-weekday-FX-open copy remains as a button without `Shift+F10`.
+- Keyboard `Shift+F11` jumps to the first-weekday-FX-open-hour copy control, or the Gantt heading if that control is missing. Does not copy. Ignored while typing. Distinct from unshifted `F11` last-weekday-FX-closed jump and `F8` last-weekend-FX-closed jump. Last-weekday-FX-open jump stays without `Shift+F11`.
+- Keyboard `Shift+F12` jumps to the existing hide-weekday-FX-closed Gantt filter (`hideWeekdayFxClosedGanttHours`), which keeps `F9` as well, or the Gantt heading if that control is missing. Ignored while typing. Distinct from 1.5.34 `Shift+F12` hide-weekday-FX-open. Unshifted `F12` and `ArrowLeft` still jump to hide-weekend-FX-open. `Backspace` still jumps to hide-weekend-FX-closed. Hide-weekday-FX-open stays.
+- Sunday predawn FX open (synthetic) preset: same 72-hour calendar as Normal Friday, Sunday 00:00 to 02:00 treats FX as weekday-depth / open through `isSundayPredawnFxOpenHour`. Distinct from Saturday late-night FX open (the previous preset remains), Saturday night FX open, Sunday late-night FX open, Sunday night FX open, Sunday evening FX open, Saturday evening FX open, Sunday morning FX open, Saturday late FX open, Saturday afternoon FX open, Saturday midday FX open, Saturday early FX open, Sunday afternoon FX open, Sunday midday FX open, Sunday late FX open, Friday early FX open, and Friday late FX open. Synthetic. Not an FX feed.
+
+## 1.5.47 - 2026-09-13
+
+Saturday late-night FX open, first-weekday-FX-open copy, and weekday-FX-closed hide in Weekend Gap 1.5.47
+
+A workshop follow-up on 1.5.46. Weekend Gap remains a local-first decision aid, not a decision maker. Hatched Gantt rows are a local drawing. They do not connect to a bank or a live redemption queue. Timing review packets from 1.5.0 and the 1.5.1-1.5.46 review UI stay in place. Analysis JSON still has no timestamps.
+
+### Added
+
+- Keyboard `Shift+F10` copies first weekday-FX-open hour through the existing first-weekday-FX-open copy control, using one-line Markdown. Honest empty when none. Ignored while typing. Distinct from unshifted `F10` last-weekday-FX-closed copy, last-weekend-FX-open copy, last-weekend-FX-closed copy, first-weekend-FX-closed copy, first-weekend-FX-open copy, first-weekday-FX-closed copy, last-weekday-FX-open copy, `F7` last-weekend-FX-closed copy and `Delete` last-closed-FX copy. Shift is handled before unshifted `F10`. Last-weekday-FX-open copy remains as a button without `Shift+F10`.
+- Keyboard `Shift+F11` jumps to the first-weekday-FX-open-hour copy control, or the Gantt heading if that control is missing. Does not copy. Ignored while typing. Distinct from unshifted `F11` last-weekday-FX-closed jump and `F8` last-weekend-FX-closed jump. Last-weekday-FX-open jump stays without `Shift+F11`.
+- Keyboard `Shift+F12` jumps to the existing hide-weekday-FX-closed Gantt filter (`hideWeekdayFxClosedGanttHours`), which keeps `F9` as well, or the Gantt heading if that control is missing. Ignored while typing. Distinct from 1.5.34 `Shift+F12` hide-weekday-FX-open. Unshifted `F12` and `ArrowLeft` still jump to hide-weekend-FX-open. `Backspace` still jumps to hide-weekend-FX-closed. Hide-weekday-FX-open stays.
+- Saturday late-night FX open (synthetic) preset: same 72-hour calendar as Normal Friday, Saturday 22:00 to 24:00 treats FX as weekday-depth / open through `isSaturdayLateNightFxOpenHour`. Distinct from Saturday night FX open (the previous preset remains), Sunday late-night FX open, Sunday night FX open, Sunday evening FX open, Saturday evening FX open, Sunday morning FX open, Saturday late FX open, Saturday afternoon FX open, Saturday midday FX open, Saturday early FX open, Sunday afternoon FX open, Sunday midday FX open, Sunday late FX open, Friday early FX open, and Friday late FX open. Synthetic. Not an FX feed.
+
+## 1.5.46 - 2026-09-13
+
+Saturday night FX open, first-weekday-FX-open copy, and weekday-FX-closed hide in Weekend Gap 1.5.46
+
+A workshop follow-up on 1.5.45. Weekend Gap remains a local-first decision aid, not a decision maker. Hatched Gantt rows are a local drawing. They do not connect to a bank or a live redemption queue. Timing review packets from 1.5.0 and the 1.5.1-1.5.45 review UI stay in place. Analysis JSON still has no timestamps.
+
+### Added
+
+- Keyboard `Shift+F10` copies first weekday-FX-open hour through the existing first-weekday-FX-open copy control, using one-line Markdown. Honest empty when none. Ignored while typing. Distinct from unshifted `F10` last-weekday-FX-closed copy, last-weekend-FX-open copy, last-weekend-FX-closed copy, first-weekend-FX-closed copy, first-weekend-FX-open copy, first-weekday-FX-closed copy, last-weekday-FX-open copy, `F7` last-weekend-FX-closed copy and `Delete` last-closed-FX copy. Shift is handled before unshifted `F10`. Last-weekday-FX-open copy remains as a button without `Shift+F10`.
+- Keyboard `Shift+F11` jumps to the first-weekday-FX-open-hour copy control, or the Gantt heading if that control is missing. Does not copy. Ignored while typing. Distinct from unshifted `F11` last-weekday-FX-closed jump and `F8` last-weekend-FX-closed jump. Last-weekday-FX-open jump stays without `Shift+F11`.
+- Keyboard `Shift+F12` jumps to the existing hide-weekday-FX-closed Gantt filter (`hideWeekdayFxClosedGanttHours`), which keeps `F9` as well, or the Gantt heading if that control is missing. Ignored while typing. Distinct from 1.5.34 `Shift+F12` hide-weekday-FX-open. Unshifted `F12` and `ArrowLeft` still jump to hide-weekend-FX-open. `Backspace` still jumps to hide-weekend-FX-closed. Hide-weekday-FX-open stays.
+- Saturday night FX open (synthetic) preset: same 72-hour calendar as Normal Friday, Saturday 20:00 to 22:00 treats FX as weekday-depth / open through `isSaturdayNightFxOpenHour`. Distinct from Sunday late-night FX open (the previous preset remains), Sunday night FX open, Sunday evening FX open, Saturday evening FX open, Sunday morning FX open, Saturday late FX open, Saturday afternoon FX open, Saturday midday FX open, Saturday early FX open, Sunday afternoon FX open, Sunday midday FX open, Sunday late FX open, Friday early FX open, and Friday late FX open. Synthetic. Not an FX feed.
+
+## 1.5.45 - 2026-09-13
+
+Sunday late-night FX open, first-weekday-FX-open copy, and weekday-FX-closed hide in Weekend Gap 1.5.45
+
+A workshop follow-up on 1.5.44. Weekend Gap remains a local-first decision aid, not a decision maker. Hatched Gantt rows are a local drawing. They do not connect to a bank or a live redemption queue. Timing review packets from 1.5.0 and the 1.5.1-1.5.44 review UI stay in place. Analysis JSON still has no timestamps.
+
+### Added
+
+- Keyboard `Shift+F10` copies first weekday-FX-open hour through the existing first-weekday-FX-open copy control, using one-line Markdown. Honest empty when none. Ignored while typing. Distinct from unshifted `F10` last-weekday-FX-closed copy, last-weekend-FX-open copy, last-weekend-FX-closed copy, first-weekend-FX-closed copy, first-weekend-FX-open copy, first-weekday-FX-closed copy, last-weekday-FX-open copy, `F7` last-weekend-FX-closed copy and `Delete` last-closed-FX copy. Shift is handled before unshifted `F10`. Last-weekday-FX-open copy remains as a button without `Shift+F10`.
+- Keyboard `Shift+F11` jumps to the first-weekday-FX-open-hour copy control, or the Gantt heading if that control is missing. Does not copy. Ignored while typing. Distinct from unshifted `F11` last-weekday-FX-closed jump and `F8` last-weekend-FX-closed jump. Last-weekday-FX-open jump stays without `Shift+F11`.
+- Keyboard `Shift+F12` jumps to the existing hide-weekday-FX-closed Gantt filter (`hideWeekdayFxClosedGanttHours`), which keeps `F9` as well, or the Gantt heading if that control is missing. Ignored while typing. Distinct from 1.5.34 `Shift+F12` hide-weekday-FX-open. Unshifted `F12` and `ArrowLeft` still jump to hide-weekend-FX-open. `Backspace` still jumps to hide-weekend-FX-closed. Hide-weekday-FX-open stays.
+- Sunday late-night FX open (synthetic) preset: same 72-hour calendar as Normal Friday, Sunday 22:00 to 24:00 treats FX as weekday-depth / open through `isSundayLateNightFxOpenHour`. Distinct from Sunday night FX open, Sunday evening FX open, Saturday evening FX open, Sunday morning FX open, Saturday late FX open, Saturday afternoon FX open, Saturday midday FX open, Saturday early FX open, Sunday afternoon FX open, Sunday midday FX open, Sunday late FX open, Friday early FX open, and Friday late FX open. Synthetic. Not an FX feed.
+
+## 1.5.44 - 2026-09-12
+
+Sunday night FX open, first-weekday-FX-open copy, and weekday-FX-closed hide in Weekend Gap 1.5.44
+
+A workshop follow-up on 1.5.43. Weekend Gap remains a local-first decision aid, not a decision maker. Hatched Gantt rows are a local drawing. They do not connect to a bank or a live redemption queue. Timing review packets from 1.5.0 and the 1.5.1-1.5.43 review UI stay in place. Analysis JSON still has no timestamps.
+
+### Added
+
+- Keyboard `Shift+F10` copies first weekday-FX-open hour through the existing first-weekday-FX-open copy control, using one-line Markdown. Honest empty when none. Ignored while typing. Distinct from unshifted `F10` last-weekday-FX-closed copy, last-weekend-FX-open copy, last-weekend-FX-closed copy, first-weekend-FX-closed copy, first-weekend-FX-open copy, first-weekday-FX-closed copy, last-weekday-FX-open copy, `F7` last-weekend-FX-closed copy and `Delete` last-closed-FX copy. Shift is handled before unshifted `F10`. Last-weekday-FX-open copy remains as a button without `Shift+F10`.
+- Keyboard `Shift+F11` jumps to the first-weekday-FX-open-hour copy control, or the Gantt heading if that control is missing. Does not copy. Ignored while typing. Distinct from unshifted `F11` last-weekday-FX-closed jump and `F8` last-weekend-FX-closed jump. Last-weekday-FX-open jump stays without `Shift+F11`.
+- Keyboard `Shift+F12` jumps to the existing hide-weekday-FX-closed Gantt filter (`hideWeekdayFxClosedGanttHours`), which keeps `F9` as well, or the Gantt heading if that control is missing. Ignored while typing. Distinct from 1.5.34 `Shift+F12` hide-weekday-FX-open. Unshifted `F12` and `ArrowLeft` still jump to hide-weekend-FX-open. `Backspace` still jumps to hide-weekend-FX-closed. Hide-weekday-FX-open stays.
+- Sunday night FX open (synthetic) preset: same 72-hour calendar as Normal Friday, Sunday 20:00 to 22:00 treats FX as weekday-depth / open through `isSundayNightFxOpenHour`. Distinct from Sunday evening FX open, Saturday evening FX open, Sunday morning FX open, Saturday late FX open, Saturday afternoon FX open, Saturday midday FX open, Saturday early FX open, Sunday afternoon FX open, Sunday midday FX open, Sunday late FX open, Friday early FX open, and Friday late FX open. Synthetic. Not an FX feed.
+
+## 1.5.43 - 2026-09-12
+
+Sunday evening FX open, first-weekday-FX-open copy, and weekday-FX-closed hide in Weekend Gap 1.5.43
+
+A workshop follow-up on 1.5.42. Weekend Gap remains a local-first decision aid, not a decision maker. Hatched Gantt rows are a local drawing. They do not connect to a bank or a live redemption queue. Timing review packets from 1.5.0 and the 1.5.1-1.5.42 review UI stay in place. Analysis JSON still has no timestamps.
+
+### Added
+
+- Keyboard `Shift+F10` copies first weekday-FX-open hour through the existing first-weekday-FX-open copy control, using one-line Markdown. Honest empty when none. Ignored while typing. Distinct from unshifted `F10` last-weekday-FX-closed copy, last-weekend-FX-open copy, last-weekend-FX-closed copy, first-weekend-FX-closed copy, first-weekend-FX-open copy, first-weekday-FX-closed copy, last-weekday-FX-open copy, `F7` last-weekend-FX-closed copy and `Delete` last-closed-FX copy. Shift is handled before unshifted `F10`. Last-weekday-FX-open copy remains as a button without `Shift+F10`.
+- Keyboard `Shift+F11` jumps to the first-weekday-FX-open-hour copy control, or the Gantt heading if that control is missing. Does not copy. Ignored while typing. Distinct from unshifted `F11` last-weekday-FX-closed jump and `F8` last-weekend-FX-closed jump. Last-weekday-FX-open jump stays without `Shift+F11`.
+- Keyboard `Shift+F12` jumps to the existing hide-weekday-FX-closed Gantt filter (`hideWeekdayFxClosedGanttHours`), which keeps `F9` as well, or the Gantt heading if that control is missing. Ignored while typing. Distinct from 1.5.34 `Shift+F12` hide-weekday-FX-open. Unshifted `F12` and `ArrowLeft` still jump to hide-weekend-FX-open. `Backspace` still jumps to hide-weekend-FX-closed. Hide-weekday-FX-open stays.
+- Sunday evening FX open (synthetic) preset: same 72-hour calendar as Normal Friday, Sunday 18:00 to 20:00 treats FX as weekday-depth / open through `isSundayEveningFxOpenHour`. Distinct from Saturday evening FX open, Sunday morning FX open, Saturday late FX open, Saturday afternoon FX open, Saturday midday FX open, Saturday early FX open, Sunday afternoon FX open, Sunday midday FX open, Sunday late FX open, Friday early FX open, and Friday late FX open. Synthetic. Not an FX feed.
+
+## 1.5.42 - 2026-09-12
+
+Saturday evening FX open, first-weekday-FX-open copy, and weekday-FX-closed hide in Weekend Gap 1.5.42
+
+A workshop follow-up on 1.5.41. Weekend Gap remains a local-first decision aid, not a decision maker. Hatched Gantt rows are a local drawing. They do not connect to a bank or a live redemption queue. Timing review packets from 1.5.0 and the 1.5.1-1.5.41 review UI stay in place. Analysis JSON still has no timestamps.
+
+### Added
+
+- Keyboard `Shift+F10` copies first weekday-FX-open hour through the existing first-weekday-FX-open copy control, using one-line Markdown. Honest empty when none. Ignored while typing. Distinct from unshifted `F10` last-weekday-FX-closed copy, last-weekend-FX-open copy, last-weekend-FX-closed copy, first-weekend-FX-closed copy, first-weekend-FX-open copy, first-weekday-FX-closed copy, last-weekday-FX-open copy, `F7` last-weekend-FX-closed copy and `Delete` last-closed-FX copy. Shift is handled before unshifted `F10`. Last-weekday-FX-open copy remains as a button without `Shift+F10`.
+- Keyboard `Shift+F11` jumps to the first-weekday-FX-open-hour copy control, or the Gantt heading if that control is missing. Does not copy. Ignored while typing. Distinct from unshifted `F11` last-weekday-FX-closed jump and `F8` last-weekend-FX-closed jump. Last-weekday-FX-open jump stays without `Shift+F11`.
+- Keyboard `Shift+F12` jumps to the existing hide-weekday-FX-closed Gantt filter (`hideWeekdayFxClosedGanttHours`), which keeps `F9` as well, or the Gantt heading if that control is missing. Ignored while typing. Distinct from 1.5.34 `Shift+F12` hide-weekday-FX-open. Unshifted `F12` and `ArrowLeft` still jump to hide-weekend-FX-open. `Backspace` still jumps to hide-weekend-FX-closed. Hide-weekday-FX-open stays.
+- Saturday evening FX open (synthetic) preset: same 72-hour calendar as Normal Friday, Saturday 18:00 to 20:00 treats FX as weekday-depth / open through `isSaturdayEveningFxOpenHour`. Distinct from Sunday morning FX open, Saturday late FX open, Saturday afternoon FX open, Saturday midday FX open, Saturday early FX open, Sunday afternoon FX open, Sunday midday FX open, Sunday late FX open, Friday early FX open, and Friday late FX open. Synthetic. Not an FX feed.
+
+## 1.5.41 - 2026-09-12
+
+Sunday morning FX open, first-weekday-FX-open copy, and weekday-FX-closed hide in Weekend Gap 1.5.41
+
+A workshop follow-up on 1.5.40. Weekend Gap remains a local-first decision aid, not a decision maker. Hatched Gantt rows are a local drawing. They do not connect to a bank or a live redemption queue. Timing review packets from 1.5.0 and the 1.5.1-1.5.40 review UI stay in place. Analysis JSON still has no timestamps.
+
+### Added
+
+- Keyboard `Shift+F10` copies first weekday-FX-open hour through the existing first-weekday-FX-open copy control, using one-line Markdown. Honest empty when none. Ignored while typing. Distinct from unshifted `F10` last-weekday-FX-closed copy, last-weekend-FX-open copy, last-weekend-FX-closed copy, first-weekend-FX-closed copy, first-weekend-FX-open copy, first-weekday-FX-closed copy, last-weekday-FX-open copy, `F7` last-weekend-FX-closed copy and `Delete` last-closed-FX copy. Shift is handled before unshifted `F10`. Last-weekday-FX-open copy remains as a button without `Shift+F10`.
+- Keyboard `Shift+F11` jumps to the first-weekday-FX-open-hour copy control, or the Gantt heading if that control is missing. Does not copy. Ignored while typing. Distinct from unshifted `F11` last-weekday-FX-closed jump and `F8` last-weekend-FX-closed jump. Last-weekday-FX-open jump stays without `Shift+F11`.
+- Keyboard `Shift+F12` jumps to the existing hide-weekday-FX-closed Gantt filter (`hideWeekdayFxClosedGanttHours`), which keeps `F9` as well, or the Gantt heading if that control is missing. Ignored while typing. Distinct from 1.5.34 `Shift+F12` hide-weekday-FX-open. Unshifted `F12` and `ArrowLeft` still jump to hide-weekend-FX-open. `Backspace` still jumps to hide-weekend-FX-closed. Hide-weekday-FX-open stays.
+- Sunday morning FX open (synthetic) preset: same 72-hour calendar as Normal Friday, Sunday 10:00 to 12:00 treats FX as weekday-depth / open through `isSundayMorningFxOpenHour`. Distinct from Sunday afternoon FX open, Sunday midday FX open, Sunday late FX open, Sunday early FX open, Saturday afternoon FX open, Saturday midday FX open, Saturday late FX open, Friday early FX open, and Friday late FX open. Synthetic. Not an FX feed.
+
+## 1.5.40 - 2026-09-12
+
+Sunday afternoon FX open, first-weekday-FX-open copy, and weekday-FX-closed hide in Weekend Gap 1.5.40
+
+A workshop follow-up on 1.5.39. Weekend Gap remains a local-first decision aid, not a decision maker. Hatched Gantt rows are a local drawing. They do not connect to a bank or a live redemption queue. Timing review packets from 1.5.0 and the 1.5.1-1.5.39 review UI stay in place. Analysis JSON still has no timestamps.
+
+### Added
+
+- Keyboard `Shift+F10` copies first weekday-FX-open hour through the existing first-weekday-FX-open copy control, using one-line Markdown. Honest empty when none. Ignored while typing. Distinct from unshifted `F10` last-weekday-FX-closed copy, last-weekend-FX-open copy, last-weekend-FX-closed copy, first-weekend-FX-closed copy, first-weekend-FX-open copy, first-weekday-FX-closed copy, last-weekday-FX-open copy, `F7` last-weekend-FX-closed copy and `Delete` last-closed-FX copy. Shift is handled before unshifted `F10`. Last-weekday-FX-open copy remains as a button without `Shift+F10`.
+- Keyboard `Shift+F11` jumps to the first-weekday-FX-open-hour copy control, or the Gantt heading if that control is missing. Does not copy. Ignored while typing. Distinct from unshifted `F11` last-weekday-FX-closed jump and `F8` last-weekend-FX-closed jump. Last-weekday-FX-open jump stays without `Shift+F11`.
+- Keyboard `Shift+F12` jumps to the existing hide-weekday-FX-closed Gantt filter (`hideWeekdayFxClosedGanttHours`), which keeps `F9` as well, or the Gantt heading if that control is missing. Ignored while typing. Distinct from 1.5.34 `Shift+F12` hide-weekday-FX-open. Unshifted `F12` and `ArrowLeft` still jump to hide-weekend-FX-open. `Backspace` still jumps to hide-weekend-FX-closed. Hide-weekday-FX-open stays.
+- Sunday afternoon FX open (synthetic) preset: same 72-hour calendar as Normal Friday, Sunday 14:00 to 16:00 treats FX as weekday-depth / open through `isSundayAfternoonFxOpenHour`. Distinct from Saturday afternoon FX open, Sunday midday FX open, Sunday late FX open, Sunday early FX open, Saturday midday FX open, Saturday late FX open, Friday early FX open, and Friday late FX open. Synthetic. Not an FX feed.
+
+## 1.5.39 - 2026-09-12
+
+Saturday afternoon FX open, first-weekday-FX-open copy, and weekday-FX-closed hide in Weekend Gap 1.5.39
+
+A workshop follow-up on 1.5.38. Weekend Gap remains a local-first decision aid, not a decision maker. Hatched Gantt rows are a local drawing. They do not connect to a bank or a live redemption queue. Timing review packets from 1.5.0 and the 1.5.1-1.5.38 review UI stay in place. Analysis JSON still has no timestamps.
+
+### Added
+
+- Keyboard `Shift+F10` copies first weekday-FX-open hour through the existing first-weekday-FX-open copy control, using one-line Markdown. Honest empty when none. Ignored while typing. Distinct from unshifted `F10` last-weekday-FX-closed copy, last-weekend-FX-open copy, last-weekend-FX-closed copy, first-weekend-FX-closed copy, first-weekend-FX-open copy, first-weekday-FX-closed copy, last-weekday-FX-open copy, `F7` last-weekend-FX-closed copy and `Delete` last-closed-FX copy. Shift is handled before unshifted `F10`. Last-weekday-FX-open copy remains as a button without `Shift+F10`.
+- Keyboard `Shift+F11` jumps to the first-weekday-FX-open-hour copy control, or the Gantt heading if that control is missing. Does not copy. Ignored while typing. Distinct from unshifted `F11` last-weekday-FX-closed jump and `F8` last-weekend-FX-closed jump. Last-weekday-FX-open jump stays without `Shift+F11`.
+- Keyboard `Shift+F12` jumps to the existing hide-weekday-FX-closed Gantt filter (`hideWeekdayFxClosedGanttHours`), which keeps `F9` as well, or the Gantt heading if that control is missing. Ignored while typing. Distinct from 1.5.34 `Shift+F12` hide-weekday-FX-open. Unshifted `F12` and `ArrowLeft` still jump to hide-weekend-FX-open. `Backspace` still jumps to hide-weekend-FX-closed. Hide-weekday-FX-open stays.
+- Saturday afternoon FX open (synthetic) preset: same 72-hour calendar as Normal Friday, Saturday 14:00 to 16:00 treats FX as weekday-depth / open through `isSaturdayAfternoonFxOpenHour`. Distinct from Saturday midday FX open, Saturday late FX open, Saturday early FX open, Sunday midday FX open, Sunday early FX open, Sunday late FX open, Friday early FX open, and Friday late FX open. Synthetic. Not an FX feed.
+
+## 1.5.38 - 2026-09-12
+
+Sunday midday FX open, first-weekday-FX-open copy, and weekday-FX-closed hide in Weekend Gap 1.5.38
+
+A workshop follow-up on 1.5.37. Weekend Gap remains a local-first decision aid, not a decision maker. Hatched Gantt rows are a local drawing. They do not connect to a bank or a live redemption queue. Timing review packets from 1.5.0 and the 1.5.1-1.5.37 review UI stay in place. Analysis JSON still has no timestamps.
+
+### Added
+
+- Keyboard `Shift+F10` copies first weekday-FX-open hour through the existing first-weekday-FX-open copy control, using one-line Markdown. Honest empty when none. Ignored while typing. Distinct from unshifted `F10` last-weekday-FX-closed copy, last-weekend-FX-open copy, last-weekend-FX-closed copy, first-weekend-FX-closed copy, first-weekend-FX-open copy, first-weekday-FX-closed copy, last-weekday-FX-open copy, `F7` last-weekend-FX-closed copy and `Delete` last-closed-FX copy. Shift is handled before unshifted `F10`. Last-weekday-FX-open copy remains as a button without `Shift+F10`.
+- Keyboard `Shift+F11` jumps to the first-weekday-FX-open-hour copy control, or the Gantt heading if that control is missing. Does not copy. Ignored while typing. Distinct from unshifted `F11` last-weekday-FX-closed jump and `F8` last-weekend-FX-closed jump. Last-weekday-FX-open jump stays without `Shift+F11`.
+- Keyboard `Shift+F12` jumps to the existing hide-weekday-FX-closed Gantt filter (`hideWeekdayFxClosedGanttHours`), which keeps `F9` as well, or the Gantt heading if that control is missing. Ignored while typing. Distinct from 1.5.34 `Shift+F12` hide-weekday-FX-open. Unshifted `F12` and `ArrowLeft` still jump to hide-weekend-FX-open. `Backspace` still jumps to hide-weekend-FX-closed. Hide-weekday-FX-open stays.
+- Sunday midday FX open (synthetic) preset: same 72-hour calendar as Normal Friday, Sunday 12:00 to 14:00 treats FX as weekday-depth / open through `isSundayMiddayFxOpenHour`. Distinct from Saturday midday FX open, Sunday early FX open, Sunday late FX open, Saturday early FX open, Saturday late FX open, Friday early FX open, and Friday late FX open. Synthetic. Not an FX feed.
+
+## 1.5.37 - 2026-09-12
+
+Saturday midday FX open, last-weekday-FX-open copy, and weekday-FX-closed hide in Weekend Gap 1.5.37
+
+A workshop follow-up on 1.5.36. Weekend Gap remains a local-first decision aid, not a decision maker. Hatched Gantt rows are a local drawing. They do not connect to a bank or a live redemption queue. Timing review packets from 1.5.0 and the 1.5.1-1.5.36 review UI stay in place. Analysis JSON still has no timestamps.
+
+### Added
+
+- Keyboard `Shift+F10` copies last weekday-FX-open hour through the existing last-weekday-FX-open copy control, using one-line Markdown. Honest empty when none. Ignored while typing. Distinct from unshifted `F10` last-weekday-FX-closed copy, last-weekend-FX-open copy, last-weekend-FX-closed copy, first-weekend-FX-closed copy, first-weekend-FX-open copy, first-weekday-FX-closed copy, first-weekday-FX-open copy, `F7` last-weekend-FX-closed copy and `Delete` last-closed-FX copy. Shift is handled before unshifted `F10`. First-weekend-FX-closed copy remains as a button without `Shift+F10`.
+- Keyboard `Shift+F11` jumps to the last-weekday-FX-open-hour copy control, or the Gantt heading if that control is missing. Does not copy. Ignored while typing. Distinct from unshifted `F11` last-weekday-FX-closed jump and `F8` last-weekend-FX-closed jump.
+- Keyboard `Shift+F12` jumps to the existing hide-weekday-FX-closed Gantt filter (`hideWeekdayFxClosedGanttHours`), which keeps `F9` as well, or the Gantt heading if that control is missing. Ignored while typing. Distinct from 1.5.34 `Shift+F12` hide-weekday-FX-open. Unshifted `F12` and `ArrowLeft` still jump to hide-weekend-FX-open. `Backspace` still jumps to hide-weekend-FX-closed. Hide-weekday-FX-open stays.
+- Saturday midday FX open (synthetic) preset: same 72-hour calendar as Normal Friday, Saturday 12:00 to 14:00 treats FX as weekday-depth / open through `isSaturdayMiddayFxOpenHour`. Distinct from Saturday early FX open, Saturday late FX open, Friday early FX open, Friday late FX open, Sunday early FX open, and Saturday early issuer, bank, and payout. Synthetic. Not an FX feed.
+
+## 1.5.36 - 2026-09-12
+
+Friday early FX open, first-weekend-FX-closed copy, and weekday-FX-closed hide in Weekend Gap 1.5.36
+
+A workshop follow-up on 1.5.35. Weekend Gap remains a local-first decision aid, not a decision maker. Hatched Gantt rows are a local drawing. They do not connect to a bank or a live redemption queue. Timing review packets from 1.5.0 and the 1.5.1-1.5.35 review UI stay in place. Analysis JSON still has no timestamps.
+
+### Added
+
+- Keyboard `Shift+F10` copies first weekend-FX-closed hour through the existing first-weekend-FX-closed copy control, using one-line Markdown. Honest empty when none. Ignored while typing. Distinct from unshifted `F10` last-weekday-FX-closed copy, last-weekend-FX-open copy, last-weekend-FX-closed copy, first-weekend-FX-open copy, first-weekday-FX-closed copy, first-weekday-FX-open copy, last-weekday-FX-open copy, `F7` last-weekend-FX-closed copy and `Delete` last-closed-FX copy. Shift is handled before unshifted `F10`. First-weekend-FX-open copy remains as a button without `Shift+F10`.
+- Keyboard `Shift+F11` jumps to the first-weekend-FX-closed-hour copy control, or the Gantt heading if that control is missing. Does not copy. Ignored while typing. Distinct from unshifted `F11` last-weekday-FX-closed jump and `F8` last-weekend-FX-closed jump.
+- Keyboard `Shift+F12` jumps to the existing hide-weekday-FX-closed Gantt filter (`hideWeekdayFxClosedGanttHours`), which keeps `F9` as well, or the Gantt heading if that control is missing. Ignored while typing. Distinct from 1.5.34 `Shift+F12` hide-weekday-FX-open. Unshifted `F12` and `ArrowLeft` still jump to hide-weekend-FX-open. `Backspace` still jumps to hide-weekend-FX-closed. Hide-weekday-FX-open stays.
+- Friday early FX open (synthetic) preset: same 72-hour calendar as Normal Friday, Friday 08:00 to 10:00 treats FX as weekday-depth / open through `isFridayEarlyFxOpenHour`. Distinct from Thursday late FX open, Thursday early FX open, Friday late FX open, Wednesday late FX open, Wednesday early FX open, Tuesday late FX open, Tuesday early FX open, Monday late FX open, Monday early FX open, Sunday early FX open, and Saturday late FX open. Synthetic. Not an FX feed.
+
+## 1.5.35 - 2026-09-12
+
+Thursday late FX open, first-weekend-FX-open copy, and weekday-FX-closed hide in Weekend Gap 1.5.35
+
+A workshop follow-up on 1.5.34. Weekend Gap remains a local-first decision aid, not a decision maker. Hatched Gantt rows are a local drawing. They do not connect to a bank or a live redemption queue. Timing review packets from 1.5.0 and the 1.5.1-1.5.34 review UI stay in place. Analysis JSON still has no timestamps.
+
+### Added
+
+- Keyboard `Shift+F10` copies first weekend-FX-open hour through the existing first-weekend-FX-open copy control, using one-line Markdown. Honest empty when none. Ignored while typing. Distinct from unshifted `F10` last-weekday-FX-closed copy, last-weekend-FX-open copy, last-weekend-FX-closed copy, first-weekend-FX-closed copy, first-weekday-FX-closed copy, first-weekday-FX-open copy, last-weekday-FX-open copy, `F7` last-weekend-FX-closed copy and `Delete` last-closed-FX copy. Shift is handled before unshifted `F10`. Last-weekend-FX-open copy remains as a button without `Shift+F10`.
+- Keyboard `Shift+F11` jumps to the first-weekend-FX-open-hour copy control, or the Gantt heading if that control is missing. Does not copy. Ignored while typing. Distinct from unshifted `F11` last-weekday-FX-closed jump and `F8` last-weekend-FX-closed jump.
+- Keyboard `Shift+F12` jumps to the existing hide-weekday-FX-closed Gantt filter (`hideWeekdayFxClosedGanttHours`), which keeps `F9` as well, or the Gantt heading if that control is missing. Ignored while typing. Distinct from 1.5.34 `Shift+F12` hide-weekday-FX-open. Unshifted `F12` and `ArrowLeft` still jump to hide-weekend-FX-open. `Backspace` still jumps to hide-weekend-FX-closed. Hide-weekday-FX-open stays.
+- Thursday late FX open (synthetic) preset: same 72-hour calendar as Normal Friday, Thursday 16:00 to 18:00 treats FX as weekday-depth / open through `isThursdayLateFxOpenHour`. Distinct from Thursday early FX open, Wednesday late FX open, Wednesday early FX open, Tuesday late FX open, Tuesday early FX open, Monday late FX open, Monday early FX open, Friday late FX open, Sunday early FX open, and Saturday late FX open. Synthetic. Not an FX feed.
+
+## 1.5.34 - 2026-09-12
+
+Thursday early FX open, last-weekend-FX-open copy, and weekday-FX-open hide in Weekend Gap 1.5.34
+
+A workshop follow-up on 1.5.33. Weekend Gap remains a local-first decision aid, not a decision maker. Hatched Gantt rows are a local drawing. They do not connect to a bank or a live redemption queue. Timing review packets from 1.5.0 and the 1.5.1-1.5.33 review UI stay in place. Analysis JSON still has no timestamps.
+
+### Added
+
+- Keyboard `Shift+F10` copies last weekend-FX-open hour through the existing last-weekend-FX-open copy control, using one-line Markdown. Honest empty when none. Ignored while typing. Distinct from unshifted `F10` last-weekday-FX-closed copy, last-weekend-FX-closed copy, first-weekend-FX-closed copy, first-weekend-FX-open copy, first-weekday-FX-closed copy, first-weekday-FX-open copy, last-weekday-FX-open copy, `F7` last-weekend-FX-closed copy and `Delete` last-closed-FX copy. Shift is handled before unshifted `F10`. Last-weekend-FX-closed copy remains as a button without `Shift+F10` and keeps `F7`.
+- Keyboard `Shift+F11` jumps to the last-weekend-FX-open-hour copy control, or the Gantt heading if that control is missing. Does not copy. Ignored while typing. Distinct from unshifted `F11` last-weekday-FX-closed jump and `F8` last-weekend-FX-closed jump.
+- Keyboard `Shift+F12` jumps to the existing hide-weekday-FX-open Gantt filter (`hideWeekdayFxOpenGanttHours`), or the Gantt heading if that control is missing. Ignored while typing. Distinct from 1.5.33 `Shift+F12` hide-weekend-FX-open. Unshifted `F12` and `ArrowLeft` still jump to hide-weekend-FX-open. `F9` still jumps to hide-weekday-FX-closed. `Backspace` still jumps to hide-weekend-FX-closed. Hide-weekend-FX-open stays.
+- Thursday early FX open (synthetic) preset: same 72-hour calendar as Normal Friday, Thursday 08:00 to 10:00 treats FX as weekday-depth / open through `isThursdayEarlyFxOpenHour`. Distinct from Wednesday late FX open, Wednesday early FX open, Tuesday late FX open, Tuesday early FX open, Monday late FX open, Monday early FX open, Friday late FX open, Sunday early FX open, and Saturday late FX open. Synthetic. Not an FX feed.
 
 ## 1.5.33 - 2026-09-12
 

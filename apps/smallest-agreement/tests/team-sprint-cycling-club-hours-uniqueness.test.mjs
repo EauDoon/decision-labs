@@ -1,0 +1,38 @@
+import assert from "node:assert/strict";
+import test from "node:test";
+import { readFile } from "node:fs/promises";
+
+test("team-sprint cycling club hours remaining 25 / 27 / 71 is distinct from team-pursuit 24 / 26 / 69", async () => {
+  const app = (await readFile(new URL("../src/app.js", import.meta.url), "utf8")).replaceAll("\r\n", "\n");
+  const sprintStart = app.indexOf('"team-sprint-cycling-club-hours"');
+  const firstAidStart = app.indexOf('"first-aid-cycling-club-hours"');
+  const sprintEnd = firstAidStart === -1 ? app.indexOf("let agreementReviewPacket", sprintStart) : firstAidStart;
+  const sprint = app.slice(sprintStart, sprintEnd === -1 ? undefined : sprintEnd);
+  const teamStart = app.indexOf('"team-pursuit-cycling-club-hours"');
+  const team = app.slice(teamStart, sprintStart);
+  const pursuitStart = app.indexOf('"individual-pursuit-cycling-club-hours"');
+  const pursuit = app.slice(pursuitStart, teamStart);
+  const scratchStart = app.indexOf('"scratch-cycling-club-hours"');
+  const scratch = app.slice(scratchStart, pursuitStart);
+  assert.ok(sprintStart > teamStart);
+  assert.ok(teamStart > pursuitStart);
+  assert.match(sprint, /weight: 25/);
+  assert.match(sprint, /weight: 27/);
+  assert.match(sprint, /relay crew at the trio-board shed/);
+  assert.match(team, /weight: 24/);
+  assert.match(team, /weight: 26/);
+  assert.match(team, /changeover crew at the quartet-board shed/);
+  assert.match(pursuit, /weight: 23/);
+  assert.match(pursuit, /weight: 25/);
+  assert.match(scratch, /weight: 22/);
+  assert.match(scratch, /weight: 24/);
+  assert.notEqual(sprint.match(/weight: 25/)?.[0], team.match(/weight: 24/)?.[0]);
+  assert.notEqual(sprint.match(/weight: 27/)?.[0], team.match(/weight: 26/)?.[0]);
+  assert.doesNotMatch(sprint, /team-pursuit-rota/);
+  assert.doesNotMatch(sprint, /changeover-bell/);
+  assert.doesNotMatch(sprint, /quartet-board/);
+  assert.doesNotMatch(team, /Flying-relay hours/);
+  assert.doesNotMatch(team, /Trio-board lock-up/);
+  assert.doesNotMatch(pursuit, /Flying-relay hours/);
+  assert.doesNotMatch(scratch, /Flying-relay hours/);
+});
