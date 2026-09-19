@@ -245,6 +245,40 @@ Cyclo-cross carnival, first-over-capacity volume copy, and first-over-capacity h
 - Print one-pager includes first over-capacity volume-to-hold as one line when the case is valid. That line has been present since 1.5.31 and stays. The line is an honest empty when none are over listed capacity. Volume that is not a finite amount is named as such. The saved case is unchanged.
 - Copy first over-capacity volume-to-hold copies a one-line Markdown volume-to-hold amount for the first roster row currently over listed capacity, or an honest empty line when none. Keyboard `Shift+F7` copies that Markdown. Clipboard falls back to a textarea. It is distinct from last over-capacity volume-to-hold copy, last over-capacity remaining listed capacity copy, first over-capacity remaining listed capacity copy, last over-capacity participant label copy, first-zero-share volume-to-hold copy, last zero-share volume-to-hold copy, remaining-to-hold copy, and first-breakpoint volume-to-hold copy. It is organizer or planner copy, not a forecast of who will exit. Copy first over-capacity remaining listed capacity stays on `~` without `Shift+F7`. Copy last over-capacity remaining listed capacity stays on `Shift+F10`. Copy last over-capacity volume-to-hold stays available. Hide flags persist as booleans; older JSON omits them. Counts remain counts. Ranking is not a forecast of who will exit.
 
+## 1.8.0
+
+Negotiation alternatives on a declared grid in Partnership Breakpoint 1.8.0
+
+- Optional `alternatives` exploration names fee levels, share modes (current, equal, stress-funded), an optional commitment-relief dimension, up to three single capacity investments, and a ranking objective (stress-holds or profit). Grids above 120 candidates are rejected with the count so the bound stays explicit.
+- `exploreNegotiationAlternatives` evaluates every grid point on the monthly model and the full stress grid under identical assumptions, reporting viability, stress holds, total profit, weakest binding, and per-participant gains and losses against the current case. Unfundable share modes are skipped with reasons, never invented. Ranking is explicit and deterministic; it is not an optimum over continuous terms.
+- The Negotiation alternatives panel edits the grid, ranks candidates, and applies one viable candidate at a time with undo support; pin a snapshot first to keep the baseline. Only fee, shares, commitments, capacity, and fixed costs change on apply.
+- Review constraints and negotiation room gains a Negotiation alternatives question under the same packet replay contract. CLI gains `alternatives [--csv]` and `apply-alternative`. Alternatives CSV separates candidates, skipped points, and the objective memo.
+- Tradeoffs are comparisons of declared inputs, not forecasts of negotiated outcomes.
+
+# Changelog
+
+## 1.7.0
+
+Multi-period commercial planning in Partnership Breakpoint 1.7.0
+
+- Optional `plan` on the case carries 1 through 24 periods with per-period volume, fee, demand cap, and setup expense, plus optional per-participant cost, commitment, and capacity overrides that inherit omitted fields from the base case. Legacy cases without a plan stay valid.
+- The Commercial plan panel shows period profit per participant with exit flags, cumulative contribution, the first constrained period per participant, partnership totals, and a recovery verdict (recovered, none required, beyond the horizon with shortfall, or impossible). The cash schedule separates earned amounts from collections and payments through whole-period lags, with opening, movements, and closing cash, after-horizon receivables and payables, and the funding requirement that keeps every closing non-negative.
+- Review constraints and negotiation room gains a Multi-period commercial plan question under the same packet replay contract. CLI gains `plan INPUT [--csv|--brief]`. Export commercial brief and Export plan CSV download the reproducible record; the plan travels in case JSON, share links, and autosave.
+- Recovery and funding answers are deterministic comparisons of declared inputs, not forecasts or funding commitments.
+
+# Changelog
+
+## 1.6.0
+
+Least-headroom versus first-breakpoint ranking explanation in Partnership Breakpoint 1.6.0
+
+- `calculatePartnership` now returns `rankingDisagreement`, a deterministic comparison of the two existing rankings: the participant with the least volume headroom and the participant ranked first by smallest relative adverse shock. When the two names differ, the reason states which participant is closest to its own limit in transaction distance, which shock kind is smallest as a percentage move, and why the two measures can disagree (absolute distance versus relative change across volume, fee and cost shocks).
+- The First breakpoint panel prints that reason under a "Not the least-headroom participant" heading when the rankings disagree, and notes the agreement in the same panel when they do not. No ranking logic changed: `weakestParticipant` keeps the volume-distance ordering and `firstBreakpoint` keeps the relative-change ordering.
+- Growth at a Cost is the built-in case that demonstrates the disagreement (least headroom: Liquidity Partner; first breakpoint: a Distributor fee shock). All other built-in starting points agree.
+- Review packets, solvers, stress grid, CSV roster and exports keep their documented formats. Analysis JSON has no timestamps. The ranking is not a forecast of who will exit.
+
+# Changelog
+
 ## 1.5.33
 
 BMX carnival, first-over-capacity remaining listed capacity copy, and last-over-capacity hide jump in Partnership Breakpoint 1.5.33

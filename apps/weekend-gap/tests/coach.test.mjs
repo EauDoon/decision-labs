@@ -8,7 +8,7 @@ const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
 test("first-run coach is dismissible, skippable on share links, and keyboard closable", () => {
   assert.match(html, /id="coach-overlay"/);
   assert.match(html, /id="coach-dismiss"/);
-  assert.match(html, /synthetic 72-hour study/);
+  assert.match(html, /synthetic liquidity study/);
   assert.match(html, /Three gates must overlap/);
   assert.match(html, /Friday 15:00 to Monday 15:00/);
   assert.match(appSource, /weekend-gap:coach:v1/);

@@ -3,7 +3,7 @@ import { open } from 'node:fs/promises';
 import {
   findSmallestAgreement, proposalFromWorkshopDocument, evaluatePackage, stressPackage,
   compareScenarioInputs, createAgreementReviewPacket, replayAgreementReviewPacket,
-  AGREEMENT_REVIEW_TOOLS, MAX_CHANGE_COST, MAX_CLAUSES, previewLockedOption,
+  AGREEMENT_REVIEW_TOOLS, MAX_CHANGE_COST, MAX_CLAUSES, previewLockedOption, summarizeRound, validateRound,
   formatDecisionBrief, formatEvidenceCsv, formatSupportMatrixCsv,
   formatParticipantGroupsCsv, formatClauseOptionsCsv, formatDiscussionWorksheetCsv,
 } from '../src/model.js';
@@ -22,6 +22,7 @@ const usage = `Usage: node scripts/analyze.mjs <command> <input.json|-> [argumen
   replay (input is a review packet)
   batch (input is JSONL, one proposal or workspace per nonblank line)
   sweep <threshold|maxChangeCost> <numeric levels separated by commas>
+  rounds
   lock <clause ID> <option ID>
   export <brief|evidence|support|groups|options|worksheet>`;
 
@@ -113,7 +114,7 @@ try {
   if (command === '--help' && path === undefined) {
     process.stdout.write(usage + '\n');
   } else {
-    const arity = { solve: 0, evaluate: 1, stress: 2, compare: 1, review: 1, replay: 0, batch: 0, sweep: 2, lock: 2, export: 1 };
+    const arity = { solve: 0, evaluate: 1, stress: 2, compare: 1, review: 1, replay: 0, batch: 0, sweep: 2, lock: 2, export: 1, rounds: 0 };
     if (!Object.hasOwn(arity, command) || !path || args.length !== arity[command]) throw new TypeError(usage);
     if (command === 'compare' && path === '-' && args[0] === '-') throw new TypeError('Only one comparison input may use stdin.');
     const inputText = await readText(path, ['replay', 'batch'].includes(command) ? 1048576 : 262144);
@@ -153,6 +154,16 @@ try {
         method: 'Fixed package, all support scores reduced and clamped at zero; no reoptimization or probabilities.',
         rows: levels(args[1], 100).map(drop => checked(stressPackage(proposal, args[0].split(','), drop))),
       }; break;
+      case 'rounds': {
+        const rounds = Array.isArray(raw.rounds) ? raw.rounds : (raw.proposal ? [] : null);
+        if (rounds === null) throw new TypeError('rounds reads a version-1 workspace document.');
+        for (const round of rounds) {
+          const validation = validateRound(round);
+          if (!validation.valid) throw new TypeError(`Invalid saved round: ${validation.errors[0]}`);
+        }
+        output = { count: rounds.length, rounds: rounds.map((round) => ({ id: round.id, name: round.name ?? null, notes: round.notes ?? null, decision: round.decision ?? null, summary: summarizeRound(round.proposal) })) };
+        break;
+      }
       case 'compare': {
         const rightText = await readText(args[0]);
         const right = proposalFrom(parseJson(rightText));

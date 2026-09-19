@@ -251,3 +251,31 @@ test('closed output pipe produces a controlled error without a stack trace', asy
   assert.match(diagnostic, /Cannot write output/);
   assert.doesNotMatch(diagnostic, /node:events|Unhandled|at /);
 });
+
+test('CLI accepts dated schedules and reports funding against an unfunded baseline', () => {
+  const override = { ...fixture(), calendarOverrides: [{ startHour: 0, endHour: 2, gates: { payout: 'closed' } }] };
+  const overridden = result(['simulate', '-'], override);
+  assert.deepEqual(overridden.scenario.calendarOverrides, override.calendarOverrides);
+  assert.equal(overridden.summary.hoursToFirstSettlement, 2);
+  assert.equal(result(['simulate', '-']).summary.hoursToFirstSettlement, 0);
+  const funded = { ...fixture(), fundingTranches: [{ hour: 0, amountAud: 50, costAud: 5 }] };
+  const report = result(['funding', '-'], funded);
+  assert.deepEqual(report.tranches, funded.fundingTranches);
+  assert.equal(report.fundedSummary.totalFundedAud, 50);
+  assert.equal(report.fundedSummary.totalFundingCostAud, 5);
+  assert.equal(report.unfundedSummary.totalFundedAud, 0);
+  assert.equal(report.deltas.totalFundedAud, 50);
+  assert.ok(report.fundedSummary.totalSettledAud >= report.unfundedSummary.totalSettledAud);
+  assert.match(report.note, /not a funding recommendation/);
+  const markdown = run(['funding', '-', '--format', 'markdown'], funded);
+  assert.equal(markdown.status, 0);
+  assert.match(markdown.stdout, /\| Fri 15:00 \(hour 0\) \| 50 \| 5 \|/);
+  const empty = result(['funding', '-']);
+  assert.deepEqual(empty.tranches, []);
+  assert.deepEqual(empty.deltas.totalSettledAud, 0);
+  fails(['funding', '-', '--format', 'csv']);
+  fails(['simulate', '-'], { ...fixture(), fundingTranches: [{ hour: 72, amountAud: 1 }] });
+  fails(['simulate', '-'], { ...fixture(), fundingTranches: 'soon' });
+  fails(['simulate', '-'], { ...fixture(), calendarOverrides: [{ startHour: 2, endHour: 1 }] });
+  assert.match(run(['--help']).stdout, /funding SCENARIO/);
+});

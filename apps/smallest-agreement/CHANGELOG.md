@@ -294,6 +294,38 @@ A workshop follow-up on 1.5.33. The solver is still a decision aid, not a decisi
 - Cyclo-cross club hours preset: synthetic students, neighbours (a veto group), and P&C scoring cyclo-cross course booking, start-grid hours, and pit-box lock-up. Distinct from Neighbourhood Plan, Library Quiet Hours, Sports Fixture Night, Market stall hours, Shared bike shed, Street stall lighting, Hall hire hours, Community garden watering, Shared laundry hours, Rooftop BBQ hours, School disco hours, Sports day hours, Netball training hours, Swimming club hours, Athletics club hours, Cricket club hours, Tennis club hours, Basketball club hours, Volleyball club hours, Soccer club hours, Hockey club hours, Rugby club hours, Softball club hours, Lacrosse club hours, Water polo club hours, Rowing club hours, Sailing club hours, Canoeing club hours, Kayaking club hours, Dragon boat club hours, Surf club hours, Triathlon club hours, Cycling club hours, Mountain bike club hours, and BMX club hours. Distinct from bmx-club-hours (pump-track / start-gate / pad-box), mountain-bike-club-hours (downhill staging / trail cafe / helmet-box), cycling-club-hours (velodrome staging / cafe / bike-box), triathlon-club-hours (staging/transition-area/bike-bag), surf-club-hours (staging/clubhouse bar/board-bag), dragon-boat-club-hours (staging/drum bar/paddle-box), kayaking-club-hours (whitewater/slalom/spraydeck), canoeing-club-hours (canoe-shed/paddle-pontoon), sailing-club-hours (jetty/yacht), and swimming-club-hours (pool open). Neighbours veto is a flag you entered, not a legal right. A veto is a number, not a legal right. Not a recorded vote.
 - Copy remaining mixing weight of the last group without a declared support floor as one-line Markdown, with a clipboard fallback. Honest 0 when none. Distinct prefix from Last-without-floor cost (`Last-without-floor cost: N`), First-without-floor cost (`First-without-floor cost: N`), First-without-floor remaining (`First-without-floor remaining: N`), Groups-without-floor remaining (`Groups-without-floor remaining: N`), Groups without a support floor count (`Groups without a support floor: N`), first group-without-floor label copy, last group-without-floor label copy, and remaining change-budget copy. A floor is a number you entered, not a legal quorum. Mixing weights are not a legal right. Display-only. Workspace JSON is unchanged.
 
+## 1.6.0
+
+Negotiation rounds in The Smallest Agreement 1.6.0
+
+- Rounds record an immutable proposal baseline with human-authored notes and an optional explicitly recorded outcome. Human statements stay separate from calculated results; a saved round is not a recorded vote unless the outcome says so.
+- The Negotiation rounds panel saves, loads (undoable), deletes, and compares rounds against the current draft: status, change cost, approval, per-group support deltas, per-clause selections, deliberate input changes, and capped option-level edits. Rounds persist in browser storage and workspace files; old files without rounds stay valid.
+- Model APIs `createRound`, `validateRound`, `summarizeRound`, `compareRounds`, and `roundsEqual` with explicit outcomes for completed search, invalid input, infeasibility, and unsupported size. CLI gains `rounds` for deterministic round summaries.
+- Search performance measured: about 16,000 combinations in roughly 50 ms, so no pruning was added; exactness is preserved and reference-verified.
+
+# Changelog
+
+## 1.5.35
+
+Option relationships in The Smallest Agreement 1.5.35
+
+- Optional `relationships` rules with stable unique ids: `requires` prerequisites, `excludes` incompatible pairs, and `linked` all-or-nothing sets across clauses. Option ids must be unique across clauses when relationships are declared.
+- Dangling references, unknown kinds and fields, duplicate rule ids, self references, same-clause requires, same-clause excludes, same-clause linked pairs, and requires rules contradicted by excludes rules on the same pair are rejected with named reasons. Requires cycles are allowed and must be selected together.
+- Search, custom-package evaluation, near misses, alternatives, explanations, briefs, CSVs, and review packets honor the same rules. Relationship rejections are counted separately and named per rule on inspected packages. The rejected-tally contract gains a `relationships` counter.
+- New Option relationships editor with add, edit, and remove actions; all edits are undoable. No model code path relaxes a relationship to make a proposal pass.
+
+# Changelog
+
+## 1.5.34
+
+Exhaustive-reference cross-check for the search in The Smallest Agreement 1.5.34
+
+- New tests cross-check `findSmallestAgreement` against an independent brute-force reference on fixed small cases (thresholds 60/70/55, budgets 12/4/0, a single-clause case, and a locked-clause case). The reference enumerates every lock-permitted combination with `evaluatePackage` and keeps the cheapest passing summary. The search result agrees on status and change cost in every case.
+- Infeasible cases are proven genuine: the reference also finds no passing combination. Already-passing proposals remain distinguished from a found change (threshold 55 passes untouched; 57 requires changes; 70 is infeasible).
+- No model code changed. The search remains a plain exhaustive enumeration inside the documented combination bound; these tests are the standing evidence that the reported minimum is exact within that bound.
+
+# Changelog
+
 ## 1.5.33 - 2026-09-12
 
 BMX club hours, last-without-floor-cost copy, and last-without-floor hide jump in The Smallest Agreement 1.5.33

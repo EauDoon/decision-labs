@@ -79,6 +79,10 @@ import {
   compareWorkshopFiles,
   formatWorkspaceJson,
   parseWorkspaceJson,
+  createRound,
+  compareRounds,
+  summarizeRound,
+  MAX_ROUNDS,
   formatLocksJson,
   parseLocksJson,
   resetGroupSupport,
@@ -94,6 +98,7 @@ import {
 
 const STORAGE_KEY = "smallest-agreement:proposal:v1";
 const LIBRARY_KEY = "smallest-agreement:scenarios:v1";
+const ROUNDS_KEY = "smallest-agreement:rounds:v1";
 const COACH_KEY = "smallest-agreement:coach:v1";
 const WORKSPACE_KEY = "smallest-agreement:workspace:v1";
 const MAX_SCENARIOS = 20;
@@ -2107,6 +2112,9 @@ let agreementReviewPacket = null;
 let agreementReviewSequence = 0;
 const state = { proposal: loadInitialProposal(), saveMessage: initialLoadMessage };
 let scenarios = loadScenarios();
+let roundsBlocked = false;
+let rounds = loadRounds();
+let roundsRaw = readRoundsRaw();
 let manualSelection = Object.create(null);
 let lockPreview = null;
 let clauseFilter = "";
@@ -2411,9 +2419,20 @@ function makeId(prefix) {
   const used = new Set([
     ...state.proposal.groups.map((group) => group.id),
     ...state.proposal.clauses.flatMap((clause) => [clause.id, ...clause.options.map((option) => option.id)]),
+    ...(state.proposal.relationships ?? []).map((rule) => rule.id),
   ]);
   do { idNumber += 1; } while (used.has(`${prefix}-${idNumber}`));
   return `${prefix}-${idNumber}`;
+}
+
+function firstOptionOutside(clauseId, excludeId = null) {
+  for (const clause of state.proposal.clauses) {
+    if (clause.id === clauseId) continue;
+    const match = clause.options.find((option) => option.id !== excludeId);
+    if (match) return match.id;
+  }
+  const fallback = state.proposal.clauses.flatMap((clause) => clause.options).find((option) => option.id !== excludeId);
+  return fallback?.id ?? null;
 }
 
 function defaultSupport(groups, value = 50) {
@@ -2553,9 +2572,11 @@ function render() {
   $("#autosave-status").textContent = state.saveMessage;
   updateHistoryButtons();
   renderScenarios();
+  renderRounds();
   const result = currentResult();
   const vetoBlocks = blockingVetoIds(result);
   renderGroups(vetoBlocks);
+  renderRelationships();
   renderWeightPreview();
   $("#clause-filter").value = clauseFilter;
   renderClauses();
@@ -2917,6 +2938,37 @@ function renderGroups(vetoBlocks = new Set()) {
     return;
   }
   $("#weight-shares").innerHTML = `<p class="field-note">Each share is that group's weight divided by the total (${total}). Shares are mixing weights in the approval formula, not voting rights.</p><div class="options-table-wrap"><table class="coalition-table"><thead><tr><th scope="col">Group</th><th scope="col">Weight</th><th scope="col">Share of total</th></tr></thead><tbody>${state.proposal.groups.map((group) => `<tr><th scope="row">${escapeHtml(group.name)}</th><td>${group.weight}</td><td>${Number.isFinite(group.weight) && group.weight > 0 ? `${((group.weight / total) * 100).toFixed(1)}%` : "Invalid"}</td></tr>`).join("")}</tbody></table></div>`;
+}
+
+function renderRelationships() {
+  const rules = state.proposal.relationships ?? [];
+  const editor = $("#relationships-editor");
+  const status = $("#relationships-status");
+  if (!editor) return;
+  if (!rules.length) {
+    editor.innerHTML = `<p class="empty-state">No relationships. Every combination of one option per clause stays eligible.</p>`;
+    if (status) status.textContent = "";
+    return;
+  }
+  const optionChoices = (selectedId, slotLabel) => `<select data-field="relationship-option" data-rule-id="${escapeHtml(selectedId.ruleId)}" data-slot="${slotLabel}" aria-label="${escapeHtml(slotLabel)} option for rule ${escapeHtml(selectedId.ruleId)}">${state.proposal.clauses.map((clause) => `<optgroup label="${escapeHtml(clause.title)}">${clause.options.map((option) => `<option value="${escapeHtml(option.id)}" ${option.id === selectedId.optionId ? "selected" : ""}>${escapeHtml(option.label)}</option>`).join("")}</optgroup>`).join("")}</select>`;
+  editor.innerHTML = rules.map((rule) => {
+    const head = rule.kind === "requires" ? "Prerequisite" : rule.kind === "excludes" ? "Incompatible pair" : "Linked set";
+    let body = "";
+    if (rule.kind === "requires") {
+      body = `<label>Option ${optionChoices({ ruleId: rule.id, optionId: rule.option }, "option")}</label><span aria-hidden="true">requires</span><label>Required option ${optionChoices({ ruleId: rule.id, optionId: rule.requires }, "requires")}</label>`;
+    } else if (rule.kind === "excludes") {
+      body = rule.options.map((optionId, index) => `<label>Option ${index + 1} ${optionChoices({ ruleId: rule.id, optionId }, `option-${index}`)}</label>`).join(`<span aria-hidden="true">excludes</span>`);
+    } else {
+      body = rule.options.map((optionId, index) => `<label>Option ${index + 1} ${optionChoices({ ruleId: rule.id, optionId }, `option-${index}`)}</label>`).join("") + (rule.options.length < 8 ? `<button class="text-button" type="button" data-action="add-linked-option" data-rule-id="${escapeHtml(rule.id)}">Add option</button>` : "");
+    }
+    return `<div class="group-row"><strong>${head}</strong> ${body} <button class="text-button danger" type="button" data-action="remove-relationship" data-rule-id="${escapeHtml(rule.id)}">Remove</button></div>`;
+  }).join("");
+  if (status) {
+    const result = currentResult();
+    status.textContent = result.status === "invalid"
+      ? "Resolve the invalid rule before searching; the message names the problem."
+      : `${rules.length} relationship${rules.length === 1 ? "" : "s"} in force. The search honors every rule.`;
+  }
 }
 
 function currentWeightKey() {
@@ -3537,8 +3589,10 @@ function renderConstraints(result, vetoBlocks = new Set()) {
   for (const floor of checks.floors) rows.push(`<tr><th scope="row">${escapeHtml(groupDisplayName(floor))} support</th><td>At least ${floor.minimum}%</td><td>${formatPercent(floor.actual)}</td><td>${mark(floor.met)}</td></tr>`);
   for (const veto of checks.vetoes ?? []) rows.push(`<tr class="${vetoBlocks.has(veto.id) ? "veto-blocking" : ""}"><th scope="row">${escapeHtml(groupDisplayName(veto))} veto</th><td>At least ${veto.required}%</td><td>${formatPercent(veto.actual)}</td><td>${mark(veto.met)}</td></tr>`);
   for (const lock of checks.locks) rows.push(`<tr><th scope="row">${escapeHtml(lock.clauseTitle)}</th><td>${escapeHtml(lock.label)}</td><td>Locked option</td><td>${mark(lock.met)}</td></tr>`);
+  for (const violation of checks.relationships?.violations ?? []) rows.push(`<tr><th scope="row">Option relationship ${escapeHtml(violation.ruleId)}</th><td>${escapeHtml(violation.kind)}</td><td>${escapeAttribute(violation.reason)}</td><td>${mark(false)}</td></tr>`);
+  if ((checks.relationships?.violations ?? []).length === 0 && (state.proposal.relationships ?? []).length > 0) rows.push(`<tr><th scope="row">Option relationships</th><td>All declared rules hold</td><td>${(state.proposal.relationships ?? []).length} rules checked</td><td>${mark(true)}</td></tr>`);
   const inspected = result.agreement ? "Recommended combination" : "Original proposal, no recommendation found";
-  const counts = result.checkedCombinations === 1 && result.status === "already_passing" ? "The original proposal meets every requirement with zero changes. No further enumeration is needed." : `${result.eligibleCombinations.toLocaleString()} combinations meet all constraints. ${result.rejected.anyConstraint.toLocaleString()} rejected: ${result.rejected.budget.toLocaleString()} over budget, ${result.rejected.floors.toLocaleString()} below a group floor, and ${result.rejected.vetoes.toLocaleString()} below a veto. These counts can overlap. Locks exclude other options before enumeration.`;
+  const counts = result.checkedCombinations === 1 && result.status === "already_passing" ? "The original proposal meets every requirement with zero changes. No further enumeration is needed." : `${result.eligibleCombinations.toLocaleString()} combinations meet all constraints. ${result.rejected.anyConstraint.toLocaleString()} rejected: ${result.rejected.budget.toLocaleString()} over budget, ${result.rejected.floors.toLocaleString()} below a group floor, ${result.rejected.vetoes.toLocaleString()} below a veto, and ${result.rejected.relationships.toLocaleString()} breaking an option relationship. These counts can overlap. Locks exclude other options before enumeration.`;
   const blockingNote = vetoBlocks.size
     ? `<p class="veto-blocking-note">Highlighted veto rows failed on the inspected package. That is a numerical constraint, not a legal right or a legitimacy claim.</p>`
     : "";
@@ -4118,7 +4172,24 @@ document.addEventListener("change", (event) => {
     [...document.querySelectorAll('[data-field="manual-option"]')].find((element) => element.dataset.clauseId === target.dataset.clauseId)?.focus();
     return;
   }
-  if (target.dataset.field !== "clause-lock") return;
+  if (target.dataset.field !== "clause-lock") {
+    if (target.dataset.field === "relationship-option") {
+      changeAndRender(() => {
+        const rule = (state.proposal.relationships ?? []).find((entry) => entry.id === target.dataset.ruleId);
+        if (!rule) return;
+        if (rule.kind === "requires") {
+          if (target.dataset.slot === "option") rule.option = target.value;
+          else rule.requires = target.value;
+        } else if (Array.isArray(rule.options)) {
+          const index = Number(target.dataset.slot.replace("option-", ""));
+          if (Number.isInteger(index) && index >= 0 && index < rule.options.length) rule.options[index] = target.value;
+        }
+      });
+      const restored = [...document.querySelectorAll('[data-field="relationship-option"]')].find((element) => element.dataset.ruleId === target.dataset.ruleId && element.dataset.slot === target.dataset.slot);
+      restored?.focus();
+    }
+    return;
+  }
   changeAndRender(() => {
     const clause = clauseById(target.dataset.clauseId);
     if (target.value === "") delete clause.lockedOptionId;
@@ -4246,6 +4317,55 @@ document.addEventListener("click", (event) => {
     notifyDraft(`Cleared ${group.name} support scores to blank. Fill every cell. Undo restores the previous scores.`);
     return;
   }
+  if (action === "add-requires") {
+    changeAndRender(() => {
+      const first = state.proposal.clauses[0]?.options[0]?.id;
+      const second = first === undefined ? null : firstOptionOutside(state.proposal.clauses[0].id, first);
+      const rules = (state.proposal.relationships ??= []);
+      rules.push({ id: makeId("rule"), kind: "requires", option: first, requires: second ?? first });
+    });
+    notifyDraft("Prerequisite added. Choose both options; same-clause pairs are rejected with a reason.");
+    return;
+  }
+  if (action === "add-excludes") {
+    changeAndRender(() => {
+      const first = state.proposal.clauses[0]?.options[0]?.id;
+      const second = first === undefined ? null : firstOptionOutside(state.proposal.clauses[0].id, first);
+      const rules = (state.proposal.relationships ??= []);
+      rules.push({ id: makeId("rule"), kind: "excludes", options: [first, second ?? first] });
+    });
+    notifyDraft("Incompatible pair added. Choose both options.");
+    return;
+  }
+  if (action === "add-linked") {
+    changeAndRender(() => {
+      const first = state.proposal.clauses[0]?.options[0]?.id;
+      const second = first === undefined ? null : firstOptionOutside(state.proposal.clauses[0].id, first);
+      const rules = (state.proposal.relationships ??= []);
+      rules.push({ id: makeId("rule"), kind: "linked", options: [first, second ?? first] });
+    });
+    notifyDraft("Linked set added. All selected options must be chosen together or not at all.");
+    return;
+  }
+  if (action === "add-linked-option") {
+    changeAndRender(() => {
+      const rule = (state.proposal.relationships ?? []).find((entry) => entry.id === button.dataset.ruleId);
+      if (!rule || rule.kind !== "linked" || rule.options.length >= 8) return;
+      const existing = new Set(rule.options);
+      const next = state.proposal.clauses.flatMap((clause) => clause.options).find((option) => !existing.has(option.id))?.id;
+      if (next !== undefined) rule.options.push(next);
+    });
+    notifyDraft("Linked option added.");
+    return;
+  }
+  if (action === "remove-relationship") {
+    changeAndRender(() => {
+      state.proposal.relationships = (state.proposal.relationships ?? []).filter((rule) => rule.id !== button.dataset.ruleId);
+      if (state.proposal.relationships.length === 0) delete state.proposal.relationships;
+    });
+    notifyDraft("Relationship removed. Undo restores it.");
+    return;
+  }
   if (action === "add-clause") changeAndRender(() => {
     const support = defaultSupport(state.proposal.groups);
     state.proposal.clauses.push({ id: makeId("clause"), title: "New clause", options: [
@@ -4307,8 +4427,118 @@ document.addEventListener("click", (event) => {
   });
 });
 
-function loadScenarios() {
+function readRoundsRaw() {
   try {
+    return localStorage.getItem(ROUNDS_KEY);
+  } catch {
+    roundsBlocked = true;
+    return null;
+  }
+}
+
+function loadRounds() {
+  try {
+    const raw = localStorage.getItem(ROUNDS_KEY);
+    if (raw === null) return [];
+    if (raw.length > 5_000_000) throw new Error("Rounds exceed their storage bound.");
+    const rows = JSON.parse(raw);
+    if (!Array.isArray(rows) || rows.length > MAX_ROUNDS) throw new Error("Invalid rounds.");
+    return rows.map((row) => {
+      const created = createRound(row.proposal, { id: row.id, name: row.name ?? undefined, notes: row.notes ?? undefined, decision: row.decision ?? undefined, recordedAt: row.recordedAt ?? undefined });
+      if (created.status !== "ok") throw new Error("Invalid round.");
+      return created.round;
+    });
+  } catch {
+    roundsBlocked = true;
+    return [];
+  }
+}
+
+function persistRounds(next) {
+  try {
+    if (localStorage.getItem(ROUNDS_KEY) !== roundsRaw) {
+      notifyDraft("The rounds list changed in another tab. Export this draft, then reload before saving a round.");
+      return false;
+    }
+    const serialized = JSON.stringify(next);
+    localStorage.setItem(ROUNDS_KEY, serialized);
+    roundsRaw = serialized;
+    rounds = next;
+    renderRounds();
+    return true;
+  } catch {
+    notifyDraft("Round could not be saved. Export JSON to keep this draft.");
+    return false;
+  }
+}
+
+function roundSummaryLine(summary) {
+  if (summary.status === "invalid") return `Invalid: ${summary.note}`;
+  if (summary.status === "too_large") return "Search over bound; no optimum claimed";
+  if (summary.status === "infeasible") return "Infeasible; nothing passes";
+  return `Cost ${summary.changeCost}, approval ${summary.approval.toFixed(1)}%`;
+}
+
+function renderRounds() {
+  const select = $("#round-select");
+  const selected = select.value;
+  select.innerHTML = '<option value="">Choose a saved round</option>' + rounds.map((row, index) => '<option value="' + index + '">' + escapeHtml(row.name ?? row.id) + '</option>').join("");
+  if (selected !== "" && rounds[Number(selected)]) select.value = selected;
+  const comparison = $("#round-compare");
+  const previousComparison = comparison.value;
+  comparison.innerHTML = '<option value="">Choose a round to compare</option>' + rounds.map((row, index) => '<option value="' + index + '">' + escapeHtml(row.name ?? row.id) + '</option>').join("");
+  if (previousComparison !== "" && rounds[Number(previousComparison)]) comparison.value = previousComparison;
+  $("#round-count").textContent = roundsBlocked ? "Round storage is unavailable or invalid. Existing stored bytes are preserved. Export JSON to keep your work." : rounds.length + " of " + MAX_ROUNDS + " rounds saved in this browser. Loading can be undone.";
+  $("#save-round").disabled = roundsBlocked || rounds.length >= MAX_ROUNDS;
+  $("#load-round").disabled = !rounds.length;
+  $("#delete-round").disabled = !rounds.length;
+  renderRoundComparison();
+}
+
+function renderRoundComparison() {
+  const target = $("#round-comparison");
+  const value = $("#round-compare").value;
+  const round = value === "" ? null : rounds[Number(value)];
+  if (!round) {
+    target.innerHTML = "";
+    return;
+  }
+  let comparison;
+  try {
+    comparison = compareRounds(round, createRound(state.proposal, {}).status === "ok" ? createRound(state.proposal, {}).round : round);
+  } catch {
+    target.innerHTML = '<p class="field-note">Fix the draft before comparing rounds.</p>';
+    return;
+  }
+  const statusLine = (summary) => summary.status === "invalid" ? `Invalid: ${escapeHtml(summary.note)}` : `${escapeHtml(summary.status)}; ${escapeHtml(roundSummaryLine(summary))}`;
+  const supportRows = comparison.supportDeltas.map((row) => `<tr><th scope="row">${escapeHtml(row.name)}</th><td>${row.before.toFixed(1)}%</td><td>${row.after.toFixed(1)}%</td><td>${row.delta >= 0 ? "+" : ""}${row.delta.toFixed(1)}</td></tr>`).join("");
+  const labelOf = (selections, clauseId) => (selections ?? []).find((entry) => entry.clauseId === clauseId) ?? null;
+  const clauseTitles = new Map();
+  for (const clause of round.proposal.clauses) clauseTitles.set(clause.id, clause.title);
+  for (const clause of state.proposal.clauses) {
+    if (!clauseTitles.has(clause.id)) clauseTitles.set(clause.id, clause.title);
+  }
+  const optionRows = [...clauseTitles].map(([clauseId, title]) => {
+    const left = labelOf(comparison.left.selections, clauseId);
+    const right = labelOf(comparison.right.selections, clauseId);
+    if (left && right && left.optionId === right.optionId) return "";
+    return `<tr><th scope="row">${escapeHtml(title)}</th><td>${escapeHtml(left?.optionLabel ?? "—")}</td><td>${escapeHtml(right?.optionLabel ?? "—")}</td></tr>`;
+  }).join("");
+  target.innerHTML = `<div class="options-table-wrap"><table class="coalition-table"><caption>Calculated comparison of ${escapeHtml(round.name ?? round.id)} against the current draft. Human notes stay separate below.</caption>
+    <thead><tr><th scope="col">Measure</th><th scope="col">Round</th><th scope="col">Current draft</th></tr></thead><tbody>
+    <tr><th scope="row">Status</th><td>${statusLine(comparison.left)}</td><td>${statusLine(comparison.right)}</td></tr>
+    <tr><th scope="row">Change cost</th><td>${comparison.left.changeCost ?? "—"}</td><td>${comparison.right.changeCost ?? "—"}</td></tr>
+    <tr><th scope="row">Approval</th><td>${comparison.left.approval === null ? "—" : comparison.left.approval.toFixed(1) + "%"}</td><td>${comparison.right.approval === null ? "—" : comparison.right.approval.toFixed(1) + "%"}</td></tr>
+    ${supportRows}
+    ${optionRows}
+    </tbody></table></div>
+    ${comparison.inputChanges.length ? `<p class="field-note">Input changes: ${escapeHtml(comparison.inputChanges.join(" "))}</p>` : '<p class="field-note">No input changes; only the recorded notes may differ.</p>'}
+    ${comparison.optionChangeCount > comparison.optionChanges.length ? `<p class="field-note">Showing ${comparison.optionChanges.length} of ${comparison.optionChangeCount} option-level changes.</p>` : ""}
+    ${round.notes ? `<p class="field-note">Human-authored round notes: ${escapeHtml(round.notes)}</p>` : ""}
+    ${round.decision ? `<p class="field-note">Human-recorded outcome: ${escapeHtml(round.decision)}</p>` : ""}`;
+}
+
+function loadScenarios() {  try {
     const raw = localStorage.getItem(LIBRARY_KEY);
     libraryRaw = raw;
     if (raw === null) return [];
@@ -4389,6 +4619,43 @@ $("#delete-scenario").addEventListener("click", () => {
   if (persistScenarios(scenarios.filter((_, index) => index !== Number(value)))) notifyDraft("Saved scenario deleted. The current draft is retained.");
 });
 
+$("#save-round").addEventListener("click", () => {
+  if (roundsBlocked || rounds.length >= MAX_ROUNDS) return;
+  const cause = firstProposalError(state.proposal);
+  if (cause) return notifyDraft("Fix the draft before saving a round: " + cause);
+  const fields = {
+    name: $("#round-name").value.trim() || undefined,
+    notes: $("#round-notes").value.trim() || undefined,
+    decision: $("#round-decision").value.trim() || undefined,
+  };
+  const created = createRound(state.proposal, fields);
+  if (created.status !== "ok") return notifyDraft("Round was not saved: " + created.errors[0]);
+  if (persistRounds([...rounds, created.round])) {
+    $("#round-select").value = String(rounds.length - 1);
+    $("#round-name").value = "";
+    $("#round-notes").value = "";
+    $("#round-decision").value = "";
+    notifyDraft("Round saved as an immutable baseline: " + (created.round.name ?? created.round.id));
+  }
+});
+$("#load-round").addEventListener("click", () => {
+  const value = $("#round-select").value;
+  const row = value === "" ? null : rounds[Number(value)];
+  if (!row) return notifyDraft("Choose a saved round first.");
+  changeAndRender(() => { state.proposal = clone(row.proposal); });
+  notifyDraft("Loaded round: " + (row.name ?? row.id) + ". Undo restores the previous draft.");
+});
+$("#delete-round").addEventListener("click", () => {
+  const value = $("#round-select").value;
+  const row = value === "" ? null : rounds[Number(value)];
+  if (!row) return notifyDraft("Choose a saved round first.");
+  if (!window.confirm("Delete saved round: " + (row.name ?? row.id) + "? The current draft is retained.")) return;
+  if (persistRounds(rounds.filter((_, index) => index !== Number(value)))) notifyDraft("Saved round deleted. The current draft is retained.");
+});
+$("#round-compare").addEventListener("change", () => {
+  renderRoundComparison();
+});
+
 function restoreHistory(from, to) {
   if (!from.length) return;
   to.push(JSON.stringify(state.proposal));
@@ -4420,7 +4687,7 @@ $("#export-button").addEventListener("click", () => {
   downloadText("smallest-agreement.json", JSON.stringify(canonicalProposal(state.proposal), null, 2), "application/json");
 });
 $("#export-workspace-button").addEventListener("click", () => {
-  const exported = formatWorkspaceJson(state.proposal, { clauseDensity, vetoGroupsOnly, lockedClausesOnly, hideUnlockedClauses, hideLockedClauses, changedClausesOnly, belowFloorGroupsOnly, overBudgetClausesOnly, hideGroupsAtFloor, hideGroupsWithoutFloors, hideGroupsMeetingThreshold, hideGroupsBelowThreshold, hideVetoGroups, hideNonVetoGroups, hideFirstVetoGroup, hideLastVetoGroup, hideFirstNonVetoGroup, hideLastNonVetoGroup, hideLastGroupBelowThreshold, hideFirstGroupBelowThreshold, hideLastGroupAtOrAboveThreshold, hideFirstGroupAtOrAboveThreshold, hideLastGroupAtFloor, hideFirstGroupAtFloor, hideFirstGroupBelowFloor, hideLastGroupBelowFloor, hideLastGroupWithoutFloor, hideFirstGroupWithoutFloor, noCheaperRemainingClausesOnly });
+  const exported = formatWorkspaceJson(state.proposal, { clauseDensity, vetoGroupsOnly, lockedClausesOnly, hideUnlockedClauses, hideLockedClauses, changedClausesOnly, belowFloorGroupsOnly, overBudgetClausesOnly, hideGroupsAtFloor, hideGroupsWithoutFloors, hideGroupsMeetingThreshold, hideGroupsBelowThreshold, hideVetoGroups, hideNonVetoGroups, hideFirstVetoGroup, hideLastVetoGroup, hideFirstNonVetoGroup, hideLastNonVetoGroup, hideLastGroupBelowThreshold, hideFirstGroupBelowThreshold, hideLastGroupAtOrAboveThreshold, hideFirstGroupAtOrAboveThreshold, hideLastGroupAtFloor, hideFirstGroupAtFloor, hideFirstGroupBelowFloor, hideLastGroupBelowFloor, hideLastGroupWithoutFloor, hideFirstGroupWithoutFloor, noCheaperRemainingClausesOnly }, rounds);
   if (exported.status !== "ok") return notifyDraft("Fix the draft before exporting workspace JSON.");
   downloadText("smallest-agreement-workspace.json", exported.json, "application/json");
   notifyDraft("Workspace JSON downloaded with the current draft, clause card density, and display filters. The solver ignores those filters.");
@@ -5231,8 +5498,17 @@ $("#import-file").addEventListener("change", async (event) => {
       hideFirstGroupWithoutFloor = workspace.hideFirstGroupWithoutFloor === true;
       noCheaperRemainingClausesOnly = workspace.noCheaperRemainingClausesOnly === true;
       persistWorkspacePrefs();
-    } else if (workspace.clauseDensity === "compact" || workspace.clauseDensity === "comfortable") {
-      clauseDensity = workspace.clauseDensity;
+      if (workspace.kind === "workspace") {
+        rounds = workspace.rounds ?? [];
+        try {
+          const serialized = JSON.stringify(rounds);
+          localStorage.setItem(ROUNDS_KEY, serialized);
+          roundsRaw = serialized;
+        } catch {
+          roundsBlocked = true;
+        }
+      }
+    } else if (workspace.clauseDensity === "compact" || workspace.clauseDensity === "comfortable") {      clauseDensity = workspace.clauseDensity;
       persistWorkspacePrefs();
     }
     save();

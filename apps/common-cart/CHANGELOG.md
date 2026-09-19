@@ -272,6 +272,34 @@ A workshop follow-up on 1.4.33. Common Cart remains an offline simulator. Residu
 - Keyboard `Shift+F9` jumps to hide last leftover-only buyer (`hide-last-leftover-only-buyer`), or the buyer list if that control is missing. Ignored while typing. Distinct from 1.4.33 `Shift+F9` hide first leftover-only buyer. That first leftover-only hide stays. Distinct from unshifted `F9` and `Shift+F12` hide first uncovered leftover buyer. `ArrowUp` still jumps to hide last leftover-only buyer. `ArrowLeft` still jumps to hide first leftover-only buyer.
 - Cyclo-cross carnival lunch (synthetic) preset after BMX carnival lunch. Winner Court-side Cyclo-cross Delivery. Leftover Hall Cyclo-cross Pickup with pickup minimum 27, unit price 22, and capacity 54. Leftover uncovered leftover-only allocated on this room is 28 leftover-only units. Leftover uncovered leftover-only headroom is 26. Leftover uncovered leftover-only capacity reports 54, not 26. Leftover uncovered leftover-only minimum is the smallest leftover-only buyer quantity 13. Distinct from BMX leftover minimum 26, unit price 21, capacity 52, allocated 27, and headroom 25. Soccer 11 through BMX 26 stay. Synthetic. Not live inventory.
 
+## 1.6.0 - 2026-09-12
+
+Supplier contingency planning in Common Cart 1.6.0.
+
+A workshop addition on 1.5.0. Common Cart remains an offline simulator. Contingency results are planning experiments, not forecasts of supplier behavior, orders, or verified savings. Merchant summaries still receive aggregates only. Organizer contingency exports are labeled organizer-private.
+
+### Added
+
+- Supplier contingency experiments: withdraw an offer, reduce capacity, scale band prices, or delay delivery, each replanned against identical demand with lost orders, newly feasible orders, and landed-cost deltas.
+- Supplier contingency panel with an experiment builder, standard merchant-withdrawal set, organizer JSON export, and aggregates-only merchant summary. Editing the room clears experiment results.
+- Supplier withdrawal dependency review question with packet replay, CLI `contingency --input --experiment`, and merchant-report privacy tests for every new export.
+
+# Changelog
+
+## 1.5.0 - 2026-09-12
+
+Multi-merchant procurement planning in Common Cart 1.5.0.
+
+A workshop addition on 1.4.33. Common Cart remains an offline simulator. Plans are projections, not orders, checkouts, or verified savings. Merchant views, JSON, CSV, overlap Markdown, and plan summaries still receive aggregates, counts, merchant labels, or fulfillment modes only. Organizer plan exports are labeled organizer-private.
+
+### Added
+
+- Bounded exact multi-merchant planner: whole buyer orders to at most one merchant, minimum orders and capacities honored, tiers repriced from actual assigned units, objective maximum fulfilled units then minimum landed cost then fewest merchants then deterministic order. Rooms above the 250,000-assignment bound return the best plan found with an explicit limit status.
+- Multi-merchant plan panel with winner comparison, per-merchant assignments, unmet demand with reasons, organizer JSON and CSV exports, and an aggregates-only merchant summary.
+- Multi-merchant review question with packet replay, CLI `plan --input`, and merchant-plan privacy tests proving no buyer records in merchant outputs.
+
+# Changelog
+
 ## 1.4.33 - 2026-09-12
 
 BMX carnival lunch, leftover-uncovered leftover-only headroom copy, and first leftover-only hide jump in Common Cart 1.4.33.

@@ -6,6 +6,7 @@
 export const MAX_COMBINATIONS = 50000;
 export const MAX_GROUPS = 24;
 export const MAX_CLAUSES = 20;
+export const MAX_RELATIONSHIPS = 64;
 export const MAX_OPTIONS_PER_CLAUSE = 24;
 export const MAX_NEAR_MISSES = 5;
 export const MAX_WEIGHT = 1_000_000;
@@ -122,7 +123,154 @@ export function validateProposal(proposal) {
       }
     });
   }
+  validateRelationships(proposal, errors);
   return { valid: errors.length === 0, errors };
+}
+
+/**
+ * Validates explicit option relationships: prerequisites (requires), incompatible
+ * pairs (excludes), and all-or-nothing sets (linked). Rules use stable option
+ * ids; dangling references are rejected. Same-clause requires can never hold,
+ * same-clause excludes restate the existing one-option-per-clause rule, linked
+ * sets with two options in one clause can never hold, and a requires rule
+ * contradicted by an excludes rule on the same pair is rejected. Requires
+ * cycles are allowed: the involved options must then be selected together.
+ */
+export function validateRelationships(proposal, errors) {
+  if (!Object.hasOwn(proposal, "relationships")) return;
+  const relationships = proposal.relationships;
+  if (!Array.isArray(relationships) || relationships.length > MAX_RELATIONSHIPS) {
+    errors.push(`relationships must contain at most ${MAX_RELATIONSHIPS} rules, or be omitted.`);
+    return;
+  }
+  const optionClause = new Map();
+  const optionCounts = new Map();
+  if (Array.isArray(proposal.clauses)) {
+    for (const clause of proposal.clauses) {
+      if (!isPlainObject(clause) || !Array.isArray(clause.options)) continue;
+      for (const option of clause.options) {
+        if (isPlainObject(option) && typeof option.id === "string") {
+          optionCounts.set(option.id, (optionCounts.get(option.id) ?? 0) + 1);
+          if (!optionClause.has(option.id)) optionClause.set(option.id, clause.id);
+        }
+      }
+    }
+  }
+  for (const [optionId, count] of optionCounts) {
+    if (count > 1) {
+      errors.push(`Option id ${optionId} appears in more than one clause; option ids must be unique across clauses when relationships are declared.`);
+    }
+  }
+  const kinds = new Set(["requires", "excludes", "linked"]);
+  const seenIds = new Set();
+  const requiresPairs = [];
+  const excludesPairs = [];
+  relationships.forEach((rule, index) => {
+    const path = `relationships[${index}]`;
+    if (!isPlainObject(rule)) {
+      errors.push(`${path} must be an object.`);
+      return;
+    }
+    if (typeof rule.id !== "string" || !ID_PATTERN.test(rule.id) || RESERVED_IDS.has(rule.id)) {
+      errors.push(`${path}.id must be 1 to 64 safe identifier characters.`);
+    } else {
+      if (seenIds.has(rule.id)) errors.push(`${path}.id must be unique.`);
+      seenIds.add(rule.id);
+    }
+    if (!kinds.has(rule.kind)) {
+      errors.push(`${path}.kind must be requires, excludes, or linked.`);
+      return;
+    }
+    const allowed = rule.kind === "requires"
+      ? new Set(["id", "kind", "option", "requires"])
+      : new Set(["id", "kind", "options"]);
+    for (const key of Object.keys(rule)) {
+      if (!allowed.has(key)) errors.push(`${path} has unexpected field: ${key}.`);
+    }
+    const describe = (optionId) => {
+      const clause = optionClause.get(optionId);
+      const clauseTitle = Array.isArray(proposal.clauses)
+        ? proposal.clauses.find((entry) => isPlainObject(entry) && entry.id === clause)?.title
+        : undefined;
+      return clauseTitle ? `${optionId} (${clauseTitle})` : optionId;
+    };
+    if (rule.kind === "requires") {
+      for (const field of ["option", "requires"]) {
+        if (typeof rule[field] !== "string") errors.push(`${path}.${field} must be an option id.`);
+        else if (!optionClause.has(rule[field])) errors.push(`${path}.${field} names no declared option: ${rule[field]}.`);
+      }
+      if (typeof rule.option === "string" && typeof rule.requires === "string") {
+        if (rule.option === rule.requires) {
+          errors.push(`${path} requires itself; a prerequisite must name a different option.`);
+        } else if (optionClause.has(rule.option) && optionClause.get(rule.option) === optionClause.get(rule.requires)) {
+          errors.push(`${path} can never hold: ${describe(rule.option)} and ${describe(rule.requires)} are in the same clause, which selects one option.`);
+        } else {
+          requiresPairs.push({ rule: rule.id, from: rule.option, to: rule.requires });
+        }
+      }
+      return;
+    }
+    if (!Array.isArray(rule.options)) {
+      errors.push(`${path}.options must be an array of option ids.`);
+      return;
+    }
+    if (rule.kind === "excludes" && rule.options.length !== 2) {
+      errors.push(`${path}.options must name exactly two options.`);
+      return;
+    }
+    if (rule.kind === "linked" && (rule.options.length < 2 || rule.options.length > 8)) {
+      errors.push(`${path}.options must name 2 to 8 options.`);
+      return;
+    }
+    const refs = [];
+    rule.options.forEach((optionId, optionIndex) => {
+      if (typeof optionId !== "string") {
+        errors.push(`${path}.options[${optionIndex}] must be an option id.`);
+        return;
+      }
+      if (!optionClause.has(optionId)) {
+        errors.push(`${path}.options[${optionIndex}] names no declared option: ${optionId}.`);
+        return;
+      }
+      refs.push(optionId);
+    });
+    if (new Set(refs).size !== refs.length) {
+      errors.push(`${path}.options must not repeat an option.`);
+      return;
+    }
+    if (rule.kind === "excludes") {
+      const [first, second] = refs;
+      if (first !== undefined && second !== undefined) {
+        if (first === second) {
+          errors.push(`${path} excludes an option from itself.`);
+        } else if (optionClause.get(first) === optionClause.get(second)) {
+          errors.push(`${path} restates the existing rule: ${describe(first)} and ${describe(second)} are in the same clause, which already selects one option.`);
+        } else {
+          excludesPairs.push({ rule: rule.id, first, second });
+        }
+      }
+      return;
+    }
+    const byClause = new Map();
+    for (const optionId of refs) {
+      const clause = optionClause.get(optionId);
+      byClause.set(clause, [...(byClause.get(clause) ?? []), optionId]);
+    }
+    for (const [clause, members] of byClause) {
+      if (members.length > 1) {
+        errors.push(`${path} can never hold: ${members.map(describe).join(" and ")} are in the same clause, which selects one option.`);
+      }
+    }
+  });
+  for (const required of requiresPairs) {
+    for (const excluded of excludesPairs) {
+      const clash = (required.from === excluded.first && required.to === excluded.second)
+        || (required.from === excluded.second && required.to === excluded.first);
+      if (clash) {
+        errors.push(`relationships ${required.rule} and ${excluded.rule} contradict: ${required.from} cannot both require and exclude ${required.to}.`);
+      }
+    }
+  }
 }
 
 /** Return only the validated fields that the application understands. */
@@ -154,6 +302,9 @@ export function canonicalProposal(proposal) {
         support: Object.fromEntries(groupIds.map((groupId) => [groupId, option.support[groupId]])),
       })),
     })),
+    ...(Object.hasOwn(proposal, "relationships")
+      ? { relationships: proposal.relationships.map((rule) => JSON.parse(JSON.stringify(rule))) }
+      : {}),
   };
 }
 
@@ -266,18 +417,59 @@ function selectionSummary(proposal, options, baselineOptions = getOriginalOption
     met: options[index].id === clause.lockedOptionId,
   }]);
   const budget = proposal.maxChangeCost === undefined ? null : { maximum: proposal.maxChangeCost, actual: changeCost, met: changeCost <= proposal.maxChangeCost + EPSILON };
+  const relationships = checkRelationships(proposal, options);
   return {
     options,
     approval: approvalForOptions(proposal.groups, options),
     byGroup,
     changes,
     changeCost,
-    constraints: { floors, locks, budget, vetoes, met: floors.every((floor) => floor.met) && locks.every((lock) => lock.met) && (!budget || budget.met) && vetoes.every((veto) => veto.met) },
+    constraints: { floors, locks, budget, vetoes, relationships, met: floors.every((floor) => floor.met) && locks.every((lock) => lock.met) && (!budget || budget.met) && vetoes.every((veto) => veto.met) && relationships.met },
     changedClauseCount: changes.length,
     groupDeltas,
     supportersGained: groupDeltas.filter((group) => group.delta > EPSILON),
     supportersLost: groupDeltas.filter((group) => group.delta < -EPSILON),
   };
+}
+
+/**
+ * Checks explicit option relationships against one complete selection.
+ * Requires cycles are satisfiable: the involved options must be selected
+ * together, exactly like a linked set. Returns each violated rule with a
+ * human-readable reason so competing combinations explain themselves.
+ */
+export function checkRelationships(proposal, selected) {
+  const rules = Array.isArray(proposal.relationships) ? proposal.relationships : [];
+  const chosen = new Set(selected.map((option) => option.id));
+  const optionLabel = (optionId) => {
+    for (const clause of proposal.clauses) {
+      const match = clause.options.find((option) => option.id === optionId);
+      if (match) return `${match.label} (${clause.title})`;
+    }
+    return optionId;
+  };
+  const violations = [];
+  for (const rule of rules) {
+    if (!isPlainObject(rule) || typeof rule.kind !== "string") continue;
+    if (rule.kind === "requires") {
+      if (chosen.has(rule.option) && !chosen.has(rule.requires)) {
+        violations.push({ ruleId: rule.id, kind: rule.kind, reason: `${optionLabel(rule.option)} requires ${optionLabel(rule.requires)}, which is not selected.` });
+      }
+    } else if (rule.kind === "excludes") {
+      const [first, second] = Array.isArray(rule.options) ? rule.options : [];
+      if (first !== undefined && chosen.has(first) && chosen.has(second)) {
+        violations.push({ ruleId: rule.id, kind: rule.kind, reason: `${optionLabel(first)} and ${optionLabel(second)} cannot be selected together.` });
+      }
+    } else if (rule.kind === "linked") {
+      const members = Array.isArray(rule.options) ? rule.options : [];
+      const selected = members.filter((optionId) => chosen.has(optionId));
+      if (selected.length > 0 && selected.length < members.length) {
+        const missing = members.filter((optionId) => !chosen.has(optionId));
+        violations.push({ ruleId: rule.id, kind: rule.kind, reason: `${selected.map(optionLabel).join(", ")} ${selected.length === 1 ? "is" : "are"} selected without linked ${missing.map(optionLabel).join(", ")}.` });
+      }
+    }
+  }
+  return { met: violations.length === 0, violations };
 }
 
 function compareText(a, b) {
@@ -421,14 +613,14 @@ export function findSmallestAgreement(proposal, options = {}) {
 
   const baseline = selectionSummary(proposal, getOriginalOptions(proposal));
   if (baseline.approval + EPSILON >= proposal.threshold && baseline.constraints.met && alternativesLimit === 0) {
-    return { status: "already_passing", possibleCombinations, checkedCombinations: 1, baseline, agreement: baseline, nearMisses: [], rejected: { budget: 0, floors: 0, vetoes: 0, anyConstraint: 0 }, eligibleCombinations: 1 };
+    return { status: "already_passing", possibleCombinations, checkedCombinations: 1, baseline, agreement: baseline, nearMisses: [], rejected: { budget: 0, floors: 0, vetoes: 0, relationships: 0, anyConstraint: 0 }, eligibleCombinations: 1 };
   }
 
   let best = null;
   const alternatives = [];
   let passingCombinations = 0;
   const nearMisses = [];
-  const rejected = { budget: 0, floors: 0, vetoes: 0, anyConstraint: 0 };
+  const rejected = { budget: 0, floors: 0, vetoes: 0, relationships: 0, anyConstraint: 0 };
   let eligibleCombinations = 0;
   const selected = [];
   const visit = (clauseIndex) => {
@@ -439,6 +631,7 @@ export function findSmallestAgreement(proposal, options = {}) {
         if (summary.constraints.budget && !summary.constraints.budget.met) rejected.budget += 1;
         if (summary.constraints.floors.some((floor) => !floor.met)) rejected.floors += 1;
         if (summary.constraints.vetoes.some((veto) => !veto.met)) rejected.vetoes += 1;
+        if (!summary.constraints.relationships.met) rejected.relationships += 1;
         return;
       }
       eligibleCombinations += 1;
@@ -548,7 +741,7 @@ export function formatDecisionBrief(proposal, result) {
   else if (result.status === "found") lines.push("A lowest-cost passing combination was found.", "Every configured constraint is met.", "");
   else lines.push("No permitted combination meets both the threshold and every configured constraint.", "");
   lines.push(`Search combinations checked: ${Number(result.checkedCombinations).toLocaleString("en-US")}`, `Lock-permitted search space: ${Number(result.possibleCombinations).toLocaleString("en-US")}`);
-  if (result.checkedCombinations !== 1 || result.status !== "already_passing") lines.push(`Constraint-compliant combinations: ${result.eligibleCombinations}`, `Rejected by budget: ${result.rejected.budget}; by group floors: ${result.rejected.floors}; by veto groups: ${result.rejected.vetoes}. Rejection counts may overlap.`);
+  if (result.checkedCombinations !== 1 || result.status !== "already_passing") lines.push(`Constraint-compliant combinations: ${result.eligibleCombinations}`, `Rejected by budget: ${result.rejected.budget}; by group floors: ${result.rejected.floors}; by veto groups: ${result.rejected.vetoes}; by option relationships: ${result.rejected.relationships}. Rejection counts may overlap.`);
   lines.push(`Current approval: ${formatPercent(current.approval)}`, `Original proposal meets constraints: ${current.constraints.met ? "yes" : "no"}`);
 
   if (agreement) {
@@ -3196,6 +3389,7 @@ export function compareWorkshopFiles(leftText, rightText) {
 }
 
 const WORKSPACE_DOCUMENT_KEYS = new Set([
+  "rounds",
   "format",
   "version",
   "clauseDensity",
@@ -3275,7 +3469,7 @@ function readWorkspaceBoolean(raw, key) {
  * Filter flags are display-only. The solver ignores them.
  * Unknown wrapper keys are rejected.
  */
-export function formatWorkspaceJson(proposal, prefs = {}) {
+export function formatWorkspaceJson(proposal, prefs = {}, rounds = []) {
   const validation = validateProposal(proposal);
   if (!validation.valid) return { status: "invalid", errors: [namedFileError("invalid_proposal", validation.errors[0])] };
   if (!isPlainObject(prefs)) {
@@ -3346,6 +3540,13 @@ export function formatWorkspaceJson(proposal, prefs = {}) {
   if (hideLastGroupWithoutFloor.error) return { status: "invalid", errors: [hideLastGroupWithoutFloor.error] };
   const hideFirstGroupWithoutFloor = readWorkspaceBoolean(prefs, "hideFirstGroupWithoutFloor");
   if (hideFirstGroupWithoutFloor.error) return { status: "invalid", errors: [hideFirstGroupWithoutFloor.error] };
+  if (!Array.isArray(rounds) || rounds.length > MAX_ROUNDS) {
+    return { status: "invalid", errors: [namedFileError("invalid_rounds", `Workspace rounds must contain at most ${MAX_ROUNDS} rounds.`)] };
+  }
+  for (const round of rounds) {
+    const validation = validateRound(round);
+    if (!validation.valid) return { status: "invalid", errors: [namedFileError("invalid_round", validation.errors[0])] };
+  }
   return {
     status: "ok",
     clauseDensity,
@@ -3409,6 +3610,7 @@ export function formatWorkspaceJson(proposal, prefs = {}) {
       hideLastGroupBelowFloor: hideLastGroupBelowFloor.value,
       hideLastGroupWithoutFloor: hideLastGroupWithoutFloor.value,
       hideFirstGroupWithoutFloor: hideFirstGroupWithoutFloor.value,
+      rounds,
       proposal: canonicalProposal(proposal),
     }, null, 2)}\n`,
   };
@@ -3454,6 +3656,7 @@ export function parseWorkspaceJson(text) {
       hideLastGroupBelowFloor: null,
       hideLastGroupWithoutFloor: null,
       hideFirstGroupWithoutFloor: null,
+      rounds: [],
     };
   }
   for (const key of Object.keys(raw)) {
@@ -3526,9 +3729,21 @@ export function parseWorkspaceJson(text) {
   if (hideLastGroupWithoutFloor.error) return { status: "invalid", errors: [hideLastGroupWithoutFloor.error] };
   const hideFirstGroupWithoutFloor = readWorkspaceBoolean(raw, "hideFirstGroupWithoutFloor");
   if (hideFirstGroupWithoutFloor.error) return { status: "invalid", errors: [hideFirstGroupWithoutFloor.error] };
+  let rounds = [];
+  if (Object.hasOwn(raw, "rounds")) {
+    if (!Array.isArray(raw.rounds) || raw.rounds.length > MAX_ROUNDS) {
+      return { status: "invalid", errors: [namedFileError("invalid_rounds", `Workspace rounds must contain at most ${MAX_ROUNDS} rounds.`)] };
+    }
+    for (const round of raw.rounds) {
+      const validation = validateRound(round);
+      if (!validation.valid) return { status: "invalid", errors: [namedFileError("invalid_round", validation.errors[0])] };
+    }
+    rounds = raw.rounds;
+  }
   return {
     status: "ok",
     kind: "workspace",
+    rounds,
     proposal: proposal.proposal,
     clauseDensity,
     vetoGroupsOnly: vetoGroupsOnly.value,
@@ -3560,6 +3775,246 @@ export function parseWorkspaceJson(text) {
     hideLastGroupWithoutFloor: hideLastGroupWithoutFloor.value,
     hideFirstGroupWithoutFloor: hideFirstGroupWithoutFloor.value,
   };
+}
+
+export const MAX_ROUNDS = 20;
+export const MAX_ROUND_NOTES = 4000;
+export const MAX_ROUND_DECISION = 500;
+
+/**
+ * Records one negotiation round: an immutable proposal baseline plus
+ * human-authored notes and an optional explicitly recorded outcome.
+ * Human statements stay separate from calculated results: a saved round is
+ * not a recorded vote unless `decision` says what was decided, in the user's
+ * own words. `recordedAt` is display-only metadata and never participates in
+ * equality, diffs, or replay.
+ */
+export function createRound(proposal, fields = {}) {
+  const errors = [];
+  if (!isPlainObject(fields)) return { status: "invalid", errors: ["Round fields must be an object."] };
+  for (const key of Object.keys(fields)) {
+    if (!["id", "name", "notes", "decision", "recordedAt"].includes(key)) {
+      errors.push(`Round has unexpected field: ${key}.`);
+    }
+  }
+  const validation = validateProposal(proposal);
+  if (!validation.valid) {
+    return { status: "invalid", errors: [`Round proposal is invalid: ${validation.errors[0]}`] };
+  }
+  const canonical = canonicalProposal(proposal);
+  let id = fields.id;
+  if (id === undefined) id = `round-${contentHash(JSON.stringify(canonical))}`;
+  if (typeof id !== "string" || !ID_PATTERN.test(id) || RESERVED_IDS.has(id)) {
+    errors.push("Round id must be 1 to 64 safe identifier characters.");
+  }
+  const text = (value, max, label) => {
+    if (value === undefined) return null;
+    if (typeof value !== "string" || !value.trim() || value.trim().length > max) {
+      errors.push(`Round ${label} must be 1 to ${max} characters, or omitted.`);
+      return null;
+    }
+    return value.trim();
+  };
+  const name = text(fields.name, 120, "name");
+  const notes = text(fields.notes, MAX_ROUND_NOTES, "notes");
+  const decision = text(fields.decision, MAX_ROUND_DECISION, "decision");
+  let recordedAt = null;
+  if (fields.recordedAt !== undefined) {
+    if (typeof fields.recordedAt !== "string" || !fields.recordedAt.trim() || fields.recordedAt.trim().length > 64) {
+      errors.push("Round recordedAt must be 1 to 64 characters, or omitted.");
+    } else {
+      recordedAt = fields.recordedAt.trim();
+    }
+  }
+  if (errors.length > 0) return { status: "invalid", errors };
+  return { status: "ok", round: { id, name, notes, decision, recordedAt, proposal: canonical } };
+}
+
+function contentHash(text) {
+  let hash = 5381;
+  for (let i = 0; i < text.length; i += 1) {
+    hash = ((hash << 5) + hash + text.charCodeAt(i)) >>> 0;
+  }
+  return hash.toString(16).padStart(8, "0");
+}
+
+export function validateRound(round) {
+  if (!isPlainObject(round)) return { valid: false, errors: ["Round must be an object."] };
+  const errors = [];
+  for (const key of Object.keys(round)) {
+    if (!["id", "name", "notes", "decision", "recordedAt", "proposal"].includes(key)) {
+      errors.push(`Round has unexpected field: ${key}.`);
+    }
+  }
+  if (typeof round.id !== "string" || !ID_PATTERN.test(round.id) || RESERVED_IDS.has(round.id)) {
+    errors.push("Round id must be 1 to 64 safe identifier characters.");
+  }
+  for (const [key, max] of [["name", 120], ["notes", MAX_ROUND_NOTES], ["decision", MAX_ROUND_DECISION]]) {
+    const value = round[key];
+    if (value !== null && value !== undefined && (typeof value !== "string" || !value.trim() || value.trim().length > max)) {
+      errors.push(`Round ${key} must be 1 to ${max} characters, or omitted.`);
+    }
+  }
+  if (round.recordedAt !== null && round.recordedAt !== undefined
+    && (typeof round.recordedAt !== "string" || !round.recordedAt.trim() || round.recordedAt.trim().length > 64)) {
+    errors.push("Round recordedAt must be 1 to 64 characters, or omitted.");
+  }
+  if (!isPlainObject(round.proposal)) {
+    errors.push("Round proposal must be an object.");
+  } else {
+    const validation = validateProposal(round.proposal);
+    if (!validation.valid) errors.push(`Round proposal is invalid: ${validation.errors[0]}`);
+  }
+  return { valid: errors.length === 0, errors };
+}
+
+/** Rounds match when their deterministic content matches; recordedAt is ignored. */
+export function roundsEqual(left, right) {
+  if (!isPlainObject(left) || !isPlainObject(right)) return false;
+  const strip = (round) => {
+    const copy = { ...round };
+    delete copy.recordedAt;
+    return copy;
+  };
+  return JSON.stringify(strip(left)) === JSON.stringify(strip(right));
+}
+
+/**
+ * Summarizes one round proposal with an explicit outcome for every search
+ * state: completed search, invalid input, infeasibility, or unsupported size.
+ * A summary never presents an unfinished search as proof.
+ */
+export function summarizeRound(proposal) {
+  const validation = validateProposal(proposal);
+  if (!validation.valid) {
+    return { status: "invalid", changeCost: null, approval: null, threshold: null, groupSupport: [], optionIds: null, note: `Invalid inputs: ${validation.errors[0]}` };
+  }
+  const result = findSmallestAgreement(proposal);
+  if (result.status === "too_large") {
+    return { status: "too_large", changeCost: null, approval: null, threshold: proposal.threshold, groupSupport: [], optionIds: null, possibleCombinations: result.possibleCombinations, note: `Search exceeds the supported bound of ${result.possibleCombinations.toLocaleString("en-US")} combinations; no optimum is claimed.` };
+  }
+  if (result.status === "infeasible") {
+    const baseline = selectionSummary(proposal, getOriginalOptions(proposal));
+    return { status: "infeasible", changeCost: null, approval: baseline.approval, threshold: proposal.threshold, groupSupport: approvalByGroup(proposal.groups, getOriginalOptions(proposal)), optionIds: null, note: "Every permitted combination was evaluated and none meets the threshold with every constraint." };
+  }
+  const agreement = result.agreement;
+  return {
+    status: result.status, changeCost: agreement.changeCost, approval: agreement.approval,
+    threshold: proposal.threshold, groupSupport: approvalByGroup(proposal.groups, agreement.options),
+    optionIds: agreement.options.map((option) => option.id),
+    selections: proposal.clauses.map((clause, index) => ({
+      clauseId: clause.id, clauseTitle: clause.title,
+      optionId: agreement.options[index].id, optionLabel: agreement.options[index].label,
+    })),
+    note: result.status === "already_passing" ? "The original proposal already passes; no change is recommended." : "Lowest-cost passing combination within the supported bound.",
+  };
+}
+
+/**
+ * Compares two rounds input by input and result by result. Support-score and
+ * change-cost cell changes are listed up to 25 entries with a remaining count.
+ * Calculated summaries stay separate from each round's human-authored notes.
+ */
+export function compareRounds(leftRound, rightRound) {
+  for (const [label, round] of [["first", leftRound], ["second", rightRound]]) {
+    const validation = validateRound(round);
+    if (!validation.valid) throw new TypeError(`Cannot compare: ${label} round is invalid: ${validation.errors[0]}`);
+  }
+  const left = canonicalProposal(leftRound.proposal);
+  const right = canonicalProposal(rightRound.proposal);
+  const summaryLeft = summarizeRound(left);
+  const summaryRight = summarizeRound(right);
+  const inputChanges = describeProposalChanges(left, right);
+  const optionChanges = [];
+  const leftOptions = new Map(left.clauses.map((clause) => [clause.id, clause.options]));
+  const rightOptions = new Map(right.clauses.map((clause) => [clause.id, clause.options]));
+  for (const [clauseId, leftList] of leftOptions) {
+    const rightList = rightOptions.get(clauseId);
+    if (!rightList) continue;
+    const rightById = new Map(rightList.map((option) => [option.id, option]));
+    for (const option of leftList) {
+      const match = rightById.get(option.id);
+      if (!match) {
+        optionChanges.push({ clauseId, optionId: option.id, field: "option", before: option.label, after: null });
+        continue;
+      }
+      if (option.label !== match.label) optionChanges.push({ clauseId, optionId: option.id, field: "label", before: option.label, after: match.label });
+      if (option.changeCost !== match.changeCost) optionChanges.push({ clauseId, optionId: option.id, field: "changeCost", before: option.changeCost, after: match.changeCost });
+      for (const group of left.groups) {
+        if (option.support[group.id] !== match.support[group.id]) {
+          optionChanges.push({ clauseId, optionId: option.id, field: `support.${group.id}`, before: option.support[group.id], after: match.support[group.id] });
+        }
+      }
+    }
+    for (const option of rightList) {
+      if (!leftList.some((entry) => entry.id === option.id)) {
+        optionChanges.push({ clauseId, optionId: option.id, field: "option", before: null, after: option.label });
+      }
+    }
+  }
+  const supportDeltas = [];
+  const rightSummary = summaryRight.groupSupport.length ? summaryRight : null;
+  if (summaryLeft.groupSupport.length && rightSummary) {
+    const rightById = new Map(rightSummary.groupSupport.map((group) => [group.id, group]));
+    for (const group of summaryLeft.groupSupport) {
+      const match = rightById.get(group.id);
+      if (match) supportDeltas.push({ id: group.id, name: group.name, before: group.approval, after: match.approval, delta: match.approval - group.approval });
+    }
+  }
+  return {
+    left: { id: leftRound.id, name: leftRound.name, ...summaryLeft },
+    right: { id: rightRound.id, name: rightRound.name, ...summaryRight },
+    inputChanges,
+    optionChanges: optionChanges.slice(0, 25),
+    optionChangeCount: optionChanges.length,
+    supportDeltas,
+    costDelta: summaryRight.changeCost === null || summaryLeft.changeCost === null ? null : summaryRight.changeCost - summaryLeft.changeCost,
+    approvalDelta: summaryRight.approval === null || summaryLeft.approval === null ? null : summaryRight.approval - summaryLeft.approval,
+  };
+}
+
+function describeProposalChanges(left, right) {
+  const changes = [];
+  if (left.threshold !== right.threshold) changes.push(`Threshold ${left.threshold}% to ${right.threshold}%.`);
+  if ((left.maxChangeCost ?? null) !== (right.maxChangeCost ?? null)) {
+    changes.push(`Budget ${left.maxChangeCost ?? "unlimited"} to ${right.maxChangeCost ?? "unlimited"}.`);
+  }
+  const leftGroups = new Map(left.groups.map((group) => [group.id, group]));
+  const rightGroups = new Map(right.groups.map((group) => [group.id, group]));
+  for (const [id, group] of leftGroups) {
+    if (!rightGroups.has(id)) changes.push(`Group removed: ${group.name}.`);
+  }
+  for (const [id, group] of rightGroups) {
+    const match = leftGroups.get(id);
+    if (!match) {
+      changes.push(`Group added: ${group.name}.`);
+      continue;
+    }
+    if (match.weight !== group.weight) changes.push(`Group ${group.name} weight ${match.weight} to ${group.weight}.`);
+    if ((match.minSupport ?? null) !== (group.minSupport ?? null)) changes.push(`Group ${group.name} floor ${match.minSupport ?? "none"} to ${group.minSupport ?? "none"}.`);
+    if ((match.veto ?? false) !== (group.veto ?? false)) changes.push(`Group ${group.name} veto ${match.veto === true ? "on" : "off"} to ${group.veto === true ? "on" : "off"}.`);
+  }
+  const leftClauses = new Map(left.clauses.map((clause) => [clause.id, clause]));
+  const rightClauses = new Map(right.clauses.map((clause) => [clause.id, clause]));
+  for (const [id, clause] of leftClauses) {
+    if (!rightClauses.has(id)) changes.push(`Clause removed: ${clause.title}.`);
+  }
+  for (const [id, clause] of rightClauses) {
+    if (!leftClauses.has(id)) changes.push(`Clause added: ${clause.title}.`);
+  }
+  const lockOf = (proposal, clauseId) => proposal.clauses.find((clause) => clause.id === clauseId)?.lockedOptionId ?? null;
+  for (const [id, clause] of leftClauses) {
+    if (!rightClauses.has(id)) continue;
+    const before = lockOf(left, id);
+    const after = lockOf(right, id);
+    if (before !== after) changes.push(`Clause ${clause.title} lock ${before ?? "none"} to ${after ?? "none"}.`);
+  }
+  const ruleIds = (proposal) => new Set((proposal.relationships ?? []).map((rule) => rule.id));
+  const leftRules = ruleIds(left);
+  const rightRules = ruleIds(right);
+  for (const id of leftRules) if (!rightRules.has(id)) changes.push(`Relationship removed: ${id}.`);
+  for (const id of rightRules) if (!leftRules.has(id)) changes.push(`Relationship added: ${id}.`);
+  return changes;
 }
 
 /**
@@ -3937,7 +4392,7 @@ export function analyzeAgreementReview(rawProposal,tool){
  switch(tool){
  case 'margin':{
 
- return report(['Package','Approval %','Threshold %','Margin points','Change cost','Other constraints'],[[context,selected.approval,proposal.threshold,selected.approval-proposal.threshold,selected.changeCost,selected.constraints.met?'Met':'Not met']],'A positive aggregate margin alone does not pass floors, vetoes, locks or budget. Support scores and weights are declared inputs, not measured votes.');
+ return report(['Package','Approval %','Threshold %','Margin points','Change cost','Other constraints'],[[context,selected.approval,proposal.threshold,selected.approval-proposal.threshold,selected.changeCost,selected.constraints.met?'Met':'Not met']],'A positive aggregate margin alone does not pass floors, vetoes, locks, budget, or option relationships. Support scores and weights are declared inputs, not measured votes.');
 
  }
  case 'floors':{

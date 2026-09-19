@@ -57,8 +57,7 @@ test("dashboard shows hours to clear the queue or queue remains", async () => {
   const app = await readFile(new URL("../src/app.js", import.meta.url), "utf8");
   assert.match(html, /id="queue-clear-value"/);
   assert.match(html, /Hours to clear queue/);
-  assert.match(app, /queue remains/);
   assert.match(app, /formatHoursToClearQueue/);
   assert.match(app, /hoursToClearQueue/);
-  assert.match(app, /No queue in 72h/);
+  assert.match(app, /hoursToClearLabel/);
 });

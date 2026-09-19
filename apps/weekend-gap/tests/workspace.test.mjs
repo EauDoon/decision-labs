@@ -11,29 +11,7 @@ test("workspace round trip preserves detached baseline, notes and analysis contr
  assert.equal(result.workspace.ganttGateFilter,"all");
  assert.equal(result.workspace.queueBacklogOnly,false);
  assert.equal(result.workspace.ganttEveryGateClosed,false);
- assert.equal(result.workspace.hideWeekdayGanttHours,false);
- assert.equal(result.workspace.hideWeekendGanttHours,false);
- assert.equal(result.workspace.hideOpenGanttHours,false);
- assert.equal(result.workspace.hideClosedGanttHours,false);
- assert.equal(result.workspace.hideZeroQueueGanttHours,false);
- assert.equal(result.workspace.hideBankClosedGanttHours,false);
- assert.equal(result.workspace.hideIssuerClosedGanttHours,false);
- assert.equal(result.workspace.hidePayoutClosedGanttHours,false);
- assert.equal(result.workspace.hideFxClosedGanttHours,false);
- assert.equal(result.workspace.hidePayoutOpenGanttHours,false);
- assert.equal(result.workspace.hideFxOpenGanttHours,false);
- assert.equal(result.workspace.hideBankOpenGanttHours,false);
- assert.equal(result.workspace.hideIssuerOpenGanttHours,false);
- assert.equal(result.workspace.hideWeekendIssuerOpenGanttHours,false);
- assert.equal(result.workspace.hideWeekendIssuerClosedGanttHours,false);
- assert.equal(result.workspace.hideWeekendBankClosedGanttHours,false);
- assert.equal(result.workspace.hideWeekendBankOpenGanttHours,false);
- assert.equal(result.workspace.hideWeekendPayoutOpenGanttHours,false);
- assert.equal(result.workspace.hideWeekendFxOpenGanttHours,false);
- assert.equal(result.workspace.hideWeekendPayoutClosedGanttHours,false);
- assert.equal(result.workspace.hideWeekendFxClosedGanttHours,false);
- assert.equal(result.workspace.hideWeekdayFxClosedGanttHours,false);
- assert.equal(result.workspace.hideWeekdayFxOpenGanttHours,false);
+ assert.equal(result.workspace.ganttHourFilter,"all");
  assert.equal(scenarioFromJSON(text).scenario,null);assert.deepEqual(workspaceFromJSON("\uFEFF"+text),result);
 });
 test("workspace Gantt density defaults to snapshots and older files remain valid",()=>{
@@ -132,295 +110,34 @@ test("older workspace files omit ganttEveryGateClosed and restore all hours",()=
  assert.deepEqual(legacy.errors,[]);
  assert.equal(workspaceFromJSON(JSON.stringify({...raw,ganttEveryGateClosed:true})).workspace.ganttEveryGateClosed,true);
 });
-test("older workspace files omit hideWeekdayGanttHours and restore all hours",()=>{
- const text=workspaceToJSON(DEFAULT_SCENARIO,DEFAULT_SCENARIO,{hideWeekdayGanttHours:true,notes:"legacy weekday filter"});
- const raw=JSON.parse(text);
- assert.equal(raw.hideWeekdayGanttHours,true);
- delete raw.hideWeekdayGanttHours;
- const legacy=workspaceFromJSON(JSON.stringify(raw));
- assert.ok(legacy.workspace);
- assert.equal(legacy.workspace.hideWeekdayGanttHours,false);
- assert.deepEqual(legacy.errors,[]);
- assert.equal(workspaceFromJSON(JSON.stringify({...raw,hideWeekdayGanttHours:true})).workspace.hideWeekdayGanttHours,true);
-});
-test("older workspace files omit hideWeekendGanttHours and restore all hours",()=>{
- const text=workspaceToJSON(DEFAULT_SCENARIO,DEFAULT_SCENARIO,{hideWeekendGanttHours:true,notes:"legacy weekend filter"});
- const raw=JSON.parse(text);
- assert.equal(raw.hideWeekendGanttHours,true);
- delete raw.hideWeekendGanttHours;
- const legacy=workspaceFromJSON(JSON.stringify(raw));
- assert.ok(legacy.workspace);
- assert.equal(legacy.workspace.hideWeekendGanttHours,false);
- assert.deepEqual(legacy.errors,[]);
- assert.equal(workspaceFromJSON(JSON.stringify({...raw,hideWeekendGanttHours:true})).workspace.hideWeekendGanttHours,true);
-});
-test("older workspace files omit hideOpenGanttHours and restore all hours",()=>{
- const text=workspaceToJSON(DEFAULT_SCENARIO,DEFAULT_SCENARIO,{hideOpenGanttHours:true,notes:"legacy open-hour filter"});
- const raw=JSON.parse(text);
- assert.equal(raw.hideOpenGanttHours,true);
- delete raw.hideOpenGanttHours;
- const legacy=workspaceFromJSON(JSON.stringify(raw));
- assert.ok(legacy.workspace);
- assert.equal(legacy.workspace.hideOpenGanttHours,false);
- assert.deepEqual(legacy.errors,[]);
- assert.equal(workspaceFromJSON(JSON.stringify({...raw,hideOpenGanttHours:true})).workspace.hideOpenGanttHours,true);
-});
-test("older workspace files omit hideClosedGanttHours and restore all hours",()=>{
- const text=workspaceToJSON(DEFAULT_SCENARIO,DEFAULT_SCENARIO,{hideClosedGanttHours:true,notes:"legacy closed-hour filter"});
- const raw=JSON.parse(text);
- assert.equal(raw.hideClosedGanttHours,true);
- delete raw.hideClosedGanttHours;
- const legacy=workspaceFromJSON(JSON.stringify(raw));
- assert.ok(legacy.workspace);
- assert.equal(legacy.workspace.hideClosedGanttHours,false);
- assert.deepEqual(legacy.errors,[]);
- assert.equal(workspaceFromJSON(JSON.stringify({...raw,hideClosedGanttHours:true})).workspace.hideClosedGanttHours,true);
-});
-test("older workspace files omit hideZeroQueueGanttHours and restore all hours",()=>{
- const text=workspaceToJSON(DEFAULT_SCENARIO,DEFAULT_SCENARIO,{hideZeroQueueGanttHours:true,notes:"legacy zero-queue filter"});
- const raw=JSON.parse(text);
- assert.equal(raw.hideZeroQueueGanttHours,true);
- delete raw.hideZeroQueueGanttHours;
- const legacy=workspaceFromJSON(JSON.stringify(raw));
- assert.ok(legacy.workspace);
- assert.equal(legacy.workspace.hideZeroQueueGanttHours,false);
- assert.deepEqual(legacy.errors,[]);
- assert.equal(workspaceFromJSON(JSON.stringify({...raw,hideZeroQueueGanttHours:true})).workspace.hideZeroQueueGanttHours,true);
-});
-test("older workspace files omit hideBankClosedGanttHours and restore all hours",()=>{
- const text=workspaceToJSON(DEFAULT_SCENARIO,DEFAULT_SCENARIO,{hideBankClosedGanttHours:true,notes:"legacy bank-closed filter"});
- const raw=JSON.parse(text);
- assert.equal(raw.hideBankClosedGanttHours,true);
- delete raw.hideBankClosedGanttHours;
- const legacy=workspaceFromJSON(JSON.stringify(raw));
- assert.ok(legacy.workspace);
- assert.equal(legacy.workspace.hideBankClosedGanttHours,false);
- assert.deepEqual(legacy.errors,[]);
- assert.equal(workspaceFromJSON(JSON.stringify({...raw,hideBankClosedGanttHours:true})).workspace.hideBankClosedGanttHours,true);
-});
-test("older workspace files omit hideIssuerClosedGanttHours and restore all hours",()=>{
- const text=workspaceToJSON(DEFAULT_SCENARIO,DEFAULT_SCENARIO,{hideIssuerClosedGanttHours:true,notes:"legacy issuer-closed filter"});
- const raw=JSON.parse(text);
- assert.equal(raw.hideIssuerClosedGanttHours,true);
- delete raw.hideIssuerClosedGanttHours;
- const legacy=workspaceFromJSON(JSON.stringify(raw));
- assert.ok(legacy.workspace);
- assert.equal(legacy.workspace.hideIssuerClosedGanttHours,false);
- assert.deepEqual(legacy.errors,[]);
- assert.equal(workspaceFromJSON(JSON.stringify({...raw,hideIssuerClosedGanttHours:true})).workspace.hideIssuerClosedGanttHours,true);
-});
-test("older workspace files omit hidePayoutClosedGanttHours and restore all hours",()=>{
- const text=workspaceToJSON(DEFAULT_SCENARIO,DEFAULT_SCENARIO,{hidePayoutClosedGanttHours:true,notes:"legacy payout-closed filter"});
- const raw=JSON.parse(text);
- assert.equal(raw.hidePayoutClosedGanttHours,true);
- delete raw.hidePayoutClosedGanttHours;
- const legacy=workspaceFromJSON(JSON.stringify(raw));
- assert.ok(legacy.workspace);
- assert.equal(legacy.workspace.hidePayoutClosedGanttHours,false);
- assert.deepEqual(legacy.errors,[]);
- assert.equal(workspaceFromJSON(JSON.stringify({...raw,hidePayoutClosedGanttHours:true})).workspace.hidePayoutClosedGanttHours,true);
-});
-test("older workspace files omit hideFxClosedGanttHours and restore all hours",()=>{
- const text=workspaceToJSON(DEFAULT_SCENARIO,DEFAULT_SCENARIO,{hideFxClosedGanttHours:true,notes:"legacy FX-closed filter"});
- const raw=JSON.parse(text);
- assert.equal(raw.hideFxClosedGanttHours,true);
- delete raw.hideFxClosedGanttHours;
- const legacy=workspaceFromJSON(JSON.stringify(raw));
- assert.ok(legacy.workspace);
- assert.equal(legacy.workspace.hideFxClosedGanttHours,false);
- assert.deepEqual(legacy.errors,[]);
- assert.equal(workspaceFromJSON(JSON.stringify({...raw,hideFxClosedGanttHours:true})).workspace.hideFxClosedGanttHours,true);
-});
-test("older workspace files omit hidePayoutOpenGanttHours and restore all hours",()=>{
- const text=workspaceToJSON(DEFAULT_SCENARIO,DEFAULT_SCENARIO,{hidePayoutOpenGanttHours:true,notes:"legacy payout-open filter"});
- const raw=JSON.parse(text);
- assert.equal(raw.hidePayoutOpenGanttHours,true);
- delete raw.hidePayoutOpenGanttHours;
- const legacy=workspaceFromJSON(JSON.stringify(raw));
- assert.ok(legacy.workspace);
- assert.equal(legacy.workspace.hidePayoutOpenGanttHours,false);
- assert.deepEqual(legacy.errors,[]);
- assert.equal(workspaceFromJSON(JSON.stringify({...raw,hidePayoutOpenGanttHours:true})).workspace.hidePayoutOpenGanttHours,true);
-});
-test("older workspace files omit hideFxOpenGanttHours and restore all hours",()=>{
- const text=workspaceToJSON(DEFAULT_SCENARIO,DEFAULT_SCENARIO,{hideFxOpenGanttHours:true,notes:"legacy FX-open filter"});
- const raw=JSON.parse(text);
- assert.equal(raw.hideFxOpenGanttHours,true);
- delete raw.hideFxOpenGanttHours;
- const legacy=workspaceFromJSON(JSON.stringify(raw));
- assert.ok(legacy.workspace);
- assert.equal(legacy.workspace.hideFxOpenGanttHours,false);
- assert.deepEqual(legacy.errors,[]);
- assert.equal(workspaceFromJSON(JSON.stringify({...raw,hideFxOpenGanttHours:true})).workspace.hideFxOpenGanttHours,true);
-});
-test("older workspace files omit hideBankOpenGanttHours and restore all hours",()=>{
- const text=workspaceToJSON(DEFAULT_SCENARIO,DEFAULT_SCENARIO,{hideBankOpenGanttHours:true,notes:"legacy bank-open filter"});
- const raw=JSON.parse(text);
- assert.equal(raw.hideBankOpenGanttHours,true);
- delete raw.hideBankOpenGanttHours;
- const legacy=workspaceFromJSON(JSON.stringify(raw));
- assert.ok(legacy.workspace);
- assert.equal(legacy.workspace.hideBankOpenGanttHours,false);
- assert.deepEqual(legacy.errors,[]);
- assert.equal(workspaceFromJSON(JSON.stringify({...raw,hideBankOpenGanttHours:true})).workspace.hideBankOpenGanttHours,true);
-});
-test("older workspace files omit hideIssuerOpenGanttHours and restore all hours",()=>{
- const text=workspaceToJSON(DEFAULT_SCENARIO,DEFAULT_SCENARIO,{hideIssuerOpenGanttHours:true,notes:"legacy issuer-open filter"});
- const raw=JSON.parse(text);
- assert.equal(raw.hideIssuerOpenGanttHours,true);
- delete raw.hideIssuerOpenGanttHours;
- const legacy=workspaceFromJSON(JSON.stringify(raw));
- assert.ok(legacy.workspace);
- assert.equal(legacy.workspace.hideIssuerOpenGanttHours,false);
- assert.deepEqual(legacy.errors,[]);
- assert.equal(workspaceFromJSON(JSON.stringify({...raw,hideIssuerOpenGanttHours:true})).workspace.hideIssuerOpenGanttHours,true);
-});
-test("older workspace files omit hideWeekendIssuerOpenGanttHours and restore all hours",()=>{
- const text=workspaceToJSON(DEFAULT_SCENARIO,DEFAULT_SCENARIO,{hideWeekendIssuerOpenGanttHours:true,notes:"legacy weekend-issuer-open filter"});
- const raw=JSON.parse(text);
- assert.equal(raw.hideWeekendIssuerOpenGanttHours,true);
- delete raw.hideWeekendIssuerOpenGanttHours;
- const legacy=workspaceFromJSON(JSON.stringify(raw));
- assert.ok(legacy.workspace);
- assert.equal(legacy.workspace.hideWeekendIssuerOpenGanttHours,false);
- assert.deepEqual(legacy.errors,[]);
- assert.equal(workspaceFromJSON(JSON.stringify({...raw,hideWeekendIssuerOpenGanttHours:true})).workspace.hideWeekendIssuerOpenGanttHours,true);
-});
-test("older workspace files omit hideWeekendIssuerClosedGanttHours and restore all hours",()=>{
- const text=workspaceToJSON(DEFAULT_SCENARIO,DEFAULT_SCENARIO,{hideWeekendIssuerClosedGanttHours:true,notes:"legacy weekend-issuer-closed filter"});
- const raw=JSON.parse(text);
- assert.equal(raw.hideWeekendIssuerClosedGanttHours,true);
- delete raw.hideWeekendIssuerClosedGanttHours;
- const legacy=workspaceFromJSON(JSON.stringify(raw));
- assert.ok(legacy.workspace);
- assert.equal(legacy.workspace.hideWeekendIssuerClosedGanttHours,false);
- assert.deepEqual(legacy.errors,[]);
- assert.equal(workspaceFromJSON(JSON.stringify({...raw,hideWeekendIssuerClosedGanttHours:true})).workspace.hideWeekendIssuerClosedGanttHours,true);
-});
-test("older workspace files omit hideWeekendBankClosedGanttHours and restore all hours",()=>{
- const text=workspaceToJSON(DEFAULT_SCENARIO,DEFAULT_SCENARIO,{hideWeekendBankClosedGanttHours:true,notes:"legacy weekend-bank-closed filter"});
- const raw=JSON.parse(text);
- assert.equal(raw.hideWeekendBankClosedGanttHours,true);
- delete raw.hideWeekendBankClosedGanttHours;
- const legacy=workspaceFromJSON(JSON.stringify(raw));
- assert.ok(legacy.workspace);
- assert.equal(legacy.workspace.hideWeekendBankClosedGanttHours,false);
- assert.deepEqual(legacy.errors,[]);
- assert.equal(workspaceFromJSON(JSON.stringify({...raw,hideWeekendBankClosedGanttHours:true})).workspace.hideWeekendBankClosedGanttHours,true);
-});
-test("older workspace files omit hideWeekendBankOpenGanttHours and restore all hours",()=>{
- const text=workspaceToJSON(DEFAULT_SCENARIO,DEFAULT_SCENARIO,{hideWeekendBankOpenGanttHours:true,notes:"legacy weekend-bank-open filter"});
- const raw=JSON.parse(text);
- assert.equal(raw.hideWeekendBankOpenGanttHours,true);
- delete raw.hideWeekendBankOpenGanttHours;
- const legacy=workspaceFromJSON(JSON.stringify(raw));
- assert.ok(legacy.workspace);
- assert.equal(legacy.workspace.hideWeekendBankOpenGanttHours,false);
- assert.deepEqual(legacy.errors,[]);
- assert.equal(workspaceFromJSON(JSON.stringify({...raw,hideWeekendBankOpenGanttHours:true})).workspace.hideWeekendBankOpenGanttHours,true);
-});
-test("older workspace files omit hideWeekendPayoutOpenGanttHours and restore all hours",()=>{
- const text=workspaceToJSON(DEFAULT_SCENARIO,DEFAULT_SCENARIO,{hideWeekendPayoutOpenGanttHours:true,notes:"legacy weekend-payout-open filter"});
- const raw=JSON.parse(text);
- assert.equal(raw.hideWeekendPayoutOpenGanttHours,true);
- delete raw.hideWeekendPayoutOpenGanttHours;
- const legacy=workspaceFromJSON(JSON.stringify(raw));
- assert.ok(legacy.workspace);
- assert.equal(legacy.workspace.hideWeekendPayoutOpenGanttHours,false);
- assert.deepEqual(legacy.errors,[]);
- assert.equal(workspaceFromJSON(JSON.stringify({...raw,hideWeekendPayoutOpenGanttHours:true})).workspace.hideWeekendPayoutOpenGanttHours,true);
-});
-test("older workspace files omit hideWeekendFxOpenGanttHours and restore all hours",()=>{
- const text=workspaceToJSON(DEFAULT_SCENARIO,DEFAULT_SCENARIO,{hideWeekendFxOpenGanttHours:true,notes:"legacy weekend-FX-open filter"});
- const raw=JSON.parse(text);
- assert.equal(raw.hideWeekendFxOpenGanttHours,true);
- delete raw.hideWeekendFxOpenGanttHours;
- const legacy=workspaceFromJSON(JSON.stringify(raw));
- assert.ok(legacy.workspace);
- assert.equal(legacy.workspace.hideWeekendFxOpenGanttHours,false);
- assert.deepEqual(legacy.errors,[]);
- assert.equal(workspaceFromJSON(JSON.stringify({...raw,hideWeekendFxOpenGanttHours:true})).workspace.hideWeekendFxOpenGanttHours,true);
-});
-test("older workspace files omit hideWeekendPayoutClosedGanttHours and restore all hours",()=>{
- const text=workspaceToJSON(DEFAULT_SCENARIO,DEFAULT_SCENARIO,{hideWeekendPayoutClosedGanttHours:true,notes:"legacy weekend-payout-closed filter"});
- const raw=JSON.parse(text);
- assert.equal(raw.hideWeekendPayoutClosedGanttHours,true);
- delete raw.hideWeekendPayoutClosedGanttHours;
- const legacy=workspaceFromJSON(JSON.stringify(raw));
- assert.ok(legacy.workspace);
- assert.equal(legacy.workspace.hideWeekendPayoutClosedGanttHours,false);
- assert.deepEqual(legacy.errors,[]);
- assert.equal(workspaceFromJSON(JSON.stringify({...raw,hideWeekendPayoutClosedGanttHours:true})).workspace.hideWeekendPayoutClosedGanttHours,true);
-});
-test("older workspace files omit hideWeekendFxClosedGanttHours and restore all hours",()=>{
- const text=workspaceToJSON(DEFAULT_SCENARIO,DEFAULT_SCENARIO,{hideWeekendFxClosedGanttHours:true,notes:"legacy weekend-FX-closed filter"});
- const raw=JSON.parse(text);
- assert.equal(raw.hideWeekendFxClosedGanttHours,true);
- delete raw.hideWeekendFxClosedGanttHours;
- const legacy=workspaceFromJSON(JSON.stringify(raw));
- assert.ok(legacy.workspace);
- assert.equal(legacy.workspace.hideWeekendFxClosedGanttHours,false);
- assert.deepEqual(legacy.errors,[]);
- assert.equal(workspaceFromJSON(JSON.stringify({...raw,hideWeekendFxClosedGanttHours:true})).workspace.hideWeekendFxClosedGanttHours,true);
-});
-test("older workspace files omit hideWeekdayFxClosedGanttHours and restore all hours",()=>{
- const text=workspaceToJSON(DEFAULT_SCENARIO,DEFAULT_SCENARIO,{hideWeekdayFxClosedGanttHours:true,notes:"legacy weekday-FX-closed filter"});
- const raw=JSON.parse(text);
- assert.equal(raw.hideWeekdayFxClosedGanttHours,true);
- delete raw.hideWeekdayFxClosedGanttHours;
- const legacy=workspaceFromJSON(JSON.stringify(raw));
- assert.ok(legacy.workspace);
- assert.equal(legacy.workspace.hideWeekdayFxClosedGanttHours,false);
- assert.deepEqual(legacy.errors,[]);
- assert.equal(workspaceFromJSON(JSON.stringify({...raw,hideWeekdayFxClosedGanttHours:true})).workspace.hideWeekdayFxClosedGanttHours,true);
-});
-test("workspace JSON persists hideWeekendFxOpenGanttHours independently of hideWeekdayFxClosedGanttHours",()=>{
- const text=workspaceToJSON(DEFAULT_SCENARIO,DEFAULT_SCENARIO,{hideWeekendFxOpenGanttHours:true,hideWeekdayFxClosedGanttHours:true,notes:"persist weekend-FX-open filter"});
- const result=workspaceFromJSON(text);
- assert.deepEqual(result.errors,[]);
- assert.equal(result.workspace.hideWeekendFxOpenGanttHours,true);
- assert.equal(result.workspace.hideWeekdayFxClosedGanttHours,true);
- const raw=JSON.parse(text);
- assert.equal(raw.hideWeekendFxOpenGanttHours,true);
- assert.equal(raw.hideWeekdayFxClosedGanttHours,true);
- const openOnly=workspaceFromJSON(JSON.stringify({...raw,hideWeekendFxOpenGanttHours:true,hideWeekdayFxClosedGanttHours:false}));
- assert.equal(openOnly.workspace.hideWeekendFxOpenGanttHours,true);
- assert.equal(openOnly.workspace.hideWeekdayFxClosedGanttHours,false);
- const closedOnly=workspaceFromJSON(JSON.stringify({...raw,hideWeekendFxOpenGanttHours:false,hideWeekdayFxClosedGanttHours:true}));
- assert.equal(closedOnly.workspace.hideWeekendFxOpenGanttHours,false);
- assert.equal(closedOnly.workspace.hideWeekdayFxClosedGanttHours,true);
- assert.doesNotMatch(text,/timestamp|createdAt|exportedAt/i);
-});
-test("older workspace files omit hideWeekdayFxOpenGanttHours and restore all hours",()=>{
- const text=workspaceToJSON(DEFAULT_SCENARIO,DEFAULT_SCENARIO,{hideWeekdayFxOpenGanttHours:true,notes:"legacy weekday-FX-open filter"});
- const raw=JSON.parse(text);
- assert.equal(raw.hideWeekdayFxOpenGanttHours,true);
- delete raw.hideWeekdayFxOpenGanttHours;
- const legacy=workspaceFromJSON(JSON.stringify(raw));
- assert.ok(legacy.workspace);
- assert.equal(legacy.workspace.hideWeekdayFxOpenGanttHours,false);
- assert.deepEqual(legacy.errors,[]);
- assert.equal(workspaceFromJSON(JSON.stringify({...raw,hideWeekdayFxOpenGanttHours:true})).workspace.hideWeekdayFxOpenGanttHours,true);
-});
-test("workspace JSON persists hideWeekdayFxOpenGanttHours independently of hideWeekendFxOpenGanttHours",()=>{
- const text=workspaceToJSON(DEFAULT_SCENARIO,DEFAULT_SCENARIO,{hideWeekdayFxOpenGanttHours:true,hideWeekendFxOpenGanttHours:true,notes:"persist weekday-FX-open filter"});
- const result=workspaceFromJSON(text);
- assert.deepEqual(result.errors,[]);
- assert.equal(result.workspace.hideWeekdayFxOpenGanttHours,true);
- assert.equal(result.workspace.hideWeekendFxOpenGanttHours,true);
- const raw=JSON.parse(text);
- assert.equal(raw.hideWeekdayFxOpenGanttHours,true);
- assert.equal(raw.hideWeekendFxOpenGanttHours,true);
- const weekdayOnly=workspaceFromJSON(JSON.stringify({...raw,hideWeekdayFxOpenGanttHours:true,hideWeekendFxOpenGanttHours:false}));
- assert.equal(weekdayOnly.workspace.hideWeekdayFxOpenGanttHours,true);
- assert.equal(weekdayOnly.workspace.hideWeekendFxOpenGanttHours,false);
- const weekendOnly=workspaceFromJSON(JSON.stringify({...raw,hideWeekdayFxOpenGanttHours:false,hideWeekendFxOpenGanttHours:true}));
- assert.equal(weekendOnly.workspace.hideWeekdayFxOpenGanttHours,false);
- assert.equal(weekendOnly.workspace.hideWeekendFxOpenGanttHours,true);
- assert.doesNotMatch(text,/timestamp|createdAt|exportedAt/i);
+test("legacy per-gate hide flags map into the consolidated ganttHourFilter",()=>{
+ const valid=JSON.parse(workspaceToJSON(DEFAULT_SCENARIO,DEFAULT_SCENARIO,{notes:"legacy"}));
+ delete valid.ganttHourFilter;
+ const cases={
+  hideWeekdayGanttHours:"weekend",
+  hideWeekendGanttHours:"weekday",
+  hideOpenGanttHours:"any-closed",
+  hideClosedGanttHours:"any-open",
+  hideZeroQueueGanttHours:"queued",
+  ganttClosedOnly:"any-closed",
+  ganttEveryGateClosed:"every-closed",
+  hideBankClosedGanttHours:"any-closed",
+  hideIssuerClosedGanttHours:"any-closed",
+  hidePayoutClosedGanttHours:"any-closed",
+  hideFxClosedGanttHours:"any-closed",
+  hideBankOpenGanttHours:"all",
+  hideWeekdayFxClosedGanttHours:"all"
+ };
+ for(const [key,expected] of Object.entries(cases)){
+  const result=workspaceFromJSON(JSON.stringify({...valid,[key]:true}));
+  assert.equal(result.workspace.ganttHourFilter,expected,key);
+  assert.deepEqual(result.errors,[]);
+ }
+ const plain=workspaceFromJSON(JSON.stringify(valid));
+ assert.equal(plain.workspace.ganttHourFilter,"all");
 });
 test("invalid workspace controls and format cannot replace an active workspace",()=>{
  const valid=JSON.parse(workspaceToJSON(DEFAULT_SCENARIO,DEFAULT_SCENARIO));
- for(const changed of [{version:2},{current:null},{baseline:[]},{targetPercent:-1},{deadlineHour:73},{selectedHour:1.5},{ganttHourIndex:1.5},{notes:"x".repeat(4001)},{ganttDensity:"wide"},{selectedChart:"canvas"},{ganttClosedOnly:"yes"},{ganttGateFilter:"issuer-only"},{queueBacklogOnly:"yes"},{ganttEveryGateClosed:"yes"},{hideWeekdayGanttHours:"yes"},{hideWeekendGanttHours:"yes"},{hideOpenGanttHours:"yes"},{hideClosedGanttHours:"yes"},{hideZeroQueueGanttHours:"yes"},{hideBankClosedGanttHours:"yes"},{hideIssuerClosedGanttHours:"yes"},{hidePayoutClosedGanttHours:"yes"},{hideFxClosedGanttHours:"yes"},{hidePayoutOpenGanttHours:"yes"},{hideFxOpenGanttHours:"yes"},{hideBankOpenGanttHours:"yes"},{hideIssuerOpenGanttHours:"yes"},{hideWeekendIssuerOpenGanttHours:"yes"},{hideWeekendIssuerClosedGanttHours:"yes"},{hideWeekendBankClosedGanttHours:"yes"},{hideWeekendBankOpenGanttHours:"yes"},{hideWeekendPayoutOpenGanttHours:"yes"},{hideWeekendFxOpenGanttHours:"yes"},{hideWeekendPayoutClosedGanttHours:"yes"},{hideWeekendFxClosedGanttHours:"yes"},{hideWeekdayFxClosedGanttHours:"yes"},{hideWeekdayFxOpenGanttHours:"yes"},{extraField:true},{constructor:{}}]) assert.equal(workspaceFromJSON(JSON.stringify({...valid,...changed})).workspace,null);
+ for(const changed of [{version:2},{current:null},{baseline:[]},{targetPercent:-1},{deadlineHour:73},{selectedHour:1.5},{ganttHourIndex:1.5},{notes:"x".repeat(4001)},{ganttDensity:"wide"},{selectedChart:"canvas"},{ganttClosedOnly:"yes"},{ganttGateFilter:"issuer-only"},{queueBacklogOnly:"yes"},{ganttEveryGateClosed:"yes"},{ganttHourFilter:"bogus"},{ganttHourFilter:2},{extraField:true},{constructor:{}}]) assert.equal(workspaceFromJSON(JSON.stringify({...valid,...changed})).workspace,null);
  assert.equal(workspaceFromJSON("x".repeat(250001)).workspace,null);
 });

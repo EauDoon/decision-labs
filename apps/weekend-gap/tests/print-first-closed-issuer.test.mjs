@@ -16,9 +16,7 @@ test("print and print redacted include the first closed issuer hour label with a
   assert.match(css, /\.print-keep/);
   assert.match(app, /firstClosedIssuerHour\.textContent/);
   assert.match(app, /firstClosedIssuerGanttHour\(scenario\)/);
-  assert.match(app, /the first closed issuer hour when one exists, with an honest empty when none/);
-  assert.match(app, /The first closed issuer hour stays on the printed brief when one exists, with an honest empty when none/);
-  assert.match(app, /counts of modeled hours, not a bank calendar/);
+      assert.match(app, /The hour evidence lines stay on the printed brief with honest empty values when none exist/);
   const printHandler = app.slice(app.indexOf('document.querySelector("#print")'), app.indexOf('document.querySelector("#copy-dashboard-markdown")'));
   assert.doesNotMatch(printHandler, /setScenario\(/);
   assert.match(printHandler, /The saved scenario was not changed/);

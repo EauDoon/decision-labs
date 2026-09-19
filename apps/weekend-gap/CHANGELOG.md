@@ -1,4 +1,54 @@
+## 1.8.0 - 2026-09-12
+
+Scheduled funding tranches with cost accounting in Weekend Gap 1.8.0
+
+A capability release on 1.7.0. Weekend Gap remains a local-first decision aid, not a decision maker. Scheduled funding is arithmetic on a synthetic reserve, not a credit line, and funding costs are tracked expenses, not advice. Analysis JSON still has no timestamps.
+
+### Added
+
+- Optional `fundingTranches` (at most 16): each names a whole hour inside the horizon when reserve cash is added before that hour settles, plus a cost of securing the funds. Costs never reduce the reserve; they are reported beside the funded total. Any invalid entry rejects the whole schedule.
+- Simulation, reserve planner, comparisons, dashboard, reports, timeline analysis, and review packets all account for tranches: the planner counts only tranches before the deadline, comparisons list schedule changes with signed funding deltas, and the outcome explanation names the funded total and cost.
+- Scenario editor gains a funding tranche list with add, edit, and remove actions; edits are undoable and travel in scenario JSON, share links, and autosave. Form edits preserve tranches, and shrinking the horizon below a tranche drops it with a warning.
+- CLI gains a `funding` command (JSON and Markdown) comparing the funded run against the same scenario with tranches stripped, and now accepts `calendarOverrides` and `fundingTranches` schedule fields instead of rejecting them as unknown.
+
+### Fixed
+
+- Weekend review tools no longer assume the 72-hour case: checkpoints, closures, cohorts, overlap, reserve, throughput, and holiday reviews run at any horizon from 24 through 336 hours, and reviews accept scenarios carrying calendar overrides or funding tranches.
+- Comparisons now list `calendarOverrides` and `fundingTranches` changes; previously only scalar fields appeared, so a schedule-only edit reported no changed assumptions.
+- Dashboard empty-state labels (`No queue in Nh`, `No settlement in Nh`) and the first-closed-bank message follow the scenario horizon; static headings no longer pin the 72-hour case.
+
+## 1.7.0 - 2026-09-12
+
+Operational calendars and longer horizons in Weekend Gap 1.7.0
+
+A capability release on 1.6.0. Weekend Gap remains a local-first decision aid, not a decision maker. Hatched Gantt rows are a local drawing. They do not connect to a bank or a live redemption queue. Analysis JSON still has no timestamps.
+
+### Added
+
+- Configurable simulation horizon: whole hours from 24 through 336 starting Friday 15:00 abstract local time. The 72-hour Friday-to-Monday case stays the default with byte-identical outputs.
+- Dated calendar overrides (at most 32): half-open hour ranges with gate states, FX depth, and throughput changes. Later entries win per field so a closure can carry a narrower reopening. Out-of-horizon ranges are rejected, not clamped.
+- Scenario editor gains a horizon field and an override list with add, edit, and remove actions; edits are undoable and travel in scenario JSON, share links, and autosave. The timeline slider, Gantt, charts, tables, comparisons, CSVs, reports, and workspace bounds all follow the horizon.
+- Saturday/Sunday rules, Monday and Saturday holidays, dated presets, and demand profiles apply at any horizon; Monday holidays close every Monday in the window.
+
 # Changelog
+
+## 1.6.0 - 2026-09-12
+
+Consolidated Gantt filters, gate hour evidence, and a concise keyboard set in Weekend Gap 1.6.0
+
+A maintainability release on 1.5.33. The simulation math is unchanged. Weekend Gap remains a local-first decision aid, not a decision maker. Hatched Gantt rows are a local drawing. They do not connect to a bank or a live redemption queue. Analysis JSON still has no timestamps.
+
+### Changed
+
+- The Gantt card replaces the twenty-three per-gate hide checkboxes (hide bank closed, hide weekend FX open, and their siblings, each bound to a punctuation or function key) with one Show hours select: all hours, closed on at least one gate, closed on every gate, open on at least one gate, weekend only, weekday only, or queued demand only. The Show gates select and row density stay.
+- The twenty-five first or last open and closed hour copy buttons become four gate hour evidence buttons (issuer, bank, payout, FX). Each copies the first and last open and closed hour plus open and closed counts for one gate as Markdown through the shared clipboard-and-fallback path.
+- The global keyboard set is trimmed to the list shown under `?`: Space, J, F, P, S, D, Q, G, H, M, A, T, K, Y, N, I, B, O, W, C, U, R, E and Esc. Punctuation keys, F2 through F12, Insert, PageUp, Home, End, Delete, Backspace and the arrow keys no longer trigger copy or filter jumps, so browser Find, fullscreen, dev tools and scrolling behave normally again.
+- Workspace JSON now writes one `ganttHourFilter` value and stops writing the legacy `hide*GanttHours` keys. Import still accepts files that contain them: each legacy flag maps onto the closest consolidated filter (`hideWeekdayGanttHours` to weekend-only, `hideWeekendGanttHours` to weekdays-only, closed-gate hides to closed-on-at-least-one-gate, zero-queue hide to queued demand, `ganttClosedOnly` and `ganttEveryGateClosed` likewise). Unmapped legacy flags restore to all hours. New files remain version-1 workspace documents with the documented size limit.
+
+### Preserved
+
+- Scenario JSON and share links still carry only the current scenario. Analysis JSON is a report, not an importable scenario, and has no timestamps.
+- All presets from 1.5.1 through 1.5.33, the timing review panel, comparisons, reserve planner, CSV exports and the standalone build format are unchanged.
 
 ## 1.5.54 - 2026-09-13
 

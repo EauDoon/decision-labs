@@ -38,6 +38,11 @@ const appImport = `import {
   stressGridCsv,
   uniqueCopyName,
   validateConfiguration,
+  validateCommercialPlan,
+  evaluateCommercialPlan,
+  createCommercialBrief,
+  commercialPlanCsv,
+  MAX_PLAN_PERIODS,
 } from './model.js';
 
 `;
@@ -47,7 +52,7 @@ test('release 1.5.54 ships bottle-hand cycling carnival, last-over-capacity rema
   const readme = await readFile(new URL('../README.md', import.meta.url), 'utf8');
   const changelog = await readFile(new URL('../CHANGELOG.md', import.meta.url), 'utf8');
   const html = await buildStandalone();
-  assert.equal(pkg.version, '1.5.54');
+  assert.equal(pkg.version, '1.8.0');
   assert.match(readme, /New in v1\.5\.54/);
   assert.match(readme, /Decision workflow \(v1\.5\.54\)/);
   assert.match(readme, /Bottle-hand cycling carnival, last-over-capacity remaining listed capacity copy, and last-over-capacity hide jump in Partnership Breakpoint 1\.5\.54/);
@@ -97,7 +102,7 @@ test('release 1.5.53 ships domestique cycling carnival, last-over-capacity remai
   const readme = await readFile(new URL('../README.md', import.meta.url), 'utf8');
   const changelog = await readFile(new URL('../CHANGELOG.md', import.meta.url), 'utf8');
   const html = await buildStandalone();
-  assert.equal(pkg.version, '1.5.54');
+  assert.equal(pkg.version, '1.8.0');
   assert.match(readme, /New in v1\.5\.53/);
   assert.match(readme, /Domestique cycling carnival, last-over-capacity remaining listed capacity copy, and last-over-capacity hide jump in Partnership Breakpoint 1\.5\.53/);
   assert.match(readme, /Cyclo-cross first-aid stays variable cost 1\.56 after the Domestique cycling carnival starting point is loaded/);
@@ -143,7 +148,7 @@ test('release 1.5.52 ships soigneur cycling carnival, last-over-capacity remaini
   const readme = await readFile(new URL('../README.md', import.meta.url), 'utf8');
   const changelog = await readFile(new URL('../CHANGELOG.md', import.meta.url), 'utf8');
   const html = await buildStandalone();
-  assert.equal(pkg.version, '1.5.54');
+  assert.equal(pkg.version, '1.8.0');
   assert.match(readme, /New in v1\.5\.52/);
   assert.match(readme, /Soigneur cycling carnival, last-over-capacity remaining listed capacity copy, and last-over-capacity hide jump in Partnership Breakpoint 1\.5\.52/);
   assert.match(readme, /Cyclo-cross first-aid stays variable cost 1\.56 after the Soigneur cycling carnival starting point is loaded/);
@@ -189,7 +194,7 @@ test('release 1.5.51 ships lead-out cycling carnival, last-over-capacity remaini
   const readme = await readFile(new URL('../README.md', import.meta.url), 'utf8');
   const changelog = await readFile(new URL('../CHANGELOG.md', import.meta.url), 'utf8');
   const html = await buildStandalone();
-  assert.equal(pkg.version, '1.5.54');
+  assert.equal(pkg.version, '1.8.0');
   assert.match(readme, /New in v1\.5\.51/);
   assert.match(readme, /Lead-out cycling carnival, last-over-capacity remaining listed capacity copy, and last-over-capacity hide jump in Partnership Breakpoint 1\.5\.51/);
   assert.match(readme, /Cyclo-cross first-aid stays variable cost 1\.56 after the Lead-out cycling carnival starting point is loaded/);
@@ -234,7 +239,7 @@ test('release 1.5.50 ships feed-zone cycling carnival, last-over-capacity remain
   const readme = await readFile(new URL('../README.md', import.meta.url), 'utf8');
   const changelog = await readFile(new URL('../CHANGELOG.md', import.meta.url), 'utf8');
   const html = await buildStandalone();
-  assert.equal(pkg.version, '1.5.54');
+  assert.equal(pkg.version, '1.8.0');
   assert.match(readme, /New in v1\.5\.50/);
   assert.match(readme, /Feed-zone cycling carnival, last-over-capacity remaining listed capacity copy, and last-over-capacity hide jump in Partnership Breakpoint 1\.5\.50/);
   assert.match(readme, /Cyclo-cross first-aid stays variable cost 1\.56 after the Feed-zone cycling carnival starting point is loaded/);
@@ -278,7 +283,7 @@ test('release 1.5.49 ships first-aid cycling carnival, last-over-capacity remain
   const readme = await readFile(new URL('../README.md', import.meta.url), 'utf8');
   const changelog = await readFile(new URL('../CHANGELOG.md', import.meta.url), 'utf8');
   const html = await buildStandalone();
-  assert.equal(pkg.version, '1.5.54');
+  assert.equal(pkg.version, '1.8.0');
   assert.match(readme, /New in v1\.5\.49/);
   assert.match(readme, /First-aid cycling carnival, last-over-capacity remaining listed capacity copy, and last-over-capacity hide jump in Partnership Breakpoint 1\.5\.49/);
   assert.match(readme, /Cyclo-cross first-aid stays variable cost 1\.56 after the First-aid cycling carnival starting point is loaded/);
@@ -319,7 +324,7 @@ test('release 1.5.48 ships team-sprint cycling carnival, last-over-capacity rema
   const readme = await readFile(new URL('../README.md', import.meta.url), 'utf8');
   const changelog = await readFile(new URL('../CHANGELOG.md', import.meta.url), 'utf8');
   const html = await buildStandalone();
-  assert.equal(pkg.version, '1.5.54');
+  assert.equal(pkg.version, '1.8.0');
   assert.match(readme, /New in v1\.5\.48/);
   assert.match(readme, /Team-sprint cycling carnival, last-over-capacity remaining listed capacity copy, and last-over-capacity hide jump in Partnership Breakpoint 1\.5\.48/);
   assert.match(readme, /Cyclo-cross first-aid stays variable cost 1\.56 after the Team-sprint cycling carnival starting point is loaded/);
@@ -359,7 +364,7 @@ test('release 1.5.47 ships team-pursuit cycling carnival, last-over-capacity rem
   const readme = await readFile(new URL('../README.md', import.meta.url), 'utf8');
   const changelog = await readFile(new URL('../CHANGELOG.md', import.meta.url), 'utf8');
   const html = await buildStandalone();
-  assert.equal(pkg.version, '1.5.54');
+  assert.equal(pkg.version, '1.8.0');
   assert.match(readme, /New in v1\.5\.47/);
   assert.match(readme, /Team-pursuit cycling carnival, last-over-capacity remaining listed capacity copy, and last-over-capacity hide jump in Partnership Breakpoint 1\.5\.47/);
   assert.match(readme, /Cyclo-cross first-aid stays variable cost 1\.56 after the Team-pursuit cycling carnival starting point is loaded/);
@@ -398,7 +403,7 @@ test('release 1.5.46 ships individual-pursuit cycling carnival, last-over-capaci
   const readme = await readFile(new URL('../README.md', import.meta.url), 'utf8');
   const changelog = await readFile(new URL('../CHANGELOG.md', import.meta.url), 'utf8');
   const html = await buildStandalone();
-  assert.equal(pkg.version, '1.5.54');
+  assert.equal(pkg.version, '1.8.0');
   assert.match(readme, /New in v1\.5\.46/);
   assert.match(readme, /Individual-pursuit cycling carnival, last-over-capacity remaining listed capacity copy, and last-over-capacity hide jump in Partnership Breakpoint 1\.5\.46/);
   assert.match(readme, /Cyclo-cross first-aid stays variable cost 1\.56 after the Individual-pursuit cycling carnival starting point is loaded/);
@@ -436,7 +441,7 @@ test('release 1.5.45 ships scratch cycling carnival, last-over-capacity remainin
   const readme = await readFile(new URL('../README.md', import.meta.url), 'utf8');
   const changelog = await readFile(new URL('../CHANGELOG.md', import.meta.url), 'utf8');
   const html = await buildStandalone();
-  assert.equal(pkg.version, '1.5.54');
+  assert.equal(pkg.version, '1.8.0');
   assert.match(readme, /New in v1\.5\.45/);
   assert.match(readme, /Scratch cycling carnival, last-over-capacity remaining listed capacity copy, and last-over-capacity hide jump in Partnership Breakpoint 1\.5\.45/);
   assert.match(readme, /Cyclo-cross first-aid stays variable cost 1\.56 after the Scratch cycling carnival starting point is loaded/);
@@ -473,7 +478,7 @@ test('release 1.5.44 ships points-race cycling carnival, last-over-capacity rema
   const readme = await readFile(new URL('../README.md', import.meta.url), 'utf8');
   const changelog = await readFile(new URL('../CHANGELOG.md', import.meta.url), 'utf8');
   const html = await buildStandalone();
-  assert.equal(pkg.version, '1.5.54');
+  assert.equal(pkg.version, '1.8.0');
   assert.match(readme, /New in v1\.5\.44/);
   assert.match(readme, /Points-race cycling carnival, last-over-capacity remaining listed capacity copy, and last-over-capacity hide jump in Partnership Breakpoint 1\.5\.44/);
   assert.match(readme, /Cyclo-cross first-aid stays variable cost 1\.56 after the Points-race cycling carnival starting point is loaded/);
@@ -509,7 +514,7 @@ test('release 1.5.43 ships omnium cycling carnival, last-over-capacity remaining
   const readme = await readFile(new URL('../README.md', import.meta.url), 'utf8');
   const changelog = await readFile(new URL('../CHANGELOG.md', import.meta.url), 'utf8');
   const html = await buildStandalone();
-  assert.equal(pkg.version, '1.5.54');
+  assert.equal(pkg.version, '1.8.0');
   assert.match(readme, /New in v1\.5\.43/);
   assert.match(readme, /Omnium cycling carnival, last-over-capacity remaining listed capacity copy, and last-over-capacity hide jump in Partnership Breakpoint 1\.5\.43/);
   assert.match(readme, /Cyclo-cross first-aid stays variable cost 1\.56 after the Omnium cycling carnival starting point is loaded/);
@@ -544,7 +549,7 @@ test('release 1.5.42 ships madison cycling carnival, last-over-capacity remainin
   const readme = await readFile(new URL('../README.md', import.meta.url), 'utf8');
   const changelog = await readFile(new URL('../CHANGELOG.md', import.meta.url), 'utf8');
   const html = await buildStandalone();
-  assert.equal(pkg.version, '1.5.54');
+  assert.equal(pkg.version, '1.8.0');
   assert.match(readme, /New in v1\.5\.42/);
   assert.match(readme, /Madison cycling carnival, last-over-capacity remaining listed capacity copy, and last-over-capacity hide jump in Partnership Breakpoint 1\.5\.42/);
   assert.match(readme, /Cyclo-cross first-aid stays variable cost 1\.56 after the Madison cycling carnival starting point is loaded/);
@@ -578,7 +583,7 @@ test('release 1.5.41 ships keirin cycling carnival, last-over-capacity remaining
   const readme = await readFile(new URL('../README.md', import.meta.url), 'utf8');
   const changelog = await readFile(new URL('../CHANGELOG.md', import.meta.url), 'utf8');
   const html = await buildStandalone();
-  assert.equal(pkg.version, '1.5.54');
+  assert.equal(pkg.version, '1.8.0');
   assert.match(readme, /New in v1\.5\.41/);
   assert.match(readme, /Keirin cycling carnival, last-over-capacity remaining listed capacity copy, and last-over-capacity hide jump in Partnership Breakpoint 1\.5\.41/);
   assert.match(readme, /Cyclo-cross first-aid stays variable cost 1\.56 after the Keirin cycling carnival starting point is loaded/);
@@ -611,7 +616,7 @@ test('release 1.5.40 ships hill-climb cycling carnival, last-over-capacity remai
   const readme = await readFile(new URL('../README.md', import.meta.url), 'utf8');
   const changelog = await readFile(new URL('../CHANGELOG.md', import.meta.url), 'utf8');
   const html = await buildStandalone();
-  assert.equal(pkg.version, '1.5.54');
+  assert.equal(pkg.version, '1.8.0');
   assert.match(readme, /New in v1\.5\.40/);
   assert.match(readme, /Hill-climb cycling carnival, last-over-capacity remaining listed capacity copy, and last-over-capacity hide jump in Partnership Breakpoint 1\.5\.40/);
   assert.match(readme, /Cyclo-cross first-aid stays variable cost 1\.56 after the Hill-climb cycling carnival starting point is loaded/);
@@ -645,7 +650,7 @@ test('release 1.5.39 ships time-trial cycling carnival, last-over-capacity remai
   const readme = await readFile(new URL('../README.md', import.meta.url), 'utf8');
   const changelog = await readFile(new URL('../CHANGELOG.md', import.meta.url), 'utf8');
   const html = await buildStandalone();
-  assert.equal(pkg.version, '1.5.54');
+  assert.equal(pkg.version, '1.8.0');
   assert.match(readme, /New in v1\.5\.39/);
   assert.match(readme, /Time-trial cycling carnival, last-over-capacity remaining listed capacity copy, and last-over-capacity hide jump in Partnership Breakpoint 1\.5\.39/);
   assert.match(readme, /Cyclo-cross first-aid stays variable cost 1\.56 after the Time-trial cycling carnival starting point is loaded/);
@@ -699,7 +704,7 @@ test('release 1.5.38 ships criterium cycling carnival, last-over-capacity remain
   const readme = await readFile(new URL('../README.md', import.meta.url), 'utf8');
   const changelog = await readFile(new URL('../CHANGELOG.md', import.meta.url), 'utf8');
   const html = await buildStandalone();
-  assert.equal(pkg.version, '1.5.54');
+  assert.equal(pkg.version, '1.8.0');
   assert.match(readme, /New in v1\.5\.38/);
   assert.match(readme, /Criterium cycling carnival, last-over-capacity remaining listed capacity copy, and last-over-capacity hide jump in Partnership Breakpoint 1\.5\.38/);
   assert.match(changelog, /## 1\.5\.38/);
@@ -745,7 +750,7 @@ test('release 1.5.37 ships road cycling carnival, last-over-capacity remaining c
   const readme = await readFile(new URL('../README.md', import.meta.url), 'utf8');
   const changelog = await readFile(new URL('../CHANGELOG.md', import.meta.url), 'utf8');
   const html = await buildStandalone();
-  assert.equal(pkg.version, '1.5.54');
+  assert.equal(pkg.version, '1.8.0');
   assert.match(readme, /New in v1\.5\.37/);
   assert.match(readme, /Road cycling carnival, last-over-capacity remaining listed capacity copy, and last-over-capacity hide jump in Partnership Breakpoint 1\.5\.37/);
   assert.match(changelog, /## 1\.5\.37/);

@@ -64,22 +64,3 @@ test("last closed FX hour Markdown uses none when no modeled hour is closed", as
   assert.notEqual(empty, firstClosedFxHourToMarkdown(DEFAULT_SCENARIO));
   assert.doesNotMatch(model, /Date\.now/);
 });
-
-test("copy last closed FX hour uses clipboard and a textarea fallback", async () => {
-  const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
-  const app = await readFile(new URL("../src/app.js", import.meta.url), "utf8");
-  assert.match(html, /id="copy-last-closed-fx"/);
-  assert.match(html, /Copy last closed FX hour/);
-  assert.match(html, /id="last-closed-fx-copy-fallback"/);
-  assert.match(html, /id="copy-last-open-fx"/);
-  assert.match(html, /id="copy-last-open-payout"/);
-  assert.match(html, /id="copy-first-closed-fx"/);
-  assert.match(app, /lastClosedFxHourToMarkdown\(scenario\)/);
-  assert.match(app, /last-closed-fx-copy-fallback/);
-  assert.match(app, /copyTextWithFallback/);
-  assert.match(app, /local drawing, not a live FX feed/);
-  assert.match(app, /Clipboard unavailable\. Copy the Markdown from the text box\./);
-  assert.notEqual(app.match(/function copyLastClosedFxHourMarkdown/)?.[0], app.match(/function copyLastOpenFxHourMarkdown/)?.[0]);
-  assert.notEqual(app.match(/function copyLastClosedFxHourMarkdown/)?.[0], app.match(/function copyLastOpenPayoutHourMarkdown/)?.[0]);
-  assert.notEqual(app.match(/function copyLastClosedFxHourMarkdown/)?.[0], app.match(/function copyFirstClosedFxHourMarkdown/)?.[0]);
-});

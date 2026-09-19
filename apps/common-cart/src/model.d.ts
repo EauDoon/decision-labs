@@ -207,6 +207,103 @@ export interface ResidualCoverage {
 
 export function computeResidualCoverage(rawScenario: unknown): ResidualCoverage;
 
+export interface PlanAssignment {
+  offerId: string;
+  merchant: string;
+  buyerIds: string[];
+  units: number;
+  unitPrice: number;
+  shippingPerBuyer: number;
+  itemsCost: number;
+  shippingCost: number;
+  totalCost: number;
+}
+
+export interface PlanUnserved {
+  buyerId: string;
+  quantity: number;
+  compatibleOfferIds: string[];
+  note: string;
+}
+
+export interface MultiMerchantPlan {
+  status: 'optimal' | 'too_large';
+  optimal: boolean;
+  objective: string;
+  evaluatedNodes: number;
+  nodeBudget: number;
+  assignments: PlanAssignment[];
+  unserved: PlanUnserved[];
+  fulfilledUnits: number;
+  unservedUnits: number;
+  totalCost: number;
+  merchantCount: number;
+}
+
+export interface MerchantPlanSummary {
+  currency: string;
+  optimal: boolean;
+  status: 'optimal' | 'too_large';
+  merchants: { merchant: string; offers: number; buyers: number; units: number; totalCost: number }[];
+  fulfilledUnits: number;
+  unservedUnits: number;
+  totalCost: number;
+  note: string;
+}
+
+export function offerBuyerCompatibility(rawScenario: unknown, rawOffer: unknown): { buyerId: string; reasons: string[] }[];
+export const MAX_PLAN_NODES: number;
+export function planMultiMerchant(rawScenario: unknown, options?: unknown): MultiMerchantPlan;
+export function createMerchantPlanReport(plan: unknown, rawScenario: unknown): MerchantPlanSummary;
+export function multiMerchantPlanCsv(rawScenario: unknown): string;
+
+export interface ContingencyExperiment {
+  type: 'withdraw' | 'capacity' | 'price' | 'delay';
+  offerId: string;
+  capacity?: number;
+  priceMultiplier?: number;
+  deliveryDays?: number;
+}
+
+export interface ContingencyOrder {
+  buyerId: string;
+  quantity: number;
+}
+
+export interface ContingencyResult {
+  experiment: ContingencyExperiment;
+  description: string;
+  fulfilledUnitsDelta: number;
+  totalCostDelta: number;
+  lostOrders: ContingencyOrder[];
+  lostUnits: number;
+  newlyFeasible: ContingencyOrder[];
+  newlyFeasibleUnits: number;
+  assignments: PlanAssignment[];
+  unserved: PlanUnserved[];
+  note: string;
+}
+
+export interface MerchantContingencySummary {
+  currency: string;
+  description: string;
+  baselineFulfilledUnits: number;
+  contingencyFulfilledUnits: number;
+  fulfilledUnitsDelta: number;
+  baselineTotalCost: number;
+  contingencyTotalCost: number;
+  totalCostDelta: number;
+  lostUnits: number;
+  newlyFeasibleUnits: number;
+  optimal: boolean;
+  note: string;
+}
+
+export function planContingency(rawScenario: unknown, rawExperiment: unknown): ContingencyResult;
+export function planContingencies(rawScenario: unknown, rawExperiments: unknown): ContingencyResult[];
+export function standardContingencySet(rawScenario: unknown): { merchant: string; experiments: ContingencyExperiment[] }[];
+export function createMerchantContingencyReport(rawScenario: unknown, rawExperiment: unknown): MerchantContingencySummary;
+
 export interface NextTierGap {
   offerId: string;
   merchant: string;

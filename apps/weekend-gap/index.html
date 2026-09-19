@@ -47,7 +47,7 @@ SOFTWARE.
 
     <details class="weekend-review" id="weekend-review">
       <summary id="weekend-review-title" tabindex="-1">Review the timing behind the queue</summary>
-      <p>Choose a question about the current 72-hour scenario. These analytical reviews do not change assumptions or move funds.</p>
+      <p>Choose a question about the current scenario. These analytical reviews do not change assumptions or move funds.</p>
       <label for="weekend-review-tool">Review question</label>
       <div class="review-controls"><select id="weekend-review-tool"></select><button id="weekend-review-run" type="button">Run review</button></div>
       <div class="review-controls"><button id="weekend-review-export" type="button" disabled>Export review packet</button><button id="weekend-review-import" type="button">Inspect review packet</button><input id="weekend-review-file" type="file" accept="application/json,.json" hidden></div>
@@ -246,15 +246,25 @@ SOFTWARE.
                   </div>
                 </div>
                 <div class="input-group input-group--full">
-                  <label for="redemptionDemandAud">72-hour redemption demand</label>
+                  <label for="redemptionDemandAud">Total redemption demand</label>
                   <div class="unit-input"><span>A$</span><input id="redemptionDemandAud" name="redemptionDemandAud" data-field="redemptionDemandAud" type="number" min="0" step="10000" inputmode="decimal"></div>
                 </div>
               </div>
             </fieldset>
+            <fieldset>
+              <legend>Simulation horizon</legend>
+              <div class="input-grid">
+                <div class="input-group input-group--full">
+                  <label for="horizonHours">Horizon (whole hours)</label>
+                  <div class="unit-input unit-input--suffix"><input id="horizonHours" name="horizonHours" data-field="horizonHours" type="number" min="24" max="336" step="1" inputmode="numeric"><span>hours</span></div>
+                </div>
+              </div>
+              <p>Whole hours from 24 through 336, starting Friday 15:00 in abstract local time. The 72-hour Friday-to-Monday case is the default. Longer horizons reuse the same weekday rules, holidays, and dated presets.</p>
+            </fieldset>
             <div class="input-group input-group--full">
               <label for="demandProfile">Demand timing</label>
               <select id="demandProfile" name="demandProfile" data-field="demandProfile">
-                <option value="flat">Even across 72 hours</option>
+                <option value="flat">Even across the horizon</option>
                 <option value="fridayBurst">Friday burst (8x weight before midnight)</option>
                 <option value="saturdayBurst">Saturday burst (8x weight on Saturday)</option>
                 <option value="sundayBurst">Sunday burst (8x weight late Sunday)</option>
@@ -609,6 +619,24 @@ SOFTWARE.
             </div>
           </form>
 
+            <fieldset>
+              <legend>Operating calendar overrides</legend>
+              <p>Dated closures, delayed reopenings, extended windows, and scheduled capacity changes. Each override names a half-open hour range inside the horizon; later entries win per field. Ranges outside the horizon are rejected.</p>
+              <div id="calendar-overrides"></div>
+              <div class="planning-actions"><button id="add-calendar-override" type="button">Add calendar override</button></div>
+              <p id="calendar-override-status" role="status"></p>
+            </fieldset>
+
+            <fieldset>
+              <legend>Scheduled funding tranches</legend>
+              <p>Reserve cash added before a named hour settles, with the cost of securing it tracked as an expense. Costs never reduce the reserve. Tranches outside the horizon are rejected.</p>
+              <div id="funding-tranches"></div>
+              <div class="planning-actions"><button id="add-funding-tranche" type="button">Add funding tranche</button><button id="copy-funding-schedule" type="button">Copy funding schedule</button></div>
+              <p id="funding-status" role="status"></p>
+              <label class="sr-only" for="funding-copy-fallback">Funding schedule Markdown fallback</label>
+              <textarea id="funding-copy-fallback" rows="8" hidden readonly></textarea>
+            </fieldset>
+
           <section class="library-controls" aria-labelledby="library-title">
             <h3 id="library-title">Saved scenarios</h3><p>Keep up to 12 named copies in this browser. Edit the scenario name before saving a copy.</p>
             <label for="scenario-library">Local scenario library</label><select id="scenario-library"></select>
@@ -691,8 +719,8 @@ SOFTWARE.
             <label class="sr-only" for="selected-versus-peak-copy-fallback">Selected versus peak hour Markdown fallback</label>
             <textarea id="selected-versus-peak-copy-fallback" rows="3" hidden readonly></textarea>
             <dl class="outcome-grid">
-              <div><dt>Settled across 72 hours</dt><dd id="settled-total-value">A$0</dd></div>
-              <div><dt>Queued at Monday 15:00</dt><dd id="final-queue-value">A$0</dd></div>
+              <div><dt>Settled across horizon</dt><dd id="settled-total-value">A$0</dd></div>
+              <div><dt>Queued at horizon close</dt><dd id="final-queue-value">A$0</dd></div>
               <div><dt>Peak queue</dt><dd id="peak-queue-value">A$0</dd></div>
               <div><dt>Peak queue hour</dt><dd id="peak-queue-hour-value">Calculating</dd></div>
               <div><dt>Intervals ending with backlog</dt><dd id="backlog-hours-value">0 of 72</dd></div>
@@ -715,7 +743,7 @@ SOFTWARE.
             <p class="eyebrow">Queue diagnostics</p><h2 id="diagnostics-title">What constrained this run?</h2>
             <p id="diagnostic-summary"></p><ul id="bottleneck-list"></ul><p id="milestone-summary"></p>
             <h3 id="attribution-title">Hourly limiting gate</h3>
-            <p id="bottleneck-explanation">Each of the 72 hours is tagged with the single limitingGate value at the start of the interval. Closed issuer, bank or payout gates are named first. This is a count of observations, not a ranking of which change would raise settlement.</p>
+            <p id="bottleneck-explanation">Each modeled hour is tagged with the single limitingGate value at the start of the interval. Closed issuer, bank or payout gates are named first. This is a count of observations, not a ranking of which change would raise settlement.</p>
             <div class="planning-actions">
               <button id="copy-bottleneck-markdown" type="button">Copy limiting-gate counts</button>
             </div>
@@ -724,7 +752,7 @@ SOFTWARE.
             <div class="table-scroll" tabindex="0" role="region" aria-label="Hourly limiting gate counts">
               <table>
                 <caption>Hours limited by each named gate versus none. Shares are hours divided by 72.</caption>
-                <thead><tr><th scope="col">Limiter</th><th scope="col">Hours</th><th scope="col">Share of 72h</th></tr></thead>
+                <thead><tr><th scope="col">Limiter</th><th scope="col">Hours</th><th scope="col">Share of horizon</th></tr></thead>
                 <tbody id="bottleneck-hours"></tbody>
               </table>
             </div>
@@ -802,7 +830,7 @@ SOFTWARE.
           <article class="planning-card card" aria-labelledby="reserve-title">
             <p class="eyebrow">Reserve sizing</p>
             <h2 id="reserve-title">Can reserve alone meet the target?</h2>
-            <p>Find the minimum whole-cent starting reserve for a share of total 72-hour demand by a chosen checkpoint. Operating windows and throughput remain unchanged. The search cannot exceed nominal liquidity.</p>
+            <p>Find the minimum whole-cent starting reserve for a share of total horizon demand by a chosen checkpoint. Operating windows and throughput remain unchanged. The search cannot exceed nominal liquidity.</p>
             <div class="input-grid">
               <div class="input-group">
                 <label for="reserve-target">Target settled (%)</label>
@@ -895,13 +923,13 @@ SOFTWARE.
           <article class="chart-card card" aria-labelledby="chart-title">
             <div class="card-heading chart-heading">
               <div>
-                <p class="eyebrow">72-hour ledger</p>
+                <p class="eyebrow">Hourly ledger</p>
                 <h2 id="chart-title" tabindex="-1">Queue and redeemable capacity</h2>
               </div>
               <p id="gate-summary" class="gate-summary">Checking gates</p>
             </div>
             <div class="chart-wrap">
-              <canvas id="liquidity-chart" role="img" aria-label="Line chart comparing queued AUD demand and immediate redeemable AUD over 72 hours. A printable SVG and a data table follow.">Your browser does not support canvas. Use the simulation data table below.</canvas>
+              <canvas id="liquidity-chart" role="img" aria-label="Line chart comparing queued AUD demand and immediate redeemable AUD over the horizon. A printable SVG and a data table follow.">Your browser does not support canvas. Use the simulation data table below.</canvas>
             </div>
             <div class="planning-actions">
               <button id="export-queue-svg" type="button">Download queue SVG</button>
@@ -947,7 +975,7 @@ SOFTWARE.
 
           <article class="planning-card card gantt-card print-keep" aria-labelledby="gantt-title">
             <p class="eyebrow">Operating calendar</p>
-            <h2 id="gantt-title" tabindex="-1">72-hour gate Gantt</h2>
+            <h2 id="gantt-title" tabindex="-1">Gate Gantt across the horizon</h2>
             <p>Issuer, bank and payout rows show open (solid) versus closed (hatched) for each hour. Color is extra; the hatch marks closed hours. FX shows weekday depth (solid) versus weekend thinning (hatched). Hatched Gantt rows are a local drawing. They do not connect to a bank or a live redemption queue. The solid vertical line is the timeline slider hour. The dashed marker is the first payout window. A table follows.</p>
             <div id="gantt-first-payout-marker" tabindex="-1">
               <p id="gantt-payout-note"></p>
@@ -968,196 +996,47 @@ SOFTWARE.
                 <option value="payout">Payout only</option>
                 <option value="fx">FX only</option>
               </select>
-              <label class="checkbox-label" for="gantt-closed-only">
-                <input id="gantt-closed-only" type="checkbox">
-                Show only hours closed on at least one gate
-              </label>
-              <label class="checkbox-label" for="gantt-every-closed">
-                <input id="gantt-every-closed" type="checkbox">
-                Show only hours where every gate is closed
-              </label>
-              <label class="checkbox-label" for="gantt-hide-weekdays">
-                <input id="gantt-hide-weekdays" type="checkbox">
-                Show only Saturday and Sunday hours
-              </label>
-              <label class="checkbox-label" for="gantt-hide-weekends">
-                <input id="gantt-hide-weekends" type="checkbox">
-                Hide Saturday and Sunday hours
-              </label>
-              <label class="checkbox-label" for="gantt-hide-open">
-                <input id="gantt-hide-open" type="checkbox">
-                Hide hours that are open on every gate
-              </label>
-              <label class="checkbox-label" for="gantt-hide-closed">
-                <input id="gantt-hide-closed" type="checkbox">
-                Hide hours that are closed on every gate
-              </label>
-              <label class="checkbox-label" for="gantt-hide-zero-queue">
-                <input id="gantt-hide-zero-queue" type="checkbox">
-                Hide hours whose synthetic queue is zero
-              </label>
-              <label class="checkbox-label" for="gantt-hide-bank-closed">
-                <input id="gantt-hide-bank-closed" type="checkbox" aria-keyshortcuts="=">
-                Hide hours where the bank gate is closed
-              </label>
-              <label class="checkbox-label" for="gantt-hide-issuer-closed">
-                <input id="gantt-hide-issuer-closed" type="checkbox" aria-keyshortcuts="{">
-                Hide hours where the issuer gate is closed
-              </label>
-              <label class="checkbox-label" for="gantt-hide-payout-closed">
-                <input id="gantt-hide-payout-closed" type="checkbox" aria-keyshortcuts="|">
-                Hide hours where the payout gate is closed
-              </label>
-              <label class="checkbox-label" for="gantt-hide-fx-closed">
-                <input id="gantt-hide-fx-closed" type="checkbox" aria-keyshortcuts="@">
-                Hide hours where the FX gate is closed
-              </label>
-              <label class="checkbox-label" for="gantt-hide-payout-open">
-                <input id="gantt-hide-payout-open" type="checkbox" aria-keyshortcuts="#">
-                Hide hours where the payout gate is open
-              </label>
-              <label class="checkbox-label" for="gantt-hide-fx-open">
-                <input id="gantt-hide-fx-open" type="checkbox" aria-keyshortcuts="%">
-                Hide hours where the FX gate is open
-              </label>
-              <label class="checkbox-label" for="gantt-hide-bank-open">
-                <input id="gantt-hide-bank-open" type="checkbox">
-                Hide hours where the bank gate is open
-              </label>
-              <label class="checkbox-label" for="gantt-hide-issuer-open">
-                <input id="gantt-hide-issuer-open" type="checkbox" aria-keyshortcuts="`">
-                Hide hours where the issuer gate is open
-              </label>
-              <label class="checkbox-label" for="gantt-hide-weekend-issuer-open">
-                <input id="gantt-hide-weekend-issuer-open" type="checkbox" aria-keyshortcuts="7">
-                Hide weekend hours where the issuer gate is open
-              </label>
-              <label class="checkbox-label" for="gantt-hide-weekend-issuer-closed">
-                <input id="gantt-hide-weekend-issuer-closed" type="checkbox" aria-keyshortcuts="0">
-                Hide weekend hours where the issuer gate is closed
-              </label>
-              <label class="checkbox-label" for="gantt-hide-weekend-bank-closed">
-                <input id="gantt-hide-weekend-bank-closed" type="checkbox" aria-keyshortcuts="3">
-                Hide weekend hours where the bank gate is closed
-              </label>
-              <label class="checkbox-label" for="gantt-hide-weekend-bank-open">
-                <input id="gantt-hide-weekend-bank-open" type="checkbox">
-                Hide weekend hours where the bank gate is open
-              </label>
-              <label class="checkbox-label" for="gantt-hide-weekend-payout-open">
-                <input id="gantt-hide-weekend-payout-open" type="checkbox">
-                Hide weekend hours where the payout gate is open
-              </label>
-              <label class="checkbox-label" for="gantt-hide-weekend-fx-open">
-                <input id="gantt-hide-weekend-fx-open" type="checkbox">
-                Hide weekend hours where the FX gate is open
-              </label>
-              <label class="checkbox-label" for="gantt-hide-weekend-payout-closed">
-                <input id="gantt-hide-weekend-payout-closed" type="checkbox">
-                Hide weekend hours where the payout gate is closed
-              </label>
-              <label class="checkbox-label" for="gantt-hide-weekend-fx-closed">
-                <input id="gantt-hide-weekend-fx-closed" type="checkbox">
-                Hide weekend hours where the FX gate is closed
-              </label>
-              <label class="checkbox-label" for="gantt-hide-weekday-fx-closed">
-                <input id="gantt-hide-weekday-fx-closed" type="checkbox">
-                Hide weekday hours where the FX gate is closed
-              </label>
-              <label class="checkbox-label" for="gantt-hide-weekday-fx-open">
-                <input id="gantt-hide-weekday-fx-open" type="checkbox">
-                Hide weekday hours where the FX gate is open
-              </label>
+              <label for="gantt-hour-filter">Show hours</label>
+              <select id="gantt-hour-filter">
+                <option value="all">All hours</option>
+                <option value="any-closed">Hours closed on at least one gate</option>
+                <option value="every-closed">Hours where every gate is closed</option>
+                <option value="any-open">Hours open on at least one gate</option>
+                <option value="weekend">Saturday and Sunday hours</option>
+                <option value="weekday">Weekday hours</option>
+                <option value="queued">Hours with queued demand</option>
+              </select>
               <button id="export-gantt" type="button">Download Gantt SVG</button>
               <button id="export-gantt-csv" type="button">Export Gantt CSV</button>
               <button id="copy-gantt-hour" type="button">Copy selected hour</button>
-              <button id="copy-remaining-reserve" type="button">Copy remaining reserve</button>
               <button id="copy-closed-hours" type="button">Copy closed hours</button>
               <button id="copy-fx-hours" type="button">Copy FX hours</button>
               <button id="copy-weekend-fx-counts" type="button">Copy weekend FX counts</button>
-              <button id="copy-first-closed-fx" type="button" aria-keyshortcuts="} +">Copy first closed FX hour</button>
-              <button id="copy-first-closed-bank" type="button">Copy first closed bank hour</button>
-              <button id="copy-first-closed-issuer" type="button" aria-keyshortcuts=": -">Copy first closed issuer hour</button>
-              <button id="copy-first-closed-payout" type="button" aria-keyshortcuts='"'>Copy first closed payout hour</button>
-              <button id="copy-first-open-payout" type="button" aria-keyshortcuts="~">Copy first open payout hour</button>
-              <button id="copy-first-open-fx" type="button" aria-keyshortcuts="(">Copy first open FX hour</button>
-              <button id="copy-first-open-bank" type="button" aria-keyshortcuts="*">Copy first open bank hour</button>
-              <button id="copy-first-open-issuer" type="button" aria-keyshortcuts="$">Copy first open issuer hour</button>
-              <button id="copy-last-open-issuer" type="button" aria-keyshortcuts="5">Copy last open issuer hour</button>
-              <button id="copy-last-open-bank" type="button" aria-keyshortcuts="4">Copy last open bank hour</button>
-              <button id="copy-last-open-payout" type="button">Copy last open payout hour</button>
-              <button id="copy-last-open-fx" type="button">Copy last open FX hour</button>
-              <button id="copy-last-closed-issuer" type="button" aria-keyshortcuts="8">Copy last closed issuer hour</button>
-              <button id="copy-last-closed-bank" type="button" aria-keyshortcuts="1">Copy last closed bank hour</button>
-              <button id="copy-last-closed-fx" type="button">Copy last closed FX hour</button>
-              <button id="copy-last-closed-payout" type="button">Copy last closed payout hour</button>
-              <button id="copy-last-weekend-fx-closed" type="button">Copy last weekend-FX-closed hour</button>
-              <button id="copy-last-weekday-fx-closed" type="button">Copy last weekday-FX-closed hour</button>
-              <button id="copy-last-weekend-fx-open" type="button">Copy last weekend-FX-open hour</button>
-              <button id="copy-last-weekday-fx-open" type="button">Copy last weekday-FX-open hour</button>
-              <button id="copy-first-weekday-fx-open" type="button">Copy first weekday-FX-open hour</button>
-              <button id="copy-first-weekday-fx-closed" type="button">Copy first weekday-FX-closed hour</button>
-              <button id="copy-first-weekend-fx-open" type="button">Copy first weekend-FX-open hour</button>
-              <button id="copy-first-weekend-fx-closed" type="button">Copy first weekend-FX-closed hour</button>
             </div>
+            <h3>Gate hour evidence</h3>
+            <p>First and last open and closed hours for one gate, with open and closed counts. The same evidence is in the outcome summary and the table below.</p>
+            <div class="planning-actions">
+              <button id="copy-gate-evidence-issuer" type="button">Copy issuer hour evidence</button>
+              <button id="copy-gate-evidence-bank" type="button">Copy bank hour evidence</button>
+              <button id="copy-gate-evidence-payout" type="button">Copy payout hour evidence</button>
+              <button id="copy-gate-evidence-fx" type="button">Copy FX hour evidence</button>
+            </div>
+            <label class="sr-only" for="gate-issuer-evidence-fallback">Issuer hour evidence Markdown fallback</label>
+            <textarea id="gate-issuer-evidence-fallback" rows="6" hidden readonly></textarea>
+            <label class="sr-only" for="gate-bank-evidence-fallback">Bank hour evidence Markdown fallback</label>
+            <textarea id="gate-bank-evidence-fallback" rows="6" hidden readonly></textarea>
+            <label class="sr-only" for="gate-payout-evidence-fallback">Payout hour evidence Markdown fallback</label>
+            <textarea id="gate-payout-evidence-fallback" rows="6" hidden readonly></textarea>
+            <label class="sr-only" for="gate-fx-evidence-fallback">FX hour evidence Markdown fallback</label>
+            <textarea id="gate-fx-evidence-fallback" rows="6" hidden readonly></textarea>
             <label class="sr-only" for="gantt-hour-copy-fallback">Selected hour Markdown fallback</label>
             <textarea id="gantt-hour-copy-fallback" rows="8" hidden readonly></textarea>
-            <label class="sr-only" for="remaining-reserve-copy-fallback">Remaining reserve Markdown fallback</label>
-            <textarea id="remaining-reserve-copy-fallback" rows="2" hidden readonly></textarea>
             <label class="sr-only" for="closed-hours-copy-fallback">Closed hours Markdown fallback</label>
             <textarea id="closed-hours-copy-fallback" rows="8" hidden readonly></textarea>
             <label class="sr-only" for="fx-hours-copy-fallback">FX hours Markdown fallback</label>
             <textarea id="fx-hours-copy-fallback" rows="8" hidden readonly></textarea>
             <label class="sr-only" for="weekend-fx-counts-copy-fallback">Weekend FX counts Markdown fallback</label>
             <textarea id="weekend-fx-counts-copy-fallback" rows="2" hidden readonly></textarea>
-            <label class="sr-only" for="first-closed-fx-copy-fallback">First closed FX hour Markdown fallback</label>
-            <textarea id="first-closed-fx-copy-fallback" rows="2" hidden readonly></textarea>
-            <label class="sr-only" for="first-closed-bank-copy-fallback">First closed bank hour Markdown fallback</label>
-            <textarea id="first-closed-bank-copy-fallback" rows="2" hidden readonly></textarea>
-            <label class="sr-only" for="first-closed-issuer-copy-fallback">First closed issuer hour Markdown fallback</label>
-            <textarea id="first-closed-issuer-copy-fallback" rows="2" hidden readonly></textarea>
-            <label class="sr-only" for="first-closed-payout-copy-fallback">First closed payout hour Markdown fallback</label>
-            <textarea id="first-closed-payout-copy-fallback" rows="2" hidden readonly></textarea>
-            <label class="sr-only" for="first-open-payout-copy-fallback">First open payout hour Markdown fallback</label>
-            <textarea id="first-open-payout-copy-fallback" rows="2" hidden readonly></textarea>
-            <label class="sr-only" for="first-open-fx-copy-fallback">First open FX hour Markdown fallback</label>
-            <textarea id="first-open-fx-copy-fallback" rows="2" hidden readonly></textarea>
-            <label class="sr-only" for="first-open-bank-copy-fallback">First open bank hour Markdown fallback</label>
-            <textarea id="first-open-bank-copy-fallback" rows="2" hidden readonly></textarea>
-            <label class="sr-only" for="first-open-issuer-copy-fallback">First open issuer hour Markdown fallback</label>
-            <textarea id="first-open-issuer-copy-fallback" rows="2" hidden readonly></textarea>
-            <label class="sr-only" for="last-open-issuer-copy-fallback">Last open issuer hour Markdown fallback</label>
-            <textarea id="last-open-issuer-copy-fallback" rows="2" hidden readonly></textarea>
-            <label class="sr-only" for="last-open-bank-copy-fallback">Last open bank hour Markdown fallback</label>
-            <textarea id="last-open-bank-copy-fallback" rows="2" hidden readonly></textarea>
-            <label class="sr-only" for="last-open-payout-copy-fallback">Last open payout hour Markdown fallback</label>
-            <textarea id="last-open-payout-copy-fallback" rows="2" hidden readonly></textarea>
-            <label class="sr-only" for="last-open-fx-copy-fallback">Last open FX hour Markdown fallback</label>
-            <textarea id="last-open-fx-copy-fallback" rows="2" hidden readonly></textarea>
-            <label class="sr-only" for="last-closed-issuer-copy-fallback">Last closed issuer hour Markdown fallback</label>
-            <textarea id="last-closed-issuer-copy-fallback" rows="2" hidden readonly></textarea>
-            <label class="sr-only" for="last-closed-bank-copy-fallback">Last closed bank hour Markdown fallback</label>
-            <textarea id="last-closed-bank-copy-fallback" rows="2" hidden readonly></textarea>
-            <label class="sr-only" for="last-closed-fx-copy-fallback">Last closed FX hour Markdown fallback</label>
-            <textarea id="last-closed-fx-copy-fallback" rows="2" hidden readonly></textarea>
-            <label class="sr-only" for="last-closed-payout-copy-fallback">Last closed payout hour Markdown fallback</label>
-            <textarea id="last-closed-payout-copy-fallback" rows="2" hidden readonly></textarea>
-            <label class="sr-only" for="last-weekend-fx-closed-copy-fallback">Last weekend-FX-closed hour Markdown fallback</label>
-            <textarea id="last-weekend-fx-closed-copy-fallback" rows="2" hidden readonly></textarea>
-            <label class="sr-only" for="last-weekday-fx-closed-copy-fallback">Last weekday-FX-closed hour Markdown fallback</label>
-            <textarea id="last-weekday-fx-closed-copy-fallback" rows="2" hidden readonly></textarea>
-            <label class="sr-only" for="last-weekend-fx-open-copy-fallback">Last weekend-FX-open hour Markdown fallback</label>
-            <textarea id="last-weekend-fx-open-copy-fallback" rows="2" hidden readonly></textarea>
-            <label class="sr-only" for="last-weekday-fx-open-copy-fallback">Last weekday-FX-open hour Markdown fallback</label>
-            <textarea id="last-weekday-fx-open-copy-fallback" rows="2" hidden readonly></textarea>
-            <label class="sr-only" for="first-weekday-fx-open-copy-fallback">First weekday-FX-open hour Markdown fallback</label>
-            <textarea id="first-weekday-fx-open-copy-fallback" rows="2" hidden readonly></textarea>
-            <label class="sr-only" for="first-weekday-fx-closed-copy-fallback">First weekday-FX-closed hour Markdown fallback</label>
-            <textarea id="first-weekday-fx-closed-copy-fallback" rows="2" hidden readonly></textarea>
-            <label class="sr-only" for="first-weekend-fx-open-copy-fallback">First weekend-FX-open hour Markdown fallback</label>
-            <textarea id="first-weekend-fx-open-copy-fallback" rows="2" hidden readonly></textarea>
-            <label class="sr-only" for="first-weekend-fx-closed-copy-fallback">First weekend-FX-closed hour Markdown fallback</label>
-            <textarea id="first-weekend-fx-closed-copy-fallback" rows="2" hidden readonly></textarea>
             <div id="gate-gantt" class="gantt-svg"></div>
             <div class="table-scroll" id="gantt-hour-row" tabindex="-1" role="region" aria-label="Gate Gantt table fallback">
               <table>
@@ -1209,7 +1088,7 @@ SOFTWARE.
         <div class="method-grid">
           <div><h3>What it shows</h3><p>How a closed payout chain can create queued AUD demand and lower immediately redeemable capacity even while onchain transfers continue.</p></div>
           <div><h3>What it does not show</h3><p>It does not model real issuers, legal redemption rights, reserve attestations, counterparties, exchange order books, credit risk, token price discovery or operational incidents.</p></div>
-          <div><h3>How to use it</h3><p>Edit the synthetic fields, choose a preset, scrub the 72-hour timeline, or export a scenario. Shared links contain only the editable scenario in the URL hash.</p></div>
+          <div><h3>How to use it</h3><p>Edit the synthetic fields, choose a preset, scrub the timeline, or export a scenario. Shared links contain only the editable scenario in the URL hash.</p></div>
         </div>
         <p class="method-link"><a href="MODEL.md">Read the model notes and formulas</a></p>
         <p><button type="button" class="text-button" id="coach-replay-method">Replay first-run notes</button></p>
@@ -1218,7 +1097,7 @@ SOFTWARE.
     <footer class="site-footer">Weekend Gap uses only synthetic, editable assumptions. AUD values are illustrative.</footer>
     <div id="coach-overlay" class="overlay" hidden>
       <div class="overlay-dialog" role="dialog" aria-modal="true" aria-labelledby="coach-title" id="coach-dialog">
-        <h2 id="coach-title">This is a synthetic 72-hour study</h2>
+        <h2 id="coach-title">This is a synthetic liquidity study</h2>
         <p>Weekend Gap is an educational liquidity simulator. Every assumption is invented and editable. It is not live market data, issuer information, or financial advice.</p>
         <p>Three gates must overlap before queued demand can settle: issuer redemption, bank settlement, and Australian AUD payout. Saturday and Sunday keep those gates closed. An optional Monday holiday treats Monday the same way. An optional Saturday holiday records Saturday as a Sunday-like public holiday.</p>
         <p>The clock runs from Friday 15:00 to Monday 15:00 in abstract local time. Demand can still join the queue while the payout chain is closed.</p>
@@ -1234,67 +1113,27 @@ SOFTWARE.
           <li><kbd>Space</kbd> Play or pause the timeline</li>
           <li><kbd>J</kbd> Jump the timeline to the first settlement</li>
           <li><kbd>F</kbd> Jump the timeline to the first closed bank hour</li>
+          <li><kbd>P</kbd> Jump the timeline to the peak queue</li>
           <li><kbd>S</kbd> Jump to the scenario inputs</li>
           <li><kbd>D</kbd> Jump to the dashboard outcome summary</li>
           <li><kbd>Q</kbd> Jump to the queue chart</li>
           <li><kbd>G</kbd> Jump to the gate Gantt</li>
           <li><kbd>H</kbd> Jump to the selected Gantt hour</li>
+          <li><kbd>M</kbd> Jump to the baseline versus current Gantt</li>
+          <li><kbd>A</kbd> Jump to analysis and export controls</li>
+          <li><kbd>T</kbd> Jump to the timing review</li>
           <li><kbd>K</kbd> Jump to the hours-to-clear line</li>
           <li><kbd>Y</kbd> Jump to the hours-to-first-settlement line</li>
-          <li><kbd>L</kbd> Copy hours to first settlement as Markdown</li>
-          <li><kbd>,</kbd> Copy hours to first settlement as Markdown</li>
-          <li><kbd>;</kbd> Copy hours to clear as Markdown</li>
-          <li><kbd>[</kbd> Jump to the hours-to-clear copy control</li>
-          <li><kbd>]</kbd> Jump to Print</li>
-          <li><kbd>.</kbd> Jump to the first-closed-FX-hour copy control</li>
-          <li><kbd>/</kbd> Jump to the remaining-reserve copy control</li>
-          <li><kbd>'</kbd> Copy first closed bank hour as Markdown</li>
-          <li><kbd>:</kbd> Copy first closed issuer hour as Markdown</li>
-          <li><kbd>"</kbd> Copy first closed payout hour as Markdown</li>
-          <li><kbd>}</kbd> Copy first closed FX hour as Markdown</li>
-          <li><kbd>~</kbd> Copy first open payout hour as Markdown</li>
-          <li><kbd>(</kbd> Copy first open FX hour as Markdown</li>
-          <li><kbd>*</kbd> Copy first open bank hour as Markdown</li>
-          <li><kbd>$</kbd> Copy first open issuer hour as Markdown</li>
-          <li><kbd>5</kbd> Copy last open issuer hour as Markdown</li>
-          <li><kbd>8</kbd> Copy last closed issuer hour as Markdown</li>
-          <li><kbd>1</kbd> Copy last closed bank hour as Markdown</li>
-          <li><kbd>4</kbd> Copy last open bank hour as Markdown</li>
-          <li><kbd>+</kbd> Jump to the first-closed-FX-hour copy control</li>
-          <li><kbd>!</kbd> Jump to the first-open-payout-hour copy control</li>
-          <li><kbd>)</kbd> Jump to the first-open-FX-hour copy control</li>
-          <li><kbd>&amp;</kbd> Jump to the first-open-bank-hour copy control</li>
-          <li><kbd>^</kbd> Jump to the first-open-issuer-hour copy control</li>
-          <li><kbd>6</kbd> Jump to the last-open-issuer-hour copy control</li>
-          <li><kbd>9</kbd> Jump to the last-closed-issuer-hour copy control</li>
-          <li><kbd>2</kbd> Jump to the last-closed-bank-hour copy control</li>
-          <li><kbd>_</kbd> Jump to the first-closed-payout-hour copy control</li>
-          <li><kbd>&lt;</kbd> Jump to the first-closed-bank-hour copy control</li>
-          <li><kbd>-</kbd> Jump to the first-closed-issuer-hour copy control</li>
-          <li><kbd>&gt;</kbd> Jump to the hide-zero-queue Gantt filter</li>
-          <li><kbd>=</kbd> Jump to the hide-bank-closed Gantt filter</li>
-          <li><kbd>{</kbd> Jump to the hide-issuer-closed Gantt filter</li>
-          <li><kbd>|</kbd> Jump to the hide-payout-closed Gantt filter</li>
-          <li><kbd>@</kbd> Jump to the hide-FX-closed Gantt filter</li>
-          <li><kbd>#</kbd> Jump to the hide-payout-open Gantt filter</li>
-          <li><kbd>%</kbd> Jump to the hide-FX-open Gantt filter</li>
-          <li><kbd>`</kbd> Jump to the hide-issuer-open Gantt filter</li>
-          <li><kbd>7</kbd> Jump to the hide-weekend-issuer-open Gantt filter</li>
-          <li><kbd>0</kbd> Jump to the hide-weekend-issuer-closed Gantt filter</li>
-          <li><kbd>3</kbd> Jump to the hide-weekend-bank-closed Gantt filter</li>
           <li><kbd>N</kbd> Jump to the first-payout Gantt marker</li>
-          <li><kbd>O</kbd> Jump to the Payout Gantt row</li>
-          <li><kbd>A</kbd> Jump to analysis and export controls</li>
-          <li><kbd>B</kbd> Jump to the Bank Gantt row</li>
           <li><kbd>I</kbd> Jump to the Issuer Gantt row</li>
+          <li><kbd>B</kbd> Jump to the Bank Gantt row</li>
+          <li><kbd>O</kbd> Jump to the Payout Gantt row</li>
           <li><kbd>W</kbd> Jump to the FX Gantt row</li>
-          <li><kbd>M</kbd> Jump to the compare Gantt</li>
-          <li><kbd>P</kbd> Jump the timeline to the peak queue</li>
           <li><kbd>C</kbd> Copy the selected Gantt hour as Markdown</li>
-          <li><kbd>Z</kbd> Copy remaining reserve at the selected hour as Markdown</li>
-          <li><kbd>V</kbd> Copy selected versus peak-queue hour as Markdown</li>
           <li><kbd>X</kbd> Copy closed hours as Markdown</li>
-          <li><kbd>T</kbd> Jump to the timing review</li>
+          <li><kbd>V</kbd> Copy selected versus peak-queue hour as Markdown</li>
+          <li><kbd>L</kbd> Copy hours to first settlement as Markdown</li>
+          <li><kbd>;</kbd> Copy hours to clear as Markdown</li>
           <li><kbd>U</kbd> Undo the last scenario edit</li>
           <li><kbd>R</kbd> Redo a scenario edit</li>
           <li><kbd>E</kbd> Export the current scenario JSON</li>

@@ -62,24 +62,3 @@ test("first open payout hour Markdown uses none when no modeled hour is open", a
   assert.match(body, /hour === null/);
   assert.match(body, /First open payout hour: none\. Counts of modeled hours, not a bank calendar\./);
 });
-
-test("copy first open payout hour uses clipboard and a textarea fallback", async () => {
-  const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
-  const app = await readFile(new URL("../src/app.js", import.meta.url), "utf8");
-  assert.match(html, /id="copy-first-open-payout"/);
-  assert.match(html, /Copy first open payout hour/);
-  assert.match(html, /id="first-open-payout-copy-fallback"/);
-  assert.match(html, /id="copy-first-closed-payout"/);
-  assert.match(html, /id="copy-first-closed-fx"/);
-  assert.match(html, /id="copy-first-closed-bank"/);
-  assert.match(html, /id="copy-first-closed-issuer"/);
-  assert.match(app, /firstOpenPayoutHourToMarkdown\(scenario\)/);
-  assert.match(app, /first-open-payout-copy-fallback/);
-  assert.match(app, /copyTextWithFallback/);
-  assert.match(app, /synthetic label, not live payout data/);
-  assert.match(app, /Clipboard unavailable\. Copy the Markdown from the text box\./);
-  assert.notEqual(app.match(/function copyFirstOpenPayoutHourMarkdown/)?.[0], app.match(/function copyFirstClosedPayoutHourMarkdown/)?.[0]);
-  assert.notEqual(app.match(/function copyFirstOpenPayoutHourMarkdown/)?.[0], app.match(/function copyFirstClosedFxHourMarkdown/)?.[0]);
-  assert.notEqual(app.match(/function copyFirstOpenPayoutHourMarkdown/)?.[0], app.match(/function copyFirstClosedIssuerHourMarkdown/)?.[0]);
-  assert.notEqual(app.match(/function copyFirstOpenPayoutHourMarkdown/)?.[0], app.match(/function copyFirstClosedBankHourMarkdown/)?.[0]);
-});

@@ -2132,6 +2132,32 @@ export function createBuyerCsv(rawScenario, offerId) {
   return rows.map(row => row.map(escapeCsvCell).join(",")).join("\r\n") + "\r\n";
 }
 
+/**
+ * Organizer plan CSV: assignment rows with buyer labels, then unserved rows.
+ * Organizer-private: buyer labels are included. Merchant summaries must use
+ * createMerchantPlanReport instead.
+ */
+export function multiMerchantPlanCsv(rawScenario) {
+  const scenario = validateScenario(rawScenario);
+  const plan = planMultiMerchant(scenario);
+  const buyerById = new Map(scenario.buyers.map((buyer) => [buyer.id, buyer]));
+  const rows = [["Private buyer label", "Buyer", "Merchant", "Offer", "Currency", "Allocated quantity", "Unit price", "Items cost", "Shipping", "Order total", "Plan status"]];
+  for (const entry of plan.assignments) {
+    const offer = scenario.offers.find((item) => item.id === entry.offerId);
+    for (const buyerId of entry.buyerIds) {
+      const buyer = buyerById.get(buyerId);
+      const items = buyer.quantity * entry.unitPrice;
+      const shipping = offer.fulfillment === "pickup" ? 0 : offer.shippingPerBuyer;
+      rows.push([buyer.label, buyerId, entry.merchant, entry.offerId, scenario.currency, buyer.quantity, entry.unitPrice, items, shipping, items + shipping, plan.status]);
+    }
+  }
+  for (const entry of plan.unserved) {
+    const buyer = buyerById.get(entry.buyerId);
+    rows.push([buyer.label, entry.buyerId, "", "", scenario.currency, 0, "", "", "", "", `${plan.status}; unserved: ${entry.note}`]);
+  }
+  return rows.map(row => row.map(escapeCsvCell).join(",")).join("\r\n") + "\r\n";
+}
+
 const BUYER_CSV_HEADERS = {
   label: "label",
   "private label": "label",
@@ -3427,6 +3453,362 @@ export function computeResidualCoverage(rawScenario) {
 }
 
 /**
+ * Base-band compatibility of every buyer with one offer: category, variant,
+ * ceiling price, landed-order budget, and delivery deadline. Tier bands only
+ * lower the unit price, so base-band compatibility is exact for every band.
+ */
+export function offerBuyerCompatibility(rawScenario, rawOffer) {
+  const scenario = validateScenario(rawScenario);
+  const offerEntry = typeof rawOffer === "string"
+    ? scenario.offers.find(({ id }) => id === rawOffer)
+    : validateOffer(rawOffer, 0);
+  if (!offerEntry) throw new ScenarioError("Offer was not found.");
+  const shipping = chargedShipping(offerEntry);
+  return scenario.buyers.map((buyer) => ({
+    buyerId: buyer.id,
+    reasons: incompatibilityReasons(buyer, { ...offerEntry, unitPrice: offerEntry.unitPrice, shippingPerBuyer: shipping }),
+  }));
+}
+
+export const MAX_PLAN_NODES = 250000;
+
+/**
+ * Bounded exact multi-merchant plan. Each buyer order stays whole and goes to
+ * at most one merchant; every used merchant meets its minimum order, respects
+ * capacity, and reprices from its actual assigned units, with shipping and
+ * totals recomputed per assignment.
+ *
+ * Objective, stated before the search: maximum fulfilled units, then minimum
+ * landed cost, then fewest merchants, then the lexicographically smallest
+ * assignment. This does not maximize every possible fairness objective.
+ * Branch and bound explores buyers in id order with a node budget; rooms above
+ * the bound return status too_large with the best plan found, never a claimed
+ * optimum. Duplicate allocation is impossible by construction: each buyer is
+ * assigned once.
+ */
+export function planMultiMerchant(rawScenario, options = {}) {
+  const scenario = validateScenario(rawScenario);
+  if (options !== undefined && (typeof options !== "object" || options === null || Array.isArray(options))) {
+    throw new ScenarioError("Plan options must be an object.");
+  }
+  const nodeBudget = options.nodeBudget ?? MAX_PLAN_NODES;
+  if (!Number.isInteger(nodeBudget) || nodeBudget < 1 || nodeBudget > MAX_PLAN_NODES) {
+    throw new ScenarioError(`Plan node budget must be a whole number from 1 through ${MAX_PLAN_NODES}.`);
+  }
+  const buyers = [...scenario.buyers].sort((left, right) => compareText(left.id, right.id));
+  const offers = [...scenario.offers].sort((left, right) => compareText(left.id, right.id));
+  const buyerById = new Map(buyers.map((buyer) => [buyer.id, buyer]));
+  const compatibility = new Map();
+  for (const offer of offers) {
+    for (const { buyerId, reasons } of offerBuyerCompatibility(scenario, offer.id)) {
+      if (!compatibility.has(buyerId)) compatibility.set(buyerId, []);
+      compatibility.get(buyerId).push({ offer, reasons });
+    }
+  }
+  const remainingUnits = [];
+  let suffix = 0;
+  for (let index = buyers.length - 1; index >= 0; index -= 1) {
+    suffix += buyers[index].quantity;
+    remainingUnits[index] = suffix;
+  }
+  const assigned = new Array(offers.length).fill(0);
+  const choice = new Array(buyers.length).fill(-1);
+  let best = null;
+  let nodes = 0;
+  let exhausted = false;
+
+  const leafScore = () => {
+    const released = new Set(choice);
+    const perOffer = offers.map(() => ({ units: 0, buyers: [] }));
+    buyers.forEach((buyer, index) => {
+      if (choice[index] >= 0) {
+        perOffer[choice[index]].units += buyer.quantity;
+        perOffer[choice[index]].buyers.push(buyer.id);
+      }
+    });
+    const active = [];
+    let fulfilled = 0;
+    let cost = 0;
+    perOffer.forEach((entry, offerIndex) => {
+      if (entry.units === 0) return;
+      const offer = offers[offerIndex];
+      if (entry.units < offer.minimumUnits) return;
+      const price = tierPriceForUnits(offer, entry.units);
+      const shipping = chargedShipping(offer);
+      const items = entry.units * price;
+      const delivery = entry.buyers.length * shipping;
+      fulfilled += entry.units;
+      cost += items + delivery;
+      active.push({
+        offerId: offer.id, merchant: offer.merchant, buyerIds: [...entry.buyers].sort(compareText),
+        units: entry.units, unitPrice: price, shippingPerBuyer: shipping,
+        itemsCost: items, shippingCost: delivery, totalCost: items + delivery,
+      });
+    });
+    active.sort((left, right) => compareText(left.offerId, right.offerId));
+    return { fulfilled, cost, active };
+  };
+  const signature = (active) => JSON.stringify(active.map((entry) => [entry.offerId, entry.buyerIds]));
+  const better = (candidate) => {
+    if (!best) return true;
+    if (candidate.fulfilled !== best.fulfilled) return candidate.fulfilled > best.fulfilled;
+    if (candidate.cost !== best.cost) return candidate.cost < best.cost;
+    if (candidate.active.length !== best.active.length) return candidate.active.length < best.active.length;
+    return signature(candidate.active) < signature(best.active);
+  };
+
+  const visit = (index, fulfilledUnits, landedCost) => {
+    if (exhausted) return;
+    nodes += 1;
+    if (nodes > nodeBudget) { exhausted = true; return; }
+    if (index === buyers.length) {
+      const candidate = leafScore();
+      if (better(candidate)) best = candidate;
+      return;
+    }
+    // Sound upper bound ignoring capacity and minimums: remaining units can add at most their total.
+    if (best && fulfilledUnits + remainingUnits[index] < best.fulfilled) return;
+    if (best && fulfilledUnits + remainingUnits[index] === best.fulfilled && landedCost >= best.cost) return;
+    const buyer = buyers[index];
+    const options = (compatibility.get(buyer.id) ?? [])
+      .filter(({ reasons }) => reasons.length === 0)
+      .map(({ offer }) => offers.findIndex((entry) => entry.id === offer.id));
+    for (const offerIndex of options) {
+      if (assigned[offerIndex] + buyer.quantity > offers[offerIndex].capacity) continue;
+      assigned[offerIndex] += buyer.quantity;
+      choice[index] = offerIndex;
+      visit(index + 1, fulfilledUnits + buyer.quantity, landedCost);
+      assigned[offerIndex] -= buyer.quantity;
+      choice[index] = -1;
+      if (exhausted) return;
+    }
+    choice[index] = -1;
+    visit(index + 1, fulfilledUnits, landedCost);
+  };
+  visit(0, 0, 0);
+
+  const active = best?.active ?? [];
+  const servedIds = new Set(active.flatMap((entry) => entry.buyerIds));
+  const unserved = buyers.filter((buyer) => !servedIds.has(buyer.id)).map((buyer) => {
+    const entries = compatibility.get(buyer.id) ?? [];
+    const compatibleOfferIds = entries.filter(({ reasons }) => reasons.length === 0).map(({ offer }) => offer.id);
+    return {
+      buyerId: buyer.id, quantity: buyer.quantity, compatibleOfferIds,
+      note: compatibleOfferIds.length === 0
+        ? 'No compatible offer: ' + entries.map(({ offer, reasons }) => `${offer.id} (${reasons.join(', ') || 'unknown'})`).join('; ')
+        : 'Compatible offers exist; capacity or minimum orders prevented assignment.',
+    };
+  });
+  const fulfilledUnits = active.reduce((sum, entry) => sum + entry.units, 0);
+  const totalCost = active.reduce((sum, entry) => sum + entry.totalCost, 0);
+  return {
+    status: exhausted ? 'too_large' : 'optimal',
+    optimal: !exhausted,
+    objective: 'Maximum fulfilled units, then minimum landed cost, then fewest merchants, then deterministic assignment order. Not a fairness optimum.',
+    evaluatedNodes: nodes,
+    nodeBudget,
+    assignments: active,
+    unserved,
+    fulfilledUnits,
+    unservedUnits: unserved.reduce((sum, entry) => sum + entry.quantity, 0),
+    totalCost,
+    merchantCount: active.length,
+  };
+}
+
+function tierPriceForUnits(offer, units) {
+  let price = offer.unitPrice;
+  for (const tier of offer.tiers ?? []) {
+    if (units >= tier.minimumUnits) price = tier.unitPrice;
+  }
+  return price;
+}
+
+/**
+ * Supplier contingency experiment. One declared change to one offer —
+ * withdrawal, reduced capacity, scaled prices, or delayed delivery — replanned
+ * against the same buyer demand with the same bounded exact planner.
+ * Lost and newly feasible orders compare baseline and contingency assignments
+ * buyer by buyer; landed cost and fulfillment deltas are reported alongside.
+ */
+export function planContingency(rawScenario, rawExperiment) {
+  const scenario = validateScenario(rawScenario);
+  const experiment = validateContingencyExperiment(rawExperiment, scenario);
+  const baseline = planMultiMerchant(scenario);
+  const modified = applyContingencyExperiment(scenario, experiment);
+  const contingency = planMultiMerchant(modified.scenario);
+  const baselineServed = new Set(baseline.assignments.flatMap((entry) => entry.buyerIds));
+  const contingencyServed = new Set(contingency.assignments.flatMap((entry) => entry.buyerIds));
+  const buyerById = new Map(scenario.buyers.map((buyer) => [buyer.id, buyer]));
+  const lostOrders = [...baselineServed].filter((id) => !contingencyServed.has(id)).sort(compareText)
+    .map((id) => ({ buyerId: id, quantity: buyerById.get(id).quantity }));
+  const newlyFeasible = [...contingencyServed].filter((id) => !baselineServed.has(id)).sort(compareText)
+    .map((id) => ({ buyerId: id, quantity: buyerById.get(id).quantity }));
+  return {
+    experiment,
+    description: contingencyDescription(experiment, scenario),
+    baseline: planSummary(baseline),
+    contingency: planSummary(contingency),
+    fulfilledUnitsDelta: contingency.fulfilledUnits - baseline.fulfilledUnits,
+    totalCostDelta: contingency.totalCost - baseline.totalCost,
+    lostOrders,
+    lostUnits: lostOrders.reduce((sum, entry) => sum + entry.quantity, 0),
+    newlyFeasible,
+    newlyFeasibleUnits: newlyFeasible.reduce((sum, entry) => sum + entry.quantity, 0),
+    assignments: contingency.assignments,
+    unserved: contingency.unserved,
+    note: 'One declared supplier change replanned against identical buyer demand. Lost orders were covered before and are not after; newly feasible orders are the reverse. This is a planning experiment, not a forecast of supplier behavior.',
+  };
+}
+
+function planSummary(plan) {
+  return {
+    status: plan.status, optimal: plan.optimal,
+    fulfilledUnits: plan.fulfilledUnits, unservedUnits: plan.unservedUnits,
+    totalCost: plan.totalCost, merchantCount: plan.merchantCount,
+    merchants: plan.assignments.map((entry) => entry.merchant),
+  };
+}
+
+function contingencyDescription(experiment, scenario) {
+  const offer = scenario.offers.find((item) => item.id === experiment.offerId);
+  const name = offer ? `${offer.merchant} / ${offer.id}` : experiment.offerId;
+  switch (experiment.type) {
+    case 'withdraw': return `Withdraw ${name}: the offer leaves the room.`;
+    case 'capacity': return `Reduce ${name} capacity to ${experiment.capacity} units.`;
+    case 'price': return `Scale ${name} band prices by ${experiment.priceMultiplier}.`;
+    case 'delay': return `Delay ${name} delivery to ${experiment.deliveryDays} days.`;
+    default: return 'Unknown experiment.';
+  }
+}
+
+function validateContingencyExperiment(rawExperiment, scenario) {
+  if (!rawExperiment || typeof rawExperiment !== 'object' || Array.isArray(rawExperiment)) {
+    throw new ScenarioError('Contingency experiment must be an object.');
+  }
+  const allowed = new Set(['type', 'offerId', 'capacity', 'priceMultiplier', 'deliveryDays']);
+  for (const key of Object.keys(rawExperiment)) {
+    if (!allowed.has(key)) throw new ScenarioError(`Contingency experiment has unexpected field: ${key}.`);
+  }
+  const { type, offerId } = rawExperiment;
+  if (!['withdraw', 'capacity', 'price', 'delay'].includes(type)) {
+    throw new ScenarioError('Contingency experiment type must be withdraw, capacity, price, or delay.');
+  }
+  if (typeof offerId !== 'string' || !scenario.offers.some((offer) => offer.id === offerId)) {
+    throw new ScenarioError('Contingency experiment must name an existing offer.');
+  }
+  const normalized = { type, offerId };
+  if (type === 'capacity') {
+    if (!Number.isInteger(rawExperiment.capacity) || rawExperiment.capacity < 0 || rawExperiment.capacity > MAX_UNITS) {
+      throw new ScenarioError('Contingency capacity must be a whole number from 0 through 5,000.');
+    }
+    normalized.capacity = rawExperiment.capacity;
+  }
+  if (type === 'price') {
+    if (typeof rawExperiment.priceMultiplier !== 'number' || !Number.isFinite(rawExperiment.priceMultiplier) || rawExperiment.priceMultiplier <= 0 || rawExperiment.priceMultiplier > 10) {
+      throw new ScenarioError('Contingency price multiplier must be finite, above zero, and at most 10.');
+    }
+    normalized.priceMultiplier = rawExperiment.priceMultiplier;
+  }
+  if (type === 'delay') {
+    if (!Number.isInteger(rawExperiment.deliveryDays) || rawExperiment.deliveryDays < 0 || rawExperiment.deliveryDays > 365) {
+      throw new ScenarioError('Contingency delivery days must be a whole number from 0 through 365.');
+    }
+    normalized.deliveryDays = rawExperiment.deliveryDays;
+  }
+  return normalized;
+}
+
+function applyContingencyExperiment(scenario, experiment) {
+  const offers = scenario.offers.filter((offer) => experiment.type !== 'withdraw' || offer.id !== experiment.offerId)
+    .map((offer) => {
+      if (offer.id !== experiment.offerId) return offer;
+      if (experiment.type === 'capacity') return { ...offer, capacity: experiment.capacity };
+      if (experiment.type === 'delay') return { ...offer, deliveryDays: experiment.deliveryDays };
+      if (experiment.type === 'price') {
+        const scale = (price) => Math.min(1_000_000, price * experiment.priceMultiplier);
+        return { ...offer, unitPrice: scale(offer.unitPrice), tiers: offer.tiers?.map((tier) => ({ ...tier, unitPrice: scale(tier.unitPrice) })) };
+      }
+      return offer;
+    });
+  return { scenario: validateScenario({ ...scenario, offers }), experiment };
+}
+
+/**
+ * Standard supplier-dependency set: withdraw every merchant used in the
+ * baseline plan, one merchant at a time. Deterministic from the room inputs.
+ */
+export function standardContingencySet(rawScenario) {
+  const scenario = validateScenario(rawScenario);
+  const baseline = planMultiMerchant(scenario);
+  const merchants = [...new Set(baseline.assignments.map((entry) => entry.merchant))].sort(compareText);
+  return merchants.map((merchant) => {
+    const offerIds = scenario.offers.filter((offer) => offer.merchant === merchant).map((offer) => offer.id);
+    return { merchant, experiments: offerIds.map((offerId) => ({ type: 'withdraw', offerId })) };
+  });
+}
+
+export function planContingencies(rawScenario, rawExperiments) {
+  const scenario = validateScenario(rawScenario);
+  if (!Array.isArray(rawExperiments) || rawExperiments.length < 1 || rawExperiments.length > 25) {
+    throw new ScenarioError('Contingency batch must contain 1 to 25 experiments.');
+  }
+  return rawExperiments.map((rawExperiment) => planContingency(scenario, rawExperiment));
+}
+
+/**
+ * Merchant-facing contingency summary: aggregate deltas only, never buyer records.
+ */
+export function createMerchantContingencyReport(rawScenario, rawExperiment) {
+  const scenario = validateScenario(rawScenario);
+  const result = planContingency(scenario, rawExperiment);
+  return {
+    currency: scenario.currency,
+    description: result.description,
+    baselineFulfilledUnits: result.baseline.fulfilledUnits,
+    contingencyFulfilledUnits: result.contingency.fulfilledUnits,
+    fulfilledUnitsDelta: result.fulfilledUnitsDelta,
+    baselineTotalCost: result.baseline.totalCost,
+    contingencyTotalCost: result.contingency.totalCost,
+    totalCostDelta: result.totalCostDelta,
+    lostUnits: result.lostUnits,
+    newlyFeasibleUnits: result.newlyFeasibleUnits,
+    optimal: result.contingency.optimal,
+    note: 'Aggregate contingency projection only: units and landed totals. No buyer records are included. This is a planning experiment, not an order or a verified saving.',
+  };
+}
+
+/**
+ * Merchant-facing plan summary: aggregates per merchant with no buyer records.
+ * Organizer detail (buyer ids and labels) never enters this contract.
+ */
+export function createMerchantPlanReport(plan, rawScenario) {
+  const scenario = validateScenario(rawScenario);
+  if (!plan || typeof plan !== 'object' || !Array.isArray(plan.assignments)) {
+    throw new ScenarioError('Multi-merchant plan is required to summarize merchant projections.');
+  }
+  const byMerchant = new Map();
+  for (const entry of plan.assignments) {
+    const current = byMerchant.get(entry.merchant) ?? { merchant: entry.merchant, offers: 0, buyers: 0, units: 0, totalCost: 0 };
+    current.offers += 1;
+    current.buyers += entry.buyerIds.length;
+    current.units += entry.units;
+    current.totalCost += entry.totalCost;
+    byMerchant.set(entry.merchant, current);
+  }
+  return {
+    currency: scenario.currency,
+    optimal: plan.optimal === true,
+    status: plan.status,
+    merchants: [...byMerchant.values()].sort((left, right) => compareText(left.merchant, right.merchant)),
+    fulfilledUnits: plan.fulfilledUnits,
+    unservedUnits: plan.unservedUnits,
+    totalCost: plan.totalCost,
+    note: 'Aggregate projections only: merchant, offer count, buyer count, units, and landed total. No buyer records are included. This is a planning projection, not an order or a verified saving.',
+  };
+}
+
+/**
  * Additional whole units needed to unlock the next cheaper quantity band
  * for one offer, or an explicit reason the band is unreachable.
  */
@@ -3807,6 +4189,8 @@ export const CART_REVIEW_TOOLS = Object.freeze([
   { id: "stranded", title: "Unserved buyer reasons" },
   { id: "dependency", title: "Sole-offer dependency" },
   { id: 'coverage', title: 'Buyer option coverage' },
+  { id: 'multimerchant', title: 'Multi-merchant plan' },
+  { id: 'contingency', title: 'Supplier withdrawal dependency' },
 ]);
 
 /** On-demand organizer analysis. Never changes matching inputs or places orders. */
@@ -3885,6 +4269,28 @@ export function analyzeCartReview(rawScenario, tool) {
         const result = evaluateOffer(scenario, { ...original.offer, minimumUnits: 1 });
         return [original.offer.merchant, original.offer.minimumUnits, 1, original.fulfilledUnits, result.fulfilledUnits, result.deliveredBuyers];
       }), 'Counterfactual only: set the base minimum to one unit while preserving capacity, prices, tier thresholds, shipping, and buyer constraints. This does not imply that a merchant will agree.');
+    }
+    case "multimerchant": {
+      const plan = planMultiMerchant(scenario);
+      const rows = plan.assignments.map((entry) => {
+        const offer = scenario.offers.find((item) => item.id === entry.offerId);
+        return [entry.merchant, entry.offerId, entry.buyerIds.length, entry.units, entry.unitPrice, entry.shippingCost, entry.totalCost];
+      });
+      rows.push(['Unserved demand', '—', plan.unserved.length, plan.unservedUnits, '', '', '']);
+      return report(['Merchant', 'Offer', 'Buyers', 'Units', 'Unit price', 'Shipping', 'Order total'], rows,
+        `Bounded exact plan (${plan.status}; ${plan.evaluatedNodes} nodes): maximum fulfilled units, then minimum landed cost, then fewest merchants, then deterministic order. Winner comparison: ${market.winner ? `${market.winner.offer.merchant} fills ${market.winner.fulfilledUnits} of ${market.totalRequestedUnits} units at ${market.winner.totalCost}` : 'no qualified single offer'}. This is a planning projection, not an order or a verified saving.`);
+    }
+    case "contingency": {
+      const set = standardContingencySet(scenario);
+      const rows = set.map(({ merchant, experiments }) => {
+        const combined = planContingencies(scenario, experiments);
+        const lost = combined.reduce((sum, result) => sum + result.lostUnits, 0);
+        const gained = combined.reduce((sum, result) => sum + result.newlyFeasibleUnits, 0);
+        const first = combined[0];
+        return [merchant, experiments.length, first.baseline.fulfilledUnits, first.contingency.fulfilledUnits, lost, gained, first.totalCostDelta];
+      });
+      return report(['Merchant withdrawn', 'Offers removed', 'Baseline units', 'Contingency units', 'Lost units', 'Newly feasible units', 'Landed cost delta'], rows,
+        'Withdraws each planned merchant in turn and replans identical demand with the bounded exact planner. Lost units were covered before and are not after. This measures exposure in the current room, not a probability of withdrawal.');
     }
     default: throw new ScenarioError('Review is unavailable.');
   }

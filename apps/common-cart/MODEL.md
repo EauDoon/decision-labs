@@ -112,6 +112,20 @@ This is a planning aid. It is not a dual checkout, split invoice, or promise tha
 
 Organizer views may list leftover buyer identifiers. Merchant residual JSON reports leftover buyer counts and units only. Organizer briefing names secondary and tertiary merchants as aggregates. Room comparisons include leftover and unfilled counts.
 
+## Multi-merchant plan (v1.5.0)
+
+The bounded exact planner assigns every buyer order whole to at most one merchant. Each used merchant must meet its minimum order and capacity, and reprices from its actual assigned units through the same quantity bands, with shipping and totals recomputed per assignment. Compatibility uses the base price band; tier bands only lower unit prices, so base-band compatibility is exact for every band.
+
+The objective is stated before the search: maximum fulfilled units, then minimum landed cost, then fewest merchants, then the lexicographically smallest assignment. This does not maximize every possible fairness objective. Branch and bound explores buyers in ID order with a 250,000-node budget; rooms above the bound return status `too_large` with the best plan found, never a claimed optimum. Duplicate allocation is impossible by construction.
+
+Unserved buyers explain themselves: no compatible offer (with per-offer reasons), or compatible offers blocked by capacity or minimum orders. Merchant plan summaries carry per-merchant aggregates only: no buyer records. Organizer plan exports carry buyer labels and allocations and are labeled organizer-private.
+
+## Supplier contingency (v1.6.0)
+
+One declared supplier change — withdrawal, reduced capacity, scaled band prices, or delayed delivery — is replanned against identical buyer demand with the bounded exact planner. Lost orders were covered before and are not after; newly feasible orders are the reverse. Price experiments scale every band price together so tier validation still holds. Capacity experiments accept any whole capacity including increases. Delivery experiments move the promised date; buyers past their deadline fall out through the existing compatibility rules.
+
+`standardContingencySet` withdraws each planned merchant in turn for the dependency review. Merchant contingency summaries carry aggregate deltas only: no buyer records. Organizer contingency exports carry buyer labels for lost and newly feasible orders and are labeled organizer-private. Experiments are recalculated from the room on every edit; stale results are never shown. These are planning experiments, not forecasts of supplier behavior.
+
 ## Units to the next cheaper tier
 
 For one offer, the next cheaper quantity band is the band after the selected index, or after the base band when the offer does not qualify. The model reports how many additional whole units that independent band still needs, which currently excluded buyers are compatible at the next price, and whether the band is unreachable because of packing inside capacity or insufficient compatible demand. When no cheaper band remains, the reason says so. Organizer views may name those buyers. Merchant-facing tables use counts only.

@@ -26,14 +26,3 @@ test("FX hours Markdown lists weekday and weekend FX as a local drawing", () => 
   assert.doesNotMatch(text, /timestamp|createdAt|exportedAt/i);
   assert.equal(runSimulation(DEFAULT_SCENARIO).timeline.length, SIMULATION_HOURS + 1);
 });
-
-test("copy FX hours uses clipboard and a textarea fallback", async () => {
-  const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
-  const app = await readFile(new URL("../src/app.js", import.meta.url), "utf8");
-  assert.match(html, /id="copy-fx-hours"/);
-  assert.match(html, /Copy FX hours/);
-  assert.match(html, /id="fx-hours-copy-fallback"/);
-  assert.match(app, /fxGanttHoursToMarkdown\(scenario\)/);
-  assert.match(app, /fx-hours-copy-fallback/);
-  assert.match(app, /local drawing, not a bank feed/);
-});

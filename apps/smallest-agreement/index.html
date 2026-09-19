@@ -200,6 +200,24 @@ SOFTWARE.
           <div class="scenario-actions"><button class="text-button" id="load-scenario" type="button">Load snapshot</button> <button class="text-button danger" id="delete-scenario" type="button">Delete snapshot</button></div>
           <p id="scenario-count" class="field-note"></p>
         </section>
+        <section class="panel-section">
+          <div class="section-heading"><h2 id="rounds-heading" tabindex="-1">Negotiation rounds</h2></div>
+          <p class="field-note">Save the current draft as an immutable round baseline. Notes and the recorded outcome are human-authored and stay separate from calculated results. A saved round is not a recorded vote unless the outcome says so.</p>
+          <label for="round-name">Round name (optional)</label>
+          <input id="round-name" type="text" maxlength="120" placeholder="For example, round two">
+          <label for="round-notes">Round notes (optional, human-authored)</label>
+          <textarea id="round-notes" rows="3" maxlength="4000"></textarea>
+          <label for="round-decision">Recorded outcome (optional, human-authored)</label>
+          <input id="round-decision" type="text" maxlength="500" placeholder="What was decided, in your own words">
+          <div class="scenario-actions"><button class="text-button" id="save-round" type="button">Save round</button></div>
+          <label for="round-select">Saved rounds</label>
+          <select id="round-select"></select>
+          <div class="scenario-actions"><button class="text-button" id="load-round" type="button">Load round</button> <button class="text-button danger" id="delete-round" type="button">Delete round</button></div>
+          <label for="round-compare">Compare current draft with round</label>
+          <select id="round-compare"></select>
+          <div id="round-comparison" tabindex="-1"></div>
+          <p id="round-count" class="field-note"></p>
+        </section>
         <section class="panel-section threshold-panel" id="threshold-setup">
           <div class="label-row"><label for="threshold">Approval threshold</label><output id="threshold-output"></output></div>
           <input id="threshold" type="range" min="0" max="100" step="any">
@@ -268,6 +286,17 @@ SOFTWARE.
           <p id="veto-note" class="field-note">A veto group must reach the overall threshold (or its higher support floor, if one is set). Old drafts without this mark stay valid. A veto is a numerical constraint, not a legal right.</p>
           <div id="weight-shares"></div>
           <div id="weight-renorm" tabindex="-1"></div>
+        </section>
+        <section class="panel-section">
+          <div class="section-heading"><h2 id="relationships-heading" tabindex="-1">Option relationships</h2></div>
+          <p class="field-note">Prerequisites, incompatible pairs, and all-or-nothing sets across clauses. A requires cycle must be selected together. Contradictory and dangling rules are rejected with reasons. Relationships never relax a floor, veto, lock, or budget.</p>
+          <div class="scenario-actions">
+            <button class="text-button" type="button" data-action="add-requires">Add prerequisite</button>
+            <button class="text-button" type="button" data-action="add-excludes">Add incompatible pair</button>
+            <button class="text-button" type="button" data-action="add-linked">Add linked set</button>
+          </div>
+          <div id="relationships-editor" class="groups-editor"></div>
+          <p id="relationships-status" class="field-note" role="status"></p>
         </section>
       </aside>
 

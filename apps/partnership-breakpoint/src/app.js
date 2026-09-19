@@ -32,6 +32,11 @@ import {
   stressGridCsv,
   uniqueCopyName,
   validateConfiguration,
+  validateCommercialPlan,
+  evaluateCommercialPlan,
+  createCommercialBrief,
+  commercialPlanCsv,
+  MAX_PLAN_PERIODS,
 } from './model.js';
 
 const STORAGE_KEY = 'partnership-breakpoint.v1';
@@ -620,7 +625,10 @@ function breakpointSection(result) {
   const threshold = units === 'txn'
     ? `${formatNumber(shock.breakpoint)} txn`
     : `${formatNumber(shock.breakpoint, 4)} units / txn`;
-  return `<section class="panel breakpoint-summary" id="first-breakpoint"><div class="panel-heading"><h2 id="first-breakpoint-title" tabindex="-1">First breakpoint</h2><span class="optional">relative adverse movement</span></div><div class="panel-body"><p><strong>Protect ${participantName} first.</strong> A ${label} of <strong>${compactShock(shock, units)}</strong> reaches the boundary at ${threshold}.</p><p class="output-note">This ranks the smallest percentage movement from the current scenario. It is a comparison aid, not a probability forecast.</p>${copyFirstBreakpointButton()}</div></section>`;
+  const disagreement = result.rankingDisagreement?.differs
+    ? `<p class="output-note ranking-disagreement"><strong>Not the least-headroom participant.</strong> ${escapeAttribute(result.rankingDisagreement.reason)}</p>`
+    : `<p class="output-note">Same participant as the least-volume-headroom ranking in this case.</p>`;
+  return `<section class="panel breakpoint-summary" id="first-breakpoint"><div class="panel-heading"><h2 id="first-breakpoint-title" tabindex="-1">First breakpoint</h2><span class="optional">relative adverse movement</span></div><div class="panel-body"><p><strong>Protect ${participantName} first.</strong> A ${label} of <strong>${compactShock(shock, units)}</strong> reaches the boundary at ${threshold}.</p>${disagreement}<p class="output-note">This ranks the smallest percentage movement from the current scenario. It is a comparison aid, not a probability forecast.</p>${copyFirstBreakpointButton()}</div></section>`;
 }
 
 function participantDetailsOpen(index) {
@@ -1289,6 +1297,8 @@ function resultsPanel(result) {
     ${tornadoSection(result)}
     ${waterfallSection(result)}
     ${stressSection()}
+    ${commercialPlanSection()}
+    ${negotiationAlternativesSection()}
     ${result.volumeCappedByAddressableDemand ? '<p class="error-box">Addressable demand limits realized volume below the post-shock monthly-volume input.</p>' : ''}
     ${participantTable(result)}
     ${shockSection(result)}
@@ -1377,6 +1387,190 @@ function capacityUtilizationCell(participant) {
   const over = pct > 100 + 1e-9;
   const label = `${formatPct(pct)} of capacity`;
   return `<td><span class="capacity-use"><svg class="capacity-meter" role="img" aria-label="${escapeAttribute(label)}" viewBox="0 0 100 8" width="72" height="8"><rect x="0" y="0" width="100" height="8" fill="#eae7de"></rect><rect x="0" y="0" width="${capped}" height="8" fill="${over ? '#d94f3d' : '#1558d6'}"></rect></svg><span>${escapeAttribute(label)}</span></span></td>`;
+}
+
+function defaultPlanFromCase() {
+  return {
+    startingCash: 0,
+    collectionLagPeriods: 0,
+    paymentLagPeriods: 0,
+    periods: [
+      {
+        volume: state.deal.monthlyVolume ?? 0,
+        feePerTransaction: state.deal.feePerTransaction ?? 0,
+        addressableVolume: state.deal.addressableVolume ?? 0,
+        setupExpense: 0,
+      },
+      {
+        volume: state.deal.monthlyVolume ?? 0,
+        feePerTransaction: state.deal.feePerTransaction ?? 0,
+        addressableVolume: state.deal.addressableVolume ?? 0,
+        setupExpense: 0,
+      },
+    ],
+  };
+}
+
+function planField(path, value, { min = 0, step = 'any', title = '' } = {}) {
+  const invalid = value !== null && value !== undefined && (!Number.isFinite(value) || value < min);
+  return `<input type="number" data-path="${path}" min="${min}" step="${step}" value="${inputValue(value)}"${title ? ` title="${escapeAttribute(title)}"` : ''} aria-invalid="${invalid}" />`;
+}
+
+function planOverrideField(periodIndex, participantId, key, value, label) {
+  return `<label>${label}<input type="number" data-plan-override="${key}" data-period="${periodIndex}" data-participant="${escapeAttribute(participantId)}" min="0" step="any" value="${inputValue(value)}" title="Blank inherits the base case ${label.toLowerCase()}." /></label>`;
+}
+
+function isPlainRecord(value) {
+  return value !== null && typeof value === 'object' && !Array.isArray(value);
+}
+
+function commercialPlanSection() {
+  const plan = state.plan ?? null;
+  if (!plan) {
+    return `<section class="panel print-keep" id="commercial-plan"><div class="panel-heading"><h2 id="commercial-plan-title" tabindex="-1">Commercial plan</h2><span class="optional">multi-period</span></div><div class="panel-body"><p>Phase volume, fees, setup costs, and participant assumptions across up to ${MAX_PLAN_PERIODS} periods. The monthly workflow above is unchanged.</p><div class="button-row"><button type="button" data-action="plan-create">Create commercial plan from current case</button></div></div></section>`;
+  }
+  const periodCount = Array.isArray(plan.periods) ? plan.periods.length : 0;
+  const periodRows = (plan.periods ?? []).map((period, index) => `<tr>
+      <td>Period ${index + 1}</td>
+      <td>${planField(`plan.periods.${index}.volume`, period.volume, { step: '1', title: 'Planned transactions for this period.' })}</td>
+      <td>${planField(`plan.periods.${index}.feePerTransaction`, period.feePerTransaction, { step: '0.0001', title: 'Gross fee per transaction for this period.' })}</td>
+      <td>${planField(`plan.periods.${index}.addressableVolume`, period.addressableVolume, { step: '1', title: 'Demand cap for this period. Blank inherits the base case.' })}</td>
+      <td>${planField(`plan.periods.${index}.setupExpense`, period.setupExpense, { step: '0.01', title: 'One-time expense attributed to this period.' })}</td>
+      <td><button type="button" data-action="plan-remove-period" data-period="${index}" ${periodCount <= 1 ? 'disabled title="At least one period is required"' : ''}>Remove</button></td>
+    </tr>`).join('');
+  const overrideBlocks = state.participants.map((participant) => {
+    const cells = (plan.periods ?? []).map((period, index) => {
+      const overrides = period.participants?.[participant.id] ?? {};
+      return `<td>${planOverrideField(index, participant.id, 'variableCostPerTransaction', overrides.variableCostPerTransaction, 'Variable cost / txn')}
+        ${planOverrideField(index, participant.id, 'fixedMonthlyCost', overrides.fixedMonthlyCost, 'Fixed cost')}
+        ${planOverrideField(index, participant.id, 'minimumAcceptableProfit', overrides.minimumAcceptableProfit, 'Minimum profit')}
+        ${planOverrideField(index, participant.id, 'minimumCommitment', overrides.minimumCommitment, 'Min commitment')}
+        ${planOverrideField(index, participant.id, 'capacity', overrides.capacity, 'Capacity')}</td>`;
+    }).join('');
+    return `<details><summary>${escapeAttribute(participant.name)} per-period overrides</summary><p>Blank inherits the base case. Capacity blank inherits too; enter 0 only to model zero capacity.</p><div class="table-wrap" tabindex="0" role="region" aria-label="${escapeAttribute(participant.name)} overrides"><table><caption>Per-period overrides for ${escapeAttribute(participant.name)}</caption><thead><tr>${(plan.periods ?? []).map((_, index) => `<th scope="col">Period ${index + 1}</th>`).join('')}</tr></thead><tbody><tr>${cells}</tr></tbody></table></div></details>`;
+  }).join('');
+  let evaluation = null;
+  let evaluationError = '';
+  try {
+    evaluation = evaluateCommercialPlan(state);
+  } catch (error) {
+    evaluationError = error instanceof ValidationError ? error.errors.join(' ') : String(error?.message ?? error);
+  }
+  const results = evaluation ? commercialPlanResults(evaluation) : `<p class="error-box">${escapeAttribute(evaluationError || 'Resolve invalid inputs before evaluating the plan.')}</p>`;
+  return `<section class="panel print-keep" id="commercial-plan"><div class="panel-heading"><h2 id="commercial-plan-title" tabindex="-1">Commercial plan</h2><span class="optional">multi-period</span></div><div class="panel-body">
+    <p>Periods are whole planning intervals in the same units as the monthly model. Shares stay fixed; omitted participant fields inherit the base case. Profit-and-loss and cash are separate views; cash lags move collections and payments without changing earned amounts.</p>
+    <div class="field-row">
+      <div class="field"><label>Starting cash ${planField('plan.startingCash', plan.startingCash, { step: '0.01', title: 'Cash on hand when period 1 opens.' })}</label></div>
+      <div class="field"><label>Collection lag (periods) ${planField('plan.collectionLagPeriods', plan.collectionLagPeriods ?? 0, { step: '1', title: 'Periods between earning revenue and collecting it.' })}</label></div>
+      <div class="field"><label>Payment lag (periods) ${planField('plan.paymentLagPeriods', plan.paymentLagPeriods ?? 0, { step: '1', title: 'Periods between incurring expense and paying it.' })}</label></div>
+    </div>
+    <div class="button-row"><button type="button" data-action="plan-add-period" ${periodCount >= MAX_PLAN_PERIODS ? 'disabled title="Period limit reached"' : ''}>Add period</button><button type="button" data-action="plan-remove">Remove commercial plan</button><button type="button" data-action="plan-export-brief">Export commercial brief</button><button type="button" data-action="plan-export-csv">Export plan CSV</button></div>
+    <div class="table-wrap" tabindex="0" role="region" aria-label="Commercial plan periods"><table><caption>Per-period deal assumptions</caption><thead><tr><th scope="col">Period</th><th scope="col">Volume</th><th scope="col">Fee / txn</th><th scope="col">Addressable</th><th scope="col">Setup expense</th><th scope="col">Row</th></tr></thead><tbody>${periodRows}</tbody></table></div>
+    ${overrideBlocks}
+    ${results}
+  </div></section>`;
+}
+
+function commercialPlanResults(plan) {
+  const profitRows = plan.participantPeriods.map((entry) => `<tr><th scope="row">${escapeAttribute(entry.name)}</th>${entry.rows.map((row) => `<td class="${row.viable ? '' : 'failure-text'}">${formatMoney(row.monthlyProfit)}${row.viable ? '' : ' (exit)'}</td>`).join('')}<td><strong>${formatMoney(entry.cumulativeOperating)}</strong></td><td>${entry.firstConstrainedPeriod === null ? 'None' : `Period ${entry.firstConstrainedPeriod}`}</td></tr>`).join('');
+  const totals = plan.periodTotals.map((row) => `<tr><th scope="row">Period ${row.period}</th><td>${formatMoney(row.operatingContribution)}</td><td>${formatMoney(row.setupExpense)}</td><td>${formatMoney(row.netContribution)}</td><td><strong>${formatMoney(row.cumulativeNet)}</strong></td></tr>`).join('');
+  const cashRows = plan.cash.rows.map((row) => `<tr><th scope="row">Period ${row.period}</th><td>${formatMoney(row.openingCash)}</td><td>${formatMoney(row.cashIn)}</td><td>${formatMoney(row.cashOut)}</td><td><strong>${formatMoney(row.closingCash)}</strong></td></tr>`).join('');
+  const recoveryLabel = plan.recovery.status === 'recovered'
+    ? `Recovered in period ${plan.recovery.period}.`
+    : plan.recovery.status === 'none-required'
+      ? 'No setup expense to recover.'
+      : plan.recovery.status === 'impossible'
+        ? 'Recovery is impossible under the stated assumptions.'
+        : `Not recovered within ${plan.horizon} periods (short ${formatMoney(plan.recovery.shortfall)}).`;
+  const brief = `Recovery: ${recoveryLabel} Funding requirement: ${formatMoney(plan.cash.fundingRequirement)}.`;
+  return `<h3>Period profitability</h3><p>${escapeAttribute(brief)}</p>
+    <div class="table-wrap" tabindex="0" role="region" aria-label="Period profit by participant"><table><caption>Monthly profit per participant per period; (exit) marks a failed exit test</caption><thead><tr><th scope="col">Participant</th>${plan.periodTotals.map((row) => `<th scope="col">Period ${row.period}</th>`).join('')}<th scope="col">Cumulative</th><th scope="col">First constrained</th></tr></thead><tbody>${profitRows}</tbody></table></div>
+    <h3>Partnership totals</h3>
+    <div class="table-wrap" tabindex="0" role="region" aria-label="Partnership period totals"><table><caption>Operating contribution, setup, and cumulative net per period</caption><thead><tr><th scope="col">Period</th><th scope="col">Operating</th><th scope="col">Setup</th><th scope="col">Net</th><th scope="col">Cumulative net</th></tr></thead><tbody>${totals}</tbody></table></div>
+    <h3>Cash schedule</h3><p>Opening cash, movements, and closing cash per period. Amounts arriving or due after the horizon are memo lines, not counted twice.</p>
+    <div class="table-wrap" tabindex="0" role="region" aria-label="Cash schedule"><table><caption>Cash movements with collection and payment lags</caption><thead><tr><th scope="col">Period</th><th scope="col">Opening</th><th scope="col">In</th><th scope="col">Out</th><th scope="col">Closing</th></tr></thead><tbody>${cashRows}</tbody></table></div>
+    <p>Minimum closing cash ${formatMoney(plan.cash.minClosingCash)}. Receivables after horizon ${formatMoney(plan.cash.receivablesAfterHorizon)}. Payables after horizon ${formatMoney(plan.cash.payablesAfterHorizon)}.</p>
+    <section class="print-only print-keep"><h2>Commercial plan brief</h2><p>${escapeAttribute(brief)} Horizon operating contribution ${escapeAttribute(formatMoney(plan.horizonOperatingContribution))}; setup ${escapeAttribute(formatMoney(plan.totalSetupExpense))}.</p></section>`;
+}
+
+function defaultExplorationFromCase() {
+  const fee = state.deal.feePerTransaction ?? 0;
+  return {
+    feeLevels: [fee, fee, fee].map((value, index) => (index === 0 ? Math.max(0, value * 0.9) : index === 1 ? value : value * 1.1)),
+    shareModes: ['current', 'equal', 'funded'],
+    commitmentRelief: false,
+    capacityInvestments: [],
+    objective: 'stress-holds',
+  };
+}
+
+function formatSignedMoney(value) {
+  if (!Number.isFinite(value)) return 'Impossible';
+  const sign = value > 0 ? '+' : value < 0 ? '−' : '';
+  const currency = currencyPrefix();
+  const amount = formatNumber(Math.abs(value), 2);
+  return `${sign}${currency ? `${currency} ${amount}` : `${amount} units`}`;
+}
+
+function negotiationAlternativesSection() {
+  const exploration = state.alternatives ?? null;
+  if (!exploration) {
+    return `<section class="panel print-keep" id="negotiation-alternatives"><div class="panel-heading"><h2 id="negotiation-alternatives-title" tabindex="-1">Negotiation alternatives</h2><span class="optional">bounded grid</span></div><div class="panel-body"><p>Compare fee levels, share structures, commitment relief, and single capacity investments on one explicit grid. Nothing is applied until you choose a candidate.</p><div class="button-row"><button type="button" data-action="alternatives-create">Create exploration from current case</button></div></div></section>`;
+  }
+  const modes = exploration.shareModes ?? [];
+  const modeButton = (mode, label) => `<button type="button" data-action="alternatives-mode" data-mode="${mode}" aria-pressed="${modes.includes(mode)}">${label}</button>`;
+  const investmentRows = (exploration.capacityInvestments ?? []).map((investment, index) => `<tr>
+      <td><select data-alt-invest-participant="${index}" aria-label="Investment ${index + 1} participant">${state.participants.map((item) => `<option value="${escapeAttribute(item.id)}" ${item.id === investment.participantId ? 'selected' : ''}>${escapeAttribute(item.name)}</option>`).join('')}</select></td>
+      <td><input type="number" data-alt-invest-capacity="${index}" min="0" step="any" value="${inputValue(investment.addedCapacity)}" aria-label="Investment ${index + 1} added capacity" /></td>
+      <td><input type="number" data-alt-invest-cost="${index}" min="0" step="any" value="${inputValue(investment.investmentCost)}" aria-label="Investment ${index + 1} cost" /></td>
+      <td><button type="button" data-action="alternatives-remove-investment" data-index="${index}">Remove</button></td>
+    </tr>`).join('');
+  let explored = null;
+  let exploredError = '';
+  try {
+    explored = exploreNegotiationAlternatives(state);
+  } catch (error) {
+    exploredError = error instanceof ValidationError ? error.errors.join(' ') : String(error?.message ?? error);
+  }
+  const results = explored ? negotiationAlternativesResults(explored) : `<p class="error-box">${escapeAttribute(exploredError || 'Resolve invalid exploration inputs.')}</p>`;
+  return `<section class="panel print-keep" id="negotiation-alternatives"><div class="panel-heading"><h2 id="negotiation-alternatives-title" tabindex="-1">Negotiation alternatives</h2><span class="optional">bounded grid</span></div><div class="panel-body">
+    <p>Each candidate changes only fee, shares, commitments, or one capacity investment. Volume, costs, floors, and stress settings stay fixed. Pin a snapshot first to keep the baseline; applying a candidate can be undone.</p>
+    <div class="field"><label>Fee levels, comma-separated <input type="text" data-action="alternative-fees" value="${escapeAttribute((exploration.feeLevels ?? []).join(', '))}" title="One through six finite non-negative fee levels." /></label></div>
+    <div class="button-row" role="group" aria-label="Share modes">${modeButton('current', 'Current shares')}${modeButton('equal', 'Equal shares')}${modeButton('funded', 'Stress-funded shares')}</div>
+    <div class="button-row"><button type="button" data-action="alternatives-relief" aria-pressed="${exploration.commitmentRelief === true}">Include commitment relief</button><button type="button" data-action="alternatives-objective" data-objective="stress-holds" aria-pressed="${(exploration.objective ?? 'stress-holds') === 'stress-holds'}">Rank by stress holds</button><button type="button" data-action="alternatives-objective" data-objective="profit" aria-pressed="${exploration.objective === 'profit'}">Rank by profit</button></div>
+    <h3>Capacity investments</h3><p>Tested one at a time, never combined. Each raises one participant's capacity and adds its cost to fixed cost.</p>
+    <div class="table-wrap" tabindex="0" role="region" aria-label="Capacity investments"><table><caption>Single capacity investments, at most three</caption><thead><tr><th scope="col">Participant</th><th scope="col">Added capacity</th><th scope="col">Investment cost</th><th scope="col">Row</th></tr></thead><tbody>${investmentRows || '<tr><td colspan="4">No capacity investments. Every candidate keeps current capacities.</td></tr>'}</tbody></table></div>
+    <div class="button-row"><button type="button" data-action="alternatives-add-investment" ${(exploration.capacityInvestments ?? []).length >= 3 ? 'disabled title="Investment limit reached"' : ''}>Add investment</button><button type="button" data-action="alternatives-remove">Remove exploration</button><button type="button" data-action="alternatives-export-csv">Export candidates CSV</button></div>
+    ${results}
+  </div></section>`;
+}
+
+function negotiationAlternativesResults(explored) {
+  const rows = explored.candidates.map((candidate) => {
+    const gains = candidate.participantProfits
+      .filter((entry) => Math.abs(entry.profitDelta) > 1e-9)
+      .map((entry) => `${entry.name} ${formatSignedMoney(entry.profitDelta)}`)
+      .join('; ') || 'no change';
+    return `<tr${candidate.id === explored.bestFeasibleId ? ' class="is-best"' : ''}>
+      <td>${candidate.rank}</td><th scope="row">${escapeAttribute(candidate.id)}</th>
+      <td>${formatNumber(candidate.fee, 4)}</td><td>${escapeAttribute(candidate.shareMode)}</td>
+      <td>${candidate.commitmentRelief ? 'relieved' : 'kept'}</td>
+      <td>${candidate.investment ? `+${formatNumber(candidate.investment.addedCapacity)} ${escapeAttribute(candidate.investment.participantId)} at ${formatMoney(candidate.investment.investmentCost)}` : 'none'}</td>
+      <td>${candidate.feasible ? 'Viable' : `<span class="failure-text">Fails: ${escapeAttribute(candidate.failureSummary)}</span>`}</td>
+      <td>${candidate.stressHolds} of ${candidate.stressCases}</td>
+      <td>${formatMoney(candidate.monthlyTotalProfit)}</td>
+      <td>${escapeAttribute(candidate.weakestBinding)}</td>
+      <td>${escapeAttribute(gains)}</td>
+      <td>${candidate.feasible ? `<button type="button" data-action="alternatives-apply" data-candidate="${candidate.id}">Apply</button>` : ''}</td>
+    </tr>`;
+  }).join('');
+  const skipped = explored.skipped.length
+    ? `<p>Skipped grid points: ${explored.skipped.map((item) => `${escapeAttribute(item.id)} (${escapeAttribute(item.reason)})`).join('; ')}</p>`
+    : '';
+  return `<h3>Candidates</h3><p>Objective ${escapeAttribute(explored.objective)} on a declared grid of ${explored.candidateCount} (${explored.feasibleCount} viable). This ranks the grid only; it is not an optimum over continuous terms. Held constant: ${escapeAttribute(explored.assumptionsHeldConstant.join(', '))}.</p>
+    <div class="table-wrap" tabindex="0" role="region" aria-label="Negotiation alternative candidates"><table><caption>Candidate structures, ranked by the stated objective</caption><thead><tr><th scope="col">Rank</th><th scope="col">Candidate</th><th scope="col">Fee</th><th scope="col">Shares</th><th scope="col">Commitments</th><th scope="col">Investment</th><th scope="col">Monthly</th><th scope="col">Stress</th><th scope="col">Total profit</th><th scope="col">Weakest binding</th><th scope="col">Gains / losses vs current</th><th scope="col">Apply</th></tr></thead><tbody>${rows}</tbody></table></div>
+    ${skipped}
+    <section class="print-only print-keep"><h2>Negotiation alternatives</h2><p>Objective ${escapeAttribute(explored.objective)}; ${explored.feasibleCount} of ${explored.candidateCount} candidates viable${explored.bestFeasibleId ? `; best feasible ${escapeAttribute(explored.bestFeasibleId)}` : '; none viable'}.</p></section>`;
 }
 
 function participantTable(result) {
@@ -1690,6 +1884,66 @@ function attachEvents() {
         }
       } else {
         setPath(input.dataset.path, numberFromInput(input.value, input.dataset.optional === 'true'));
+      }
+      activePreset = '';
+      const validation = validateConfiguration(state);
+      refresh(validation.valid
+        ? (standaloneFileMode ? 'Saved locally. Export JSON to transfer this standalone case.' : 'Saved locally and updated the shareable URL.')
+        : `Invalid inputs are not saved. ${summarizeErrors(validation.errors)}`);
+      return;
+    }
+    if (input.dataset.action === 'alternative-fees') {
+      const exploration = state.alternatives;
+      if (!exploration) return;
+      checkpoint();
+      const fees = input.value.split(',').map((part) => part.trim()).filter((part) => part !== '').map(Number);
+      exploration.feeLevels = fees;
+      activePreset = '';
+      const validation = validateConfiguration(state);
+      refresh(validation.valid
+        ? 'Fee levels updated.'
+        : `Invalid inputs are not saved. ${summarizeErrors(validation.errors)}`);
+      return;
+    }
+    if (input.dataset.altInvestParticipant !== undefined || input.dataset.altInvestCapacity !== undefined || input.dataset.altInvestCost !== undefined) {
+      const exploration = state.alternatives;
+      const rawIndex = input.dataset.altInvestParticipant ?? input.dataset.altInvestCapacity ?? input.dataset.altInvestCost;
+      const index = Number(rawIndex);
+      const investments = exploration?.capacityInvestments;
+      if (!exploration || !Array.isArray(investments) || !Number.isInteger(index) || index < 0 || index >= investments.length) return;
+      checkpoint();
+      if (input.dataset.altInvestParticipant !== undefined) {
+        investments[index].participantId = input.value;
+      } else if (input.dataset.altInvestCapacity !== undefined) {
+        investments[index].addedCapacity = numberFromInput(input.value, false);
+      } else {
+        investments[index].investmentCost = numberFromInput(input.value, false);
+      }
+      activePreset = '';
+      const validation = validateConfiguration(state);
+      refresh(validation.valid
+        ? 'Capacity investment updated.'
+        : `Invalid inputs are not saved. ${summarizeErrors(validation.errors)}`);
+      return;
+    }
+    if (input.dataset.planOverride) {
+      checkpoint();
+      const periodIndex = Number(input.dataset.period);
+      const participantId = input.dataset.participant;
+      const key = input.dataset.planOverride;
+      const periods = state.plan?.periods;
+      if (!Array.isArray(periods) || !Number.isInteger(periodIndex) || periodIndex < 0 || periodIndex >= periods.length) return;
+      const period = periods[periodIndex];
+      period.participants = isPlainRecord(period.participants) ? period.participants : {};
+      if (input.value.trim() === '') {
+        if (isPlainRecord(period.participants[participantId])) {
+          delete period.participants[participantId][key];
+          if (Object.keys(period.participants[participantId]).length === 0) delete period.participants[participantId];
+        }
+        if (Object.keys(period.participants).length === 0) delete period.participants;
+      } else {
+        if (!isPlainRecord(period.participants[participantId])) period.participants[participantId] = {};
+        period.participants[participantId][key] = numberFromInput(input.value, false);
       }
       activePreset = '';
       const validation = validateConfiguration(state);
@@ -2356,6 +2610,21 @@ function attachEvents() {
     if (action === 'copy-deal-title') copyDealTitleCurrency();
     if (action === 'copy-share-url') copyShareUrl();
     if (action === 'export-csv') exportStressCsv(false);
+    if (action === 'plan-create') createCommercialPlan();
+    if (action === 'plan-remove') removeCommercialPlan();
+    if (action === 'plan-add-period') addCommercialPlanPeriod();
+    if (action === 'plan-remove-period') removeCommercialPlanPeriod(Number(button.dataset.period));
+    if (action === 'plan-export-brief') exportCommercialPlanBrief();
+    if (action === 'plan-export-csv') exportCommercialPlanCsv();
+    if (action === 'alternatives-create') createNegotiationExploration();
+    if (action === 'alternatives-remove') removeNegotiationExploration();
+    if (action === 'alternatives-mode') toggleAlternativeShareMode(button.dataset.mode);
+    if (action === 'alternatives-relief') toggleAlternativeRelief();
+    if (action === 'alternatives-objective') setAlternativeObjective(button.dataset.objective);
+    if (action === 'alternatives-add-investment') addAlternativeInvestment();
+    if (action === 'alternatives-remove-investment') removeAlternativeInvestment(Number(button.dataset.index));
+    if (action === 'alternatives-apply') applyNegotiationCandidate(button.dataset.candidate);
+    if (action === 'alternatives-export-csv') exportNegotiationCandidatesCsv();
     if (action === 'export-visible-csv') exportStressCsv(true);
     if (action === 'copy-visible-csv') copyVisibleStressCsv();
     if (action === 'export-participants-csv') exportParticipantsCsv();
@@ -5456,6 +5725,146 @@ function exportParticipantsCsv() {
   }
   downloadText(participantsToCsv(state), 'text/csv;charset=utf-8', exportDownloadName('participants', caseExportTitle()));
   setNotice('Participant CSV exported. Columns match import. Formula-like names are stored as text.');
+}
+
+function createNegotiationExploration() {
+  checkpoint();
+  state.alternatives = defaultExplorationFromCase();
+  activePreset = '';
+  refresh('Exploration created from the current case. Edit the grid, then apply one viable candidate at a time.');
+}
+
+function removeNegotiationExploration() {
+  checkpoint();
+  delete state.alternatives;
+  activePreset = '';
+  refresh('Exploration removed. The monthly case is unchanged.');
+}
+
+function withExploration() {
+  if (!state.alternatives) return null;
+  return state.alternatives;
+}
+
+function toggleAlternativeShareMode(mode) {
+  const exploration = withExploration();
+  if (!exploration || !['current', 'equal', 'funded'].includes(mode)) return;
+  checkpoint();
+  const modes = (exploration.shareModes ?? []).filter((item) => item !== mode);
+  if (!exploration.shareModes?.includes(mode)) modes.push(mode);
+  exploration.shareModes = ['current', 'equal', 'funded'].filter((item) => modes.includes(item));
+  activePreset = '';
+  refresh(validateConfiguration(state).valid ? 'Share modes updated.' : `Invalid inputs are not saved. ${summarizeErrors(validateConfiguration(state).errors)}`);
+}
+
+function toggleAlternativeRelief() {
+  const exploration = withExploration();
+  if (!exploration) return;
+  checkpoint();
+  exploration.commitmentRelief = exploration.commitmentRelief !== true;
+  activePreset = '';
+  refresh('Commitment-relief dimension updated.');
+}
+
+function setAlternativeObjective(objective) {
+  const exploration = withExploration();
+  if (!exploration || !['stress-holds', 'profit'].includes(objective)) return;
+  checkpoint();
+  exploration.objective = objective;
+  activePreset = '';
+  refresh('Ranking objective updated.');
+}
+
+function addAlternativeInvestment() {
+  const exploration = withExploration();
+  if (!exploration || (exploration.capacityInvestments ?? []).length >= 3 || !state.participants.length) return;
+  checkpoint();
+  exploration.capacityInvestments = [...(exploration.capacityInvestments ?? []),
+    { participantId: state.participants[0].id, addedCapacity: 0, investmentCost: 0 }];
+  activePreset = '';
+  refresh('Capacity investment added. Choose the participant, added capacity, and cost.');
+}
+
+function removeAlternativeInvestment(index) {
+  const exploration = withExploration();
+  if (!exploration || !Number.isInteger(index) || index < 0 || index >= (exploration.capacityInvestments ?? []).length) return;
+  checkpoint();
+  exploration.capacityInvestments.splice(index, 1);
+  activePreset = '';
+  refresh('Capacity investment removed.');
+}
+
+function applyNegotiationCandidate(candidateId) {
+  try {
+    checkpoint();
+    const next = applyNegotiationAlternative(state, candidateId);
+    state.deal = next.deal;
+    state.participants = next.participants;
+    activePreset = '';
+    refresh(`Applied ${candidateId}. The previous case is on the undo stack; pin a snapshot to keep the baseline.`);
+  } catch (error) {
+    setNotice(error instanceof ValidationError ? summarizeErrors(error.errors) : String(error?.message ?? error));
+  }
+}
+
+function exportNegotiationCandidatesCsv() {
+  try {
+    downloadText(negotiationAlternativesCsv(state), 'text/csv;charset=utf-8', exportDownloadName('participants', `${caseExportTitle()}-alternatives`));
+    setNotice('Candidates CSV exported. One row per explored alternative; skipped grid points follow as memo rows.');
+  } catch (error) {
+    setNotice(error instanceof ValidationError ? `Resolve invalid inputs before exporting CSV. ${summarizeErrors(error.errors)}` : String(error?.message ?? error));
+  }
+}
+
+function createCommercialPlan() {
+  checkpoint();
+  state.plan = defaultPlanFromCase();
+  activePreset = '';
+  refresh('Commercial plan created from the current case. Edit periods, then review profitability, recovery, and cash.');
+}
+
+function removeCommercialPlan() {
+  checkpoint();
+  delete state.plan;
+  activePreset = '';
+  refresh('Commercial plan removed. The monthly case is unchanged.');
+}
+
+function addCommercialPlanPeriod() {
+  if (!state.plan || !Array.isArray(state.plan.periods) || state.plan.periods.length >= MAX_PLAN_PERIODS) return;
+  checkpoint();
+  const last = state.plan.periods[state.plan.periods.length - 1];
+  state.plan.periods.push({ ...JSON.parse(JSON.stringify(last)) });
+  activePreset = '';
+  refresh('Period added, copied from the previous period. Edit its assumptions.');
+}
+
+function removeCommercialPlanPeriod(index) {
+  if (!state.plan || !Array.isArray(state.plan.periods) || state.plan.periods.length <= 1) return;
+  if (!Number.isInteger(index) || index < 0 || index >= state.plan.periods.length) return;
+  checkpoint();
+  state.plan.periods.splice(index, 1);
+  activePreset = '';
+  refresh('Period removed.');
+}
+
+function exportCommercialPlanBrief() {
+  try {
+    const brief = createCommercialBrief(state);
+    downloadText(`${JSON.stringify(brief, null, 2)}\n`, 'application/json;charset=utf-8', exportDownloadName('report', `${caseExportTitle()}-commercial-plan`));
+    setNotice('Commercial brief exported. It records canonical inputs and the evaluated plan; import the separate case JSON to reopen the work.');
+  } catch (error) {
+    setNotice(error instanceof ValidationError ? `Resolve invalid inputs before exporting a brief. ${summarizeErrors(error.errors)}` : String(error?.message ?? error));
+  }
+}
+
+function exportCommercialPlanCsv() {
+  try {
+    downloadText(commercialPlanCsv(state), 'text/csv;charset=utf-8', exportDownloadName('participants', `${caseExportTitle()}-commercial-plan`));
+    setNotice('Commercial plan CSV exported. Period-profit, plan-total, cash, recovery, and funding rows are separate sections.');
+  } catch (error) {
+    setNotice(error instanceof ValidationError ? `Resolve invalid inputs before exporting CSV. ${summarizeErrors(error.errors)}` : String(error?.message ?? error));
+  }
 }
 
 function exportStressCsv(visibleOnly = false) {

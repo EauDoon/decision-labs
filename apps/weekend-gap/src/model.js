@@ -6,6 +6,10 @@
 export const SIMULATION_HOURS = 72;
 export const START_DAY_INDEX = 5; // Friday, where Sunday is 0.
 export const START_HOUR = 15;
+export const MIN_HORIZON_HOURS = 24;
+export const MAX_HORIZON_HOURS = 336;
+export const MAX_CALENDAR_OVERRIDES = 32;
+export const MAX_FUNDING_TRANCHES = 16;
 
 const SCENARIO_FORMAT = "weekend-gap-scenario";
 const SCENARIO_VERSION = 1;
@@ -13,6 +17,7 @@ const ANALYSIS_FORMAT = "weekend-gap-analysis";
 
 export const DEFAULT_SCENARIO = Object.freeze({
   name: "Normal Friday",
+  horizonHours: 72,
   issuerLabel: "Issuer",
   bankLabel: "Bank",
   payoutLabel: "Payout",
@@ -435,6 +440,7 @@ export const PRESETS = Object.freeze({
 
 const FIELD_RULES = Object.freeze({
   name: { type: "text", maxLength: 80 },
+  horizonHours: { min: MIN_HORIZON_HOURS, max: MAX_HORIZON_HOURS, integer: true },
   issuerLabel: { type: "text", maxLength: 40 },
   bankLabel: { type: "text", maxLength: 40 },
   payoutLabel: { type: "text", maxLength: 40 },
@@ -585,7 +591,209 @@ export function sanitizeScenario(raw = {}) {
     scenario[endKey] = end;
   }
 
+  const overrides = sanitizeCalendarOverrides(source.calendarOverrides, scenario.horizonHours);
+  if (overrides.errors.length) {
+    errors.push(...overrides.errors);
+  } else if (source.calendarOverrides !== undefined) {
+    scenario.calendarOverrides = overrides.overrides;
+  }
+
+  const funding = sanitizeFundingTranches(source.fundingTranches, scenario.horizonHours);
+  if (funding.errors.length) {
+    errors.push(...funding.errors);
+  } else if (source.fundingTranches !== undefined) {
+    scenario.fundingTranches = funding.tranches;
+  }
+
   return { scenario, errors: [...new Set(errors)] };
+}
+
+/** Validated simulation horizon in whole hours. Sanitized scenarios always carry one. */
+export function scenarioHours(scenarioInput) {
+  const scenario = scenarioInput && typeof scenarioInput === "object" ? scenarioInput : {};
+  const hours = scenario.horizonHours;
+  if (Number.isInteger(hours) && hours >= MIN_HORIZON_HOURS && hours <= MAX_HORIZON_HOURS) return hours;
+  return SIMULATION_HOURS;
+}
+
+/**
+ * Validates explicit dated operating-window overrides. Each override names a
+ * half-open hour range [startHour, endHour) inside the horizon plus any subset
+ * of gate states and throughput changes. Overlapping ranges are allowed;
+ * later entries win per field. Ranges outside the horizon are rejected, not
+ * clamped, so a horizon change cannot silently reinterpret saved overrides.
+ */
+export function sanitizeCalendarOverrides(raw, horizon) {
+  const errors = [];
+  if (raw === undefined) return { overrides: undefined, errors };
+  if (!Array.isArray(raw)) return { overrides: undefined, errors: ["Calendar overrides must be an array."] };
+  if (raw.length > MAX_CALENDAR_OVERRIDES) {
+    return { overrides: undefined, errors: [`Calendar overrides allow at most ${MAX_CALENDAR_OVERRIDES} entries.`] };
+  }
+  const limit = Number.isInteger(horizon) && horizon >= MIN_HORIZON_HOURS && horizon <= MAX_HORIZON_HOURS ? horizon : SIMULATION_HOURS;
+  const gates = ["issuer", "bank", "payout"];
+  const overrides = [];
+  raw.forEach((entry, index) => {
+    const prefix = `Calendar override ${index + 1}`;
+    if (!entry || typeof entry !== "object" || Array.isArray(entry)) {
+      errors.push(`${prefix} must be an object.`);
+      return;
+    }
+    for (const key of Object.keys(entry)) {
+      if (!["startHour", "endHour", "gates", "fx", "throughput"].includes(key)) {
+        errors.push(`${prefix} has unexpected field: ${key}.`);
+      }
+    }
+    const startHour = entry.startHour;
+    const endHour = entry.endHour;
+    if (!Number.isInteger(startHour) || startHour < 0 || startHour >= limit) {
+      errors.push(`${prefix} start hour must be a whole hour from 0 through ${limit - 1}.`);
+    }
+    if (!Number.isInteger(endHour) || endHour <= 0 || endHour > limit) {
+      errors.push(`${prefix} end hour must be a whole hour from 1 through ${limit}.`);
+    }
+    if (Number.isInteger(startHour) && Number.isInteger(endHour) && startHour < limit && endHour <= limit && startHour >= endHour) {
+      errors.push(`${prefix} must end after it starts.`);
+    }
+    const normalized = { startHour, endHour };
+    if (entry.gates !== undefined) {
+      if (!entry.gates || typeof entry.gates !== "object" || Array.isArray(entry.gates)) {
+        errors.push(`${prefix} gates must be an object.`);
+      } else {
+        normalized.gates = {};
+        for (const key of Object.keys(entry.gates)) {
+          if (!gates.includes(key)) errors.push(`${prefix} gates has unexpected gate: ${key}.`);
+          else if (entry.gates[key] !== "open" && entry.gates[key] !== "closed") errors.push(`${prefix} gate ${key} must be open or closed.`);
+          else normalized.gates[key] = entry.gates[key];
+        }
+      }
+    }
+    if (entry.fx !== undefined) {
+      if (entry.fx !== "weekday" && entry.fx !== "weekend") errors.push(`${prefix} FX must be weekday or weekend.`);
+      else normalized.fx = entry.fx;
+    }
+    if (entry.throughput !== undefined) {
+      if (!entry.throughput || typeof entry.throughput !== "object" || Array.isArray(entry.throughput)) {
+        errors.push(`${prefix} throughput must be an object.`);
+      } else {
+        normalized.throughput = {};
+        for (const key of ["issuer", "fx", "payout"]) {
+          if (entry.throughput[key] === undefined) continue;
+          if (typeof entry.throughput[key] !== "number" || !Number.isFinite(entry.throughput[key]) || entry.throughput[key] < 0 || entry.throughput[key] > 1000000000) {
+            errors.push(`${prefix} ${key} throughput must be finite from 0 through 1,000,000,000.`);
+          } else {
+            normalized.throughput[key] = entry.throughput[key];
+          }
+        }
+        for (const key of Object.keys(entry.throughput)) {
+          if (!["issuer", "fx", "payout"].includes(key)) errors.push(`${prefix} throughput has unexpected field: ${key}.`);
+        }
+      }
+    }
+    overrides.push(normalized);
+  });
+  if (errors.length) return { overrides: undefined, errors };
+  return { overrides: Object.freeze(overrides.map((entry) => Object.freeze(entry))), errors };
+}
+
+/**
+ * Merged override in force at one hour offset. Later entries win per field,
+ * so a dated closure can carry a narrower reopening inside it.
+ */
+export function overrideAtHour(scenarioInput, hourOffset) {
+  const { scenario } = sanitizeScenario(scenarioInput);
+  const overrides = Array.isArray(scenario.calendarOverrides) ? scenario.calendarOverrides : [];
+  const hour = Math.floor(hourOffset);
+  const merged = { gates: {}, fx: null, throughput: {} };
+  let found = false;
+  for (const entry of overrides) {
+    if (hour < entry.startHour || hour >= entry.endHour) continue;
+    found = true;
+    for (const [gate, state] of Object.entries(entry.gates ?? {})) merged.gates[gate] = state;
+    if (entry.fx !== undefined) merged.fx = entry.fx;
+    for (const [key, value] of Object.entries(entry.throughput ?? {})) merged.throughput[key] = value;
+  }
+  return found ? merged : null;
+}
+
+/**
+ * Validates scheduled funding tranches. Each tranche names a whole hour inside
+ * the horizon when reserve cash is added before that hour settles, plus an
+ * optional cost of securing the funds. Costs are tracked as an expense; they
+ * never reduce the reserve. Any invalid entry rejects the whole schedule, so a
+ * horizon change cannot silently reinterpret saved tranches.
+ */
+export function sanitizeFundingTranches(raw, horizon) {
+  const errors = [];
+  if (raw === undefined) return { tranches: undefined, errors };
+  if (!Array.isArray(raw)) return { tranches: undefined, errors: ["Funding tranches must be an array."] };
+  if (raw.length > MAX_FUNDING_TRANCHES) {
+    return { tranches: undefined, errors: [`Funding tranches allow at most ${MAX_FUNDING_TRANCHES} entries.`] };
+  }
+  const limit = Number.isInteger(horizon) && horizon >= MIN_HORIZON_HOURS && horizon <= MAX_HORIZON_HOURS ? horizon : SIMULATION_HOURS;
+  const tranches = [];
+  raw.forEach((entry, index) => {
+    const prefix = `Funding tranche ${index + 1}`;
+    if (!entry || typeof entry !== "object" || Array.isArray(entry)) {
+      errors.push(`${prefix} must be an object.`);
+      return;
+    }
+    for (const key of Object.keys(entry)) {
+      if (!["hour", "amountAud", "costAud"].includes(key)) {
+        errors.push(`${prefix} has unexpected field: ${key}.`);
+      }
+    }
+    const hour = entry.hour;
+    if (!Number.isInteger(hour) || hour < 0 || hour >= limit) {
+      errors.push(`${prefix} hour must be a whole hour from 0 through ${limit - 1}.`);
+    }
+    const amount = typeof entry.amountAud === "number" && Number.isFinite(entry.amountAud)
+      ? Math.round(entry.amountAud * 100) / 100 : NaN;
+    if (!Number.isFinite(amount) || amount <= 0 || amount > 1000000000) {
+      errors.push(`${prefix} amount must be more than A$0 and at most A$1,000,000,000.`);
+    }
+    let cost = 0;
+    if (entry.costAud !== undefined) {
+      cost = typeof entry.costAud === "number" && Number.isFinite(entry.costAud)
+        ? Math.round(entry.costAud * 100) / 100 : NaN;
+      if (!Number.isFinite(cost) || cost < 0 || cost > 1000000000) {
+        errors.push(`${prefix} cost must be from A$0 through A$1,000,000,000.`);
+      }
+    }
+    tranches.push({ hour, amountAud: amount, costAud: cost });
+  });
+  if (errors.length) return { tranches: undefined, errors };
+  return { tranches: Object.freeze(tranches.map((entry) => Object.freeze(entry))), errors };
+}
+
+/**
+ * Funding scheduled at one hour offset: cash added to the reserve before that
+ * hour settles, plus the tracked cost of securing it. Costs never reduce the
+ * reserve; they are reported as an expense beside the funded total.
+ */
+export function fundingAtHour(scenarioInput, hourOffset) {
+  const { scenario } = sanitizeScenario(scenarioInput);
+  const tranches = Array.isArray(scenario.fundingTranches) ? scenario.fundingTranches : [];
+  const hour = Math.floor(hourOffset);
+  let amountAud = 0;
+  let costAud = 0;
+  for (const entry of tranches) {
+    if (entry.hour !== hour) continue;
+    amountAud = Math.round((amountAud + entry.amountAud) * 100) / 100;
+    costAud = Math.round((costAud + entry.costAud) * 100) / 100;
+  }
+  return { amountAud, costAud };
+}
+
+/** Hourly throughput inputs with any scheduled capacity change applied. */
+export function throughputAtHour(scenarioInput, hourOffset) {
+  const { scenario } = sanitizeScenario(scenarioInput);
+  const override = overrideAtHour(scenario, hourOffset)?.throughput ?? {};
+  return {
+    issuer: override.issuer ?? scenario.issuerThroughputAudPerHour,
+    fx: override.fx ?? scenario.fxDepthAudPerHour,
+    payout: override.payout ?? scenario.payoutThroughputAudPerHour,
+  };
 }
 
 export function dayAndHourAt(hourOffset) {
@@ -964,18 +1172,29 @@ function isSundayLunchFxOpenHour(hourOffset, scenario) {
 export function getOperationalStatus(scenarioInput, hourOffset) {
   const { scenario } = sanitizeScenario(scenarioInput);
   const weekend = !isBusinessDay(hourOffset, scenario.mondayHoliday, scenario.saturdayHoliday);
-  const fxWeekday = !weekend || isFridayLateFxHour(hourOffset, scenario) || isSaturdayEarlyFxHour(hourOffset, scenario) || isFridayLateFxOpenHour(hourOffset, scenario) || isSaturdayLateFxOpenHour(hourOffset, scenario) || isSundayLateFxOpenHour(hourOffset, scenario) || isSundayEarlyFxOpenHour(hourOffset, scenario) || isMondayEarlyFxOpenHour(hourOffset, scenario) || isMondayLateFxOpenHour(hourOffset, scenario) || isTuesdayEarlyFxOpenHour(hourOffset, scenario) || isTuesdayLateFxOpenHour(hourOffset, scenario) || isWednesdayEarlyFxOpenHour(hourOffset, scenario) || isWednesdayLateFxOpenHour(hourOffset, scenario) || isThursdayEarlyFxOpenHour(hourOffset, scenario) || isThursdayLateFxOpenHour(hourOffset, scenario) || isFridayEarlyFxOpenHour(hourOffset, scenario) || isSaturdayMiddayFxOpenHour(hourOffset, scenario) || isSundayMiddayFxOpenHour(hourOffset, scenario) || isSaturdayAfternoonFxOpenHour(hourOffset, scenario) || isSundayAfternoonFxOpenHour(hourOffset, scenario) || isSundayMorningFxOpenHour(hourOffset, scenario) || isSaturdayEveningFxOpenHour(hourOffset, scenario) || isSundayEveningFxOpenHour(hourOffset, scenario) || isSundayNightFxOpenHour(hourOffset, scenario) || isSundayLateNightFxOpenHour(hourOffset, scenario) || isSaturdayNightFxOpenHour(hourOffset, scenario) || isSaturdayLateNightFxOpenHour(hourOffset, scenario) || isSundayPredawnFxOpenHour(hourOffset, scenario) || isSundayDawnFxOpenHour(hourOffset, scenario) || isSundayDaybreakFxOpenHour(hourOffset, scenario) || isSundaySunriseFxOpenHour(hourOffset, scenario) || isSundayBreakfastFxOpenHour(hourOffset, scenario) || isSundayBrunchFxOpenHour(hourOffset, scenario) || isSundayLunchFxOpenHour(hourOffset, scenario);
-  const issuerOpen = isOperational(hourOffset, scenario.issuerOpenStartHour, scenario.issuerOpenEndHour, scenario.mondayHoliday, scenario.saturdayHoliday) || isSundayLateIssuerHour(hourOffset, scenario) || isSundayEarlyIssuerHour(hourOffset, scenario) || isSaturdayEarlyIssuerHour(hourOffset, scenario) || isFridayEarlyIssuerHour(hourOffset, scenario);
-  const bankOpen = isOperational(hourOffset, scenario.bankOpenStartHour, scenario.bankOpenEndHour, scenario.mondayHoliday, scenario.saturdayHoliday) || isSundayLateBankHour(hourOffset, scenario) || isSaturdayEarlyBankHour(hourOffset, scenario) || isFridayEarlyBankHour(hourOffset, scenario) || isSaturdayLateBankHour(hourOffset, scenario) || isFridayLateBankHour(hourOffset, scenario);
-  const payoutOpen = isOperational(hourOffset, scenario.payoutOpenStartHour, scenario.payoutOpenEndHour, scenario.mondayHoliday, scenario.saturdayHoliday) || isSundayLatePayoutHour(hourOffset, scenario) || isSaturdayEarlyPayoutHour(hourOffset, scenario) || isFridayEarlyPayoutHour(hourOffset, scenario) || isSaturdayLatePayoutHour(hourOffset, scenario) || isSundayEarlyPayoutHour(hourOffset, scenario);
+  const scheduledFx = overrideAtHour(scenario, hourOffset)?.fx;
+  const fxWeekday = scheduledFx !== null && scheduledFx !== undefined
+    ? scheduledFx === "weekday"
+    : !weekend || isFridayLateFxHour(hourOffset, scenario) || isSaturdayEarlyFxHour(hourOffset, scenario) || isFridayLateFxOpenHour(hourOffset, scenario) || isSaturdayLateFxOpenHour(hourOffset, scenario) || isSundayLateFxOpenHour(hourOffset, scenario) || isSundayEarlyFxOpenHour(hourOffset, scenario) || isMondayEarlyFxOpenHour(hourOffset, scenario) || isMondayLateFxOpenHour(hourOffset, scenario) || isTuesdayEarlyFxOpenHour(hourOffset, scenario) || isTuesdayLateFxOpenHour(hourOffset, scenario) || isWednesdayEarlyFxOpenHour(hourOffset, scenario) || isWednesdayLateFxOpenHour(hourOffset, scenario) || isThursdayEarlyFxOpenHour(hourOffset, scenario) || isThursdayLateFxOpenHour(hourOffset, scenario) || isFridayEarlyFxOpenHour(hourOffset, scenario) || isSaturdayMiddayFxOpenHour(hourOffset, scenario) || isSundayMiddayFxOpenHour(hourOffset, scenario) || isSaturdayAfternoonFxOpenHour(hourOffset, scenario) || isSundayAfternoonFxOpenHour(hourOffset, scenario) || isSundayMorningFxOpenHour(hourOffset, scenario) || isSaturdayEveningFxOpenHour(hourOffset, scenario) || isSundayEveningFxOpenHour(hourOffset, scenario) || isSundayNightFxOpenHour(hourOffset, scenario) || isSundayLateNightFxOpenHour(hourOffset, scenario) || isSaturdayNightFxOpenHour(hourOffset, scenario) || isSaturdayLateNightFxOpenHour(hourOffset, scenario) || isSundayPredawnFxOpenHour(hourOffset, scenario) || isSundayDawnFxOpenHour(hourOffset, scenario) || isSundayDaybreakFxOpenHour(hourOffset, scenario) || isSundaySunriseFxOpenHour(hourOffset, scenario) || isSundayBreakfastFxOpenHour(hourOffset, scenario) || isSundayBrunchFxOpenHour(hourOffset, scenario) || isSundayLunchFxOpenHour(hourOffset, scenario);
+  const scheduledGates = overrideAtHour(scenario, hourOffset)?.gates ?? {};
+  const issuerOpen = scheduledGates.issuer !== undefined
+    ? scheduledGates.issuer === "open"
+    : isOperational(hourOffset, scenario.issuerOpenStartHour, scenario.issuerOpenEndHour, scenario.mondayHoliday, scenario.saturdayHoliday) || isSundayLateIssuerHour(hourOffset, scenario) || isSundayEarlyIssuerHour(hourOffset, scenario) || isSaturdayEarlyIssuerHour(hourOffset, scenario) || isFridayEarlyIssuerHour(hourOffset, scenario);
+  const bankOpen = scheduledGates.bank !== undefined
+    ? scheduledGates.bank === "open"
+    : isOperational(hourOffset, scenario.bankOpenStartHour, scenario.bankOpenEndHour, scenario.mondayHoliday, scenario.saturdayHoliday) || isSundayLateBankHour(hourOffset, scenario) || isSaturdayEarlyBankHour(hourOffset, scenario) || isFridayEarlyBankHour(hourOffset, scenario) || isSaturdayLateBankHour(hourOffset, scenario) || isFridayLateBankHour(hourOffset, scenario);
+  const payoutOpen = scheduledGates.payout !== undefined
+    ? scheduledGates.payout === "open"
+    : isOperational(hourOffset, scenario.payoutOpenStartHour, scenario.payoutOpenEndHour, scenario.mondayHoliday, scenario.saturdayHoliday) || isSundayLatePayoutHour(hourOffset, scenario) || isSaturdayEarlyPayoutHour(hourOffset, scenario) || isFridayEarlyPayoutHour(hourOffset, scenario) || isSaturdayLatePayoutHour(hourOffset, scenario) || isSundayEarlyPayoutHour(hourOffset, scenario);
   const fxMultiplier = fxWeekday ? 1 : scenario.weekendFxMultiplier;
+  const scheduledThroughput = overrideAtHour(scenario, hourOffset)?.throughput ?? {};
   return {
     issuerOpen,
     bankOpen,
     payoutOpen,
     weekend,
     fxWeekday,
-    fxDepthAudPerHour: scenario.fxDepthAudPerHour / fxMultiplier,
+    fxDepthAudPerHour: scheduledThroughput.fx ?? scenario.fxDepthAudPerHour / fxMultiplier,
     fxSpreadBps: scenario.fxSpreadBps * fxMultiplier
   };
 }
@@ -998,20 +1217,21 @@ export function buildDemandSchedule(totalDemandAud, hours = SIMULATION_HOURS, pr
 export function capacityForHour(scenarioInput, hourOffset, reserveRemainingAud) {
   const { scenario } = sanitizeScenario(scenarioInput);
   const status = getOperationalStatus(scenario, hourOffset);
+  const throughput = throughputAtHour(scenario, hourOffset);
   const gatesOpen = status.issuerOpen && status.bankOpen && status.payoutOpen;
   if (!gatesOpen || reserveRemainingAud <= 0) {
     return { capacityAud: 0, status, limitingGate: !status.issuerOpen ? "issuer" : !status.bankOpen ? "bank" : !status.payoutOpen ? "payout" : "reserve" };
   }
   const capacityAud = Math.max(0, Math.min(
-    scenario.issuerThroughputAudPerHour,
+    throughput.issuer,
     status.fxDepthAudPerHour,
-    scenario.payoutThroughputAudPerHour,
+    throughput.payout,
     reserveRemainingAud
   ));
   const limits = [
-    [scenario.issuerThroughputAudPerHour, "issuer throughput"],
+    [throughput.issuer, "issuer throughput"],
     [status.fxDepthAudPerHour, "FX depth"],
-    [scenario.payoutThroughputAudPerHour, "payout throughput"],
+    [throughput.payout, "payout throughput"],
     [reserveRemainingAud, "AUD reserve"]
   ];
   const limitingGate = limits.find(([value]) => value === capacityAud)?.[1] || "none";
@@ -1071,6 +1291,8 @@ export function createSnapshot(scenario, hour, state, demandThisHour = 0, settle
     hour,
     timeLabel: formatTime(hour),
     reserveRemainingAud: state.reserveRemainingAud,
+    fundedThisHour: state.fundedThisHour ?? 0,
+    fundedTotalAud: state.fundedTotalAud ?? 0,
     queuedAud: state.queuedAud,
     settledAud: state.settledAud,
     demandArrivedAud: state.demandArrivedAud,
@@ -1091,11 +1313,29 @@ export function createSnapshot(scenario, hour, state, demandThisHour = 0, settle
  */
 export function runSimulation(input = {}) {
   const { scenario, errors } = sanitizeScenario(input);
-  const demandSchedule = buildDemandSchedule(scenario.redemptionDemandAud, SIMULATION_HOURS, scenario.demandProfile);
-  const state = { reserveRemainingAud: scenario.reserveCashAud, queuedAud: 0, settledAud: 0, demandArrivedAud: 0 };
+  const hours = scenarioHours(scenario);
+  const demandSchedule = buildDemandSchedule(scenario.redemptionDemandAud, hours, scenario.demandProfile);
+  const tranches = Array.isArray(scenario.fundingTranches) ? scenario.fundingTranches : [];
+  const fundingByHour = new Map();
+  for (const entry of tranches) {
+    const prior = fundingByHour.get(entry.hour) ?? { amountAud: 0, costAud: 0 };
+    fundingByHour.set(entry.hour, {
+      amountAud: Math.round((prior.amountAud + entry.amountAud) * 100) / 100,
+      costAud: Math.round((prior.costAud + entry.costAud) * 100) / 100
+    });
+  }
+  const state = { reserveRemainingAud: scenario.reserveCashAud, queuedAud: 0, settledAud: 0, demandArrivedAud: 0,
+    fundedThisHour: 0, fundedTotalAud: 0, fundingCostTotalAud: 0 };
   const timeline = [createSnapshot(scenario, 0, state)];
 
-  for (let hour = 0; hour < SIMULATION_HOURS; hour += 1) {
+  for (let hour = 0; hour < hours; hour += 1) {
+    const funding = fundingByHour.get(hour) ?? { amountAud: 0, costAud: 0 };
+    state.fundedThisHour = funding.amountAud;
+    if (funding.amountAud !== 0 || funding.costAud !== 0) {
+      state.reserveRemainingAud += funding.amountAud;
+      state.fundedTotalAud = Math.round((state.fundedTotalAud + funding.amountAud) * 100) / 100;
+      state.fundingCostTotalAud = Math.round((state.fundingCostTotalAud + funding.costAud) * 100) / 100;
+    }
     const demandThisHour = demandSchedule[hour];
     state.demandArrivedAud += demandThisHour;
     state.queuedAud += demandThisHour;
@@ -1125,6 +1365,8 @@ export function runSimulation(input = {}) {
       hoursWithQueue: timeline.filter((point) => point.queuedAud > 0).length,
       hoursToFirstSettlement: hoursToFirstSettlement(timeline),
       hoursToClearQueue: hoursToClearQueue(timeline),
+      totalFundedAud: state.fundedTotalAud,
+      totalFundingCostAud: state.fundingCostTotalAud,
     })
   });
 }
@@ -1136,6 +1378,11 @@ export function compareScenarios(baselineInput, candidateInput) {
   const changes = Object.keys(DEFAULT_SCENARIO)
     .filter((key) => baseline.scenario[key] !== candidate.scenario[key])
     .map((key) => ({ field: key, baseline: baseline.scenario[key], candidate: candidate.scenario[key] }));
+  for (const key of ["calendarOverrides", "fundingTranches"]) {
+    const before = JSON.stringify(baseline.scenario[key] ?? []);
+    const after = JSON.stringify(candidate.scenario[key] ?? []);
+    if (before !== after) changes.push({ field: key, baseline: JSON.parse(before), candidate: JSON.parse(after) });
+  }
   const deltas = Object.fromEntries(Object.keys(baseline.summary)
     .map((key) => {
       const before = baseline.summary[key];
@@ -1151,8 +1398,12 @@ function settlementByDeadline(scenario, reserveAud, deadlineHour) {
   let reserve = reserveAud;
   let queued = 0;
   let settled = 0;
-  const demand = buildDemandSchedule(scenario.redemptionDemandAud, SIMULATION_HOURS, scenario.demandProfile);
+  const tranches = Array.isArray(scenario.fundingTranches) ? scenario.fundingTranches : [];
+  const demand = buildDemandSchedule(scenario.redemptionDemandAud, scenarioHours(scenario), scenario.demandProfile);
   for (let hour = 0; hour < deadlineHour; hour += 1) {
+    for (const entry of tranches) {
+      if (entry.hour === hour) reserve += entry.amountAud;
+    }
     queued += demand[hour];
     const amount = Math.min(queued, capacityForHour(scenario, hour, reserve).capacityAud);
     queued = Math.max(0, queued - amount);
@@ -1163,14 +1414,16 @@ function settlementByDeadline(scenario, reserveAud, deadlineHour) {
 }
 
 /** Minimum whole-cent starting reserve for a share of TOTAL 72-hour demand. */
-export function planReserve(input, targetPercent = 100, deadlineHour = SIMULATION_HOURS) {
+export function planReserve(input, targetPercent = 100, deadlineHour = null) {
   if (typeof targetPercent !== "number" || !Number.isFinite(targetPercent) || targetPercent < 0 || targetPercent > 100) {
     throw new RangeError("Settlement target must be a number from 0 to 100.");
   }
-  if (!Number.isInteger(deadlineHour) || deadlineHour < 1 || deadlineHour > SIMULATION_HOURS) {
-    throw new RangeError("Deadline must be a whole hour from 1 to 72.");
-  }
   const { scenario } = sanitizeScenario(input);
+  const hours = scenarioHours(scenario);
+  if (deadlineHour === null) deadlineHour = hours;
+  if (!Number.isInteger(deadlineHour) || deadlineHour < 1 || deadlineHour > hours) {
+    throw new RangeError(`Deadline must be a whole hour from 1 to ${hours}.`);
+  }
   const targetAud = scenario.redemptionDemandAud * targetPercent / 100;
   const scaledCap = scenario.nominalLiquidityAud * 100;
   const maximumCents = Math.floor(scaledCap + Number.EPSILON * Math.max(1, scaledCap));
@@ -1202,7 +1455,7 @@ export function planReserve(input, targetPercent = 100, deadlineHour = SIMULATIO
     reason: "Minimum whole-cent reserve under the unchanged scenario assumptions. This is a synthetic funding calculation, not a liquidity recommendation." };
 }
 
-export function analysisToJSON(baselineInput, candidateInput, targetPercent = 100, deadlineHour = SIMULATION_HOURS) {
+export function analysisToJSON(baselineInput, candidateInput, targetPercent = 100, deadlineHour = null) {
   const comparison = compareScenarios(baselineInput, candidateInput);
   return JSON.stringify({ format: ANALYSIS_FORMAT, version: 1,
     baseline: comparison.baseline.scenario, candidate: comparison.candidate.scenario,
@@ -1210,7 +1463,7 @@ export function analysisToJSON(baselineInput, candidateInput, targetPercent = 10
     baselineSummary: comparison.baseline.summary, candidateSummary: comparison.candidate.summary,
     reservePlan: planReserve(candidateInput, targetPercent, deadlineHour),
     timeline: comparison.candidate.timeline.map((point, index) => ({
-      hour: point.hour, time: point.timeLabel, baselineQueuedAud: comparison.baseline.timeline[index].queuedAud,
+      hour: point.hour, time: point.timeLabel, baselineQueuedAud: index < comparison.baseline.timeline.length ? comparison.baseline.timeline[index].queuedAud : null,
       candidateQueuedAud: point.queuedAud, candidateSettledAud: point.settledAud,
       candidateReserveAud: point.reserveRemainingAud
     })) }, null, 2);
@@ -1337,7 +1590,8 @@ export function analyzeTimeline(input) {
   let backlogIntervals = 0;
   let longestBacklogRun = 0;
   let currentRun = 0;
-  for (let hour = 0; hour < SIMULATION_HOURS; hour += 1) {
+  const timelineHours = scenarioHours(result.scenario);
+  for (let hour = 0; hour < timelineHours; hour += 1) {
     const before = result.timeline[hour];
     const after = result.timeline[hour + 1];
     const capacity = capacityForHour(result.scenario, hour, before.reserveRemainingAud);
@@ -1357,7 +1611,8 @@ export function analyzeTimeline(input) {
     longestBacklogRun = Math.max(longestBacklogRun, currentRun);
     queueAudHours += after.queuedAud;
     rows.push({ hour, endHour: hour + 1, demandAud: after.demandThisHour,
-      settledAud: after.settledThisHour, queuedAud: after.queuedAud, capacityAud: capacity.capacityAud, blockers });
+      settledAud: after.settledThisHour, queuedAud: after.queuedAud, capacityAud: capacity.capacityAud,
+      fundedAud: after.fundedThisHour, blockers });
   }
   return { rows, queueAudHours, backlogIntervals, longestBacklogRun,
     blockers: [...counts].map(([label, intervals]) => ({ label, intervals })),
@@ -1398,22 +1653,7 @@ export function libraryFromJSON(text) {
 
 export const CHART_VIEWS = Object.freeze(["queue", "gantt"]);
 
-const WORKSPACE_KEYS = Object.freeze([
-  "format",
-  "version",
-  "current",
-  "baseline",
-  "targetPercent",
-  "deadlineHour",
-  "selectedHour",
-  "notes",
-  "ganttDensity",
-  "selectedChart",
-  "ganttClosedOnly",
-  "ganttGateFilter",
-  "queueBacklogOnly",
-  "ganttHourIndex",
-  "ganttEveryGateClosed",
+const LEGACY_HIDE_GANTT_KEYS = Object.freeze([
   "hideWeekdayGanttHours",
   "hideWeekendGanttHours",
   "hideOpenGanttHours",
@@ -1439,6 +1679,42 @@ const WORKSPACE_KEYS = Object.freeze([
   "hideWeekdayFxOpenGanttHours"
 ]);
 
+const WORKSPACE_KEYS = Object.freeze([
+  "format",
+  "version",
+  "current",
+  "baseline",
+  "targetPercent",
+  "deadlineHour",
+  "selectedHour",
+  "notes",
+  "ganttDensity",
+  "selectedChart",
+  "ganttClosedOnly",
+  "ganttGateFilter",
+  "queueBacklogOnly",
+  "ganttHourIndex",
+  "ganttEveryGateClosed",
+  "ganttHourFilter",
+  ...LEGACY_HIDE_GANTT_KEYS
+]);
+
+/** Map legacy per-gate hide flags to the consolidated hour filter. The first matching
+ * legacy filter wins so old workspaces still show roughly what they saved. */
+export function legacyHourFilterFromKeys(raw) {
+  if (raw?.hideWeekdayGanttHours === true) return "weekend";
+  if (raw?.hideWeekendGanttHours === true) return "weekday";
+  if (raw?.hideOpenGanttHours === true) return "any-closed";
+  if (raw?.hideClosedGanttHours === true) return "any-open";
+  if (raw?.ganttClosedOnly === true) return "any-closed";
+  if (raw?.ganttEveryGateClosed === true) return "every-closed";
+  if (raw?.hideZeroQueueGanttHours === true) return "queued";
+  for (const gate of ["bank", "issuer", "payout", "fx"]) {
+    if (raw?.[`hide${gate.charAt(0).toUpperCase()}${gate.slice(1)}ClosedGanttHours`] === true) return "any-closed";
+  }
+  return "all";
+}
+
 function assertWorkspaceKeys(raw) {
   if (!raw || typeof raw !== "object" || Array.isArray(raw)) throw new Error("Unsupported workspace format.");
   for (const key of ["__proto__", "constructor", "prototype"]) {
@@ -1451,10 +1727,11 @@ function assertWorkspaceKeys(raw) {
 
 /** Portable editing state; computed results are always regenerated on restore. */
 export function workspaceToJSON(current, baseline, options = {}) {
-  const { targetPercent = 100, deadlineHour = 72, selectedHour = 0, notes = "", ganttDensity = "snapshots", selectedChart = "queue", ganttClosedOnly = false, ganttGateFilter = "all", queueBacklogOnly = false, ganttEveryGateClosed = false, hideWeekdayGanttHours = false, hideWeekendGanttHours = false, hideOpenGanttHours = false, hideClosedGanttHours = false, hideZeroQueueGanttHours = false, hideBankClosedGanttHours = false, hideIssuerClosedGanttHours = false, hidePayoutClosedGanttHours = false, hideFxClosedGanttHours = false, hidePayoutOpenGanttHours = false, hideFxOpenGanttHours = false, hideBankOpenGanttHours = false, hideIssuerOpenGanttHours = false, hideWeekendIssuerOpenGanttHours = false, hideWeekendIssuerClosedGanttHours = false, hideWeekendBankClosedGanttHours = false, hideWeekendBankOpenGanttHours = false, hideWeekendPayoutOpenGanttHours = false, hideWeekendFxOpenGanttHours = false, hideWeekendPayoutClosedGanttHours = false, hideWeekendFxClosedGanttHours = false, hideWeekdayFxClosedGanttHours = false, hideWeekdayFxOpenGanttHours = false } = options;
+  const { targetPercent = 100, deadlineHour = 72, selectedHour = 0, notes = "", ganttDensity = "snapshots", selectedChart = "queue", ganttClosedOnly = false, ganttGateFilter = "all", queueBacklogOnly = false, ganttEveryGateClosed = false, ganttHourFilter = "all" } = options;
   const ganttHourIndex = options.ganttHourIndex === undefined ? selectedHour : options.ganttHourIndex;
-  if (!Number.isFinite(targetPercent) || targetPercent < 0 || targetPercent > 100 || !Number.isInteger(deadlineHour) || deadlineHour < 1 || deadlineHour > 72 || !Number.isInteger(selectedHour) || selectedHour < 0 || selectedHour > 72) throw new RangeError("Workspace target, deadline or selected hour is invalid.");
-  if (!Number.isInteger(ganttHourIndex) || ganttHourIndex < 0 || ganttHourIndex > 72) throw new RangeError("Workspace Gantt hour index is invalid.");
+  const horizon = scenarioHours(sanitizeScenario(current).scenario);
+  if (!Number.isFinite(targetPercent) || targetPercent < 0 || targetPercent > 100 || !Number.isInteger(deadlineHour) || deadlineHour < 1 || deadlineHour > horizon || !Number.isInteger(selectedHour) || selectedHour < 0 || selectedHour > horizon) throw new RangeError("Workspace target, deadline or selected hour is invalid.");
+  if (!Number.isInteger(ganttHourIndex) || ganttHourIndex < 0 || ganttHourIndex > horizon) throw new RangeError("Workspace Gantt hour index is invalid.");
   if (ganttHourIndex !== selectedHour) throw new RangeError("Workspace Gantt hour index is invalid.");
   if (typeof notes !== "string" || notes.length > 4000) throw new RangeError("Workspace notes must be 4000 characters or fewer.");
   if (!["snapshots", "all", "open"].includes(ganttDensity)) throw new RangeError("Workspace Gantt density is invalid.");
@@ -1463,31 +1740,9 @@ export function workspaceToJSON(current, baseline, options = {}) {
   if (!GANTT_GATE_FILTERS.includes(ganttGateFilter)) throw new RangeError("Workspace Gantt gate filter is invalid.");
   if (queueBacklogOnly !== true && queueBacklogOnly !== false) throw new RangeError("Workspace queue backlog filter is invalid.");
   if (ganttEveryGateClosed !== true && ganttEveryGateClosed !== false) throw new RangeError("Workspace Gantt every-gate-closed filter is invalid.");
-  if (hideWeekdayGanttHours !== true && hideWeekdayGanttHours !== false) throw new RangeError("Workspace Gantt weekday-hour filter is invalid.");
-  if (hideWeekendGanttHours !== true && hideWeekendGanttHours !== false) throw new RangeError("Workspace Gantt weekend-hour filter is invalid.");
-  if (hideOpenGanttHours !== true && hideOpenGanttHours !== false) throw new RangeError("Workspace Gantt open-hour filter is invalid.");
-  if (hideClosedGanttHours !== true && hideClosedGanttHours !== false) throw new RangeError("Workspace Gantt closed-hour filter is invalid.");
-  if (hideZeroQueueGanttHours !== true && hideZeroQueueGanttHours !== false) throw new RangeError("Workspace Gantt zero-queue-hour filter is invalid.");
-  if (hideBankClosedGanttHours !== true && hideBankClosedGanttHours !== false) throw new RangeError("Workspace Gantt bank-closed-hour filter is invalid.");
-  if (hideIssuerClosedGanttHours !== true && hideIssuerClosedGanttHours !== false) throw new RangeError("Workspace Gantt issuer-closed-hour filter is invalid.");
-  if (hidePayoutClosedGanttHours !== true && hidePayoutClosedGanttHours !== false) throw new RangeError("Workspace Gantt payout-closed-hour filter is invalid.");
-  if (hideFxClosedGanttHours !== true && hideFxClosedGanttHours !== false) throw new RangeError("Workspace Gantt FX-closed-hour filter is invalid.");
-  if (hidePayoutOpenGanttHours !== true && hidePayoutOpenGanttHours !== false) throw new RangeError("Workspace Gantt payout-open-hour filter is invalid.");
-  if (hideFxOpenGanttHours !== true && hideFxOpenGanttHours !== false) throw new RangeError("Workspace Gantt FX-open-hour filter is invalid.");
-  if (hideBankOpenGanttHours !== true && hideBankOpenGanttHours !== false) throw new RangeError("Workspace Gantt bank-open-hour filter is invalid.");
-  if (hideIssuerOpenGanttHours !== true && hideIssuerOpenGanttHours !== false) throw new RangeError("Workspace Gantt issuer-open-hour filter is invalid.");
-  if (hideWeekendIssuerOpenGanttHours !== true && hideWeekendIssuerOpenGanttHours !== false) throw new RangeError("Workspace Gantt weekend-issuer-open-hour filter is invalid.");
-  if (hideWeekendIssuerClosedGanttHours !== true && hideWeekendIssuerClosedGanttHours !== false) throw new RangeError("Workspace Gantt weekend-issuer-closed-hour filter is invalid.");
-  if (hideWeekendBankClosedGanttHours !== true && hideWeekendBankClosedGanttHours !== false) throw new RangeError("Workspace Gantt weekend-bank-closed-hour filter is invalid.");
-  if (hideWeekendBankOpenGanttHours !== true && hideWeekendBankOpenGanttHours !== false) throw new RangeError("Workspace Gantt weekend-bank-open-hour filter is invalid.");
-  if (hideWeekendPayoutOpenGanttHours !== true && hideWeekendPayoutOpenGanttHours !== false) throw new RangeError("Workspace Gantt weekend-payout-open-hour filter is invalid.");
-  if (hideWeekendFxOpenGanttHours !== true && hideWeekendFxOpenGanttHours !== false) throw new RangeError("Workspace Gantt weekend-FX-open-hour filter is invalid.");
-  if (hideWeekendPayoutClosedGanttHours !== true && hideWeekendPayoutClosedGanttHours !== false) throw new RangeError("Workspace Gantt weekend-payout-closed-hour filter is invalid.");
-  if (hideWeekendFxClosedGanttHours !== true && hideWeekendFxClosedGanttHours !== false) throw new RangeError("Workspace Gantt weekend-FX-closed-hour filter is invalid.");
-  if (hideWeekdayFxClosedGanttHours !== true && hideWeekdayFxClosedGanttHours !== false) throw new RangeError("Workspace Gantt weekday-FX-closed-hour filter is invalid.");
-  if (hideWeekdayFxOpenGanttHours !== true && hideWeekdayFxOpenGanttHours !== false) throw new RangeError("Workspace Gantt weekday-FX-open-hour filter is invalid.");
+  if (!GANTT_HOUR_FILTERS.includes(ganttHourFilter)) throw new RangeError("Workspace Gantt hour filter is invalid.");
   return JSON.stringify({ format: "weekend-gap-workspace", version: 1, current: sanitizeScenario(current).scenario,
-    baseline: sanitizeScenario(baseline).scenario, targetPercent, deadlineHour, selectedHour, notes, ganttDensity, selectedChart, ganttClosedOnly, ganttGateFilter, queueBacklogOnly, ganttHourIndex, ganttEveryGateClosed, hideWeekdayGanttHours, hideWeekendGanttHours, hideOpenGanttHours, hideClosedGanttHours, hideZeroQueueGanttHours, hideBankClosedGanttHours, hideIssuerClosedGanttHours, hidePayoutClosedGanttHours, hideFxClosedGanttHours, hidePayoutOpenGanttHours, hideFxOpenGanttHours, hideBankOpenGanttHours, hideIssuerOpenGanttHours, hideWeekendIssuerOpenGanttHours, hideWeekendIssuerClosedGanttHours, hideWeekendBankClosedGanttHours, hideWeekendBankOpenGanttHours, hideWeekendPayoutOpenGanttHours, hideWeekendFxOpenGanttHours, hideWeekendPayoutClosedGanttHours, hideWeekendFxClosedGanttHours, hideWeekdayFxClosedGanttHours, hideWeekdayFxOpenGanttHours }, null, 2);
+    baseline: sanitizeScenario(baseline).scenario, targetPercent, deadlineHour, selectedHour, notes, ganttDensity, selectedChart, ganttClosedOnly, ganttGateFilter, queueBacklogOnly, ganttHourIndex, ganttEveryGateClosed, ganttHourFilter }, null, 2);
 }
 export function workspaceFromJSON(text) {
   try {
@@ -1515,29 +1770,7 @@ export function workspaceFromJSON(text) {
       queueBacklogOnly: raw.queueBacklogOnly === undefined ? false : raw.queueBacklogOnly,
       ganttHourIndex: restoredHour,
       ganttEveryGateClosed: raw.ganttEveryGateClosed === undefined ? false : raw.ganttEveryGateClosed,
-      hideWeekdayGanttHours: raw.hideWeekdayGanttHours === undefined ? false : raw.hideWeekdayGanttHours,
-      hideWeekendGanttHours: raw.hideWeekendGanttHours === undefined ? false : raw.hideWeekendGanttHours,
-      hideOpenGanttHours: raw.hideOpenGanttHours === undefined ? false : raw.hideOpenGanttHours,
-      hideClosedGanttHours: raw.hideClosedGanttHours === undefined ? false : raw.hideClosedGanttHours,
-      hideZeroQueueGanttHours: raw.hideZeroQueueGanttHours === undefined ? false : raw.hideZeroQueueGanttHours,
-      hideBankClosedGanttHours: raw.hideBankClosedGanttHours === undefined ? false : raw.hideBankClosedGanttHours,
-      hideIssuerClosedGanttHours: raw.hideIssuerClosedGanttHours === undefined ? false : raw.hideIssuerClosedGanttHours,
-      hidePayoutClosedGanttHours: raw.hidePayoutClosedGanttHours === undefined ? false : raw.hidePayoutClosedGanttHours,
-      hideFxClosedGanttHours: raw.hideFxClosedGanttHours === undefined ? false : raw.hideFxClosedGanttHours,
-      hidePayoutOpenGanttHours: raw.hidePayoutOpenGanttHours === undefined ? false : raw.hidePayoutOpenGanttHours,
-      hideFxOpenGanttHours: raw.hideFxOpenGanttHours === undefined ? false : raw.hideFxOpenGanttHours,
-      hideBankOpenGanttHours: raw.hideBankOpenGanttHours === undefined ? false : raw.hideBankOpenGanttHours,
-      hideIssuerOpenGanttHours: raw.hideIssuerOpenGanttHours === undefined ? false : raw.hideIssuerOpenGanttHours,
-      hideWeekendIssuerOpenGanttHours: raw.hideWeekendIssuerOpenGanttHours === undefined ? false : raw.hideWeekendIssuerOpenGanttHours,
-      hideWeekendIssuerClosedGanttHours: raw.hideWeekendIssuerClosedGanttHours === undefined ? false : raw.hideWeekendIssuerClosedGanttHours,
-      hideWeekendBankClosedGanttHours: raw.hideWeekendBankClosedGanttHours === undefined ? false : raw.hideWeekendBankClosedGanttHours,
-      hideWeekendBankOpenGanttHours: raw.hideWeekendBankOpenGanttHours === undefined ? false : raw.hideWeekendBankOpenGanttHours,
-      hideWeekendPayoutOpenGanttHours: raw.hideWeekendPayoutOpenGanttHours === undefined ? false : raw.hideWeekendPayoutOpenGanttHours,
-      hideWeekendFxOpenGanttHours: raw.hideWeekendFxOpenGanttHours === undefined ? false : raw.hideWeekendFxOpenGanttHours,
-      hideWeekendPayoutClosedGanttHours: raw.hideWeekendPayoutClosedGanttHours === undefined ? false : raw.hideWeekendPayoutClosedGanttHours,
-      hideWeekendFxClosedGanttHours: raw.hideWeekendFxClosedGanttHours === undefined ? false : raw.hideWeekendFxClosedGanttHours,
-      hideWeekdayFxClosedGanttHours: raw.hideWeekdayFxClosedGanttHours === undefined ? false : raw.hideWeekdayFxClosedGanttHours,
-      hideWeekdayFxOpenGanttHours: raw.hideWeekdayFxOpenGanttHours === undefined ? false : raw.hideWeekdayFxOpenGanttHours
+      ganttHourFilter: raw.ganttHourFilter === undefined ? legacyHourFilterFromKeys(raw) : raw.ganttHourFilter
     };
     const workspace = JSON.parse(workspaceToJSON(current.scenario, baseline.scenario, options));
     return { workspace, errors: [...current.errors, ...baseline.errors] };
@@ -1583,7 +1816,7 @@ export function timelineToCSV(current, baseline = current) {
   const comparison = compareScenarios(baseline, current);
   const headers = ["checkpoint_hour", "local_time", "interval_start_hour", "arrived_previous_interval_aud", "settled_previous_interval_aud", "cumulative_settled_aud", "queued_aud", "reserve_remaining_aud", "next_hour_capacity_aud", "baseline_queued_aud"];
   const rows = comparison.candidate.timeline.map((point, index) => [point.hour, point.timeLabel, point.hour === 0 ? "" : point.hour - 1,
-    point.demandThisHour, point.settledThisHour, point.settledAud, point.queuedAud, point.reserveRemainingAud, point.immediateAud, comparison.baseline.timeline[index].queuedAud]);
+    point.demandThisHour, point.settledThisHour, point.settledAud, point.queuedAud, point.reserveRemainingAud, point.immediateAud, index < comparison.baseline.timeline.length ? comparison.baseline.timeline[index].queuedAud : ""]);
   return [headers, ...rows].map(row => row.join(",")).join("\r\n") + "\r\n";
 }
 
@@ -1595,7 +1828,7 @@ export function queueToCSV(current, baseline = current) {
     point.hour,
     point.timeLabel,
     point.queuedAud,
-    comparison.baseline.timeline[index].queuedAud,
+    index < comparison.baseline.timeline.length ? comparison.baseline.timeline[index].queuedAud : "",
     comparison.candidate.scenario.name
   ]);
   return csvTable([headers, ...rows]);
@@ -1609,30 +1842,34 @@ export function reportToHTML(current, baseline, options = {}) {
   const plan = planReserve(workspace.current, workspace.targetPercent, workspace.deadlineHour);
   const escape = value => String(value).replace(/[&<>"']/g, char => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[char]));
   const money = value => value.toLocaleString("en-AU", { style: "currency", currency: "AUD", minimumFractionDigits: 2 });
-  const summaryRows = [["Total demand", "totalDemandAud"], ["Settled by Monday 15:00", "totalSettledAud"], ["Final queue", "finalQueuedAud"], ["Peak queue", "peakQueuedAud"], ["Final reserve", "finalReserveAud"]]
+  const horizon = scenarioHours(workspace.current);
+  const summaryRows = [["Total demand", "totalDemandAud"], [`Settled by ${formatTime(horizon)}`, "totalSettledAud"], ["Final queue", "finalQueuedAud"], ["Peak queue", "peakQueuedAud"], ["Final reserve", "finalReserveAud"], ["Scheduled funding", "totalFundedAud"], ["Funding cost", "totalFundingCostAud"]]
     .map(([label, field]) => "<tr><th scope=row>" + escape(label) + "</th><td>" + escape(money(comparison.baseline.summary[field])) + "</td><td>" + escape(money(comparison.candidate.summary[field])) + "</td></tr>").join("");
-  const assumptionRows = Object.keys(DEFAULT_SCENARIO).map(field => "<tr><th scope=row>" + escape(field) + "</th><td>" + escape(workspace.baseline[field]) + "</td><td>" + escape(workspace.current[field]) + "</td></tr>").join("");
+  const scheduleRows = [["calendarOverrides", "calendarOverrides"], ["fundingTranches", "fundingTranches"]]
+    .filter(([, field]) => workspace.baseline[field] !== undefined || workspace.current[field] !== undefined)
+    .map(([label, field]) => "<tr><th scope=row>" + escape(label) + "</th><td>" + escape(JSON.stringify(workspace.baseline[field] ?? [])) + "</td><td>" + escape(JSON.stringify(workspace.current[field] ?? [])) + "</td></tr>").join("");
+  const assumptionRows = Object.keys(DEFAULT_SCENARIO).map(field => "<tr><th scope=row>" + escape(field) + "</th><td>" + escape(workspace.baseline[field]) + "</td><td>" + escape(workspace.current[field]) + "</td></tr>").join("") + scheduleRows;
   const planText = plan.status === "reachable" ? "Minimum whole-cent starting reserve: " + money(plan.minimumReserveAud) : "Unreachable by reserve alone. Maximum modeled settlement: " + money(plan.maximumSettledAud);
-  const firstSettlementText = (hours) => hours === null ? "No settlement in 72h" : hours + " hour" + (hours === 1 ? "" : "s");
+  const firstSettlementText = (hours) => hours === null ? `No settlement in ${horizon}h` : hours + " hour" + (hours === 1 ? "" : "s");
   const firstSettlementRow = "<tr><th scope=row>" + escape("Hours to first settlement") + "</th><td>" + escape(firstSettlementText(comparison.baseline.summary.hoursToFirstSettlement)) + "</td><td>" + escape(firstSettlementText(comparison.candidate.summary.hoursToFirstSettlement)) + "</td></tr>";
-  const queueClearText = (hours, peak) => hours === null ? (peak > 0 ? "queue remains" : "No queue in 72h") : hours + " hour" + (hours === 1 ? "" : "s");
+  const queueClearText = (hours, peak) => hours === null ? (peak > 0 ? "queue remains" : `No queue in ${horizon}h`) : hours + " hour" + (hours === 1 ? "" : "s");
   const queueClearRow = "<tr><th scope=row>" + escape("Hours to clear queue") + "</th><td>" + escape(queueClearText(comparison.baseline.summary.hoursToClearQueue, comparison.baseline.summary.peakQueuedAud)) + "</td><td>" + escape(queueClearText(comparison.candidate.summary.hoursToClearQueue, comparison.candidate.summary.peakQueuedAud)) + "</td></tr>";
   const bottleneckRows = attributeBottlenecks(workspace.current).rows.map((row) =>
     "<tr><th scope=row>" + escape(row.label) + "</th><td>" + escape(String(row.hours)) + "</td><td>" + escape((row.share * 100).toFixed(1) + "%") + "</td></tr>").join("");
-  return '<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta http-equiv="Content-Security-Policy" content="default-src &#39;none&#39;; style-src &#39;unsafe-inline&#39;; base-uri &#39;none&#39;; form-action &#39;none&#39;"><title>Weekend Gap experiment report</title><style>body{font:16px/1.5 system-ui,sans-serif;color:#172b35;background:white;max-width:1000px;margin:2rem auto;padding:1rem}h1,h2{line-height:1.2}table{border-collapse:collapse;width:100%;margin:1rem 0}th,td{border:1px solid #9aa9b0;padding:.55rem;text-align:left;overflow-wrap:anywhere}th{background:#eff3f5}pre{white-space:pre-wrap;overflow-wrap:anywhere;font:inherit}.notice{border-left:4px solid #54727f;padding:1rem;background:#f2f5f6}@media print{body{margin:0;padding:0;font-size:10pt}h2{break-after:avoid}tr{break-inside:avoid}thead{display:table-header-group}}</style></head><body><main><h1>Weekend Gap experiment report</h1><p class="notice">Synthetic educational analysis. No live data, issuer claims, financial advice or payout operations. 72-hour horizon: Friday 15:00 to Monday 15:00, using abstract local time.</p><p>Current: <strong>' + escape(workspace.current.name) + '</strong>. Baseline: <strong>' + escape(workspace.baseline.name) + '</strong>.</p><h2>Experiment notes</h2><pre>' + escape(workspace.notes || "No experiment notes provided.") + '</pre><h2>Outcome comparison</h2><p>AUD display values are rounded to cents. Compare total demand alongside settlement and queue size.</p><table><thead><tr><th scope="col">Metric</th><th scope="col">Baseline</th><th scope="col">Current</th></tr></thead><tbody>' + summaryRows + firstSettlementRow + queueClearRow + '</tbody></table><h2>Queue diagnostics</h2><p>' + diagnostics.backlogIntervals + ' of 72 intervals end with backlog. Longest run: ' + diagnostics.longestBacklogRun + ' hours. End-of-hour queue exposure: ' + escape(money(diagnostics.queueAudHours)) + '·hours.</p><ul>' + diagnostics.blockers.map(item => '<li>' + escape(item.label) + ': ' + item.intervals + ' backlog intervals</li>').join("") + '</ul><p>Concurrent blockers overlap. Counts describe observations, not marginal causal impact.</p><h2>Gate Gantt</h2><p>Open versus closed hours for the current scenario. The green dashed marker is the first hour the payout chain can settle given starting reserve. The solid marker is the selected hour from the workspace.</p>' + buildGateGanttSvg(workspace.current, workspace.selectedHour) + '<h2>Baseline versus current Gantt</h2><p>Paired rows compare current and baseline operating calendars. This is not a forecast.</p>' + buildComparisonGanttSvg(workspace.baseline, workspace.current, workspace.selectedHour) + '<h2>Queue path</h2><p>Printable queued AUD versus hour for the current scenario. The dashed path is the pinned baseline. The vertical line is the selected workspace hour.</p>' + buildQueueChartSvg(workspace.current, workspace.baseline, workspace.selectedHour) + '<h2>Hourly limiting gate</h2><p>Count of the 72 interval-start limitingGate values on the current scenario. Closed issuer, bank or payout gates are named before throughput or reserve. This is an observation count, not a ranking of which change would raise settlement.</p><table><thead><tr><th scope="col">Limiter</th><th scope="col">Hours</th><th scope="col">Share of 72h</th></tr></thead><tbody>' + bottleneckRows + '</tbody></table><h2>Reserve experiment</h2><p>Target: ' + workspace.targetPercent + '% of total 72-hour demand by ' + escape(formatTime(workspace.deadlineHour)) + '. ' + escape(planText) + '.</p><p>' + escape(plan.reason) + '</p><h2>Complete assumptions</h2><table><thead><tr><th scope="col">Assumption</th><th scope="col">Baseline</th><th scope="col">Current</th></tr></thead><tbody>' + assumptionRows + '</tbody></table><h2>Method and limits</h2><p>Demand joins once per hour under the selected deterministic arrival profile. Settlement requires all three business-day operating windows to overlap. Capacity is the minimum of issuer throughput, FX depth, payout throughput and remaining starting reserve. No reserve replenishment occurs. Queue exposure sums end-of-hour balances; it is not a customer waiting-time estimate. The optional Monday and Saturday holiday flags are modeled. Other public holidays, time zones, settlement uncertainty and counterparty risk are not modeled. No result is a liquidity recommendation.</p><p>Report format: weekend-gap-report v1. Export the separate workspace JSON for editable inputs and hourly CSV for the complete ledger. Use your browser Print command to save or print this report.</p></main></body></html>';
+  return '<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta http-equiv="Content-Security-Policy" content="default-src &#39;none&#39;; style-src &#39;unsafe-inline&#39;; base-uri &#39;none&#39;; form-action &#39;none&#39;"><title>Weekend Gap experiment report</title><style>body{font:16px/1.5 system-ui,sans-serif;color:#172b35;background:white;max-width:1000px;margin:2rem auto;padding:1rem}h1,h2{line-height:1.2}table{border-collapse:collapse;width:100%;margin:1rem 0}th,td{border:1px solid #9aa9b0;padding:.55rem;text-align:left;overflow-wrap:anywhere}th{background:#eff3f5}pre{white-space:pre-wrap;overflow-wrap:anywhere;font:inherit}.notice{border-left:4px solid #54727f;padding:1rem;background:#f2f5f6}@media print{body{margin:0;padding:0;font-size:10pt}h2{break-after:avoid}tr{break-inside:avoid}thead{display:table-header-group}}</style></head><body><main><h1>Weekend Gap experiment report</h1><p class="notice">Synthetic educational analysis. No live data, issuer claims, financial advice or payout operations. ' + horizon + '-hour horizon: ' + formatTime(0) + ' to ' + formatTime(horizon) + ', using abstract local time.</p><p>Current: <strong>' + escape(workspace.current.name) + '</strong>. Baseline: <strong>' + escape(workspace.baseline.name) + '</strong>.</p><h2>Experiment notes</h2><pre>' + escape(workspace.notes || "No experiment notes provided.") + '</pre><h2>Outcome comparison</h2><p>AUD display values are rounded to cents. Compare total demand alongside settlement and queue size.</p><table><thead><tr><th scope="col">Metric</th><th scope="col">Baseline</th><th scope="col">Current</th></tr></thead><tbody>' + summaryRows + firstSettlementRow + queueClearRow + '</tbody></table><h2>Queue diagnostics</h2><p>' + diagnostics.backlogIntervals + ' of ' + horizon + ' intervals end with backlog. Longest run: ' + diagnostics.longestBacklogRun + ' hours. End-of-hour queue exposure: ' + escape(money(diagnostics.queueAudHours)) + '·hours.</p><ul>' + diagnostics.blockers.map(item => '<li>' + escape(item.label) + ': ' + item.intervals + ' backlog intervals</li>').join("") + '</ul><p>Concurrent blockers overlap. Counts describe observations, not marginal causal impact.</p><h2>Gate Gantt</h2><p>Open versus closed hours for the current scenario. The green dashed marker is the first hour the payout chain can settle given starting reserve. The solid marker is the selected hour from the workspace.</p>' + buildGateGanttSvg(workspace.current, workspace.selectedHour) + '<h2>Baseline versus current Gantt</h2><p>Paired rows compare current and baseline operating calendars. This is not a forecast.</p>' + buildComparisonGanttSvg(workspace.baseline, workspace.current, workspace.selectedHour) + '<h2>Queue path</h2><p>Printable queued AUD versus hour for the current scenario. The dashed path is the pinned baseline. The vertical line is the selected workspace hour.</p>' + buildQueueChartSvg(workspace.current, workspace.baseline, workspace.selectedHour) + '<h2>Hourly limiting gate</h2><p>Count of the ' + horizon + ' interval-start limitingGate values on the current scenario. Closed issuer, bank or payout gates are named before throughput or reserve. This is an observation count, not a ranking of which change would raise settlement.</p><table><thead><tr><th scope="col">Limiter</th><th scope="col">Hours</th><th scope="col">Share of ' + horizon + 'h</th></tr></thead><tbody>' + bottleneckRows + '</tbody></table><h2>Reserve experiment</h2><p>Target: ' + workspace.targetPercent + '% of total ' + horizon + '-hour demand by ' + escape(formatTime(workspace.deadlineHour)) + '. ' + escape(planText) + '.</p><p>' + escape(plan.reason) + '</p><h2>Complete assumptions</h2><table><thead><tr><th scope="col">Assumption</th><th scope="col">Baseline</th><th scope="col">Current</th></tr></thead><tbody>' + assumptionRows + '</tbody></table><h2>Method and limits</h2><p>Demand joins once per hour under the selected deterministic arrival profile. Settlement requires all three business-day operating windows to overlap. Capacity is the minimum of issuer throughput, FX depth, payout throughput and remaining starting reserve. ' + (scheduleRows.includes('fundingTranches') ? 'Scheduled funding tranches add reserve cash before their named hours settle; funding costs are tracked expenses, not reserve deductions.' : 'No reserve replenishment occurs.') + ' Queue exposure sums end-of-hour balances; it is not a customer waiting-time estimate. The optional Monday and Saturday holiday flags are modeled. Other public holidays, time zones, settlement uncertainty and counterparty risk are not modeled. No result is a liquidity recommendation.</p><p>Report format: weekend-gap-report v1. Export the separate workspace JSON for editable inputs and hourly CSV for the complete ledger. Use your browser Print command to save or print this report.</p></main></body></html>';
 }
 
-function hoursToClearLabel(hours, peak) {
-  if (hours === null) return peak > 0 ? "queue remains" : "No queue in 72h";
+export function hoursToClearLabel(hours, peak, horizon = SIMULATION_HOURS) {
+  if (hours === null) return peak > 0 ? "queue remains" : `No queue in ${horizon}h`;
   return hours + " hour" + (hours === 1 ? "" : "s");
 }
 
-function hoursToFirstSettlementLabel(hours) {
-  return hours === null ? "No settlement in 72h" : hours + " hour" + (hours === 1 ? "" : "s");
+export function hoursToFirstSettlementLabel(hours, horizon = SIMULATION_HOURS) {
+  return hours === null ? `No settlement in ${horizon}h` : hours + " hour" + (hours === 1 ? "" : "s");
 }
 
-function peakQueueHourLabel(summary) {
-  if (!(summary.peakQueuedAud > 0)) return "No queue in 72h";
+export function peakQueueHourLabel(summary, horizon = SIMULATION_HOURS) {
+  if (!(summary.peakQueuedAud > 0)) return `No queue in ${horizon}h`;
   return formatTime(summary.peakQueueHour) + " (hour " + summary.peakQueueHour + ")";
 }
 
@@ -1661,9 +1898,11 @@ export function reportToMarkdown(current, baseline, options = {}) {
     "",
     "| Metric | Baseline | Current |",
     "| --- | --- | --- |",
-    "| Hours to clear queue | " + hoursToClearLabel(comparison.baseline.summary.hoursToClearQueue, comparison.baseline.summary.peakQueuedAud) + " | " + hoursToClearLabel(comparison.candidate.summary.hoursToClearQueue, comparison.candidate.summary.peakQueuedAud) + " |",
-    "| Peak queue hour | " + peakQueueHourLabel(comparison.baseline.summary) + " | " + peakQueueHourLabel(comparison.candidate.summary) + " |",
+    "| Hours to clear queue | " + hoursToClearLabel(comparison.baseline.summary.hoursToClearQueue, comparison.baseline.summary.peakQueuedAud, scenarioHours(comparison.baseline.scenario)) + " | " + hoursToClearLabel(comparison.candidate.summary.hoursToClearQueue, comparison.candidate.summary.peakQueuedAud, scenarioHours(comparison.candidate.scenario)) + " |",
+    "| Peak queue hour | " + peakQueueHourLabel(comparison.baseline.summary, scenarioHours(comparison.baseline.scenario)) + " | " + peakQueueHourLabel(comparison.candidate.summary, scenarioHours(comparison.candidate.scenario)) + " |",
     "| Peak queue | " + comparison.baseline.summary.peakQueuedAud + " | " + comparison.candidate.summary.peakQueuedAud + " |",
+    "| Scheduled funding AUD | " + comparison.baseline.summary.totalFundedAud + " | " + comparison.candidate.summary.totalFundedAud + " |",
+    "| Funding cost AUD | " + comparison.baseline.summary.totalFundingCostAud + " | " + comparison.candidate.summary.totalFundingCostAud + " |",
     "",
     "This is a synthetic comparison, not a liquidity recommendation.",
     ""
@@ -1674,29 +1913,54 @@ export function reportToMarkdown(current, baseline, options = {}) {
 export function dashboardToMarkdown(input) {
   const result = runSimulation(input);
   const summary = result.summary;
-  return [
+  const hours = scenarioHours(result.scenario);
+  const lines = [
     "# Weekend Gap dashboard",
     "",
     "Synthetic educational numbers. Not financial advice or live market data.",
     "",
-    "- Hours to clear queue: " + hoursToClearLabel(summary.hoursToClearQueue, summary.peakQueuedAud),
-    "- Peak queue hour: " + peakQueueHourLabel(summary),
-    "- Hours to first settlement: " + hoursToFirstSettlementLabel(summary.hoursToFirstSettlement),
-    ""
+    "- Hours to clear queue: " + hoursToClearLabel(summary.hoursToClearQueue, summary.peakQueuedAud, hours),
+    "- Peak queue hour: " + peakQueueHourLabel(summary, hours),
+    "- Hours to first settlement: " + hoursToFirstSettlementLabel(summary.hoursToFirstSettlement, hours)
+  ];
+  const tranches = Array.isArray(result.scenario.fundingTranches) ? result.scenario.fundingTranches : [];
+  if (tranches.length) {
+    lines.push("- Scheduled funding: A$" + summary.totalFundedAud + " across " + tranches.length +
+      (tranches.length === 1 ? " tranche" : " tranches") + " (funding cost A$" + summary.totalFundingCostAud + ")");
+  }
+  lines.push("");
+  return lines.join("\n");
+}
+
+/** One funding row per tranche: hour label, amount, and cost. Costs are expenses, not reserve deductions. */
+export function fundingToMarkdown(input) {
+  const result = runSimulation(input);
+  const tranches = Array.isArray(result.scenario.fundingTranches) ? result.scenario.fundingTranches : [];
+  if (!tranches.length) return "No scheduled funding tranches. Synthetic educational snapshot, not a funding recommendation.";
+  const rows = tranches.map((entry) =>
+    "| " + formatTime(entry.hour) + " (hour " + entry.hour + ") | " + entry.amountAud + " | " + entry.costAud + " |");
+  return [
+    "Scheduled funding adds reserve cash before the named hour settles. Costs are tracked expenses, not reserve deductions.",
+    "",
+    "| Funding hour | Amount AUD | Cost AUD |",
+    "| --- | --- | --- |",
+    ...rows,
+    "",
+    "Total funded A$" + result.summary.totalFundedAud + " at a funding cost of A$" + result.summary.totalFundingCostAud + ". Synthetic educational snapshot, not a funding recommendation."
   ].join("\n");
 }
 
 /** One-line Markdown for hours to clear the queue. Synthetic, not live. */
 export function hoursToClearQueueToMarkdown(input) {
   const result = runSimulation(input);
-  const label = hoursToClearLabel(result.summary.hoursToClearQueue, result.summary.peakQueuedAud);
+  const label = hoursToClearLabel(result.summary.hoursToClearQueue, result.summary.peakQueuedAud, scenarioHours(result.scenario));
   return "Hours to clear queue: " + label + ". Synthetic educational snapshot, not live market data.";
 }
 
 /** One-line Markdown for hours to first settlement. Synthetic, not live, and distinct from hours-to-clear. */
 export function hoursToFirstSettlementToMarkdown(input) {
   const result = runSimulation(input);
-  const label = hoursToFirstSettlementLabel(result.summary.hoursToFirstSettlement);
+  const label = hoursToFirstSettlementLabel(result.summary.hoursToFirstSettlement, scenarioHours(result.scenario));
   return "Hours to first settlement: " + label + ". Synthetic educational snapshot, not live market data.";
 }
 
@@ -1730,24 +1994,25 @@ export const BOTTLENECK_LABELS = Object.freeze([
 /** Count of the 72 interval-start limiting gates. Observation only, not causal impact. */
 export function attributeBottlenecks(input) {
   const result = runSimulation(input);
+  const hours = scenarioHours(result.scenario);
   const counts = Object.fromEntries(BOTTLENECK_LABELS.map((label) => [label, 0]));
-  for (let hour = 0; hour < SIMULATION_HOURS; hour += 1) {
+  for (let hour = 0; hour < hours; hour += 1) {
     const label = result.timeline[hour].limitingGate;
     counts[label] = (counts[label] || 0) + 1;
   }
   const rows = Object.freeze(BOTTLENECK_LABELS.map((label) => Object.freeze({
     label,
     hours: counts[label] || 0,
-    share: (counts[label] || 0) / SIMULATION_HOURS
+    share: (counts[label] || 0) / hours
   })));
   const extra = Object.keys(counts).filter((label) => !BOTTLENECK_LABELS.includes(label));
   const extraRows = extra.map((label) => Object.freeze({
     label,
     hours: counts[label],
-    share: counts[label] / SIMULATION_HOURS
+    share: counts[label] / hours
   }));
   return Object.freeze({
-    hours: SIMULATION_HOURS,
+    hours,
     counts: Object.freeze(counts),
     rows: Object.freeze([...rows, ...extraRows])
   });
@@ -1762,9 +2027,9 @@ export function bottleneckCountsToMarkdown(input) {
   return [
     "# Weekend Gap hourly limiting-gate counts",
     "",
-    "Observation counts of the 72 interval-start limitingGate values. Not a causal ranking.",
+    `Observation counts of the ${attribution.hours} interval-start limitingGate values. Not a causal ranking.`,
     "",
-    "| Limiter | Hours | Share of 72h |",
+    "| Limiter | Hours | Share of " + attribution.hours + "h |",
     "| --- | --- | --- |",
     ...rows,
     "",
@@ -1830,7 +2095,7 @@ export const DEMAND_PROFILES = Object.freeze(["flat", "fridayBurst", "mondayRush
 export const DEMAND_PROFILE_STEP_ORDER = Object.freeze(["fridayBurst", "flat", "mondayRush"]);
 
 const DEMAND_PROFILE_LABELS = Object.freeze({
-  flat: "Even across 72 hours",
+  flat: "Even across the horizon",
   fridayBurst: "Friday burst",
   mondayRush: "Monday rush"
 });
@@ -1956,8 +2221,9 @@ export function gateDisplayLabels(input, redacted = false) {
 /** Hourly open/closed state for issuer, bank, payout and weekday vs weekend FX. */
 export function buildGateSchedule(input) {
   const { scenario } = sanitizeScenario(input);
+  const horizon = scenarioHours(scenario);
   const hours = [];
-  for (let hour = 0; hour <= SIMULATION_HOURS; hour += 1) {
+  for (let hour = 0; hour <= horizon; hour += 1) {
     const status = getOperationalStatus(scenario, hour);
     hours.push(Object.freeze({
       hour,
@@ -1974,7 +2240,7 @@ export function buildGateSchedule(input) {
 /** First chart hour where the bank gate is closed, else the first closed issuer/bank/payout hour. */
 export function firstClosedGanttHour(input) {
   const schedule = buildGateSchedule(input);
-  const chartHours = schedule.hours.filter((point) => point.hour < SIMULATION_HOURS);
+  const chartHours = schedule.hours.filter((point) => point.hour < schedule.hours.length - 1);
   const bankClosed = chartHours.find((point) => !point.bankOpen);
   if (bankClosed) return bankClosed.hour;
   const closedGate = chartHours.find((point) => !point.issuerOpen || !point.bankOpen || !point.payoutOpen);
@@ -1984,161 +2250,161 @@ export function firstClosedGanttHour(input) {
 /** First chart hour where FX is weekend-thinned. Honest empty when none of the 72 hours is closed. */
 export function firstClosedFxGanttHour(input) {
   const schedule = buildGateSchedule(input);
-  const closed = schedule.hours.find((point) => point.hour < SIMULATION_HOURS && !point.fxWeekday);
+  const closed = schedule.hours.find((point) => point.hour < schedule.hours.length - 1 && !point.fxWeekday);
   return closed ? closed.hour : null;
 }
 
 /** First chart hour where the issuer gate is closed. Honest empty when none of the 72 hours is closed. */
 export function firstClosedIssuerGanttHour(input) {
   const schedule = buildGateSchedule(input);
-  const closed = schedule.hours.find((point) => point.hour < SIMULATION_HOURS && !point.issuerOpen);
+  const closed = schedule.hours.find((point) => point.hour < schedule.hours.length - 1 && !point.issuerOpen);
   return closed ? closed.hour : null;
 }
 
 /** First chart hour where the payout gate is closed. Honest empty when none of the 72 hours is closed. */
 export function firstClosedPayoutGanttHour(input) {
   const schedule = buildGateSchedule(input);
-  const closed = schedule.hours.find((point) => point.hour < SIMULATION_HOURS && !point.payoutOpen);
+  const closed = schedule.hours.find((point) => point.hour < schedule.hours.length - 1 && !point.payoutOpen);
   return closed ? closed.hour : null;
 }
 
 /** First chart hour where the payout gate is open. Honest empty when none of the 72 hours is open. */
 export function firstOpenPayoutGanttHour(input) {
   const schedule = buildGateSchedule(input);
-  const open = schedule.hours.find((point) => point.hour < SIMULATION_HOURS && point.payoutOpen);
+  const open = schedule.hours.find((point) => point.hour < schedule.hours.length - 1 && point.payoutOpen);
   return open ? open.hour : null;
 }
 
 /** First chart hour where FX is weekday depth. Honest empty when none of the 72 hours is open. */
 export function firstOpenFxGanttHour(input) {
   const schedule = buildGateSchedule(input);
-  const open = schedule.hours.find((point) => point.hour < SIMULATION_HOURS && point.fxWeekday);
+  const open = schedule.hours.find((point) => point.hour < schedule.hours.length - 1 && point.fxWeekday);
   return open ? open.hour : null;
 }
 
 /** First chart hour where the bank gate is open. Honest empty when none of the 72 hours is open. */
 export function firstOpenBankGanttHour(input) {
   const schedule = buildGateSchedule(input);
-  const open = schedule.hours.find((point) => point.hour < SIMULATION_HOURS && point.bankOpen);
+  const open = schedule.hours.find((point) => point.hour < schedule.hours.length - 1 && point.bankOpen);
   return open ? open.hour : null;
 }
 
 /** First chart hour where the issuer gate is open. Honest empty when none of the 72 hours is open. */
 export function firstOpenIssuerGanttHour(input) {
   const schedule = buildGateSchedule(input);
-  const open = schedule.hours.find((point) => point.hour < SIMULATION_HOURS && point.issuerOpen);
+  const open = schedule.hours.find((point) => point.hour < schedule.hours.length - 1 && point.issuerOpen);
   return open ? open.hour : null;
 }
 
 /** Last chart hour where the issuer gate is open. Honest empty when none of the 72 hours is open. */
 export function lastOpenIssuerGanttHour(input) {
   const schedule = buildGateSchedule(input);
-  const open = schedule.hours.findLast((point) => point.hour < SIMULATION_HOURS && point.issuerOpen);
+  const open = schedule.hours.findLast((point) => point.hour < schedule.hours.length - 1 && point.issuerOpen);
   return open ? open.hour : null;
 }
 
 /** Last chart hour where the bank gate is open. Honest empty when none of the 72 hours is open. */
 export function lastOpenBankGanttHour(input) {
   const schedule = buildGateSchedule(input);
-  const open = schedule.hours.findLast((point) => point.hour < SIMULATION_HOURS && point.bankOpen);
+  const open = schedule.hours.findLast((point) => point.hour < schedule.hours.length - 1 && point.bankOpen);
   return open ? open.hour : null;
 }
 
 /** Last chart hour where the payout gate is open. Honest empty when none of the 72 hours is open. Distinct from last-open-bank and first-open-payout. */
 export function lastOpenPayoutGanttHour(input) {
   const schedule = buildGateSchedule(input);
-  const open = schedule.hours.findLast((point) => point.hour < SIMULATION_HOURS && point.payoutOpen);
+  const open = schedule.hours.findLast((point) => point.hour < schedule.hours.length - 1 && point.payoutOpen);
   return open ? open.hour : null;
 }
 
 /** Last chart hour where FX is weekday depth. Honest empty when none of the 72 hours is open. Distinct from last-open-bank, last-open-payout and first-open-FX. */
 export function lastOpenFxGanttHour(input) {
   const schedule = buildGateSchedule(input);
-  const open = schedule.hours.findLast((point) => point.hour < SIMULATION_HOURS && point.fxWeekday);
+  const open = schedule.hours.findLast((point) => point.hour < schedule.hours.length - 1 && point.fxWeekday);
   return open ? open.hour : null;
 }
 
 /** Last chart hour where the issuer gate is closed. Honest empty when none of the 72 hours is closed. */
 export function lastClosedIssuerGanttHour(input) {
   const schedule = buildGateSchedule(input);
-  const closed = schedule.hours.findLast((point) => point.hour < SIMULATION_HOURS && !point.issuerOpen);
+  const closed = schedule.hours.findLast((point) => point.hour < schedule.hours.length - 1 && !point.issuerOpen);
   return closed ? closed.hour : null;
 }
 
 /** Last chart hour where the bank gate is closed. Honest empty when none of the 72 hours is closed. */
 export function lastClosedBankGanttHour(input) {
   const schedule = buildGateSchedule(input);
-  const closed = schedule.hours.findLast((point) => point.hour < SIMULATION_HOURS && !point.bankOpen);
+  const closed = schedule.hours.findLast((point) => point.hour < schedule.hours.length - 1 && !point.bankOpen);
   return closed ? closed.hour : null;
 }
 
 /** Last chart hour where FX is weekend-thinned. Honest empty when none of the 72 hours is closed. Distinct from last-open-FX, last-open-payout and first-closed-FX. */
 export function lastClosedFxGanttHour(input) {
   const schedule = buildGateSchedule(input);
-  const closed = schedule.hours.findLast((point) => point.hour < SIMULATION_HOURS && !point.fxWeekday);
+  const closed = schedule.hours.findLast((point) => point.hour < schedule.hours.length - 1 && !point.fxWeekday);
   return closed ? closed.hour : null;
 }
 
 /** Last chart hour where the payout gate is closed. Honest empty when none of the 72 hours is closed. Distinct from last-closed-FX, last-closed-bank, last-closed-issuer and last-open-payout. */
 export function lastClosedPayoutGanttHour(input) {
   const schedule = buildGateSchedule(input);
-  const closed = schedule.hours.findLast((point) => point.hour < SIMULATION_HOURS && !point.payoutOpen);
+  const closed = schedule.hours.findLast((point) => point.hour < schedule.hours.length - 1 && !point.payoutOpen);
   return closed ? closed.hour : null;
 }
 
 /** Last chart hour that is weekend and FX-closed. Honest empty when none of the 72 hours matches. Distinct from last-closed-FX, last-closed-payout, last-closed-bank and last-closed-issuer. */
 export function lastWeekendFxClosedGanttHour(input) {
   const schedule = buildGateSchedule(input);
-  const closed = schedule.hours.findLast((point) => point.hour < SIMULATION_HOURS && ganttHourWeekendFxClosed(point));
+  const closed = schedule.hours.findLast((point) => point.hour < schedule.hours.length - 1 && ganttHourWeekendFxClosed(point));
   return closed ? closed.hour : null;
 }
 
 /** Last chart hour that is weekday and FX-closed. Honest empty when none of the 72 hours matches. Distinct from last-weekend-FX-closed, last-closed-FX and last-closed-payout. */
 export function lastWeekdayFxClosedGanttHour(input) {
   const schedule = buildGateSchedule(input);
-  const closed = schedule.hours.findLast((point) => point.hour < SIMULATION_HOURS && ganttHourWeekdayFxClosed(point));
+  const closed = schedule.hours.findLast((point) => point.hour < schedule.hours.length - 1 && ganttHourWeekdayFxClosed(point));
   return closed ? closed.hour : null;
 }
 
 /** Last chart hour that is weekend and FX-open. Honest empty when none of the 72 hours matches. Distinct from last-weekday-FX-closed, last-weekend-FX-closed and last-closed-FX. */
 export function lastWeekendFxOpenGanttHour(input) {
   const schedule = buildGateSchedule(input);
-  const open = schedule.hours.findLast((point) => point.hour < SIMULATION_HOURS && ganttHourWeekendFxOpen(point));
+  const open = schedule.hours.findLast((point) => point.hour < schedule.hours.length - 1 && ganttHourWeekendFxOpen(point));
   return open ? open.hour : null;
 }
 
 /** Last chart hour that is weekday and FX-open. Honest empty when none of the 72 hours matches. Distinct from last-weekend-FX-open, last-weekday-FX-closed and last-weekend-FX-closed. */
 export function lastWeekdayFxOpenGanttHour(input) {
   const schedule = buildGateSchedule(input);
-  const open = schedule.hours.findLast((point) => point.hour < SIMULATION_HOURS && ganttHourWeekdayFxOpen(point));
+  const open = schedule.hours.findLast((point) => point.hour < schedule.hours.length - 1 && ganttHourWeekdayFxOpen(point));
   return open ? open.hour : null;
 }
 
 /** First chart hour that is weekday and FX-open. Honest empty when none of the 72 hours matches. Distinct from last-weekday-FX-open, last-weekend-FX-open and last-weekday-FX-closed. */
 export function firstWeekdayFxOpenGanttHour(input) {
   const schedule = buildGateSchedule(input);
-  const open = schedule.hours.find((point) => point.hour < SIMULATION_HOURS && ganttHourWeekdayFxOpen(point));
+  const open = schedule.hours.find((point) => point.hour < schedule.hours.length - 1 && ganttHourWeekdayFxOpen(point));
   return open ? open.hour : null;
 }
 
 /** First chart hour that is weekday and FX-closed. Honest empty when none of the 72 hours matches. Distinct from last-weekday-FX-closed, first-weekday-FX-open, last-weekday-FX-open and last-weekend-FX-closed. */
 export function firstWeekdayFxClosedGanttHour(input) {
   const schedule = buildGateSchedule(input);
-  const closed = schedule.hours.find((point) => point.hour < SIMULATION_HOURS && ganttHourWeekdayFxClosed(point));
+  const closed = schedule.hours.find((point) => point.hour < schedule.hours.length - 1 && ganttHourWeekdayFxClosed(point));
   return closed ? closed.hour : null;
 }
 
 /** First chart hour that is weekend and FX-open. Honest empty when none of the 72 hours matches. Distinct from first-weekday-FX-closed, first-weekday-FX-open, last-weekday-FX-open, last-weekend-FX-open, last-weekday-FX-closed, last-weekend-FX-closed and last-closed-FX. */
 export function firstWeekendFxOpenGanttHour(input) {
   const schedule = buildGateSchedule(input);
-  const open = schedule.hours.find((point) => point.hour < SIMULATION_HOURS && ganttHourWeekendFxOpen(point));
+  const open = schedule.hours.find((point) => point.hour < schedule.hours.length - 1 && ganttHourWeekendFxOpen(point));
   return open ? open.hour : null;
 }
 
 /** First chart hour that is weekend and FX-closed. Honest empty when none of the 72 hours matches. Distinct from first-weekend-FX-open, last-weekend-FX-closed, last-weekday-FX-closed, first-weekday-FX-closed, first-weekday-FX-open and last-closed-FX. */
 export function firstWeekendFxClosedGanttHour(input) {
   const schedule = buildGateSchedule(input);
-  const closed = schedule.hours.find((point) => point.hour < SIMULATION_HOURS && ganttHourWeekendFxClosed(point));
+  const closed = schedule.hours.find((point) => point.hour < schedule.hours.length - 1 && ganttHourWeekendFxClosed(point));
   return closed ? closed.hour : null;
 }
 
@@ -2273,35 +2539,105 @@ export function ganttHourWeekdayFxClosed(point) {
 
 export const GANTT_GATE_FILTERS = Object.freeze(["all", "issuer", "bank", "payout", "fx"]);
 
+/** Consolidated Gantt hour-filter values. Replaces the earlier per-gate hide checkboxes. */
+export const GANTT_HOUR_FILTERS = Object.freeze([
+  "all",
+  "any-closed",
+  "every-closed",
+  "any-open",
+  "weekend",
+  "weekday",
+  "queued"
+]);
+
+/**
+ * True when a schedule hour passes the consolidated Gantt hour filter.
+ * "any-closed" keeps hours closed on at least one gate; "any-open" keeps hours
+ * open on at least one gate (FX weekend thinning counts as closed); "queued"
+ * keeps hours whose synthetic queue is nonzero. selectedHour always passes.
+ */
+export function ganttHourMatchesFilter(point, hourFilter = "all", queuePoint = null, selectedHour = null) {
+  if (!point || typeof point !== "object") return false;
+  if (selectedHour !== null && point.hour === selectedHour) return true;
+  switch (hourFilter) {
+    case "any-closed":
+      return ganttHourClosedOnAnyGate(point);
+    case "every-closed":
+      return ganttHourClosedOnEveryGate(point);
+    case "any-open":
+      return !ganttHourClosedOnEveryGate(point);
+    case "weekend":
+      return ganttHourIsWeekend(point);
+    case "weekday":
+      return !ganttHourIsWeekend(point);
+    case "queued":
+      return !(queuePoint ? ganttHourHasZeroQueue(queuePoint) : false);
+    default:
+      return true;
+  }
+}
+
+/** One-line first/last open or closed hour label for one gate. Honest empty when none exists. */
+export function gateHourToMarkdown(input, gate, boundary = "first", open = true) {
+  const gateKey = `${gate}Open`;
+  const schedule = buildGateSchedule(input);
+  const matches = (point) => point.hour < schedule.hours.length - 1
+    && (gate === "fx" ? (open ? point.fxWeekday : !point.fxWeekday) : (open ? point[gateKey] === true : point[gateKey] === false));
+  const point = boundary === "last"
+    ? schedule.hours.findLast(matches)
+    : schedule.hours.find(matches);
+  const gateName = gate === "fx" ? "FX" : gate.charAt(0).toUpperCase() + gate.slice(1);
+  const state = open ? "open" : "closed";
+  if (!point) {
+    return `${gateName} ${state} hours: none in the 72-hour window. Counts of modeled hours, not a bank calendar.`;
+  }
+  const boundaryLabel = boundary === "last" ? "Last" : "First";
+  return `${boundaryLabel} ${state} ${gateName} hour: ${formatTime(point.hour)} (hour ${point.hour}). Counts of modeled hours, not a bank calendar.`;
+}
+
+/** Multi-line hour evidence for one gate: first and last open and closed hours plus gate hour counts. */
+export function gateHourEvidenceToMarkdown(input, gate) {
+  return [
+    `# Weekend Gap ${gate === "fx" ? "FX" : gate} hours`,
+    "",
+    gateHourToMarkdown(input, gate, "first", true),
+    gateHourToMarkdown(input, gate, "last", true),
+    gateHourToMarkdown(input, gate, "first", false),
+    gateHourToMarkdown(input, gate, "last", false),
+    gateHourCountsToMarkdown(input, gate)
+  ].join("\n");
+}
+
+/** Counts of open and closed modeled hours for one gate. Not a bank calendar. */
+export function gateHourCountsToMarkdown(input, gate) {
+  const schedule = buildGateSchedule(input);
+  const hours = schedule.hours.length - 1;
+  let open = 0;
+  for (let hour = 0; hour < hours; hour += 1) {
+    const point = schedule.hours[hour];
+    const isOpen = gate === "fx" ? point.fxWeekday : point[`${gate}Open`] === true;
+    if (isOpen) open += 1;
+  }
+  const gateName = gate === "fx" ? "FX" : gate.charAt(0).toUpperCase() + gate.slice(1);
+  return `${gateName} hours: ${open} open, ${hours - open} closed out of ${hours}. Counts of modeled hours, not a bank calendar.`;
+}
+
 /** Light, print-friendly SVG of 72 operating hours plus a selected-hour marker. */
+/** Tick hours for time SVGs: hour 0, every local midnight, and the final hour. */
+export function svgTickHours(hours) {
+  const ticks = [0];
+  for (let hour = 1; hour < hours; hour += 1) {
+    if (dayAndHourAt(hour).localHour === 0) ticks.push(hour);
+  }
+  if (ticks[ticks.length - 1] !== hours) ticks.push(hours);
+  return ticks;
+}
+
 export function buildGateGanttSvg(input, selectedHour = 0, options = {}) {
   const schedule = buildGateSchedule(input);
-  const markerHour = clamp(Math.round(finiteNumber(selectedHour, 0)), 0, SIMULATION_HOURS);
-  const closedOnly = options.closedOnly === true;
-  const everyClosedOnly = options.everyClosedOnly === true;
-  const hideWeekdayHours = options.hideWeekdayHours === true;
-  const hideWeekendHours = options.hideWeekendHours === true;
-  const hideOpenHours = options.hideOpenHours === true;
-  const hideClosedHours = options.hideClosedHours === true;
-  const hideZeroQueueHours = options.hideZeroQueueHours === true;
-  const hideBankClosedHours = options.hideBankClosedHours === true;
-  const hideIssuerClosedHours = options.hideIssuerClosedHours === true;
-  const hidePayoutClosedHours = options.hidePayoutClosedHours === true;
-  const hideFxClosedHours = options.hideFxClosedHours === true;
-  const hidePayoutOpenHours = options.hidePayoutOpenHours === true;
-  const hideFxOpenHours = options.hideFxOpenHours === true;
-  const hideBankOpenHours = options.hideBankOpenHours === true;
-  const hideIssuerOpenHours = options.hideIssuerOpenHours === true;
-  const hideWeekendIssuerOpenHours = options.hideWeekendIssuerOpenHours === true;
-  const hideWeekendIssuerClosedHours = options.hideWeekendIssuerClosedHours === true;
-  const hideWeekendBankClosedHours = options.hideWeekendBankClosedHours === true;
-  const hideWeekendBankOpenHours = options.hideWeekendBankOpenHours === true;
-  const hideWeekendPayoutOpenHours = options.hideWeekendPayoutOpenHours === true;
-  const hideWeekendFxOpenHours = options.hideWeekendFxOpenHours === true;
-  const hideWeekendPayoutClosedHours = options.hideWeekendPayoutClosedHours === true;
-  const hideWeekendFxClosedHours = options.hideWeekendFxClosedHours === true;
-  const hideWeekdayFxClosedHours = options.hideWeekdayFxClosedHours === true;
-  const hideWeekdayFxOpenHours = options.hideWeekdayFxOpenHours === true;
+  const hours = schedule.hours.length - 1;
+  const markerHour = clamp(Math.round(finiteNumber(selectedHour, 0)), 0, hours);
+  const hourFilter = GANTT_HOUR_FILTERS.includes(options.hourFilter) ? options.hourFilter : "all";
   const gateFilter = GANTT_GATE_FILTERS.includes(options.gateFilter) ? options.gateFilter : "all";
   const labelsForChart = gateDisplayLabels(input, options.redacted === true);
   const width = 720;
@@ -2317,55 +2653,37 @@ export function buildGateGanttSvg(input, selectedHour = 0, options = {}) {
   ];
   const rows = gateFilter === "all" ? allRows : allRows.filter((row) => row[0] === gateFilter);
   const height = top + rows.length * rowHeight + 32;
-  const hourWidth = plotWidth / SIMULATION_HOURS;
+  const hourWidth = plotWidth / hours;
   const firstPayout = nextPayoutTime(schedule.scenario, 0);
-  const queueTimeline = hideZeroQueueHours ? runSimulation(input).timeline : null;
+  const queueTimeline = hourFilter === "queued" ? runSimulation(input).timeline : null;
+  const visibleHours = new Set([markerHour]);
+  for (let hour = 0; hour < hours; hour += 1) {
+    if (ganttHourMatchesFilter(schedule.hours[hour], hourFilter, queueTimeline ? queueTimeline[hour] : null, markerHour)) {
+      visibleHours.add(hour);
+    }
+  }
   let cells = "";
   rows.forEach((row, rowIndex) => {
     const y = top + rowIndex * rowHeight;
-    for (let hour = 0; hour < SIMULATION_HOURS; hour += 1) {
-      if (hideWeekdayHours && !ganttHourIsWeekend(schedule.hours[hour])) continue;
-      if (hideWeekendHours && ganttHourIsWeekend(schedule.hours[hour])) continue;
-      if (hideOpenHours && ganttHourOpenOnEveryGate(schedule.hours[hour])) continue;
-      if (hideClosedHours && ganttHourClosedOnEveryGate(schedule.hours[hour])) continue;
-      if (hideZeroQueueHours && ganttHourHasZeroQueue(queueTimeline[hour])) continue;
-      if (hideBankClosedHours && ganttHourBankClosed(schedule.hours[hour]) && hour !== markerHour) continue;
-      if (hideIssuerClosedHours && ganttHourIssuerClosed(schedule.hours[hour]) && hour !== markerHour) continue;
-      if (hidePayoutClosedHours && ganttHourPayoutClosed(schedule.hours[hour]) && hour !== markerHour) continue;
-      if (hideFxClosedHours && ganttHourFxClosed(schedule.hours[hour]) && hour !== markerHour) continue;
-      if (hidePayoutOpenHours && ganttHourPayoutOpen(schedule.hours[hour]) && hour !== markerHour) continue;
-      if (hideFxOpenHours && ganttHourFxOpen(schedule.hours[hour]) && hour !== markerHour) continue;
-      if (hideBankOpenHours && ganttHourBankOpen(schedule.hours[hour]) && hour !== markerHour) continue;
-      if (hideIssuerOpenHours && ganttHourIssuerOpen(schedule.hours[hour]) && hour !== markerHour) continue;
-      if (hideWeekendIssuerOpenHours && ganttHourWeekendIssuerOpen(schedule.hours[hour]) && hour !== markerHour) continue;
-      if (hideWeekendIssuerClosedHours && ganttHourWeekendIssuerClosed(schedule.hours[hour]) && hour !== markerHour) continue;
-      if (hideWeekendBankClosedHours && ganttHourWeekendBankClosed(schedule.hours[hour]) && hour !== markerHour) continue;
-      if (hideWeekendBankOpenHours && ganttHourWeekendBankOpen(schedule.hours[hour]) && hour !== markerHour) continue;
-      if (hideWeekendPayoutOpenHours && ganttHourWeekendPayoutOpen(schedule.hours[hour]) && hour !== markerHour) continue;
-      if (hideWeekendFxOpenHours && ganttHourWeekendFxOpen(schedule.hours[hour]) && hour !== markerHour) continue;
-      if (hideWeekendPayoutClosedHours && ganttHourWeekendPayoutClosed(schedule.hours[hour]) && hour !== markerHour) continue;
-      if (hideWeekendFxClosedHours && ganttHourWeekendFxClosed(schedule.hours[hour]) && hour !== markerHour) continue;
-      if (hideWeekdayFxClosedHours && ganttHourWeekdayFxClosed(schedule.hours[hour]) && hour !== markerHour) continue;
-      if (hideWeekdayFxOpenHours && ganttHourWeekdayFxOpen(schedule.hours[hour]) && hour !== markerHour) continue;
-      if (everyClosedOnly && !ganttHourClosedOnEveryGate(schedule.hours[hour])) continue;
-      if (closedOnly && !ganttHourClosedOnAnyGate(schedule.hours[hour])) continue;
+    for (let hour = 0; hour < hours; hour += 1) {
+      if (!visibleHours.has(hour)) continue;
       const open = row[2](hour);
       const x = labelWidth + hour * hourWidth;
       cells += `<rect x="${x.toFixed(2)}" y="${y + 5}" width="${Math.max(0.4, hourWidth).toFixed(2)}" height="${rowHeight - 10}" fill="${ganttCellFill(open, row[3], "wg-gantt", row[4])}" />`;
     }
   });
-  const markerX = labelWidth + (markerHour / SIMULATION_HOURS) * plotWidth;
+  const markerX = labelWidth + (markerHour / hours) * plotWidth;
   const labels = rows.map((row, index) => `<text x="8" y="${top + index * rowHeight + 18}" font-size="12" fill="#17324a">${svgEscape(row[1])}</text>`).join("");
-  const ticks = [0, 9, 33, 57, 72].map((hour) => {
-    const x = labelWidth + (hour / SIMULATION_HOURS) * plotWidth;
+  const ticks = svgTickHours(hours).map((hour) => {
+    const x = labelWidth + (hour / hours) * plotWidth;
     return `<text x="${x.toFixed(1)}" y="${height - 8}" font-size="10" text-anchor="middle" fill="#3e5360">${svgEscape(formatTime(hour))}</text>`;
   }).join("");
   const selectedLabel = `<text x="${width - 8}" y="14" font-size="11" text-anchor="end" fill="#17324a">Selected ${svgEscape(formatTime(markerHour))}</text>`;
-  const payoutX = firstPayout === null || firstPayout > SIMULATION_HOURS ? null : labelWidth + (firstPayout / SIMULATION_HOURS) * plotWidth;
+  const payoutX = firstPayout === null || firstPayout > hours ? null : labelWidth + (firstPayout / hours) * plotWidth;
   const payoutMark = payoutX === null ? "" :
     `<line x1="${payoutX.toFixed(2)}" y1="${top}" x2="${payoutX.toFixed(2)}" y2="${top + rows.length * rowHeight}" stroke="#2f9e6b" stroke-width="2" stroke-dasharray="4 3" />` +
     `<text x="${Math.min(width - 80, Math.max(labelWidth, payoutX + 6)).toFixed(1)}" y="${top + 12}" font-size="10" fill="#1f6b49">First payout ${svgEscape(formatTime(firstPayout))}</text>`;
-  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${width} ${height}" width="100%" role="img" aria-label="72-hour gate Gantt for issuer, bank, payout and FX. Solid fill is open or weekday depth. Hatched fill is closed or weekend thinning. Current hour is the solid vertical marker. First payout window is the dashed marker. A table follows.">` +
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${width} ${height}" width="100%" role="img" aria-label="${hours}-hour gate Gantt for issuer, bank, payout and FX. Solid fill is open or weekday depth. Hatched fill is closed or weekend thinning. Current hour is the solid vertical marker. First payout window is the dashed marker. A table follows.">` +
     ganttPatternDefs("wg-gantt") +
     `<rect width="${width}" height="${height}" fill="#f7fafb"/>` +
     `<text x="8" y="14" font-size="10" fill="#3e5360">Solid open or weekday. Hatched closed or weekend.</text>` +
@@ -2375,12 +2693,12 @@ export function buildGateGanttSvg(input, selectedHour = 0, options = {}) {
     "</svg>";
 }
 
-/** Gate open/closed for the same 72 hours drawn on the Gantt chart. */
+/** Gate open/closed for the modeled hours drawn on the Gantt chart. */
 export function ganttToCSV(input) {
   const schedule = buildGateSchedule(input);
   const headers = ["hour", "time_label", "issuer", "bank", "payout", "fx"];
   const rows = [];
-  for (let hour = 0; hour < SIMULATION_HOURS; hour += 1) {
+  for (let hour = 0; hour < schedule.hours.length - 1; hour += 1) {
     const point = schedule.hours[hour];
     rows.push([
       point.hour,
@@ -2402,7 +2720,7 @@ function ganttGateStateLabel(open, fx = false) {
 /** Markdown table for one Gantt hour. Synthetic calendar, not a live queue. */
 export function selectedGanttHourToMarkdown(input, selectedHour = 0) {
   const schedule = buildGateSchedule(input);
-  const hour = clamp(Math.round(finiteNumber(selectedHour, 0)), 0, SIMULATION_HOURS);
+  const hour = clamp(Math.round(finiteNumber(selectedHour, 0)), 0, schedule.hours.length - 1);
   const point = schedule.hours[hour];
   return [
     "# Weekend Gap selected hour",
@@ -2424,7 +2742,7 @@ export function selectedGanttHourToMarkdown(input, selectedHour = 0) {
 /** One-line remaining reserve and queued AUD at the selected Gantt hour. Synthetic snapshot, not live. */
 export function remainingReserveAtHourToMarkdown(input, selectedHour = 0) {
   const result = runSimulation(input);
-  const hour = clamp(Math.round(finiteNumber(selectedHour, 0)), 0, SIMULATION_HOURS);
+  const hour = clamp(Math.round(finiteNumber(selectedHour, 0)), 0, result.timeline.length - 1);
   const point = result.timeline[hour];
   return "Remaining reserve: " + point.reserveRemainingAud + " AUD. Queued AUD: " + point.queuedAud + ". Hour: " + point.timeLabel + " (hour " + point.hour + "). Synthetic educational snapshot, not live market data.";
 }
@@ -2468,7 +2786,7 @@ export function peakQueueHourToMarkdown(input) {
 /** Two-line selected Gantt hour versus peak-queue hour. Not a forecast. */
 export function selectedVersusPeakHourToMarkdown(input, selectedHour = 0) {
   const result = runSimulation(input);
-  const hour = clamp(Math.round(finiteNumber(selectedHour, 0)), 0, SIMULATION_HOURS);
+  const hour = clamp(Math.round(finiteNumber(selectedHour, 0)), 0, result.timeline.length - 1);
   const selected = result.timeline[hour];
   const selectedLine = "Selected Gantt hour: " + selected.timeLabel + " (hour " + selected.hour + ").";
   const peakLine = result.summary.peakQueuedAud > 0
@@ -2480,7 +2798,7 @@ export function selectedVersusPeakHourToMarkdown(input, selectedHour = 0) {
 /** One-line next-payout hour label. Honest empty when none exists. */
 export function nextPayoutHourToMarkdown(input, selectedHour = 0) {
   const result = runSimulation(input);
-  const hour = clamp(Math.round(finiteNumber(selectedHour, 0)), 0, SIMULATION_HOURS);
+  const hour = clamp(Math.round(finiteNumber(selectedHour, 0)), 0, result.timeline.length - 1);
   const nextHour = result.timeline[hour].nextPayoutHour;
   if (nextHour === null) {
     return "Next payout hour: none. Synthetic educational label, not a live payout time.";
@@ -2492,7 +2810,7 @@ export function nextPayoutHourToMarkdown(input, selectedHour = 0) {
 export function closedGanttHoursToMarkdown(input) {
   const schedule = buildGateSchedule(input);
   const rows = [];
-  for (let hour = 0; hour < SIMULATION_HOURS; hour += 1) {
+  for (let hour = 0; hour < schedule.hours.length - 1; hour += 1) {
     const point = schedule.hours[hour];
     const closed = [];
     if (!point.issuerOpen) closed.push("Issuer");
@@ -2518,7 +2836,7 @@ export function closedGanttHoursToMarkdown(input) {
 export function fxGanttHoursToMarkdown(input) {
   const schedule = buildGateSchedule(input);
   const rows = [];
-  for (let hour = 0; hour < SIMULATION_HOURS; hour += 1) {
+  for (let hour = 0; hour < schedule.hours.length - 1; hour += 1) {
     const point = schedule.hours[hour];
     rows.push("| " + point.timeLabel + " (hour " + point.hour + ") | " + ganttGateStateLabel(point.fxWeekday, true) + " |");
   }
@@ -2539,7 +2857,7 @@ export function weekendFxHourCountsToMarkdown(input) {
   const schedule = buildGateSchedule(input);
   let open = 0;
   let closed = 0;
-  for (let hour = 0; hour < SIMULATION_HOURS; hour += 1) {
+  for (let hour = 0; hour < schedule.hours.length - 1; hour += 1) {
     const point = schedule.hours[hour];
     if (!ganttHourIsWeekend(point)) continue;
     if (point.fxWeekday) open += 1;
@@ -2764,12 +3082,12 @@ export function firstWeekendFxClosedHourToMarkdown(input) {
   return "First weekend-FX-closed hour: " + formatTime(hour) + " (hour " + hour + "). Counts of modeled hours, not an FX calendar.";
 }
 
-/** Markdown for arrival-hour cohorts. Remaining is unfinished after 72 hours. Not a forecast. */
+/** Markdown for arrival-hour cohorts. Remaining is unfinished after the horizon. Not a forecast. */
 export function arrivalCohortsToMarkdown(input) {
   const result = runSimulation(input);
   const cohorts = [];
   let front = 0;
-  for (let hour = 0; hour < SIMULATION_HOURS; hour += 1) {
+  for (let hour = 0; hour < result.timeline.length - 1; hour += 1) {
     const point = result.timeline[hour + 1];
     cohorts.push({ hour, arrived: point.demandThisHour, remaining: point.demandThisHour });
     let available = point.settledThisHour;
@@ -2801,30 +3119,27 @@ export function arrivalCohortsToMarkdown(input) {
 export function compareGateSchedules(baselineInput, currentInput) {
   const baseline = buildGateSchedule(baselineInput);
   const current = buildGateSchedule(currentInput);
+  const span = Math.max(baseline.hours.length, current.hours.length) - 1;
   const hours = [];
-  for (let hour = 0; hour <= SIMULATION_HOURS; hour += 1) {
-    const before = baseline.hours[hour];
-    const after = current.hours[hour];
-    const differs = before.issuerOpen !== after.issuerOpen
+  for (let hour = 0; hour <= span; hour += 1) {
+    const before = hour < baseline.hours.length ? baseline.hours[hour] : null;
+    const after = hour < current.hours.length ? current.hours[hour] : null;
+    const differs = !before || !after || before.issuerOpen !== after.issuerOpen
       || before.bankOpen !== after.bankOpen
       || before.payoutOpen !== after.payoutOpen
       || before.fxWeekday !== after.fxWeekday;
+    const side = (point) => point === null ? null : Object.freeze({
+      issuerOpen: point.issuerOpen,
+      bankOpen: point.bankOpen,
+      payoutOpen: point.payoutOpen,
+      fxWeekday: point.fxWeekday
+    });
     hours.push(Object.freeze({
       hour,
-      timeLabel: after.timeLabel,
+      timeLabel: (after ?? before).timeLabel,
       differs,
-      current: Object.freeze({
-        issuerOpen: after.issuerOpen,
-        bankOpen: after.bankOpen,
-        payoutOpen: after.payoutOpen,
-        fxWeekday: after.fxWeekday
-      }),
-      baseline: Object.freeze({
-        issuerOpen: before.issuerOpen,
-        bankOpen: before.bankOpen,
-        payoutOpen: before.payoutOpen,
-        fxWeekday: before.fxWeekday
-      })
+      current: side(after),
+      baseline: side(before)
     }));
   }
   return Object.freeze({
@@ -2837,13 +3152,14 @@ export function compareGateSchedules(baselineInput, currentInput) {
 export function buildComparisonGanttSvg(baselineInput, currentInput, selectedHour = 0) {
   const currentSchedule = buildGateSchedule(currentInput);
   const baselineSchedule = buildGateSchedule(baselineInput);
-  const markerHour = clamp(Math.round(finiteNumber(selectedHour, 0)), 0, SIMULATION_HOURS);
+  const hours = Math.max(currentSchedule.hours.length, baselineSchedule.hours.length) - 1;
+  const markerHour = clamp(Math.round(finiteNumber(selectedHour, 0)), 0, hours);
   const width = 720;
   const rowHeight = 24;
   const labelWidth = 132;
   const top = 28;
   const plotWidth = width - labelWidth - 16;
-  const hourWidth = plotWidth / SIMULATION_HOURS;
+  const hourWidth = plotWidth / hours;
   const pairs = [
     ["Issuer current", currentSchedule, (point) => point.issuerOpen, "#2f9e6b", false],
     ["Issuer baseline", baselineSchedule, (point) => point.issuerOpen, "#2f9e6b", false],
@@ -2856,18 +3172,20 @@ export function buildComparisonGanttSvg(baselineInput, currentInput, selectedHou
   ];
   const height = top + pairs.length * rowHeight + 32;
   let cells = "";
+  const span = Math.max(currentSchedule.hours.length, baselineSchedule.hours.length) - 1;
   const labels = pairs.map((row, rowIndex) => {
     const y = top + rowIndex * rowHeight;
-    for (let hour = 0; hour < SIMULATION_HOURS; hour += 1) {
+    for (let hour = 0; hour < span; hour += 1) {
+      if (hour >= row[1].hours.length - 1) continue;
       const open = row[2](row[1].hours[hour]);
       const x = labelWidth + hour * hourWidth;
       cells += `<rect x="${x.toFixed(2)}" y="${y + 4}" width="${Math.max(0.4, hourWidth).toFixed(2)}" height="${rowHeight - 8}" fill="${ganttCellFill(open, row[3], "wg-compare", row[4])}" />`;
     }
     return `<text x="8" y="${y + 16}" font-size="11" fill="#17324a">${svgEscape(row[0])}</text>`;
   }).join("");
-  const markerX = labelWidth + (markerHour / SIMULATION_HOURS) * plotWidth;
-  const ticks = [0, 9, 33, 57, 72].map((hour) => {
-    const x = labelWidth + (hour / SIMULATION_HOURS) * plotWidth;
+  const markerX = labelWidth + (markerHour / span) * plotWidth;
+  const ticks = svgTickHours(span).map((hour) => {
+    const x = labelWidth + (hour / span) * plotWidth;
     return `<text x="${x.toFixed(1)}" y="${height - 8}" font-size="10" text-anchor="middle" fill="#3e5360">${svgEscape(formatTime(hour))}</text>`;
   }).join("");
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${width} ${height}" width="100%" role="img" aria-label="Two-row gate Gantt comparing current and baseline issuer, bank, payout and FX hours. Solid fill is open or weekday depth. Hatched fill is closed or weekend thinning. A table follows.">` +
@@ -2892,11 +3210,12 @@ export function buildQueueChartSvg(currentInput, baselineInput = currentInput, s
   const plotWidth = width - 72;
   const plotHeight = height - 50;
   const maximum = Math.max(1, ...current.map((point) => point.queuedAud), ...baseline.map((point) => point.queuedAud));
-  const markerHour = clamp(Math.round(finiteNumber(selectedHour, 0)), 0, SIMULATION_HOURS);
-  const xAt = (hour) => left + (hour / SIMULATION_HOURS) * plotWidth;
+  const span = Math.max(current.length, baseline.length) - 1;
+  const markerHour = clamp(Math.round(finiteNumber(selectedHour, 0)), 0, span);
+  const xAt = (hour) => left + (hour / span) * plotWidth;
   const yAt = (value) => top + plotHeight - (value / maximum) * plotHeight;
   const pathFor = (points) => points.map((point, index) => `${index ? "L" : "M"}${xAt(point.hour).toFixed(2)} ${yAt(point.queuedAud).toFixed(2)}`).join(" ");
-  const ticks = [0, 9, 33, 57, 72].map((hour) => {
+  const ticks = svgTickHours(span).map((hour) => {
     const x = xAt(hour);
     return `<text x="${x.toFixed(1)}" y="${height - 8}" font-size="10" text-anchor="middle" fill="#3e5360">${svgEscape(formatTime(hour))}</text>`;
   }).join("");
@@ -2979,63 +3298,69 @@ export const WEEKEND_REVIEW_TOOLS=Object.freeze([
 ]);
 function validateWeekendReviewScenario(raw){
  const fields=Object.keys(DEFAULT_SCENARIO);
- if(!raw||typeof raw!=='object'||Array.isArray(raw)||Object.keys(raw).length!==fields.length||!fields.every(field=>Object.hasOwn(raw,field)&&typeof raw[field]===typeof DEFAULT_SCENARIO[field]))throw new TypeError('Review requires a complete scenario with the declared field types.');
+ const extras=['calendarOverrides','fundingTranches'];
+ if(!raw||typeof raw!=='object'||Array.isArray(raw)||!fields.every(field=>Object.hasOwn(raw,field)&&typeof raw[field]===typeof DEFAULT_SCENARIO[field]))throw new TypeError('Review requires a complete scenario with the declared field types.');
+ for(const key of Object.keys(raw))if(!fields.includes(key)&&!extras.includes(key))throw new TypeError('Review requires a complete scenario with the declared field types.');
+ for(const key of extras)if(raw[key]!==undefined&&!Array.isArray(raw[key]))throw new TypeError('Review requires a complete scenario with the declared field types.');
+ if(Object.keys(raw).length>fields.length+extras.length)throw new TypeError('Review requires a complete scenario with the declared field types.');
  const cleaned=sanitizeScenario(raw);if(cleaned.errors.length)throw new TypeError(cleaned.errors.join(' '));return cleaned.scenario;
 }
 export function analyzeWeekendReview(rawScenario,tool){
  const scenario=validateWeekendReviewScenario(rawScenario);const selected=WEEKEND_REVIEW_TOOLS.find(entry=>entry.id===tool);if(!selected)throw new TypeError('Unknown weekend review.');
+ const hours=scenarioHours(scenario);
  const result=runSimulation(scenario);const report=(columns,rows,note)=>({tool,title:selected.title,currency:'AUD',columns,rows,note});
  switch(tool){
  case 'days':{
 
- const days=new Map();for(let hour=0;hour<72;hour++){const name=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'][dayAndHourAt(hour).dayIndex];if(!days.has(name))days.set(name,[name,0,0,0,0,0]);const row=days.get(name),point=result.timeline[hour+1];row[1]++;row[2]+=point.demandThisHour;row[3]+=point.settledThisHour;row[4]+=point.queuedAud;row[5]=Math.max(row[5],point.queuedAud);}
+ const days=new Map();for(let hour=0;hour<hours;hour++){const name=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'][dayAndHourAt(hour).dayIndex];if(!days.has(name))days.set(name,[name,0,0,0,0,0]);const row=days.get(name),point=result.timeline[hour+1];row[1]++;row[2]+=point.demandThisHour;row[3]+=point.settledThisHour;row[4]+=point.queuedAud;row[5]=Math.max(row[5],point.queuedAud);}
  return report(['Day','Modeled hours','Demand arrived AUD','Settled AUD','Queue AUD-hours','Peak end-hour queue AUD'],[...days.values()],'Queue AUD-hours sums the queue after each hourly step, multiplied by one hour. Friday and Monday are partial days. It measures modeled backlog exposure, not a charge or real customer waiting time.');
 
  }
  case 'cohorts':{
 
- const cohorts=[];let front=0;for(let hour=0;hour<72;hour++){const point=result.timeline[hour+1];cohorts.push({hour,arrived:point.demandThisHour,remaining:point.demandThisHour,settled:0,wait:0});let available=point.settledThisHour;while(available>0&&front<cohorts.length){const cohort=cohorts[front],amount=Math.min(available,cohort.remaining);cohort.remaining=Math.max(0,cohort.remaining-amount);available=Math.max(0,available-amount);cohort.settled+=amount;cohort.wait+=amount*(hour-cohort.hour);if(cohort.remaining===0)front++;else break;}}
- return report(['Arrival hour','Arrived AUD','Settled by hour 72 AUD','Remaining AUD','Mean completed wait hours','Unfinished wait AUD-hours'],cohorts.map(c=>[c.hour,c.arrived,c.settled,c.remaining,c.settled>0?c.wait/c.settled:null,c.remaining*(72-c.hour)]),'Analytical FIFO attribution only: the core model has no customer priority. Same-step settlement has zero completed wait. Remaining amounts accumulate wait through hour 72 and have no assumed later payout. Means exclude unfinished amounts.');
+ const cohorts=[];let front=0;for(let hour=0;hour<hours;hour++){const point=result.timeline[hour+1];cohorts.push({hour,arrived:point.demandThisHour,remaining:point.demandThisHour,settled:0,wait:0});let available=point.settledThisHour;while(available>0&&front<cohorts.length){const cohort=cohorts[front],amount=Math.min(available,cohort.remaining);cohort.remaining=Math.max(0,cohort.remaining-amount);available=Math.max(0,available-amount);cohort.settled+=amount;cohort.wait+=amount*(hour-cohort.hour);if(cohort.remaining===0)front++;else break;}}
+ return report(['Arrival hour','Arrived AUD','Settled by hour '+hours+' AUD','Remaining AUD','Mean completed wait hours','Unfinished wait AUD-hours'],cohorts.map(c=>[c.hour,c.arrived,c.settled,c.remaining,c.settled>0?c.wait/c.settled:null,c.remaining*(hours-c.hour)]),'Analytical FIFO attribution only: the core model has no customer priority. Same-step settlement has zero completed wait. Remaining amounts accumulate wait through hour '+hours+' and have no assumed later payout. Means exclude unfinished amounts.');
 
  }
  case 'deadlines':{
 
- return report(['Checkpoint hour','Arrived AUD','Settled AUD','Queued AUD','Settled / arrived %','Settled / total demand %'],[12,24,36,48,60,72].map(hour=>{const p=result.timeline[hour];return[hour,p.demandArrivedAud,p.settledAud,p.queuedAud,p.demandArrivedAud>0?p.settledAud/p.demandArrivedAud*100:null,scenario.redemptionDemandAud>0?p.settledAud/scenario.redemptionDemandAud*100:null];}),'Six fixed checkpoints. The total-demand denominator includes future arrivals, while arrived demand includes only arrivals by that checkpoint. Blank percentage means zero demand, not a promised service level.');
+ const marks=[12,24,36,48,60,72].filter(mark=>mark<=hours);if(marks[marks.length-1]!==hours)marks.push(hours);
+ return report(['Checkpoint hour','Arrived AUD','Settled AUD','Queued AUD','Settled / arrived %','Settled / total demand %'],marks.map(hour=>{const p=result.timeline[hour];return[hour,p.demandArrivedAud,p.settledAud,p.queuedAud,p.demandArrivedAud>0?p.settledAud/p.demandArrivedAud*100:null,scenario.redemptionDemandAud>0?p.settledAud/scenario.redemptionDemandAud*100:null];}),'Checkpoints every 12 hours within the horizon plus the final checkpoint. The total-demand denominator includes future arrivals, while arrived demand includes only arrivals by that checkpoint. Blank percentage means zero demand, not a promised service level.');
 
  }
  case 'closures':{
 
- const rows=[];let start=null;for(let hour=0;hour<=72;hour++){const status=hour<72?getOperationalStatus(scenario,hour):null;const closed=status&&!(status.issuerOpen&&status.bankOpen&&status.payoutOpen);if(closed&&start===null)start=hour;if(!closed&&start!==null){const arrived=result.timeline.slice(start+1,hour+1).reduce((sum,p)=>sum+p.demandThisHour,0);rows.push([start,hour,hour-start,result.timeline[start].queuedAud,arrived,result.timeline[hour].queuedAud]);start=null;}}
- return report(['Start hour inclusive','End hour exclusive','Consecutive closed hours','Queue at start AUD','Arrivals during closure AUD','Queue at end AUD'],rows,'A closure means at least one issuer, bank or payout window is closed. Zero reserve and zero throughput are separate constraints. Spells end at the 72-hour horizon; no reopening beyond that horizon is inferred.');
+ const rows=[];let start=null;for(let hour=0;hour<=hours;hour++){const status=hour<hours?getOperationalStatus(scenario,hour):null;const closed=status&&!(status.issuerOpen&&status.bankOpen&&status.payoutOpen);if(closed&&start===null)start=hour;if(!closed&&start!==null){const arrived=result.timeline.slice(start+1,hour+1).reduce((sum,p)=>sum+p.demandThisHour,0);rows.push([start,hour,hour-start,result.timeline[start].queuedAud,arrived,result.timeline[hour].queuedAud]);start=null;}}
+ return report(['Start hour inclusive','End hour exclusive','Consecutive closed hours','Queue at start AUD','Arrivals during closure AUD','Queue at end AUD'],rows,'A closure means at least one issuer, bank or payout window is closed. Zero reserve and zero throughput are separate constraints. Spells end at the '+hours+'-hour horizon; no reopening beyond that horizon is inferred.');
 
  }
  case 'overlap':{
 
- const counts={issuer:0,bank:0,payout:0};let common=0;for(let hour=0;hour<72;hour++){const status=getOperationalStatus(scenario,hour);for(const gate of Object.keys(counts))if(status[gate+'Open'])counts[gate]++;if(status.issuerOpen&&status.bankOpen&&status.payoutOpen)common++;}
+ const counts={issuer:0,bank:0,payout:0};let common=0;for(let hour=0;hour<hours;hour++){const status=getOperationalStatus(scenario,hour);for(const gate of Object.keys(counts))if(status[gate+'Open'])counts[gate]++;if(status.issuerOpen&&status.bankOpen&&status.payoutOpen)common++;}
  return report(['Gate','Individually open hours','Complete-chain open hours','Open hours without complete chain'],Object.entries(counts).map(([gate,hours])=>[gate,hours,common,hours-common]),'Hours use operating windows and holidays only. Open hours do not establish available reserve, FX depth, throughput or demand. The lost overlap counts are per gate and must not be summed as unique closure hours.');
 
  }
  case 'reserve':{
 
- return report(['Target of total demand %','Target AUD','Status','Minimum starting reserve AUD','Change from current AUD','Maximum possible settlement AUD'],[25,50,75,100].map(target=>{const p=planReserve(scenario,target,72);return[target,p.targetAud,p.status,p.minimumReserveAud,p.reserveChangeAud,p.maximumSettledAud];}),'Four targets at hour 72 use the existing whole-cent reserve planner. All gates, throughput and demand timing stay fixed. Unreachable means reserve alone cannot meet that target within nominal liquidity. Synthetic calculation only; no funding action or recommendation.');
+ return report(['Target of total demand %','Target AUD','Status','Minimum starting reserve AUD','Change from current AUD','Maximum possible settlement AUD'],[25,50,75,100].map(target=>{const p=planReserve(scenario,target,hours);return[target,p.targetAud,p.status,p.minimumReserveAud,p.reserveChangeAud,p.maximumSettledAud];}),'Four targets at hour '+hours+' use the existing whole-cent reserve planner. All gates, throughput, demand timing and scheduled funding stay fixed. Unreachable means reserve alone cannot meet that target within nominal liquidity. Synthetic calculation only; no funding action or recommendation.');
 
  }
  case 'throughput':{
 
  const fields=['issuerThroughputAudPerHour','fxDepthAudPerHour','payoutThroughputAudPerHour'];const rows=[1,2,4,8].map(multiplier=>{const candidate={...scenario};for(const field of fields)candidate[field]=Math.min(1000000000,scenario[field]*multiplier);const r=runSimulation(candidate);return[multiplier,...fields.map(f=>candidate[f]),r.summary.totalSettledAud,r.summary.totalSettledAud-result.summary.totalSettledAud,r.summary.finalQueuedAud];});
- return report(['Multiplier','Issuer AUD/hour','FX AUD/hour before weekend factor','Payout AUD/hour','Settled by 72 AUD','Extra settled AUD','Final queue AUD'],rows,'All three throughput assumptions scale together up to their 1 billion AUD/hour caps. Reserve and windows remain unchanged. Repeated settlements show a plateau only at these four tested points, not a global optimum. Zero rates remain zero.');
+ return report(['Multiplier','Issuer AUD/hour','FX AUD/hour before weekend factor','Payout AUD/hour','Settled by '+hours+' AUD','Extra settled AUD','Final queue AUD'],rows,'All three throughput assumptions scale together up to their 1 billion AUD/hour caps. Reserve and windows remain unchanged. Repeated settlements show a plateau only at these four tested points, not a global optimum. Zero rates remain zero.');
 
  }
  case 'holidays':{
 
  const rows=[];for(const saturdayHoliday of [false,true])for(const mondayHoliday of [false,true]){const r=runSimulation({...scenario,saturdayHoliday,mondayHoliday});rows.push([saturdayHoliday?'Yes':'No',mondayHoliday?'Yes':'No',r.summary.totalSettledAud,r.summary.totalSettledAud-result.summary.totalSettledAud,r.summary.finalQueuedAud]);}
- return report(['Saturday holiday','Monday holiday','Settled by 72 AUD','Change from current AUD','Final queue AUD'],rows,'These four declared holiday combinations are synthetic, not a calendar lookup. Saturday is already closed in the current business-day model, so its flag may have no numerical effect. No actual holiday or service availability is verified.');
+ return report(['Saturday holiday','Monday holiday','Settled by '+hours+' AUD','Change from current AUD','Final queue AUD'],rows,'These four declared holiday combinations are synthetic, not a calendar lookup. Saturday is already closed in the current business-day model, so its flag may have no numerical effect. No actual holiday or service availability is verified.');
 
  }
  case 'reserve-hours':{
 
  const added=Math.min(scenario.nominalLiquidityAud-scenario.reserveCashAud,Math.max(.01,scenario.reserveCashAud*.1));const candidate=runSimulation({...scenario,reserveCashAud:scenario.reserveCashAud+added});
- return report(['Hour ending','Base settled this hour AUD','With extra reserve AUD','Extra settled this hour AUD','Extra cumulative settled AUD'],result.timeline.slice(1).map((point,i)=>{const other=candidate.timeline[i+1];return[point.hour,point.settledThisHour,other.settledThisHour,other.settledThisHour-point.settledThisHour,other.settledAud-point.settledAud];}),'A single counterfactual adds '+added+' AUD starting reserve (10% or one cent, capped at nominal liquidity). All other assumptions stay fixed. With fixed rates and no reserve replenishment, extra reserve cannot reduce hourly settlement; the cumulative column tracks the added payout. No reserve is actually moved.');
+ return report(['Hour ending','Base settled this hour AUD','With extra reserve AUD','Extra settled this hour AUD','Extra cumulative settled AUD'],result.timeline.slice(1).map((point,i)=>{const other=candidate.timeline[i+1];return[point.hour,point.settledThisHour,other.settledThisHour,other.settledThisHour-point.settledThisHour,other.settledAud-point.settledAud];}),'A single counterfactual adds '+added+' AUD starting reserve (10% or one cent, capped at nominal liquidity). All other assumptions stay fixed, including any scheduled funding tranches. With fixed rates, extra starting reserve cannot reduce hourly settlement; the cumulative column tracks the added payout. No reserve is actually moved.');
 
  }
 // WG_REVIEW_CASES

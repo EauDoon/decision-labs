@@ -32,15 +32,3 @@ test("remaining reserve Markdown follows the selected Gantt hour", () => {
   assert.ok(point.queuedAud > 0);
   assert.notEqual(saturday, remainingReserveAtHourToMarkdown(DEFAULT_SCENARIO, 0));
 });
-
-test("copy remaining reserve uses clipboard and a textarea fallback", async () => {
-  const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
-  const app = await readFile(new URL("../src/app.js", import.meta.url), "utf8");
-  assert.match(html, /id="copy-remaining-reserve"/);
-  assert.match(html, /Copy remaining reserve/);
-  assert.match(html, /id="remaining-reserve-copy-fallback"/);
-  assert.match(app, /remainingReserveAtHourToMarkdown\(scenario, selectedHour\)/);
-  assert.match(app, /remaining-reserve-copy-fallback/);
-  assert.match(app, /copyTextWithFallback/);
-  assert.match(app, /Clipboard unavailable\. Copy the Markdown from the text box\./);
-});

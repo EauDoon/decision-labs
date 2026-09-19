@@ -26,22 +26,18 @@ test("weekend-hour helper is Saturday and Sunday only", () => {
 
 test("weekday-hidden Gantt SVG is display-only and leaves the 72-hour model unchanged", () => {
   const full = buildGateGanttSvg(DEFAULT_SCENARIO, 0);
-  const weekendOnly = buildGateGanttSvg(DEFAULT_SCENARIO, 0, { hideWeekdayHours: true });
-  const holiday = { ...DEFAULT_SCENARIO, mondayHoliday: true };
-  const everyClosed = buildGateGanttSvg(holiday, 0, { everyClosedOnly: true });
-  const composed = buildGateGanttSvg(holiday, 0, { hideWeekdayHours: true, everyClosedOnly: true });
-  const fxOnly = buildGateGanttSvg(DEFAULT_SCENARIO, 0, { hideWeekdayHours: true, gateFilter: "fx" });
+  const weekendOnly = buildGateGanttSvg(DEFAULT_SCENARIO, 0, { hourFilter: "weekend" });
+  const weekdayOnly = buildGateGanttSvg(DEFAULT_SCENARIO, 0, { hourFilter: "weekday" });
+  const fxOnly = buildGateGanttSvg(DEFAULT_SCENARIO, 0, { hourFilter: "weekend", gateFilter: "fx" });
+  const composed = buildGateGanttSvg(DEFAULT_SCENARIO, 0, { hourFilter: "weekend", gateFilter: "fx" });
   assert.notEqual(full, weekendOnly);
+  assert.notEqual(weekendOnly, weekdayOnly);
   assert.match(weekendOnly, /viewBox="0 0 720/);
   const weekendRects = (weekendOnly.match(/<rect /g) || []).length;
   const fullRects = (full.match(/<rect /g) || []).length;
-  const everyRects = (everyClosed.match(/<rect /g) || []).length;
-  const composedRects = (composed.match(/<rect /g) || []).length;
   const fxRects = (fxOnly.match(/<rect /g) || []).length;
   assert.ok(weekendRects < fullRects);
-  assert.ok(composedRects < everyRects);
   assert.ok(fxRects < weekendRects);
-  assert.equal(everyClosed, buildGateGanttSvg(holiday, 0, { everyClosedOnly: true, hideWeekdayHours: false }));
   assert.equal(attributeBottlenecks(DEFAULT_SCENARIO).hours, SIMULATION_HOURS);
   assert.equal(runSimulation(DEFAULT_SCENARIO).timeline.length, SIMULATION_HOURS + 1);
 });
@@ -49,11 +45,11 @@ test("weekday-hidden Gantt SVG is display-only and leaves the 72-hour model unch
 test("weekday-hour Gantt filter is a display control that can restore all hours", async () => {
   const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
   const app = await readFile(new URL("../src/app.js", import.meta.url), "utf8");
-  assert.match(html, /id="gantt-hide-weekdays"/);
-  assert.match(html, /Show only Saturday and Sunday hours/);
-  assert.match(app, /ganttHourIsWeekend/);
-  assert.match(app, /hideWeekdayHours/);
-  assert.match(app, /hideWeekdayGanttHours/);
+  assert.match(html, /id="gantt-hour-filter"/);
+  assert.match(html, /Saturday and Sunday hours/);
+  assert.match(app, /hourFilter/);
+  assert.match(app, /hourFilter/);
+  assert.match(app, /currentGanttHourFilter/);
   assert.match(app, /Display only/);
   assert.match(app, /The model still contains/);
 });

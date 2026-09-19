@@ -52,7 +52,7 @@ test("dashboard surfaces hours to first settlement or the 72-hour empty result",
   const app = await readFile(new URL("../src/app.js", import.meta.url), "utf8");
   assert.match(html, /id="first-settlement-value"/);
   assert.match(html, /Hours to first settlement/);
-  assert.match(app, /No settlement in 72h/);
+  assert.match(app, /hoursToFirstSettlementLabel/);
   assert.match(app, /hoursToFirstSettlement/);
 });
 

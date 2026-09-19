@@ -10,6 +10,13 @@ It is a working research prototype for a simple question: can shared demand crea
 
 *Built-in synthetic coffee scenario.*
 
+## Supplier contingency (v1.6.0)
+
+The **Supplier contingency** panel tests one declared supplier change at a time — withdraw an offer, reduce a capacity, scale prices, or delay delivery — against identical demand, and shows which orders lose coverage, which become feasible, and how landed cost moves. Withdraw each planned merchant runs the standard dependency set. Export the experiments as organizer-private JSON or the merchant summary with aggregates only. The CLI accepts `contingency --input scenario.json --experiment '{"type":"withdraw","offerId":"O01"}'`. Editing the room clears experiment results so stale runs are never shown.
+
+## Multi-merchant plan (v1.5.0)
+
+The **Multi-merchant plan** panel plans all merchants together on identical demand: maximum fulfilled units, then minimum landed cost, then fewest merchants, then deterministic order. It shows the single-offer winner beside the plan, per-merchant assignments with repriced tiers, and unmet demand with reasons. Export the plan as organizer-private JSON or CSV, or the merchant summary with aggregates only. The CLI accepts `plan --input scenario.json`. Rooms above the 250,000-assignment search bound return the best plan found with an explicit limit status instead of a claimed optimum.
 ## Changelog (1.4.54)
 
 Leftover uncovered leftover-only remaining copy through Shift+F7 stays, leftover uncovered leftover-only remaining copy jump, hide first leftover-only buyer jump, last leftover-only hide stays on ArrowUp without Shift+F9, Bottle-hand cycling carnival lunch after Domestique cycling carnival lunch, kept on top of 1.4.0 review packets and 1.4.1/1.4.2/1.4.3/1.4.4/1.4.5/1.4.6/1.4.7/1.4.8/1.4.9/1.4.10/1.4.11/1.4.12/1.4.13/1.4.14/1.4.15/1.4.16/1.4.17/1.4.18/1.4.19/1.4.20/1.4.21/1.4.22/1.4.23/1.4.24/1.4.25/1.4.26/1.4.27/1.4.28/1.4.29/1.4.30/1.4.31/1.4.32/1.4.33/1.4.34/1.4.35/1.4.36/1.4.37/1.4.38/1.4.39/1.4.40/1.4.41/1.4.42/1.4.43/1.4.44/1.4.45/1.4.46/1.4.47/1.4.48/1.4.49/1.4.50/1.4.51/1.4.52/1.4.53 tools. This remains an offline simulator. Residual coverage is leftover planning, not checkout. Merchant views, JSON, CSV, overlap Markdown, leftover print, winning merchant copy, winning fulfillment copy, and remaining-capacity copy still receive aggregates, counts, merchant labels, or fulfillment modes only. Organizer leftover copies are labeled organizer-private. Review packets stay private and unsigned.

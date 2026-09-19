@@ -36,6 +36,26 @@ node scripts/analyze.mjs solve scenario.json volume participant-id
 
 Use a participant's stable `id` from the scenario, not their display name. `fee` holds volume and shares fixed and finds the common fee floor. `share` finds one participant's minimum share while redistributing others' leftover proportionally; this can make another participant fail. `volume` finds that participant's minimum planned monthly volume within demand and capacity limits. These return the existing model's `possible` or `impossible` status and explanation. Impossibility is a valid result with exit 0; no proposal is applied or saved automatically. Capacity and commitment constraints remain visible.
 
+## Multi-period commercial plan
+
+```sh
+node scripts/analyze.mjs plan scenario.json
+node scripts/analyze.mjs plan scenario.json --csv
+node scripts/analyze.mjs plan scenario.json --brief
+```
+
+`plan` evaluates the case's `plan` object: per-period profit and hold status, cumulative contribution, the first constrained period per participant, the recovery verdict, and the cash schedule with lags, receivables, payables, and the funding requirement. `--csv` writes the period ledger with separate P&L, total, cash, recovery, and funding sections. `--brief` writes the reproducible commercial brief with canonical inputs, the evaluated plan, and the monthly run-rate for comparison. A case without a plan fails closed with exit 1. Results describe declared inputs, not forecasts or funding commitments.
+
+## Negotiation alternatives
+
+```sh
+node scripts/analyze.mjs alternatives scenario.json
+node scripts/analyze.mjs alternatives scenario.json --csv
+node scripts/analyze.mjs apply-alternative scenario.json alt-3
+```
+
+`alternatives` compares the declared grid of fee levels, share modes, commitment relief, and single capacity investments under identical assumptions, ranked by the stated objective. `--csv` writes one row per candidate with viability, stress holds, economics, and per-participant deltas against the current case, plus skipped grid points as memo rows. `apply-alternative` returns the case with one viable candidate's fee, shares, commitments, capacity, and fixed costs applied; it refuses failing candidates and unknown ids with exit 1. The ranking covers the declared grid only and is not an optimum over continuous terms.
+
 ## Compare saved negotiations
 
 ```sh

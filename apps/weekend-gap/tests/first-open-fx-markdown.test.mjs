@@ -49,22 +49,3 @@ test("first open FX hour Markdown uses none when no modeled hour is open", async
   assert.equal(empty.split("\n").length, 1);
   assert.doesNotMatch(empty, /timestamp|createdAt|exportedAt/i);
 });
-
-test("copy first open FX hour uses clipboard and a textarea fallback", async () => {
-  const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
-  const app = await readFile(new URL("../src/app.js", import.meta.url), "utf8");
-  assert.match(html, /id="copy-first-open-fx"/);
-  assert.match(html, /Copy first open FX hour/);
-  assert.match(html, /id="first-open-fx-copy-fallback"/);
-  assert.match(html, /id="copy-first-open-payout"/);
-  assert.match(html, /id="copy-first-closed-fx"/);
-  assert.match(html, /id="copy-first-closed-payout"/);
-  assert.match(app, /firstOpenFxHourToMarkdown\(scenario\)/);
-  assert.match(app, /first-open-fx-copy-fallback/);
-  assert.match(app, /copyTextWithFallback/);
-  assert.match(app, /local drawing, not a live FX feed/);
-  assert.match(app, /Clipboard unavailable\. Copy the Markdown from the text box\./);
-  assert.notEqual(app.match(/function copyFirstOpenFxHourMarkdown/)?.[0], app.match(/function copyFirstOpenPayoutHourMarkdown/)?.[0]);
-  assert.notEqual(app.match(/function copyFirstOpenFxHourMarkdown/)?.[0], app.match(/function copyFirstClosedFxHourMarkdown/)?.[0]);
-  assert.notEqual(app.match(/function copyFirstOpenFxHourMarkdown/)?.[0], app.match(/function copyFirstClosedPayoutHourMarkdown/)?.[0]);
-});

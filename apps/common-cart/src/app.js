@@ -45,6 +45,12 @@ import {
   compareScenarios,
   compareThreeRooms,
   computeResidualCoverage,
+  planMultiMerchant,
+  createMerchantPlanReport,
+  multiMerchantPlanCsv,
+  planContingency,
+  standardContingencySet,
+  createMerchantContingencyReport,
   createScenarioHistory,
   createMerchantReport,
   createMerchantResidualReport,
@@ -189,6 +195,7 @@ let hideFirstUncoveredLeftoverBuyer = false;
 let hideLastUncoveredLeftoverBuyer = false;
 let lastRemovedBuyer = null;
 let saveTimer;
+let contingencyRuns = [];
 renderEditor();
 refresh();
 bindStaticEvents();
@@ -341,6 +348,58 @@ function bindStaticEvents() {
       downloadFile(`${JSON.stringify(createMerchantResidualReport(scenario), null, 2)}\n`, "common-cart-residual-coverage.json", "application/json");
       setStatus("Residual coverage exported as aggregates. Buyer IDs and labels are omitted. This is not a dual checkout.", true);
     } catch (error) { setStatus(`Report failed: ${messageOf(error)}`); }
+  });
+  document.querySelector("#export-multi-merchant-plan").addEventListener("click", () => {
+    try {
+      downloadFile(`${JSON.stringify(planMultiMerchant(scenario), null, 2)}\n`, "common-cart-multi-merchant-plan.json", "application/json");
+      setStatus("Multi-merchant plan exported (organizer private). It contains buyer IDs and allocations. This is not a merchant export.", true);
+    } catch (error) { setStatus(`Plan export failed: ${messageOf(error)}`); }
+  });
+  document.querySelector("#export-multi-merchant-csv").addEventListener("click", () => {
+    try {
+      downloadFile(multiMerchantPlanCsv(scenario), "common-cart-multi-merchant-plan.csv", "text/csv;charset=utf-8");
+      setStatus("Multi-merchant plan CSV exported (organizer private). It contains buyer labels. This is not a merchant export.", true);
+    } catch (error) { setStatus(`Plan export failed: ${messageOf(error)}`); }
+  });
+  document.querySelector("#export-merchant-plan-summary").addEventListener("click", () => {
+    try {
+      downloadFile(`${JSON.stringify(createMerchantPlanReport(planMultiMerchant(scenario), scenario), null, 2)}\n`, "common-cart-merchant-plan-summary.json", "application/json");
+      setStatus("Merchant plan summary exported. Per-merchant aggregates only; buyer IDs, labels, and allocations are omitted.", true);
+    } catch (error) { setStatus(`Plan export failed: ${messageOf(error)}`); }
+  });
+  document.querySelector("#contingency-type").addEventListener("change", renderContingencyOffers);
+  document.querySelector("#run-contingency").addEventListener("click", () => {
+    try {
+      const result = planContingency(scenario, contingencyExperimentFromBuilder());
+      contingencyRuns = [result];
+      renderContingencyResults();
+      setStatus("Contingency experiment complete. Identical demand, one declared supplier change.", true);
+    } catch (error) { setStatus(`Contingency failed: ${messageOf(error)}`); }
+  });
+  document.querySelector("#run-standard-contingencies").addEventListener("click", () => {
+    try {
+      contingencyRuns = standardContingencySet(scenario).flatMap(({ experiments }) =>
+        experiments.map((experiment) => planContingency(scenario, experiment)));
+      renderContingencyResults();
+      setStatus(contingencyRuns.length
+        ? `Withdrew each planned merchant in turn: ${contingencyRuns.length} experiment${contingencyRuns.length === 1 ? "" : "s"}.`
+        : "The baseline plan uses no merchant, so there is nothing to withdraw.", true);
+    } catch (error) { setStatus(`Contingency failed: ${messageOf(error)}`); }
+  });
+  document.querySelector("#export-contingency-plan").addEventListener("click", () => {
+    try {
+      if (!contingencyRuns.length) throw new Error("Run an experiment before exporting.");
+      downloadFile(`${JSON.stringify({ format: "common-cart-contingency", version: 1, scenario, runs: contingencyRuns }, null, 2)}\n`, "common-cart-contingency.json", "application/json");
+      setStatus("Contingency experiments exported (organizer private). They contain buyer labels for lost and newly feasible orders.", true);
+    } catch (error) { setStatus(`Contingency export failed: ${messageOf(error)}`); }
+  });
+  document.querySelector("#export-merchant-contingency-summary").addEventListener("click", () => {
+    try {
+      if (!contingencyRuns.length) throw new Error("Run an experiment before exporting.");
+      const summaries = contingencyRuns.map((result) => createMerchantContingencyReport(scenario, result.experiment));
+      downloadFile(`${JSON.stringify(summaries, null, 2)}\n`, "common-cart-merchant-contingency-summary.json", "application/json");
+      setStatus("Merchant contingency summary exported. Aggregate deltas only; buyer records are omitted.", true);
+    } catch (error) { setStatus(`Contingency export failed: ${messageOf(error)}`); }
   });
   document.querySelector("#compare-offer-identity").addEventListener("click", compareOfferIdentityFiles);
   document.querySelector("#heatmap-csv").addEventListener("click", () => {
@@ -2801,6 +2860,10 @@ function refresh() {
     renderInspector(market);
     applyBuyerDisplayFilters();
     renderResidualCoverage(market.scenario);
+    renderMultiMerchantPlan(market.scenario);
+    contingencyRuns = [];
+    renderContingencyOffers();
+    renderContingencyResults();
     renderDemand(market.scenario);
     renderOrganizerBuyerVariantCounts(market.scenario);
     renderDeliveryHeatmap(market.scenario);
@@ -2830,6 +2893,8 @@ function refresh() {
       residualEmpty.textContent = "Residual coverage will appear once every field is valid.";
       residualSummary.append(residualEmpty);
     }
+    clearMultiMerchantPlan();
+    clearContingencyResults();
     const leftoverRows = document.querySelector("#leftover-coverage-rows");
     if (leftoverRows) leftoverRows.replaceChildren();
     const leftoverBuyers = document.querySelector("#leftover-buyer-rows");
@@ -3120,6 +3185,7 @@ function renderResidualCoverage(rawScenario) {
   summary.replaceChildren(list, leftoverNote);
   renderLeftoverCoverageTable(rawScenario);
 }
+
 
 function leftoverRowCells(row) {
   const element = document.createElement("tr");
@@ -4301,6 +4367,171 @@ function appJsonSyntaxHint(error) {
   return ` (${message})`;
 }
 
+
+
+function renderMultiMerchantPlan(rawScenario) {
+  const note = document.querySelector("#multi-merchant-note");
+  const status = document.querySelector("#multi-merchant-status");
+  const compareRows = document.querySelector("#multi-merchant-compare-rows");
+  const assignmentRows = document.querySelector("#multi-merchant-assignment-rows");
+  const unservedRows = document.querySelector("#multi-merchant-unserved-rows");
+  if (!note || !status || !compareRows || !assignmentRows || !unservedRows) return;
+  const market = evaluateMarket(rawScenario);
+  const plan = planMultiMerchant(rawScenario);
+  const formatter = money(rawScenario.currency);
+  note.textContent = "Bounded exact plan on identical demand: maximum fulfilled units, then minimum landed cost, then fewest merchants, then deterministic order. This is a planning projection, not an order and not a fairness optimum.";
+  status.textContent = plan.optimal
+    ? `Optimal plan over ${plan.evaluatedNodes} searched assignments. Every used merchant meets its minimum order and capacity with tiers repriced from actual units.`
+    : `Room exceeds the ${plan.nodeBudget} assignment bound after ${plan.evaluatedNodes} searched assignments, so this is the best plan found, not a proven optimum. Narrow buyers or offers to finish the exact search.`;
+  compareRows.replaceChildren();
+  const winnerRow = document.createElement("tr");
+  for (const value of ["Single-offer winner", market.winner ? String(market.winner.fulfilledUnits) : "None",
+    market.winner ? formatter.format(market.winner.totalCost) : "None", market.winner ? "1" : "0"]) {
+    const cell = document.createElement("td");
+    cell.textContent = value;
+    winnerRow.append(cell);
+  }
+  const planRow = document.createElement("tr");
+  for (const value of ["Multi-merchant plan", String(plan.fulfilledUnits), formatter.format(plan.totalCost), String(plan.merchantCount)]) {
+    const cell = document.createElement("td");
+    cell.textContent = value;
+    planRow.append(cell);
+  }
+  compareRows.append(winnerRow, planRow);
+  assignmentRows.replaceChildren();
+  const buyerById = new Map(rawScenario.buyers.map((buyer) => [buyer.id, buyer]));
+  for (const entry of plan.assignments) {
+    const row = document.createElement("tr");
+    const buyers = entry.buyerIds.map((id) => buyerDisplayLabel(buyerById.get(id))).join(", ");
+    for (const value of [entry.merchant, entry.offerId, buyers, String(entry.units),
+      formatter.format(entry.unitPrice), formatter.format(entry.shippingCost), formatter.format(entry.totalCost)]) {
+      const cell = document.createElement("td");
+      cell.textContent = value;
+      row.append(cell);
+    }
+    assignmentRows.append(row);
+  }
+  if (!plan.assignments.length) {
+    const row = document.createElement("tr");
+    const cell = document.createElement("td");
+    cell.colSpan = 7;
+    cell.textContent = "No merchant meets its minimum order on these whole orders.";
+    row.append(cell);
+    assignmentRows.append(row);
+  }
+  unservedRows.replaceChildren();
+  for (const entry of plan.unserved) {
+    const row = document.createElement("tr");
+    const buyer = buyerById.get(entry.buyerId);
+    for (const value of [buyerDisplayLabel(buyer), String(entry.quantity), entry.note]) {
+      const cell = document.createElement("td");
+      cell.textContent = value;
+      row.append(cell);
+    }
+    unservedRows.append(row);
+  }
+  if (!plan.unserved.length) {
+    const row = document.createElement("tr");
+    const cell = document.createElement("td");
+    cell.colSpan = 3;
+    cell.textContent = "Every order is assigned.";
+    row.append(cell);
+    unservedRows.append(row);
+  }
+}
+
+function clearMultiMerchantPlan() {
+  for (const id of ["#multi-merchant-note", "#multi-merchant-status"]) {
+    const node = document.querySelector(id);
+    if (node) node.textContent = id === "#multi-merchant-note" ? "Multi-merchant plan will appear once every field is valid." : "";
+  }
+  for (const id of ["#multi-merchant-compare-rows", "#multi-merchant-assignment-rows", "#multi-merchant-unserved-rows"]) {
+    const body = document.querySelector(id);
+    if (body) body.replaceChildren();
+  }
+}
+
+function contingencyExperimentFromBuilder() {
+  const type = document.querySelector("#contingency-type")?.value;
+  const offerId = document.querySelector("#contingency-offer")?.value;
+  const rawValue = document.querySelector("#contingency-value")?.value;
+  if (type === "withdraw") return { type, offerId };
+  if (type === "capacity") return { type, offerId, capacity: Math.trunc(Number(rawValue)) };
+  if (type === "price") return { type, offerId, priceMultiplier: Number(rawValue) };
+  return { type, offerId, deliveryDays: Math.trunc(Number(rawValue)) };
+}
+
+function renderContingencyOffers() {
+  const select = document.querySelector("#contingency-offer");
+  if (!select) return;
+  const current = select.value;
+  select.replaceChildren();
+  for (const offer of scenario.offers) {
+    const option = document.createElement("option");
+    option.value = offer.id;
+    option.textContent = `${offer.merchant} / ${offer.id}`;
+    select.append(option);
+  }
+  if ([...select.options].some((option) => option.value === current)) select.value = current;
+  const hint = document.querySelector("#contingency-value-hint");
+  if (hint) {
+    const type = document.querySelector("#contingency-type")?.value;
+    hint.textContent = type === "capacity"
+      ? "New capacity in whole units from 0 through 5,000."
+      : type === "price"
+        ? "Price multiplier above zero through 10; every band price scales together."
+        : type === "delay"
+          ? "New delivery promise in whole days from 0 through 365."
+          : "Withdrawal ignores the value field.";
+  }
+}
+
+function renderContingencyResults() {
+  const status = document.querySelector("#contingency-status");
+  const resultRows = document.querySelector("#contingency-result-rows");
+  const orderRows = document.querySelector("#contingency-order-rows");
+  if (!status || !resultRows || !orderRows) return;
+  const formatter = money(scenario.currency);
+  const buyerById = new Map(scenario.buyers.map((buyer) => [buyer.id, buyer]));
+  resultRows.replaceChildren();
+  orderRows.replaceChildren();
+  if (!contingencyRuns.length) {
+    status.textContent = "No contingency experiment has run on this room yet.";
+    return;
+  }
+  status.textContent = `${contingencyRuns.length} experiment${contingencyRuns.length === 1 ? "" : "s"} against identical demand.`;
+  for (const result of contingencyRuns) {
+    const row = document.createElement("tr");
+    const delta = result.totalCostDelta === 0 ? formatter.format(0)
+      : `${result.totalCostDelta > 0 ? "+" : "−"}${formatter.format(Math.abs(result.totalCostDelta)).replace(/^[^0-9]*/, "")}`;
+    for (const value of [result.description, String(result.baseline.fulfilledUnits), String(result.contingency.fulfilledUnits),
+      String(result.lostUnits), String(result.newlyFeasibleUnits), delta]) {
+      const cell = document.createElement("td");
+      cell.textContent = value;
+      row.append(cell);
+    }
+    resultRows.append(row);
+    const orders = document.createElement("tr");
+    const lost = result.lostOrders.map((entry) => buyerDisplayLabel(buyerById.get(entry.buyerId))).join(", ") || "None";
+    const gained = result.newlyFeasible.map((entry) => buyerDisplayLabel(buyerById.get(entry.buyerId))).join(", ") || "None";
+    for (const value of [result.description, lost, gained]) {
+      const cell = document.createElement("td");
+      cell.textContent = value;
+      orders.append(cell);
+    }
+    orderRows.append(orders);
+  }
+}
+
+function clearContingencyResults() {
+  contingencyRuns = [];
+  const status = document.querySelector("#contingency-status");
+  if (status) status.textContent = "Contingency experiments will appear once every field is valid.";
+  for (const id of ["#contingency-result-rows", "#contingency-order-rows"]) {
+    const body = document.querySelector(id);
+    if (body) body.replaceChildren();
+  }
+}
 
 function clearCartReview() {
   cartReviewSequence++;

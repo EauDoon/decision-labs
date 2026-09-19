@@ -71,6 +71,32 @@ The partnership is viable only when every participant holds.
 
 The named weakest participant has the smallest transaction-volume distance to either its economic exit threshold or its capacity ceiling. Its binding limit identifies the nearest boundary as minimum acceptable profit, minimum commitment, or capacity. This is a local headroom comparison, not a probability of exit. First breakpoint uses a different measure, relative shock size, so the two rankings can name different participants.
 
+## Multi-period commercial plan (v1.7.0)
+
+The optional `plan` object carries 1 through 24 periods. Each period is one planning interval (a month by convention) with its own `volume`, `feePerTransaction`, optional `addressableVolume` (inheriting the deal cap when omitted), and optional one-time `setupExpense`. Revenue shares stay fixed. Per-participant overrides for `variableCostPerTransaction`, `fixedMonthlyCost`, `minimumAcceptableProfit`, `capacity`, and `minimumCommitment` are optional; omitted or blank fields inherit the base case, including capacity. Unknown participant ids, unknown fields, and reserved keys are rejected. Legacy cases omit `plan` and stay valid.
+
+Per-period economics reuse the monthly formulas with period values, and the same three exit tests:
+
+```text
+V_t = min(volume_t, addressableVolume_t)
+profit_t = V_t * F_t * S - V_t * C_t - K_t - R
+cumulativeOperating_t = sum of profit_1..t
+net_t = sum of participant profit_t - setupExpense_t
+cumulativeNet_t = sum of net_1..t
+```
+
+Recovery compares cumulative operating contribution against cumulative setup expense. With no setup expense there is nothing to recover. Otherwise the first period with non-negative cumulative net recovers; when no such period exists within the horizon, recovery is impossible if the best single-period net is non-positive (repeating the stated economics can never close the gap), and beyond the horizon otherwise, reporting the shortfall.
+
+Cash timing is a separate view of the same earned amounts. With whole-period collection and payment lags:
+
+```text
+cashIn_t = earnedRevenue_{t - collectionLag}, or 0 before period 1
+cashOut_t = incurredExpense_{t - paymentLag}, or 0 before period 1
+closing_t = opening_t + cashIn_t - cashOut_t, with opening_1 = startingCash
+```
+
+Amounts earned or incurred but arriving or due after the horizon are reported as receivables and payables, never counted twice. The funding requirement is the extra starting cash that keeps every closing balance non-negative: `max(0, -minClosingCash)`. Conservation holds exactly: movements plus after-horizon balances equal earned revenue and incurred expense.
+
 ## Adverse shocks
 
 The app calculates a local deterministic boundary for each participant using all other inputs unchanged:
@@ -85,6 +111,22 @@ At the displayed boundary, the applicable profit, commitment, or capacity condit
 The First breakpoint card compares bounded volume decreases, volume increases, fee decreases, and variable-cost increases by percentage movement from their current values. An already-failing or at-breakpoint condition ranks first. A zero current value has no percentage denominator, so that shock is ranked after shocks with a finite percentage. Ties use participant order, then volume decrease, volume increase, fee decrease, and variable-cost increase order. This is a deterministic negotiation prioritisation aid, not a probability or behavioural forecast.
 
 Capacity remains an independent operational constraint rather than a fee or cost shock. Its reachable, bounded volume-increase threshold participates directly in the First breakpoint ranking. The fee-volume operating-region grid tests the current participant data over a finite range from zero to the greater of addressable and planned volume, and from zero to 150 percent of the current fee.
+
+## Negotiation alternatives (v1.8.0)
+
+The optional `alternatives` object declares a bounded exploration grid:
+
+```text
+feeLevels: 1 to 6 finite non-negative fees
+shareModes: any of current, equal, funded (no repeats)
+commitmentRelief: optional boolean adding a zero-commitment dimension
+capacityInvestments: 0 to 3 single { participantId, addedCapacity, investmentCost } entries
+objective: stress-holds (default) or profit
+```
+
+Grids above 120 candidates are rejected with their count. Each candidate changes only fee, shares, commitments, or one capacity investment; volume, shock, demand, costs, floors, and stress settings stay fixed. Equal shares split revenue evenly. Funded shares give each participant the share that funds its profit floor at the candidate volume and fee, distributing leftover revenue in proportion to current shares, and are skipped with a reason when no finite split funds every floor.
+
+Ranking is explicit: `stress-holds` orders by stress cases held, then monthly total profit; `profit` orders by monthly total profit, then stress cases held; deterministic candidate order breaks remaining ties. Per-participant profit deltas compare against the current monthly case. This ranks the declared grid only. It is not an optimum over continuous terms, a probability, or a forecast of negotiated outcomes.
 
 ## Compound stress grid and fixed-share negotiation
 

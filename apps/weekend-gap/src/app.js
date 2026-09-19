@@ -6,6 +6,16 @@ import {
   DEFAULT_SCENARIO,
   PRESETS,
   SIMULATION_HOURS,
+  scenarioHours,
+  sanitizeCalendarOverrides,
+  sanitizeFundingTranches,
+  fundingToMarkdown,
+  MAX_CALENDAR_OVERRIDES,
+  MAX_FUNDING_TRANCHES,
+  hoursToClearLabel,
+  hoursToFirstSettlementLabel,
+  peakQueueHourLabel,
+  svgTickHours,
   formatTime,
   weekendCloseOverlapNotice,
   mondaySaturdayHolidayNotice,
@@ -27,37 +37,12 @@ import {
   buildGateGanttSvg,
   ganttToCSV,
   selectedGanttHourToMarkdown,
-  remainingReserveAtHourToMarkdown,
   peakQueueHourToMarkdown,
   selectedVersusPeakHourToMarkdown,
   nextPayoutHourToMarkdown,
   closedGanttHoursToMarkdown,
   fxGanttHoursToMarkdown,
   weekendFxHourCountsToMarkdown,
-  firstClosedFxHourToMarkdown,
-  firstClosedBankHourToMarkdown,
-  firstClosedIssuerHourToMarkdown,
-  firstClosedPayoutHourToMarkdown,
-  firstOpenPayoutHourToMarkdown,
-  firstOpenFxHourToMarkdown,
-  firstOpenBankHourToMarkdown,
-  firstOpenIssuerHourToMarkdown,
-  lastOpenIssuerHourToMarkdown,
-  lastOpenBankHourToMarkdown,
-  lastOpenPayoutHourToMarkdown,
-  lastOpenFxHourToMarkdown,
-  lastClosedIssuerHourToMarkdown,
-  lastClosedBankHourToMarkdown,
-  lastClosedFxHourToMarkdown,
-  lastClosedPayoutHourToMarkdown,
-  lastWeekendFxClosedHourToMarkdown,
-  lastWeekdayFxClosedHourToMarkdown,
-  lastWeekendFxOpenHourToMarkdown,
-  lastWeekdayFxOpenHourToMarkdown,
-  firstWeekdayFxOpenHourToMarkdown,
-  firstWeekdayFxClosedHourToMarkdown,
-  firstWeekendFxOpenHourToMarkdown,
-  firstWeekendFxClosedHourToMarkdown,
   arrivalCohortsToMarkdown,
   firstClosedGanttHour,
   firstClosedFxGanttHour,
@@ -66,30 +51,10 @@ import {
   firstOpenPayoutGanttHour,
   firstOpenFxGanttHour,
   firstOpenBankGanttHour,
-  firstOpenIssuerGanttHour,
-  ganttHourClosedOnAnyGate,
-  ganttHourClosedOnEveryGate,
-  ganttHourOpenOnEveryGate,
-  ganttHourIsWeekend,
-  ganttHourHasZeroQueue,
-  ganttHourBankClosed,
-  ganttHourIssuerClosed,
-  ganttHourPayoutClosed,
-  ganttHourFxClosed,
-  ganttHourPayoutOpen,
-  ganttHourFxOpen,
-  ganttHourBankOpen,
-  ganttHourIssuerOpen,
-  ganttHourWeekendIssuerOpen,
-  ganttHourWeekendIssuerClosed,
-  ganttHourWeekendBankClosed,
-  ganttHourWeekendBankOpen,
-  ganttHourWeekendPayoutOpen,
-  ganttHourWeekendFxOpen,
-  ganttHourWeekdayFxOpen,
-  ganttHourWeekendPayoutClosed,
-  ganttHourWeekendFxClosed,
-  ganttHourWeekdayFxClosed,
+  ganttHourMatchesFilter,
+  gateHourToMarkdown,
+  gateHourEvidenceToMarkdown,
+  GANTT_HOUR_FILTERS,
   GANTT_GATE_FILTERS,
   gateDisplayLabels,
   GENERIC_GATE_LABELS,
@@ -117,7 +82,7 @@ import {
 } from "./model.js";
 
 let workspaceReady = false;
-let lastValidPlan = { targetPercent: 100, deadlineHour: 72, ganttDensity: "snapshots", selectedHour: 0, ganttHourIndex: 0, selectedChart: "queue", ganttClosedOnly: false, ganttGateFilter: "all", queueBacklogOnly: false, ganttEveryGateClosed: false, hideWeekdayGanttHours: false, hideWeekendGanttHours: false, hideOpenGanttHours: false, hideClosedGanttHours: false, hideZeroQueueGanttHours: false, hideBankClosedGanttHours: false, hideIssuerClosedGanttHours: false, hidePayoutClosedGanttHours: false, hideFxClosedGanttHours: false, hidePayoutOpenGanttHours: false, hideFxOpenGanttHours: false, hideBankOpenGanttHours: false, hideIssuerOpenGanttHours: false, hideWeekendIssuerOpenGanttHours: false, hideWeekendIssuerClosedGanttHours: false, hideWeekendBankClosedGanttHours: false, hideWeekendBankOpenGanttHours: false, hideWeekendPayoutOpenGanttHours: false, hideWeekendFxOpenGanttHours: false, hideWeekendPayoutClosedGanttHours: false, hideWeekendFxClosedGanttHours: false, hideWeekdayFxClosedGanttHours: false, hideWeekdayFxOpenGanttHours: false };
+let lastValidPlan = { targetPercent: 100, deadlineHour: 72, ganttDensity: "snapshots", selectedHour: 0, ganttHourIndex: 0, selectedChart: "queue", ganttClosedOnly: false, ganttGateFilter: "all", queueBacklogOnly: false, ganttEveryGateClosed: false, ganttHourFilter: "all" };
 const WORKSPACE_KEY = "weekend-gap:workspace:v1";
 const STORAGE_KEY = "weekend-gap:scenario:v1";
 const standaloneMode = document.documentElement.dataset.weekendGapStandalone === "true";
@@ -164,6 +129,10 @@ const elements = {
   table: document.querySelector("#timeline-table"),
   inputMessage: document.querySelector("#input-message")
 };
+
+function simHours() {
+  return scenarioHours(scenario);
+}
 
 let weekendReviewPacket = null;
 let weekendReviewSequence = 0;
@@ -262,7 +231,7 @@ function setScenario(nextScenario, { normaliseForm = true, message = "", preserv
   renderHistory();
   simulation = runSimulation(scenario);
   comparison = compareScenarios(baselineScenario, scenario);
-  selectedHour = Math.min(selectedHour, SIMULATION_HOURS);
+  selectedHour = Math.min(selectedHour, simHours());
   if (!preserveShareHash && window.location.hash.startsWith("#scenario=")) {
     history.replaceState(null, "", `${window.location.pathname}${window.location.search}`);
   }
@@ -319,10 +288,13 @@ function currentScenarioHashError(error) {
 }
 
 function render() {
+  renderCalendarOverrides();
+  renderFundingTranches();
   const point = simulation.timeline[selectedHour];
   elements.title.textContent = scenario.name;
+  timelineRange.max = String(simHours());
   timelineRange.value = String(selectedHour);
-  timelineRange.setAttribute("aria-valuetext", point.timeLabel + ", hour " + selectedHour + " of 72");
+  timelineRange.setAttribute("aria-valuetext", point.timeLabel + ", hour " + selectedHour + " of " + simHours());
   elements.timelineLabel.textContent = point.timeLabel;
   elements.immediate.textContent = formatAud(point.immediateAud);
   elements.immediateDetail.textContent = point.immediateAud > 0
@@ -338,13 +310,9 @@ function render() {
   elements.settledTotal.textContent = formatAud(totalSettledAud, false);
   elements.finalQueue.textContent = formatAud(finalQueuedAud, false);
   elements.peakQueue.textContent = formatAud(peakQueuedAud, false);
-  elements.peakQueueHour.textContent = peakQueuedAud > 0
-    ? `${formatTime(peakQueueHour)} (hour ${peakQueueHour})`
-    : "No queue in 72h";
-  elements.backlogHours.textContent = `${hoursWithQueue} of ${SIMULATION_HOURS}`;
-  elements.firstSettlement.textContent = hoursToFirstSettlement === null
-    ? "No settlement in 72h"
-    : `${hoursToFirstSettlement} hour${hoursToFirstSettlement === 1 ? "" : "s"}`;
+  elements.peakQueueHour.textContent = peakQueueHourLabel(simulation.summary, simHours());
+  elements.backlogHours.textContent = `${hoursWithQueue} of ${simHours()}`;
+  elements.firstSettlement.textContent = formatHoursToFirstSettlement(hoursToFirstSettlement);
   elements.queueClear.textContent = formatHoursToClearQueue(hoursToClearQueue, peakQueuedAud);
   if (elements.selectedGanttHour) {
     elements.selectedGanttHour.textContent = `${point.timeLabel} (hour ${selectedHour})`;
@@ -402,9 +370,12 @@ function render() {
   if (jumpPeak) {
     jumpPeak.disabled = !(peakQueuedAud > 0);
   }
-  elements.outcomeExplanation.textContent = finalQueuedAud > 0
-    ? `${formatAud(finalQueuedAud)} remains queued at ${formatTime(SIMULATION_HOURS)}. The peak queue was ${formatAud(peakQueuedAud)} at ${formatTime(peakQueueHour)}.`
-    : `All synthetic demand settles within the 72-hour window. The peak queue was ${formatAud(peakQueuedAud)} at ${formatTime(peakQueueHour)}.`;
+  const fundingNote = simulation.summary.totalFundedAud > 0
+    ? ` Scheduled funding added ${formatAud(simulation.summary.totalFundedAud, false)} at a funding cost of ${formatAud(simulation.summary.totalFundingCostAud, false)}.`
+    : "";
+  elements.outcomeExplanation.textContent = (finalQueuedAud > 0
+    ? `${formatAud(finalQueuedAud)} remains queued at ${formatTime(simHours())}. The peak queue was ${formatAud(peakQueuedAud)} at ${formatTime(peakQueueHour)}.`
+    : `All synthetic demand settles within the ${simHours()}-hour window. The peak queue was ${formatAud(peakQueuedAud)} at ${formatTime(peakQueueHour)}.`) + fundingNote;
   elements.gateSummary.textContent = point.immediateAud > 0
     ? `Payout chain open · limited by ${point.limitingGate}`
     : `Payout chain closed · blocked at ${point.limitingGate}`;
@@ -459,7 +430,7 @@ function renderTable() {
   const peakQueuedAud = simulation.summary.peakQueuedAud;
   const rowIndexes = new Set([selectedHour]);
   if (peakQueuedAud > 0) rowIndexes.add(peakHour);
-  for (let hour = 0; hour <= SIMULATION_HOURS; hour += 1) {
+  for (let hour = 0; hour <= simHours(); hour += 1) {
     if (backlogOnly) {
       if (simulation.timeline[hour].queuedAud > 0) rowIndexes.add(hour);
       continue;
@@ -479,7 +450,7 @@ function renderTable() {
       formatPercent(point.liquidityRatio),
       formatPercent(point.discountBps / 10000, 2),
       point.immediateAud > 0 ? "Open" : `Blocked: ${point.limitingGate}`,
-      formatAud(comparison.baseline.timeline[hour].queuedAud),
+      hour < comparison.baseline.timeline.length ? formatAud(comparison.baseline.timeline[hour].queuedAud) : "\u2014",
       formatAud(point.demandThisHour, false),
       formatAud(point.settledThisHour, false)
     ];
@@ -502,78 +473,43 @@ function renderTable() {
   if (filterNote) {
     const backlogCount = simulation.timeline.filter((point) => point.queuedAud > 0).length;
     filterNote.textContent = backlogOnly
-      ? `Showing hours with backlog (${backlogCount} of ${SIMULATION_HOURS + 1} checkpoints). Dashboard counts are unchanged.`
+      ? `Showing hours with backlog (${backlogCount} of ${simHours() + 1} checkpoints). Dashboard counts are unchanged.`
       : `All checkpoints remain available. Use the backlog filter to hide hours with no queue. Dashboard counts are unchanged.`;
   }
 }
 
+function currentGanttHourFilter() {
+  const raw = document.querySelector("#gantt-hour-filter")?.value;
+  return GANTT_HOUR_FILTERS.includes(raw) ? raw : "all";
+}
+
+const GANTT_FILTER_NOTES = {
+  "all": "",
+  "any-closed": "Hours open on every gate are hidden; hours closed on at least one gate remain",
+  "every-closed": "Showing only hours where every gate is closed; all other hours are hidden",
+  "any-open": "Hours open on every gate are hidden",
+  "weekend": "Weekday hours are hidden; only Saturday and Sunday remain",
+  "weekday": "Weekend hours are hidden",
+  "queued": "Hours whose synthetic queue is zero are hidden"
+};
+
 function renderGantt() {
-  const closedOnly = Boolean(document.querySelector("#gantt-closed-only")?.checked);
-  const everyClosedOnly = Boolean(document.querySelector("#gantt-every-closed")?.checked);
-  const hideWeekdayHours = Boolean(document.querySelector("#gantt-hide-weekdays")?.checked);
-  const hideWeekendHours = Boolean(document.querySelector("#gantt-hide-weekends")?.checked);
-  const hideOpenHours = Boolean(document.querySelector("#gantt-hide-open")?.checked);
-  const hideClosedHours = Boolean(document.querySelector("#gantt-hide-closed")?.checked);
-  const hideZeroQueueHours = Boolean(document.querySelector("#gantt-hide-zero-queue")?.checked);
-  const hideBankClosedHours = Boolean(document.querySelector("#gantt-hide-bank-closed")?.checked);
-  const hideIssuerClosedHours = Boolean(document.querySelector("#gantt-hide-issuer-closed")?.checked);
-  const hidePayoutClosedHours = Boolean(document.querySelector("#gantt-hide-payout-closed")?.checked);
-  const hideFxClosedHours = Boolean(document.querySelector("#gantt-hide-fx-closed")?.checked);
-  const hidePayoutOpenHours = Boolean(document.querySelector("#gantt-hide-payout-open")?.checked);
-  const hideFxOpenHours = Boolean(document.querySelector("#gantt-hide-fx-open")?.checked);
-  const hideBankOpenHours = Boolean(document.querySelector("#gantt-hide-bank-open")?.checked);
-  const hideIssuerOpenHours = Boolean(document.querySelector("#gantt-hide-issuer-open")?.checked);
-  const hideWeekendIssuerOpenHours = Boolean(document.querySelector("#gantt-hide-weekend-issuer-open")?.checked);
-  const hideWeekendIssuerClosedHours = Boolean(document.querySelector("#gantt-hide-weekend-issuer-closed")?.checked);
-  const hideWeekendBankClosedHours = Boolean(document.querySelector("#gantt-hide-weekend-bank-closed")?.checked);
-  const hideWeekendBankOpenHours = Boolean(document.querySelector("#gantt-hide-weekend-bank-open")?.checked);
-  const hideWeekendPayoutOpenHours = Boolean(document.querySelector("#gantt-hide-weekend-payout-open")?.checked);
-  const hideWeekendFxOpenHours = Boolean(document.querySelector("#gantt-hide-weekend-fx-open")?.checked);
-  const hideWeekendPayoutClosedHours = Boolean(document.querySelector("#gantt-hide-weekend-payout-closed")?.checked);
-  const hideWeekendFxClosedHours = Boolean(document.querySelector("#gantt-hide-weekend-fx-closed")?.checked);
-  const hideWeekdayFxClosedHours = Boolean(document.querySelector("#gantt-hide-weekday-fx-closed")?.checked);
-  const hideWeekdayFxOpenHours = Boolean(document.querySelector("#gantt-hide-weekday-fx-open")?.checked);
+  const hourFilter = currentGanttHourFilter();
   const rawGate = document.querySelector("#gantt-gate-filter")?.value || "all";
   const gateFilter = GANTT_GATE_FILTERS.includes(rawGate) ? rawGate : "all";
-  document.querySelector("#gate-gantt").innerHTML = buildGateGanttSvg(scenario, selectedHour, { closedOnly, everyClosedOnly, hideWeekdayHours, hideWeekendHours, hideOpenHours, hideClosedHours, hideZeroQueueHours, hideBankClosedHours, hideIssuerClosedHours, hidePayoutClosedHours, hideFxClosedHours, hidePayoutOpenHours, hideFxOpenHours, hideBankOpenHours, hideIssuerOpenHours, hideWeekendIssuerOpenHours, hideWeekendIssuerClosedHours, hideWeekendBankClosedHours, hideWeekendBankOpenHours, hideWeekendPayoutOpenHours, hideWeekendFxOpenHours, hideWeekendPayoutClosedHours, hideWeekendFxClosedHours, hideWeekdayFxClosedHours, hideWeekdayFxOpenHours, gateFilter });
+  document.querySelector("#gate-gantt").innerHTML = buildGateGanttSvg(scenario, selectedHour, { hourFilter, gateFilter });
   const schedule = buildGateSchedule(scenario);
   const mode = document.querySelector("#gantt-density")?.value || "snapshots";
   const rowIndexes = new Set([selectedHour]);
-  if (!closedOnly && !everyClosedOnly && !hideWeekdayHours && !hideWeekendHours && !hideOpenHours && !hideClosedHours && !hideZeroQueueHours && !hideBankClosedHours && !hideIssuerClosedHours && !hidePayoutClosedHours && !hideFxClosedHours && !hidePayoutOpenHours && !hideFxOpenHours && !hideBankOpenHours && !hideIssuerOpenHours && !hideWeekendIssuerOpenHours && !hideWeekendIssuerClosedHours && !hideWeekendBankClosedHours && !hideWeekendBankOpenHours && !hideWeekendPayoutOpenHours && !hideWeekendFxOpenHours && !hideWeekendPayoutClosedHours && !hideWeekendFxClosedHours && !hideWeekdayFxClosedHours && !hideWeekdayFxOpenHours) {
+  if (hourFilter === "all") {
     rowIndexes.add(0);
-    rowIndexes.add(SIMULATION_HOURS);
+    rowIndexes.add(simHours());
   }
-  for (let hour = 0; hour <= SIMULATION_HOURS; hour += 1) {
+  for (let hour = 0; hour <= simHours(); hour += 1) {
     const point = schedule.hours[hour];
-    if (hideWeekdayHours && !ganttHourIsWeekend(point) && hour !== selectedHour) continue;
-    if (hideWeekendHours && ganttHourIsWeekend(point) && hour !== selectedHour) continue;
-    if (hideOpenHours && ganttHourOpenOnEveryGate(point) && hour !== selectedHour) continue;
-    if (hideClosedHours && ganttHourClosedOnEveryGate(point) && hour !== selectedHour) continue;
-    if (hideZeroQueueHours && ganttHourHasZeroQueue(simulation.timeline[hour]) && hour !== selectedHour) continue;
-    if (hideBankClosedHours && ganttHourBankClosed(point) && hour !== selectedHour) continue;
-    if (hideIssuerClosedHours && ganttHourIssuerClosed(point) && hour !== selectedHour) continue;
-    if (hidePayoutClosedHours && ganttHourPayoutClosed(point) && hour !== selectedHour) continue;
-    if (hideFxClosedHours && ganttHourFxClosed(point) && hour !== selectedHour) continue;
-    if (hidePayoutOpenHours && ganttHourPayoutOpen(point) && hour !== selectedHour) continue;
-    if (hideFxOpenHours && ganttHourFxOpen(point) && hour !== selectedHour) continue;
-    if (hideBankOpenHours && ganttHourBankOpen(point) && hour !== selectedHour) continue;
-    if (hideIssuerOpenHours && ganttHourIssuerOpen(point) && hour !== selectedHour) continue;
-    if (hideWeekendIssuerOpenHours && ganttHourWeekendIssuerOpen(point) && hour !== selectedHour) continue;
-    if (hideWeekendIssuerClosedHours && ganttHourWeekendIssuerClosed(point) && hour !== selectedHour) continue;
-    if (hideWeekendBankClosedHours && ganttHourWeekendBankClosed(point) && hour !== selectedHour) continue;
-    if (hideWeekendBankOpenHours && ganttHourWeekendBankOpen(point) && hour !== selectedHour) continue;
-    if (hideWeekendPayoutOpenHours && ganttHourWeekendPayoutOpen(point) && hour !== selectedHour) continue;
-    if (hideWeekendFxOpenHours && ganttHourWeekendFxOpen(point) && hour !== selectedHour) continue;
-    if (hideWeekendPayoutClosedHours && ganttHourWeekendPayoutClosed(point) && hour !== selectedHour) continue;
-    if (hideWeekendFxClosedHours && ganttHourWeekendFxClosed(point) && hour !== selectedHour) continue;
-    if (hideWeekdayFxClosedHours && ganttHourWeekdayFxClosed(point) && hour !== selectedHour) continue;
-    if (hideWeekdayFxOpenHours && ganttHourWeekdayFxOpen(point) && hour !== selectedHour) continue;
-    if (everyClosedOnly) {
-      if (ganttHourClosedOnEveryGate(point)) rowIndexes.add(hour);
-      continue;
-    }
-    if (closedOnly) {
-      if (ganttHourClosedOnAnyGate(point)) rowIndexes.add(hour);
+    if (!ganttHourMatchesFilter(point, hourFilter, simulation.timeline[hour], selectedHour)) continue;
+    if (hourFilter !== "all") {
+      rowIndexes.add(hour);
       continue;
     }
     if (mode === "all" || (mode === "snapshots" && hour % 6 === 0) || (mode === "open" && (point.issuerOpen || point.bankOpen || point.payoutOpen))) {
@@ -605,87 +541,15 @@ function renderGantt() {
     : `First payout window: ${formatTime(firstOpen)} (hour ${firstOpen}). The dashed green marker on the Gantt uses this hour.`;
   const filterNote = document.querySelector("#gantt-filter-note");
   if (filterNote) {
-    const closedCount = schedule.hours.filter((point) => point.hour < SIMULATION_HOURS && ganttHourClosedOnAnyGate(point)).length;
-    const everyClosedCount = schedule.hours.filter((point) => point.hour < SIMULATION_HOURS && ganttHourClosedOnEveryGate(point)).length;
-    if (everyClosedOnly) {
-      filterNote.textContent = `Showing hours where every gate is closed (${everyClosedCount} of ${SIMULATION_HOURS} chart hours). Uncheck to restore all hours. Display only. The model still contains ${SIMULATION_HOURS} hours.`;
-    } else if (closedOnly) {
-      filterNote.textContent = `Showing hours closed on at least one gate (${closedCount} of ${SIMULATION_HOURS} chart hours). The model still contains ${SIMULATION_HOURS} hours. This table and chart are a local drawing.`;
+    if (hourFilter === "all") {
+      filterNote.textContent = `All ${simHours()} model hours remain available. Use the hour filter to hide hours in this local drawing. Display only. The model still contains ${simHours()} hours.`;
     } else {
-      filterNote.textContent = `All ${SIMULATION_HOURS} model hours remain available. Use the closed-hours filter to hide fully open hours in this local drawing.`;
+      const shown = schedule.hours.filter((point) => point.hour < simHours() && ganttHourMatchesFilter(point, hourFilter, simulation.timeline[point.hour], selectedHour)).length;
+      filterNote.textContent = `${GANTT_FILTER_NOTES[hourFilter]} (${shown} of ${simHours()} chart hours). Display only. The model still contains ${simHours()} hours. This table and chart are a local drawing.`;
     }
     if (gateFilter !== "all") {
       const gateName = GENERIC_GATE_LABELS[gateFilter] || gateFilter;
       filterNote.textContent += ` Chart shows ${gateName} only. Simulation is unchanged.`;
-    }
-    if (hideWeekdayHours) {
-      filterNote.textContent += ` Showing Saturday and Sunday hours only. Display only. The model still contains ${SIMULATION_HOURS} hours.`;
-    }
-    if (hideWeekendHours) {
-      filterNote.textContent += ` Saturday and Sunday hours are hidden. Display only. The model still contains ${SIMULATION_HOURS} hours.`;
-    }
-    if (hideOpenHours) {
-      filterNote.textContent += ` Hours open on every gate are hidden. Display only. The model still contains ${SIMULATION_HOURS} hours.`;
-    }
-    if (hideClosedHours) {
-      filterNote.textContent += ` Hours closed on every gate are hidden. Display only. The model still contains ${SIMULATION_HOURS} hours.`;
-    }
-    if (hideZeroQueueHours) {
-      filterNote.textContent += ` Hours whose synthetic queue is zero are hidden. Display only. The model still contains ${SIMULATION_HOURS} hours.`;
-    }
-    if (hideBankClosedHours) {
-      filterNote.textContent += ` Hours where the bank gate is closed are hidden. Display only. The model still contains ${SIMULATION_HOURS} hours.`;
-    }
-    if (hideIssuerClosedHours) {
-      filterNote.textContent += ` Hours where the issuer gate is closed are hidden. Display only. The model still contains ${SIMULATION_HOURS} hours.`;
-    }
-    if (hidePayoutClosedHours) {
-      filterNote.textContent += ` Hours where the payout gate is closed are hidden. Display only. The model still contains ${SIMULATION_HOURS} hours.`;
-    }
-    if (hideFxClosedHours) {
-      filterNote.textContent += ` Hours where the FX gate is closed are hidden. Display only. The model still contains ${SIMULATION_HOURS} hours.`;
-    }
-    if (hidePayoutOpenHours) {
-      filterNote.textContent += ` Hours where the payout gate is open are hidden. Display only. The model still contains ${SIMULATION_HOURS} hours.`;
-    }
-    if (hideFxOpenHours) {
-      filterNote.textContent += ` Hours where the FX gate is open are hidden. Display only. The model still contains ${SIMULATION_HOURS} hours.`;
-    }
-    if (hideBankOpenHours) {
-      filterNote.textContent += ` Hours where the bank gate is open are hidden. Display only. The model still contains ${SIMULATION_HOURS} hours.`;
-    }
-    if (hideIssuerOpenHours) {
-      filterNote.textContent += ` Hours where the issuer gate is open are hidden. Display only. The model still contains ${SIMULATION_HOURS} hours.`;
-    }
-    if (hideWeekendIssuerOpenHours) {
-      filterNote.textContent += ` Weekend hours where the issuer gate is open are hidden. Display only. The model still contains ${SIMULATION_HOURS} hours.`;
-    }
-    if (hideWeekendIssuerClosedHours) {
-      filterNote.textContent += ` Weekend hours where the issuer gate is closed are hidden. Display only. The model still contains ${SIMULATION_HOURS} hours.`;
-    }
-    if (hideWeekendBankClosedHours) {
-      filterNote.textContent += ` Weekend hours where the bank gate is closed are hidden. Display only. The model still contains ${SIMULATION_HOURS} hours.`;
-    }
-    if (hideWeekendBankOpenHours) {
-      filterNote.textContent += ` Weekend hours where the bank gate is open are hidden. Display only. The model still contains ${SIMULATION_HOURS} hours.`;
-    }
-    if (hideWeekendPayoutOpenHours) {
-      filterNote.textContent += ` Weekend hours where the payout gate is open are hidden. Display only. The model still contains ${SIMULATION_HOURS} hours.`;
-    }
-    if (hideWeekendFxOpenHours) {
-      filterNote.textContent += ` Weekend hours where the FX gate is open are hidden. Display only. The model still contains ${SIMULATION_HOURS} hours.`;
-    }
-    if (hideWeekendPayoutClosedHours) {
-      filterNote.textContent += ` Weekend hours where the payout gate is closed are hidden. Display only. The model still contains ${SIMULATION_HOURS} hours.`;
-    }
-    if (hideWeekendFxClosedHours) {
-      filterNote.textContent += ` Weekend hours where the FX gate is closed are hidden. Display only. The model still contains ${SIMULATION_HOURS} hours.`;
-    }
-    if (hideWeekdayFxClosedHours) {
-      filterNote.textContent += ` Weekday hours where the FX gate is closed are hidden. Display only. The model still contains ${SIMULATION_HOURS} hours.`;
-    }
-    if (hideWeekdayFxOpenHours) {
-      filterNote.textContent += ` Weekday hours where the FX gate is open are hidden. Display only. The model still contains ${SIMULATION_HOURS} hours.`;
     }
   }
 }
@@ -709,14 +573,14 @@ function renderCompareGantt() {
     if (hour === selectedHour) row.className = "is-current";
     for (const value of [
       point.timeLabel,
-      gateCellLabel(point.current.issuerOpen),
-      gateCellLabel(point.baseline.issuerOpen),
-      gateCellLabel(point.current.bankOpen),
-      gateCellLabel(point.baseline.bankOpen),
-      gateCellLabel(point.current.payoutOpen),
-      gateCellLabel(point.baseline.payoutOpen),
-      gateCellLabel(point.current.fxWeekday, true),
-      gateCellLabel(point.baseline.fxWeekday, true)
+      point.current === null ? "\u2014" : gateCellLabel(point.current.issuerOpen),
+      point.baseline === null ? "\u2014" : gateCellLabel(point.baseline.issuerOpen),
+      point.current === null ? "\u2014" : gateCellLabel(point.current.bankOpen),
+      point.baseline === null ? "\u2014" : gateCellLabel(point.baseline.bankOpen),
+      point.current === null ? "\u2014" : gateCellLabel(point.current.payoutOpen),
+      point.baseline === null ? "\u2014" : gateCellLabel(point.baseline.payoutOpen),
+      point.current === null ? "\u2014" : gateCellLabel(point.current.fxWeekday, true),
+      point.baseline === null ? "\u2014" : gateCellLabel(point.baseline.fxWeekday, true)
     ]) {
       const cell = document.createElement("td");
       cell.textContent = value;
@@ -727,7 +591,7 @@ function renderCompareGantt() {
   document.querySelector("#compare-gantt-table").replaceChildren(fragment);
   document.querySelector("#compare-gantt-status").textContent = comparison.differingHours === 0
     ? "Current and baseline gate hours match. The table keeps the selected hour as a text equivalent."
-    : `${comparison.differingHours} of 73 checkpoints differ between current and baseline. Matching hours are omitted except the selected hour.`;
+    : `${comparison.differingHours} of ${comparison.hours.length} checkpoints differ between current and baseline. Matching hours are omitted except the selected hour. Hours past the shorter calendar show an em dash.`;
 }
 
 function renderQueueSvg() {
@@ -780,8 +644,8 @@ function drawChart() {
     chartContext.fillText(formatAud(value), 0, y + 4);
   }
 
-  [0, 9, 33, 57, 72].forEach((hour) => {
-    const x = dimensions.left + (hour / SIMULATION_HOURS) * dimensions.width;
+  svgTickHours(simHours()).forEach((hour) => {
+    const x = dimensions.left + (hour / simHours()) * dimensions.width;
     chartContext.fillText(formatTime(hour), Math.min(x, width - 46), height - 14);
   });
 
@@ -790,7 +654,7 @@ function drawChart() {
   chartContext.setLineDash([6, 4]);
   drawLine(chartContext, comparison.baseline.timeline, (point) => point.queuedAud, "#aac7ff", dimensions, maximum);
   chartContext.setLineDash([]);
-  const selectedX = dimensions.left + (selectedHour / SIMULATION_HOURS) * dimensions.width;
+  const selectedX = dimensions.left + (selectedHour / simHours()) * dimensions.width;
   chartContext.beginPath();
   chartContext.moveTo(selectedX, dimensions.top);
   chartContext.lineTo(selectedX, dimensions.top + dimensions.height);
@@ -801,7 +665,7 @@ function drawChart() {
 
 function setPlaying(nextPlaying) {
   if (nextPlaying && reducedMotion?.matches) {
-    selectedHour = selectedHour >= SIMULATION_HOURS ? 0 : selectedHour + 1;
+    selectedHour = selectedHour >= simHours() ? 0 : selectedHour + 1;
     render(); saveWorkspace(); return;
   }
   const wasPlaying = playing;
@@ -812,9 +676,9 @@ function setPlaying(nextPlaying) {
   playTimer = null;
   if (!playing) { if (wasPlaying) saveWorkspace(); return; }
   playTimer = window.setInterval(() => {
-    selectedHour = selectedHour >= SIMULATION_HOURS ? 0 : selectedHour + 1;
+    selectedHour = selectedHour >= simHours() ? 0 : selectedHour + 1;
     render();
-    if (selectedHour >= SIMULATION_HOURS) setPlaying(false);
+    if (selectedHour >= simHours()) setPlaying(false);
   }, 700);
 }
 
@@ -845,7 +709,7 @@ function renderPlanning() {
   const rows = [
     ["Starting reserve", comparison.baseline.scenario.reserveCashAud, scenario.reserveCashAud],
     ["Total demand", comparison.baseline.summary.totalDemandAud, simulation.summary.totalDemandAud],
-    ["Settled by Monday 15:00", comparison.baseline.summary.totalSettledAud, simulation.summary.totalSettledAud],
+    ["Settled by " + formatTime(simHours()), comparison.baseline.summary.totalSettledAud, simulation.summary.totalSettledAud],
     ["Remaining queue", comparison.baseline.summary.finalQueuedAud, simulation.summary.finalQueuedAud],
     ["Peak queue", comparison.baseline.summary.peakQueuedAud, simulation.summary.peakQueuedAud]
   ];
@@ -892,7 +756,10 @@ function renderPlanning() {
     return row;
   })());
   document.querySelector("#changed-assumptions").textContent = comparison.changes.length
-    ? comparison.changes.map(({ field, baseline, candidate }) => `${field}: ${baseline} to ${candidate}`).join("; ")
+    ? comparison.changes.map(({ field, baseline, candidate }) => {
+      const print = (value) => Array.isArray(value) ? JSON.stringify(value) : String(value);
+      return `${field}: ${print(baseline)} to ${print(candidate)}`;
+    }).join("; ")
     : "No assumptions changed. Pin a baseline, then edit the scenario or choose a preset.";
   const output = document.querySelector("#reserve-result");
   const apply = document.querySelector("#apply-reserve");
@@ -903,7 +770,7 @@ function renderPlanning() {
       document.querySelector("#reserve-deadline").valueAsNumber);
     document.querySelector("#analysis-export").disabled = false;
     const p = reservePlan;
-    const target = `${p.targetPercent}% of total 72-hour demand (${planningAud(p.targetAud)}) by ${formatTime(p.deadlineHour)}`;
+    const target = `${p.targetPercent}% of total ${simHours()}-hour demand (${planningAud(p.targetAud)}) by ${formatTime(p.deadlineHour)}`;
     output.textContent = p.status === "reachable"
       ? `${target}: minimum starting reserve ${p.minimumReserveAud.toLocaleString("en-US", { style: "currency", currency: "AUD" })}. Change from current reserve: ${signedAud(p.reserveChangeAud)}. ${p.reason}`
       : `${target}: unreachable by reserve alone. Maximum modeled settlement: ${planningAud(p.maximumSettledAud)}. ${p.reason}`;
@@ -1190,11 +1057,257 @@ function applyFormEdit(normaliseForm) {
   weekendReviewDraftInvalid = invalid;
   if (invalid) { setMessage("Complete the highlighted numeric assumptions with finite numbers. The previous simulation is kept."); return; }
   userEdited = true;
+  const hadOverrides = Array.isArray(scenario.calendarOverrides) && scenario.calendarOverrides.length > 0;
+  if (hadOverrides) raw.calendarOverrides = scenario.calendarOverrides;
+  const hadFunding = Array.isArray(scenario.fundingTranches) && scenario.fundingTranches.length > 0;
+  if (hadFunding) raw.fundingTranches = scenario.fundingTranches;
   setScenario(raw, { normaliseForm });
+  if ((hadOverrides && !Array.isArray(scenario.calendarOverrides)) || (hadFunding && !Array.isArray(scenario.fundingTranches))) {
+    setMessage("The new horizon dropped calendar overrides or funding tranches outside its range. Re-add them inside the horizon.");
+    return;
+  }
 }
 form.addEventListener("input", () => applyFormEdit(false));
 form.addEventListener("change", () => applyFormEdit(true));
 form.addEventListener("submit", event => event.preventDefault());
+
+function overrideRowLabel(entry, index) {
+  return `Override ${index + 1}: hours ${entry.startHour} to ${entry.endHour}`;
+}
+
+let lastRenderedOverrides = null;
+function renderCalendarOverrides() {
+  const container = document.querySelector("#calendar-overrides");
+  const status = document.querySelector("#calendar-override-status");
+  if (!container) return;
+  const overrides = Array.isArray(scenario.calendarOverrides) ? scenario.calendarOverrides : [];
+  const signature = JSON.stringify(overrides);
+  if (signature === lastRenderedOverrides && container.contains(document.activeElement)) return;
+  lastRenderedOverrides = signature;
+  container.replaceChildren();
+  if (!overrides.length) {
+    const empty = document.createElement("p");
+    empty.className = "canvas-note";
+    empty.textContent = "No overrides. The weekday rules, holidays, and dated presets above apply across the whole horizon.";
+    container.append(empty);
+  }
+  overrides.forEach((entry, index) => {
+    const row = document.createElement("div");
+    row.className = "override-row";
+    const hours = scenarioHours(scenario);
+    row.innerHTML = `
+      <strong>${overrideRowLabel(entry, index)} (${entry.startHour < hours && entry.endHour <= hours ? "inside horizon" : "outside horizon"})</strong>
+      <label>Start hour <input type="number" min="0" max="${hours}" step="1" value="${entry.startHour}" data-override-field="startHour" data-override-index="${index}"></label>
+      <label>End hour <input type="number" min="1" max="${hours}" step="1" value="${entry.endHour}" data-override-field="endHour" data-override-index="${index}"></label>
+      <label>Issuer <select data-override-field="issuer" data-override-index="${index}">
+        <option value="">Weekly rules</option>
+        <option value="open"${entry.gates?.issuer === "open" ? " selected" : ""}>Open</option>
+        <option value="closed"${entry.gates?.issuer === "closed" ? " selected" : ""}>Closed</option>
+      </select></label>
+      <label>Bank <select data-override-field="bank" data-override-index="${index}">
+        <option value="">Weekly rules</option>
+        <option value="open"${entry.gates?.bank === "open" ? " selected" : ""}>Open</option>
+        <option value="closed"${entry.gates?.bank === "closed" ? " selected" : ""}>Closed</option>
+      </select></label>
+      <label>Payout <select data-override-field="payout" data-override-index="${index}">
+        <option value="">Weekly rules</option>
+        <option value="open"${entry.gates?.payout === "open" ? " selected" : ""}>Open</option>
+        <option value="closed"${entry.gates?.payout === "closed" ? " selected" : ""}>Closed</option>
+      </select></label>
+      <label>FX <select data-override-field="fx" data-override-index="${index}">
+        <option value="">Weekly rules</option>
+        <option value="weekday"${entry.fx === "weekday" ? " selected" : ""}>Weekday depth</option>
+        <option value="weekend"${entry.fx === "weekend" ? " selected" : ""}>Weekend thinned</option>
+      </select></label>
+      <label>Issuer A$/h <input type="number" min="0" step="any" value="${entry.throughput?.issuer ?? ""}" placeholder="Unchanged" data-override-field="throughputIssuer" data-override-index="${index}"></label>
+      <label>FX A$/h <input type="number" min="0" step="any" value="${entry.throughput?.fx ?? ""}" placeholder="Unchanged" data-override-field="throughputFx" data-override-index="${index}"></label>
+      <label>Payout A$/h <input type="number" min="0" step="any" value="${entry.throughput?.payout ?? ""}" placeholder="Unchanged" data-override-field="throughputPayout" data-override-index="${index}"></label>
+      <button type="button" data-remove-override="${index}">Remove override</button>`;
+    container.append(row);
+  });
+  if (status && !status.dataset.touched) status.textContent = "";
+}
+
+function readOverridesFromEditor() {
+  const container = document.querySelector("#calendar-overrides");
+  if (!container) return [];
+  const rows = [...container.querySelectorAll(".override-row")];
+  return rows.map((row) => {
+    const get = (field) => row.querySelector(`[data-override-field="${field}"]`)?.value ?? "";
+    const entry = {
+      startHour: Number(get("startHour")),
+      endHour: Number(get("endHour")),
+    };
+    const gates = {};
+    for (const gate of ["issuer", "bank", "payout"]) {
+      const value = get(gate);
+      if (value === "open" || value === "closed") gates[gate] = value;
+    }
+    if (Object.keys(gates).length) entry.gates = gates;
+    const fx = get("fx");
+    if (fx === "weekday" || fx === "weekend") entry.fx = fx;
+    const throughput = {};
+    for (const [field, key] of [["throughputIssuer", "issuer"], ["throughputFx", "fx"], ["throughputPayout", "payout"]]) {
+      const raw = get(field);
+      if (raw.trim() !== "") throughput[key] = Number(raw);
+    }
+    if (Object.keys(throughput).length) entry.throughput = throughput;
+    return entry;
+  });
+}
+
+function applyOverrideEdit() {
+  const status = document.querySelector("#calendar-override-status");
+  const parsed = readOverridesFromEditor();
+  const checked = sanitizeCalendarOverrides(parsed, simHours());
+  if (checked.errors.length) {
+    if (status) {
+      status.dataset.touched = "true";
+      status.textContent = checked.errors[0];
+    }
+    return;
+  }
+  if (status) {
+    delete status.dataset.touched;
+    status.textContent = "";
+  }
+  userEdited = true;
+  const next = { ...scenario };
+  if (checked.overrides && checked.overrides.length) next.calendarOverrides = checked.overrides;
+  else delete next.calendarOverrides;
+  lastRenderedOverrides = JSON.stringify(next.calendarOverrides ?? []);
+  setScenario(next, { normaliseForm: false });
+}
+
+document.querySelector("#calendar-overrides")?.addEventListener("input", applyOverrideEdit);
+document.querySelector("#calendar-overrides")?.addEventListener("change", applyOverrideEdit);
+document.querySelector("#add-calendar-override")?.addEventListener("click", () => {
+  userEdited = true;
+  const hours = simHours();
+  const next = { ...scenario };
+  const overrides = [...(Array.isArray(next.calendarOverrides) ? next.calendarOverrides : [])];
+  if (overrides.length >= MAX_CALENDAR_OVERRIDES) {
+    setMessage(`Calendar overrides allow at most ${MAX_CALENDAR_OVERRIDES} entries. Remove one before adding another.`);
+    return;
+  }
+  const start = Math.min(9, hours - 1);
+  overrides.push({ startHour: start, endHour: Math.min(start + 8, hours), gates: { payout: "closed" } });
+  next.calendarOverrides = overrides;
+  setScenario(next, { normaliseForm: false, message: "Calendar override added. Edit its range and gates; later entries win per field." });
+});
+document.querySelector("#calendar-overrides")?.addEventListener("click", (event) => {
+  const button = event.target.closest("[data-remove-override]");
+  if (!button) return;
+  userEdited = true;
+  const next = { ...scenario };
+  const overrides = [...(Array.isArray(next.calendarOverrides) ? next.calendarOverrides : [])];
+  overrides.splice(Number(button.dataset.removeOverride), 1);
+  if (overrides.length) next.calendarOverrides = overrides;
+  else delete next.calendarOverrides;
+  setScenario(next, { normaliseForm: false, message: "Calendar override removed." });
+  document.querySelector("#add-calendar-override")?.focus();
+});
+
+function fundingRowLabel(entry, index) {
+  return `Tranche ${index + 1}: A$${entry.amountAud} at hour ${entry.hour}`;
+}
+
+let lastRenderedFunding = null;
+function renderFundingTranches() {
+  const container = document.querySelector("#funding-tranches");
+  const status = document.querySelector("#funding-status");
+  if (!container) return;
+  const tranches = Array.isArray(scenario.fundingTranches) ? scenario.fundingTranches : [];
+  const signature = JSON.stringify(tranches);
+  if (signature === lastRenderedFunding && container.contains(document.activeElement)) return;
+  lastRenderedFunding = signature;
+  container.replaceChildren();
+  if (!tranches.length) {
+    const empty = document.createElement("p");
+    empty.className = "canvas-note";
+    empty.textContent = "No scheduled funding. The starting reserve covers the whole horizon unless you add a tranche.";
+    container.append(empty);
+  }
+  tranches.forEach((entry, index) => {
+    const row = document.createElement("div");
+    row.className = "funding-row";
+    const hours = simHours();
+    row.innerHTML = `
+      <strong>${fundingRowLabel(entry, index)} (${entry.hour < hours ? "inside horizon" : "outside horizon"})</strong>
+      <label>Funding hour <input type="number" min="0" max="${hours - 1}" step="1" value="${entry.hour}" data-funding-field="hour" data-funding-index="${index}"></label>
+      <label>Amount A$ <input type="number" min="0" step="0.01" value="${entry.amountAud}" data-funding-field="amountAud" data-funding-index="${index}"></label>
+      <label>Cost A$ <input type="number" min="0" step="0.01" value="${entry.costAud}" data-funding-field="costAud" data-funding-index="${index}"></label>
+      <button type="button" data-remove-funding="${index}">Remove tranche</button>`;
+    container.append(row);
+  });
+  if (status && !status.dataset.touched) status.textContent = "";
+}
+
+function readFundingFromEditor() {
+  const container = document.querySelector("#funding-tranches");
+  if (!container) return [];
+  return [...container.querySelectorAll(".funding-row")].map((row) => {
+    const get = (field) => row.querySelector(`[data-funding-field="${field}"]`)?.value ?? "";
+    const entry = { hour: Number(get("hour")), amountAud: Number(get("amountAud")) };
+    const costRaw = get("costAud");
+    if (costRaw.trim() !== "") entry.costAud = Number(costRaw);
+    return entry;
+  });
+}
+
+function applyFundingEdit() {
+  const status = document.querySelector("#funding-status");
+  const parsed = readFundingFromEditor();
+  const checked = sanitizeFundingTranches(parsed, simHours());
+  if (checked.errors.length) {
+    if (status) {
+      status.dataset.touched = "true";
+      status.textContent = checked.errors[0];
+    }
+    return;
+  }
+  if (status) {
+    delete status.dataset.touched;
+    status.textContent = "";
+  }
+  userEdited = true;
+  const next = { ...scenario };
+  if (checked.tranches && checked.tranches.length) next.fundingTranches = checked.tranches;
+  else delete next.fundingTranches;
+  lastRenderedFunding = JSON.stringify(next.fundingTranches ?? []);
+  setScenario(next, { normaliseForm: false });
+}
+
+document.querySelector("#funding-tranches")?.addEventListener("input", applyFundingEdit);
+document.querySelector("#funding-tranches")?.addEventListener("change", applyFundingEdit);
+document.querySelector("#add-funding-tranche")?.addEventListener("click", () => {
+  userEdited = true;
+  const next = { ...scenario };
+  const tranches = [...(Array.isArray(next.fundingTranches) ? next.fundingTranches : [])];
+  if (tranches.length >= MAX_FUNDING_TRANCHES) {
+    setMessage(`Funding tranches allow at most ${MAX_FUNDING_TRANCHES} entries. Remove one before adding another.`);
+    return;
+  }
+  tranches.push({ hour: 0, amountAud: 100000, costAud: 0 });
+  next.fundingTranches = tranches;
+  setScenario(next, { normaliseForm: false, message: "Funding tranche added. Edit its hour, amount, and cost." });
+});
+document.querySelector("#funding-tranches")?.addEventListener("click", (event) => {
+  const button = event.target.closest("[data-remove-funding]");
+  if (!button) return;
+  userEdited = true;
+  const next = { ...scenario };
+  const tranches = [...(Array.isArray(next.fundingTranches) ? next.fundingTranches : [])];
+  tranches.splice(Number(button.dataset.removeFunding), 1);
+  if (tranches.length) next.fundingTranches = tranches;
+  else delete next.fundingTranches;
+  setScenario(next, { normaliseForm: false, message: "Funding tranche removed." });
+  document.querySelector("#add-funding-tranche")?.focus();
+});
+document.querySelector("#copy-funding-schedule")?.addEventListener("click", async () => {
+  const text = fundingToMarkdown(scenario);
+  return copyTextWithFallback(text, "#funding-copy-fallback", "Funding schedule copied as Markdown. This is a synthetic snapshot, not a funding recommendation.");
+});
 
 timelineRange.addEventListener("input", () => {
   selectedHour = Number(timelineRange.value);
@@ -1259,7 +1372,7 @@ if (!userEdited && !window.location.hash) saveScenario();
 
 function renderDiagnostics() {
   const d = analyzeTimeline(scenario);
-  document.querySelector("#diagnostic-summary").textContent = d.backlogIntervals + " of 72 intervals end with backlog. Longest uninterrupted run: " + d.longestBacklogRun + " hours. Queue exposure: " + formatAud(d.queueAudHours, false) + "·hours.";
+  document.querySelector("#diagnostic-summary").textContent = d.backlogIntervals + " of " + simHours() + " intervals end with backlog. Longest uninterrupted run: " + d.longestBacklogRun + " hours. Queue exposure: " + formatAud(d.queueAudHours, false) + "·hours.";
   const list = document.querySelector("#bottleneck-list");
   list.replaceChildren(...d.blockers.map(item => {
     const li = document.createElement("li"); li.textContent = item.label + ": " + item.intervals + " backlog intervals"; return li;
@@ -1280,17 +1393,16 @@ function renderDiagnostics() {
     return tr;
   }));
   document.querySelector("#bottleneck-explanation").textContent = active.length
-    ? `Of 72 hours, ${active.map((row) => `${row.hours} were limited by ${row.label}`).join(", ")}. Hours labeled none had no recorded limiter. This does not say which assumption to change.`
+    ? `Of ${simHours()} hours, ${active.map((row) => `${row.hours} were limited by ${row.label}`).join(", ")}. Hours labeled none had no recorded limiter. This does not say which assumption to change.`
     : "No limiting-gate hours were recorded for this run.";
 }
 
 function formatHoursToFirstSettlement(hours) {
-  return hours === null ? "No settlement in 72h" : `${hours} hour${hours === 1 ? "" : "s"}`;
+  return hoursToFirstSettlementLabel(hours, simHours());
 }
 
 function formatHoursToClearQueue(hours, peakQueuedAud = 0) {
-  if (hours === null) return peakQueuedAud > 0 ? "queue remains" : "No queue in 72h";
-  return `${hours} hour${hours === 1 ? "" : "s"}`;
+  return hoursToClearLabel(hours, peakQueuedAud, simHours());
 }
 
 function renderDemandProfiles() {
@@ -1389,7 +1501,7 @@ document.querySelector("#compare-experiments").addEventListener("click",()=>{
         planningAud(item.peakQueuedAud),
         planningAud(item.finalQueuedAud),
         planningAud(item.totalSettledAud),
-        item.hoursToFirstSettlement === null ? "No settlement in 72h" : `${item.hoursToFirstSettlement} hour${item.hoursToFirstSettlement === 1 ? "" : "s"}`
+        formatHoursToFirstSettlement(item.hoursToFirstSettlement)
       ]) {
         const td = document.createElement("td");
         td.textContent = value;
@@ -1426,33 +1538,11 @@ function currentWorkspace() {
     deadlineHour:document.querySelector("#reserve-deadline").valueAsNumber, selectedHour, ganttHourIndex: selectedHour, notes:document.querySelector("#workspace-notes").value,
     ganttDensity: document.querySelector("#gantt-density").value,
     selectedChart: document.querySelector("#selected-chart").value,
-    ganttClosedOnly: Boolean(document.querySelector("#gantt-closed-only")?.checked),
+    ganttClosedOnly: false,
     ganttGateFilter: GANTT_GATE_FILTERS.includes(document.querySelector("#gantt-gate-filter")?.value) ? document.querySelector("#gantt-gate-filter").value : "all",
     queueBacklogOnly: Boolean(document.querySelector("#queue-backlog-only")?.checked),
-    ganttEveryGateClosed: Boolean(document.querySelector("#gantt-every-closed")?.checked),
-    hideWeekdayGanttHours: Boolean(document.querySelector("#gantt-hide-weekdays")?.checked),
-    hideWeekendGanttHours: Boolean(document.querySelector("#gantt-hide-weekends")?.checked),
-    hideOpenGanttHours: Boolean(document.querySelector("#gantt-hide-open")?.checked),
-    hideClosedGanttHours: Boolean(document.querySelector("#gantt-hide-closed")?.checked),
-    hideZeroQueueGanttHours: Boolean(document.querySelector("#gantt-hide-zero-queue")?.checked),
-    hideBankClosedGanttHours: Boolean(document.querySelector("#gantt-hide-bank-closed")?.checked),
-    hideIssuerClosedGanttHours: Boolean(document.querySelector("#gantt-hide-issuer-closed")?.checked),
-    hidePayoutClosedGanttHours: Boolean(document.querySelector("#gantt-hide-payout-closed")?.checked),
-    hideFxClosedGanttHours: Boolean(document.querySelector("#gantt-hide-fx-closed")?.checked),
-    hidePayoutOpenGanttHours: Boolean(document.querySelector("#gantt-hide-payout-open")?.checked),
-    hideFxOpenGanttHours: Boolean(document.querySelector("#gantt-hide-fx-open")?.checked),
-    hideBankOpenGanttHours: Boolean(document.querySelector("#gantt-hide-bank-open")?.checked),
-    hideIssuerOpenGanttHours: Boolean(document.querySelector("#gantt-hide-issuer-open")?.checked),
-    hideWeekendIssuerOpenGanttHours: Boolean(document.querySelector("#gantt-hide-weekend-issuer-open")?.checked),
-    hideWeekendIssuerClosedGanttHours: Boolean(document.querySelector("#gantt-hide-weekend-issuer-closed")?.checked),
-    hideWeekendBankClosedGanttHours: Boolean(document.querySelector("#gantt-hide-weekend-bank-closed")?.checked),
-    hideWeekendBankOpenGanttHours: Boolean(document.querySelector("#gantt-hide-weekend-bank-open")?.checked),
-    hideWeekendPayoutOpenGanttHours: Boolean(document.querySelector("#gantt-hide-weekend-payout-open")?.checked),
-    hideWeekendFxOpenGanttHours: Boolean(document.querySelector("#gantt-hide-weekend-fx-open")?.checked),
-    hideWeekendPayoutClosedGanttHours: Boolean(document.querySelector("#gantt-hide-weekend-payout-closed")?.checked),
-    hideWeekendFxClosedGanttHours: Boolean(document.querySelector("#gantt-hide-weekend-fx-closed")?.checked),
-    hideWeekdayFxClosedGanttHours: Boolean(document.querySelector("#gantt-hide-weekday-fx-closed")?.checked),
-    hideWeekdayFxOpenGanttHours: Boolean(document.querySelector("#gantt-hide-weekday-fx-open")?.checked) });
+    ganttEveryGateClosed: false,
+    ganttHourFilter: currentGanttHourFilter() });
 }
 function saveWorkspace() {
   if(!workspaceReady) return;
@@ -1462,7 +1552,7 @@ function saveWorkspace() {
     try {
       serialized = currentWorkspace();
       const saved = JSON.parse(serialized);
-      lastValidPlan = { targetPercent: saved.targetPercent, deadlineHour: saved.deadlineHour, ganttDensity: saved.ganttDensity, selectedHour: saved.selectedHour, ganttHourIndex: saved.ganttHourIndex ?? saved.selectedHour, selectedChart: saved.selectedChart, ganttClosedOnly: saved.ganttClosedOnly === true, ganttGateFilter: GANTT_GATE_FILTERS.includes(saved.ganttGateFilter) ? saved.ganttGateFilter : "all", queueBacklogOnly: saved.queueBacklogOnly === true, ganttEveryGateClosed: saved.ganttEveryGateClosed === true, hideWeekdayGanttHours: saved.hideWeekdayGanttHours === true, hideWeekendGanttHours: saved.hideWeekendGanttHours === true, hideOpenGanttHours: saved.hideOpenGanttHours === true, hideClosedGanttHours: saved.hideClosedGanttHours === true, hideZeroQueueGanttHours: saved.hideZeroQueueGanttHours === true, hideBankClosedGanttHours: saved.hideBankClosedGanttHours === true, hideIssuerClosedGanttHours: saved.hideIssuerClosedGanttHours === true, hidePayoutClosedGanttHours: saved.hidePayoutClosedGanttHours === true, hideFxClosedGanttHours: saved.hideFxClosedGanttHours === true, hidePayoutOpenGanttHours: saved.hidePayoutOpenGanttHours === true, hideFxOpenGanttHours: saved.hideFxOpenGanttHours === true, hideBankOpenGanttHours: saved.hideBankOpenGanttHours === true, hideIssuerOpenGanttHours: saved.hideIssuerOpenGanttHours === true, hideWeekendIssuerOpenGanttHours: saved.hideWeekendIssuerOpenGanttHours === true, hideWeekendIssuerClosedGanttHours: saved.hideWeekendIssuerClosedGanttHours === true, hideWeekendBankClosedGanttHours: saved.hideWeekendBankClosedGanttHours === true, hideWeekendBankOpenGanttHours: saved.hideWeekendBankOpenGanttHours === true, hideWeekendPayoutOpenGanttHours: saved.hideWeekendPayoutOpenGanttHours === true, hideWeekendFxOpenGanttHours: saved.hideWeekendFxOpenGanttHours === true, hideWeekendPayoutClosedGanttHours: saved.hideWeekendPayoutClosedGanttHours === true, hideWeekendFxClosedGanttHours: saved.hideWeekendFxClosedGanttHours === true, hideWeekdayFxClosedGanttHours: saved.hideWeekdayFxClosedGanttHours === true, hideWeekdayFxOpenGanttHours: saved.hideWeekdayFxOpenGanttHours === true };
+      lastValidPlan = { targetPercent: saved.targetPercent, deadlineHour: saved.deadlineHour, ganttDensity: saved.ganttDensity, selectedHour: saved.selectedHour, ganttHourIndex: saved.ganttHourIndex ?? saved.selectedHour, selectedChart: saved.selectedChart, ganttClosedOnly: saved.ganttClosedOnly === true, ganttGateFilter: GANTT_GATE_FILTERS.includes(saved.ganttGateFilter) ? saved.ganttGateFilter : "all", queueBacklogOnly: saved.queueBacklogOnly === true, ganttEveryGateClosed: saved.ganttEveryGateClosed === true, ganttHourFilter: GANTT_HOUR_FILTERS.includes(saved.ganttHourFilter) ? saved.ganttHourFilter : "all" };
     } catch {
       controlsValid = false;
       serialized = workspaceToJSON(scenario, baselineScenario, { ...lastValidPlan, selectedHour, ganttHourIndex: selectedHour, notes: document.querySelector("#workspace-notes").value });
@@ -1474,40 +1564,19 @@ function saveWorkspace() {
   } catch { document.querySelector("#workspace-status").textContent="Workspace could not be saved. Edits remain in this tab; export a valid workspace to keep them."; }
 }
 function applyWorkspace(saved) {
-  lastValidPlan = { targetPercent: saved.targetPercent, deadlineHour: saved.deadlineHour, ganttDensity: saved.ganttDensity || "snapshots", selectedHour: saved.ganttHourIndex ?? saved.selectedHour ?? 0, ganttHourIndex: saved.ganttHourIndex ?? saved.selectedHour ?? 0, selectedChart: saved.selectedChart || "queue", ganttClosedOnly: saved.ganttClosedOnly === true, ganttGateFilter: GANTT_GATE_FILTERS.includes(saved.ganttGateFilter) ? saved.ganttGateFilter : "all", queueBacklogOnly: saved.queueBacklogOnly === true, ganttEveryGateClosed: saved.ganttEveryGateClosed === true, hideWeekdayGanttHours: saved.hideWeekdayGanttHours === true, hideWeekendGanttHours: saved.hideWeekendGanttHours === true, hideOpenGanttHours: saved.hideOpenGanttHours === true, hideClosedGanttHours: saved.hideClosedGanttHours === true, hideZeroQueueGanttHours: saved.hideZeroQueueGanttHours === true, hideBankClosedGanttHours: saved.hideBankClosedGanttHours === true, hideIssuerClosedGanttHours: saved.hideIssuerClosedGanttHours === true, hidePayoutClosedGanttHours: saved.hidePayoutClosedGanttHours === true, hideFxClosedGanttHours: saved.hideFxClosedGanttHours === true, hidePayoutOpenGanttHours: saved.hidePayoutOpenGanttHours === true, hideFxOpenGanttHours: saved.hideFxOpenGanttHours === true, hideBankOpenGanttHours: saved.hideBankOpenGanttHours === true, hideIssuerOpenGanttHours: saved.hideIssuerOpenGanttHours === true, hideWeekendIssuerOpenGanttHours: saved.hideWeekendIssuerOpenGanttHours === true, hideWeekendIssuerClosedGanttHours: saved.hideWeekendIssuerClosedGanttHours === true, hideWeekendBankClosedGanttHours: saved.hideWeekendBankClosedGanttHours === true, hideWeekendBankOpenGanttHours: saved.hideWeekendBankOpenGanttHours === true, hideWeekendPayoutOpenGanttHours: saved.hideWeekendPayoutOpenGanttHours === true, hideWeekendFxOpenGanttHours: saved.hideWeekendFxOpenGanttHours === true, hideWeekendPayoutClosedGanttHours: saved.hideWeekendPayoutClosedGanttHours === true, hideWeekendFxClosedGanttHours: saved.hideWeekendFxClosedGanttHours === true, hideWeekdayFxClosedGanttHours: saved.hideWeekdayFxClosedGanttHours === true, hideWeekdayFxOpenGanttHours: saved.hideWeekdayFxOpenGanttHours === true };
-  baselineScenario={...saved.baseline}; selectedHour=saved.ganttHourIndex ?? saved.selectedHour ?? 0;setPlaying(false);
+  lastValidPlan = { targetPercent: saved.targetPercent, deadlineHour: saved.deadlineHour, ganttDensity: saved.ganttDensity || "snapshots", selectedHour: saved.ganttHourIndex ?? saved.selectedHour ?? 0, ganttHourIndex: saved.ganttHourIndex ?? saved.selectedHour ?? 0, selectedChart: saved.selectedChart || "queue", ganttClosedOnly: saved.ganttClosedOnly === true, ganttGateFilter: GANTT_GATE_FILTERS.includes(saved.ganttGateFilter) ? saved.ganttGateFilter : "all", queueBacklogOnly: saved.queueBacklogOnly === true, ganttEveryGateClosed: saved.ganttEveryGateClosed === true, ganttHourFilter: GANTT_HOUR_FILTERS.includes(saved.ganttHourFilter) ? saved.ganttHourFilter : "all" };
+  baselineScenario={...saved.baseline}; selectedHour=Math.min(saved.ganttHourIndex ?? saved.selectedHour ?? 0, scenarioHours(saved.current));setPlaying(false);
   document.querySelector("#reserve-target").value=String(saved.targetPercent);
   document.querySelector("#reserve-deadline").value=String(saved.deadlineHour);
   document.querySelector("#workspace-notes").value=saved.notes;
   document.querySelector("#gantt-density").value = saved.ganttDensity || "snapshots";
   document.querySelector("#selected-chart").value = saved.selectedChart || "queue";
-  document.querySelector("#gantt-closed-only").checked = saved.ganttClosedOnly === true;
   document.querySelector("#gantt-gate-filter").value = GANTT_GATE_FILTERS.includes(saved.ganttGateFilter) ? saved.ganttGateFilter : "all";
   document.querySelector("#queue-backlog-only").checked = saved.queueBacklogOnly === true;
-  document.querySelector("#gantt-every-closed").checked = saved.ganttEveryGateClosed === true;
-  document.querySelector("#gantt-hide-weekdays").checked = saved.hideWeekdayGanttHours === true;
-  document.querySelector("#gantt-hide-weekends").checked = saved.hideWeekendGanttHours === true;
-  document.querySelector("#gantt-hide-open").checked = saved.hideOpenGanttHours === true;
-  document.querySelector("#gantt-hide-closed").checked = saved.hideClosedGanttHours === true;
-  document.querySelector("#gantt-hide-zero-queue").checked = saved.hideZeroQueueGanttHours === true;
-  document.querySelector("#gantt-hide-bank-closed").checked = saved.hideBankClosedGanttHours === true;
-  document.querySelector("#gantt-hide-issuer-closed").checked = saved.hideIssuerClosedGanttHours === true;
-  document.querySelector("#gantt-hide-payout-closed").checked = saved.hidePayoutClosedGanttHours === true;
-  document.querySelector("#gantt-hide-fx-closed").checked = saved.hideFxClosedGanttHours === true;
-  document.querySelector("#gantt-hide-payout-open").checked = saved.hidePayoutOpenGanttHours === true;
-  document.querySelector("#gantt-hide-fx-open").checked = saved.hideFxOpenGanttHours === true;
-  document.querySelector("#gantt-hide-bank-open").checked = saved.hideBankOpenGanttHours === true;
-  document.querySelector("#gantt-hide-issuer-open").checked = saved.hideIssuerOpenGanttHours === true;
-  document.querySelector("#gantt-hide-weekend-issuer-open").checked = saved.hideWeekendIssuerOpenGanttHours === true;
-  document.querySelector("#gantt-hide-weekend-issuer-closed").checked = saved.hideWeekendIssuerClosedGanttHours === true;
-  document.querySelector("#gantt-hide-weekend-bank-closed").checked = saved.hideWeekendBankClosedGanttHours === true;
-  document.querySelector("#gantt-hide-weekend-bank-open").checked = saved.hideWeekendBankOpenGanttHours === true;
-  document.querySelector("#gantt-hide-weekend-payout-open").checked = saved.hideWeekendPayoutOpenGanttHours === true;
-  document.querySelector("#gantt-hide-weekend-fx-open").checked = saved.hideWeekendFxOpenGanttHours === true;
-  document.querySelector("#gantt-hide-weekend-payout-closed").checked = saved.hideWeekendPayoutClosedGanttHours === true;
-  document.querySelector("#gantt-hide-weekend-fx-closed").checked = saved.hideWeekendFxClosedGanttHours === true;
-  document.querySelector("#gantt-hide-weekday-fx-closed").checked = saved.hideWeekdayFxClosedGanttHours === true;
-  document.querySelector("#gantt-hide-weekday-fx-open").checked = saved.hideWeekdayFxOpenGanttHours === true;
+  const restoredFilter = saved.ganttHourFilter === "all" && saved.ganttClosedOnly === true ? "any-closed"
+    : saved.ganttHourFilter === "all" && saved.ganttEveryGateClosed === true ? "every-closed"
+    : saved.ganttHourFilter;
+  document.querySelector("#gantt-hour-filter").value = GANTT_HOUR_FILTERS.includes(restoredFilter) ? restoredFilter : "all";
   setScenario(saved.current,{message:"Workspace restored with its baseline, notes and reserve target."});
 }
 function downloadText(text,filename,type) {
@@ -1564,110 +1633,12 @@ document.querySelector("#gantt-density").addEventListener("change",()=>{
   renderGantt();
   saveWorkspace();
 });
-document.querySelector("#gantt-closed-only").addEventListener("change",()=>{
-  renderGantt();
-  saveWorkspace();
-});
-document.querySelector("#gantt-every-closed").addEventListener("change",()=>{
-  renderGantt();
-  saveWorkspace();
-});
-document.querySelector("#gantt-hide-weekdays").addEventListener("change",()=>{
-  renderGantt();
-  saveWorkspace();
-});
-document.querySelector("#gantt-hide-weekends").addEventListener("change",()=>{
-  renderGantt();
-  saveWorkspace();
-});
-document.querySelector("#gantt-hide-open").addEventListener("change",()=>{
-  renderGantt();
-  saveWorkspace();
-});
-document.querySelector("#gantt-hide-closed").addEventListener("change",()=>{
-  renderGantt();
-  saveWorkspace();
-});
-document.querySelector("#gantt-hide-zero-queue").addEventListener("change",()=>{
-  renderGantt();
-  saveWorkspace();
-});
-document.querySelector("#gantt-hide-bank-closed").addEventListener("change",()=>{
-  renderGantt();
-  saveWorkspace();
-});
-document.querySelector("#gantt-hide-issuer-closed").addEventListener("change",()=>{
-  renderGantt();
-  saveWorkspace();
-});
-document.querySelector("#gantt-hide-payout-closed").addEventListener("change",()=>{
-  renderGantt();
-  saveWorkspace();
-});
-document.querySelector("#gantt-hide-fx-closed").addEventListener("change",()=>{
-  renderGantt();
-  saveWorkspace();
-});
-document.querySelector("#gantt-hide-payout-open").addEventListener("change",()=>{
-  renderGantt();
-  saveWorkspace();
-});
-document.querySelector("#gantt-hide-fx-open").addEventListener("change",()=>{
-  renderGantt();
-  saveWorkspace();
-});
-document.querySelector("#gantt-hide-bank-open").addEventListener("change",()=>{
-  renderGantt();
-  saveWorkspace();
-});
-document.querySelector("#gantt-hide-issuer-open").addEventListener("change",()=>{
-  renderGantt();
-  saveWorkspace();
-});
-document.querySelector("#gantt-hide-weekend-issuer-open").addEventListener("change",()=>{
-  renderGantt();
-  saveWorkspace();
-});
-document.querySelector("#gantt-hide-weekend-issuer-closed").addEventListener("change",()=>{
-  renderGantt();
-  saveWorkspace();
-});
-document.querySelector("#gantt-hide-weekend-bank-closed").addEventListener("change",()=>{
-  renderGantt();
-  saveWorkspace();
-});
-document.querySelector("#gantt-hide-weekend-bank-open").addEventListener("change",()=>{
-  renderGantt();
-  saveWorkspace();
-});
-document.querySelector("#gantt-hide-weekend-payout-open").addEventListener("change",()=>{
-  renderGantt();
-  saveWorkspace();
-});
-document.querySelector("#gantt-hide-weekend-fx-open").addEventListener("change",()=>{
-  renderGantt();
-  saveWorkspace();
-});
-document.querySelector("#gantt-hide-weekend-payout-closed").addEventListener("change",()=>{
-  renderGantt();
-  saveWorkspace();
-});
-document.querySelector("#gantt-hide-weekend-fx-closed").addEventListener("change",()=>{
-  renderGantt();
-  saveWorkspace();
-});
-document.querySelector("#gantt-hide-weekday-fx-closed").addEventListener("change",()=>{
-  renderGantt();
-  saveWorkspace();
-});
-document.querySelector("#gantt-hide-weekday-fx-open").addEventListener("change",()=>{
-  renderGantt();
-  saveWorkspace();
-});
-document.querySelector("#gantt-gate-filter").addEventListener("change",()=>{
-  renderGantt();
-  saveWorkspace();
-});
+for (const filterControl of ["#gantt-hour-filter", "#gantt-gate-filter"]) {
+  document.querySelector(filterControl).addEventListener("change",()=>{
+    renderGantt();
+    saveWorkspace();
+  });
+}
 document.querySelector("#selected-chart").addEventListener("change",()=>{
   const view = document.querySelector("#selected-chart").value;
   saveWorkspace();
@@ -1711,9 +1682,6 @@ async function copyTextWithFallback(text, fallbackId, successMessage) {
 document.querySelector("#copy-gantt-hour").addEventListener("click", async () => {
   await copySelectedGanttHourMarkdown();
 });
-document.querySelector("#copy-remaining-reserve").addEventListener("click", async () => {
-  await copyRemainingReserveMarkdown();
-});
 document.querySelector("#copy-peak-hour").addEventListener("click", async () => {
   const text = peakQueueHourToMarkdown(scenario);
   await copyTextWithFallback(text, "#peak-hour-copy-fallback", "Peak-queue hour copied as Markdown. This is a synthetic snapshot, not a live bank or payout queue.");
@@ -1733,78 +1701,11 @@ document.querySelector("#copy-fx-hours").addEventListener("click", async () => {
 document.querySelector("#copy-weekend-fx-counts").addEventListener("click", async () => {
   await copyWeekendFxHourCountsMarkdown();
 });
-document.querySelector("#copy-first-closed-fx").addEventListener("click", async () => {
-  await copyFirstClosedFxHourMarkdown();
-});
-document.querySelector("#copy-first-closed-bank").addEventListener("click", async () => {
-  await copyFirstClosedBankHourMarkdown();
-});
-document.querySelector("#copy-first-closed-issuer").addEventListener("click", async () => {
-  await copyFirstClosedIssuerHourMarkdown();
-});
-document.querySelector("#copy-first-closed-payout").addEventListener("click", async () => {
-  await copyFirstClosedPayoutHourMarkdown();
-});
-document.querySelector("#copy-first-open-payout").addEventListener("click", async () => {
-  await copyFirstOpenPayoutHourMarkdown();
-});
-document.querySelector("#copy-first-open-fx").addEventListener("click", async () => {
-  await copyFirstOpenFxHourMarkdown();
-});
-document.querySelector("#copy-first-open-bank").addEventListener("click", async () => {
-  await copyFirstOpenBankHourMarkdown();
-});
-document.querySelector("#copy-first-open-issuer").addEventListener("click", async () => {
-  await copyFirstOpenIssuerHourMarkdown();
-});
-document.querySelector("#copy-last-open-issuer").addEventListener("click", async () => {
-  await copyLastOpenIssuerHourMarkdown();
-});
-document.querySelector("#copy-last-closed-issuer").addEventListener("click", async () => {
-  await copyLastClosedIssuerHourMarkdown();
-});
-document.querySelector("#copy-last-closed-bank").addEventListener("click", async () => {
-  await copyLastClosedBankHourMarkdown();
-});
-document.querySelector("#copy-last-closed-fx").addEventListener("click", async () => {
-  await copyLastClosedFxHourMarkdown();
-});
-document.querySelector("#copy-last-closed-payout").addEventListener("click", async () => {
-  await copyLastClosedPayoutHourMarkdown();
-});
-document.querySelector("#copy-last-weekend-fx-closed").addEventListener("click", async () => {
-  await copyLastWeekendFxClosedHourMarkdown();
-});
-document.querySelector("#copy-last-weekday-fx-closed").addEventListener("click", async () => {
-  await copyLastWeekdayFxClosedHourMarkdown();
-});
-document.querySelector("#copy-last-weekend-fx-open").addEventListener("click", async () => {
-  await copyLastWeekendFxOpenHourMarkdown();
-});
-document.querySelector("#copy-last-weekday-fx-open").addEventListener("click", async () => {
-  await copyLastWeekdayFxOpenHourMarkdown();
-});
-document.querySelector("#copy-first-weekday-fx-open").addEventListener("click", async () => {
-  await copyFirstWeekdayFxOpenHourMarkdown();
-});
-document.querySelector("#copy-first-weekday-fx-closed").addEventListener("click", async () => {
-  await copyFirstWeekdayFxClosedHourMarkdown();
-});
-document.querySelector("#copy-first-weekend-fx-open").addEventListener("click", async () => {
-  await copyFirstWeekendFxOpenHourMarkdown();
-});
-document.querySelector("#copy-first-weekend-fx-closed").addEventListener("click", async () => {
-  await copyFirstWeekendFxClosedHourMarkdown();
-});
-document.querySelector("#copy-last-open-bank").addEventListener("click", async () => {
-  await copyLastOpenBankHourMarkdown();
-});
-document.querySelector("#copy-last-open-payout").addEventListener("click", async () => {
-  await copyLastOpenPayoutHourMarkdown();
-});
-document.querySelector("#copy-last-open-fx").addEventListener("click", async () => {
-  await copyLastOpenFxHourMarkdown();
-});
+for (const gate of ["issuer", "bank", "payout", "fx"]) {
+  document.querySelector(`#copy-gate-evidence-${gate}`).addEventListener("click", async () => {
+    await copyGateHourEvidenceMarkdown(gate);
+  });
+}
 document.querySelector("#copy-cohort-markdown").addEventListener("click", async () => {
   const text = arrivalCohortsToMarkdown(scenario);
   await copyTextWithFallback(text, "#cohort-copy-fallback", "Arrival-cohort table copied as Markdown. This is a synthetic ledger, not a forecast.");
@@ -1847,7 +1748,7 @@ document.querySelector("#jump-first-settlement").addEventListener("click",()=>{
 function jumpToFirstClosedBank() {
   const hour = firstClosedGanttHour(scenario);
   if (hour === null) {
-    setMessage("No closed bank or gate hour in this 72-hour calendar.");
+    setMessage(`No closed bank or gate hour in this ${simHours()}-hour calendar.`);
     return false;
   }
   selectedHour = hour;
@@ -2045,19 +1946,6 @@ function copyNextPayoutHourMarkdown() {
   const text = nextPayoutHourToMarkdown(scenario, selectedHour);
   return copyTextWithFallback(text, "#next-payout-copy-fallback", "Next-payout hour copied as one-line Markdown. This is a synthetic label, not a live payout time.");
 }
-function jumpToRemainingReserveCopy() {
-  const control = document.querySelector("#copy-remaining-reserve");
-  if (control) {
-    control.focus();
-    control.scrollIntoView?.({ block: "start" });
-    return true;
-  }
-  return jumpToDashboard();
-}
-function copyRemainingReserveMarkdown() {
-  const text = remainingReserveAtHourToMarkdown(scenario, selectedHour);
-  return copyTextWithFallback(text, "#remaining-reserve-copy-fallback", "Remaining reserve and queued AUD copied as one-line Markdown. This is a synthetic snapshot, not live market data.");
-}
 function copyClosedHoursMarkdown() {
   const text = closedGanttHoursToMarkdown(scenario);
   return copyTextWithFallback(text, "#closed-hours-copy-fallback", "Closed hours copied as Markdown. This list is a local drawing, not a bank feed.");
@@ -2070,492 +1958,12 @@ function copyWeekendFxHourCountsMarkdown() {
   const text = weekendFxHourCountsToMarkdown(scenario);
   return copyTextWithFallback(text, "#weekend-fx-counts-copy-fallback", "Weekend FX hour counts copied as Markdown. These are counts of modeled hours, not a bank calendar.");
 }
-function jumpToFirstClosedFxCopy() {
-  const control = document.querySelector("#copy-first-closed-fx");
-  if (control) {
-    control.focus();
-    control.scrollIntoView?.({ block: "start" });
-    return true;
-  }
-  if (jumpToGanttFxRow()) return true;
-  return jumpToDashboard();
-}
-function jumpToFirstClosedFxCopyOrGantt() {
-  const control = document.querySelector("#copy-first-closed-fx");
-  if (control) {
-    control.focus();
-    control.scrollIntoView?.({ block: "start" });
-    return true;
-  }
-  return jumpToGantt();
-}
-function copyFirstClosedFxHourMarkdown() {
-  const text = firstClosedFxHourToMarkdown(scenario);
-  return copyTextWithFallback(text, "#first-closed-fx-copy-fallback", "First closed FX hour copied as one-line Markdown. These are counts of modeled hours, not a bank calendar.");
-}
-function copyFirstClosedBankHourMarkdown() {
-  const text = firstClosedBankHourToMarkdown(scenario);
-  return copyTextWithFallback(text, "#first-closed-bank-copy-fallback", "First closed bank hour copied as one-line Markdown. These are counts of modeled hours, not a bank calendar.");
-}
-function copyFirstClosedIssuerHourMarkdown() {
-  const text = firstClosedIssuerHourToMarkdown(scenario);
-  return copyTextWithFallback(text, "#first-closed-issuer-copy-fallback", "First closed issuer hour copied as one-line Markdown. This is a synthetic label, not live issuer data.");
-}
-function copyFirstClosedPayoutHourMarkdown() {
-  const text = firstClosedPayoutHourToMarkdown(scenario);
-  return copyTextWithFallback(text, "#first-closed-payout-copy-fallback", "First closed payout hour copied as one-line Markdown. This is a synthetic label, not live payout data.");
-}
-function copyFirstOpenPayoutHourMarkdown() {
-  const text = firstOpenPayoutHourToMarkdown(scenario);
-  return copyTextWithFallback(text, "#first-open-payout-copy-fallback", "First open payout hour copied as one-line Markdown. This is a synthetic label, not live payout data.");
-}
-function copyFirstOpenFxHourMarkdown() {
-  const text = firstOpenFxHourToMarkdown(scenario);
-  return copyTextWithFallback(text, "#first-open-fx-copy-fallback", "First open FX hour copied as one-line Markdown. This is a local drawing, not a live FX feed.");
-}
-function copyFirstOpenBankHourMarkdown() {
-  const text = firstOpenBankHourToMarkdown(scenario);
-  return copyTextWithFallback(text, "#first-open-bank-copy-fallback", "First open bank hour copied as one-line Markdown. This is a local drawing, not a live bank feed.");
-}
-function copyFirstOpenIssuerHourMarkdown() {
-  const text = firstOpenIssuerHourToMarkdown(scenario);
-  return copyTextWithFallback(text, "#first-open-issuer-copy-fallback", "First open issuer hour copied as one-line Markdown. This is a synthetic label, not live issuer data.");
-}
-function copyLastOpenIssuerHourMarkdown() {
-  const text = lastOpenIssuerHourToMarkdown(scenario);
-  return copyTextWithFallback(text, "#last-open-issuer-copy-fallback", "Last open issuer hour copied as one-line Markdown. This is a synthetic label, not live issuer data.");
-}
-function copyLastOpenBankHourMarkdown() {
-  const text = lastOpenBankHourToMarkdown(scenario);
-  return copyTextWithFallback(text, "#last-open-bank-copy-fallback", "Last open bank hour copied as one-line Markdown. This is a synthetic label, not live bank data.");
-}
-function copyLastOpenPayoutHourMarkdown() {
-  const text = lastOpenPayoutHourToMarkdown(scenario);
-  return copyTextWithFallback(text, "#last-open-payout-copy-fallback", "Last open payout hour copied as one-line Markdown. This is a synthetic label, not live payout data.");
-}
-function copyLastOpenFxHourMarkdown() {
-  const text = lastOpenFxHourToMarkdown(scenario);
-  return copyTextWithFallback(text, "#last-open-fx-copy-fallback", "Last open FX hour copied as one-line Markdown. This is a local drawing, not a live FX feed.");
-}
-function copyLastClosedIssuerHourMarkdown() {
-  const text = lastClosedIssuerHourToMarkdown(scenario);
-  return copyTextWithFallback(text, "#last-closed-issuer-copy-fallback", "Last closed issuer hour copied as one-line Markdown. This is a synthetic label, not live issuer data.");
-}
-function copyLastClosedBankHourMarkdown() {
-  const text = lastClosedBankHourToMarkdown(scenario);
-  return copyTextWithFallback(text, "#last-closed-bank-copy-fallback", "Last closed bank hour copied as one-line Markdown. This is a synthetic label, not live bank data.");
-}
-function copyLastClosedFxHourMarkdown() {
-  const text = lastClosedFxHourToMarkdown(scenario);
-  return copyTextWithFallback(text, "#last-closed-fx-copy-fallback", "Last closed FX hour copied as one-line Markdown. This is a local drawing, not a live FX feed.");
-}
-function copyLastClosedPayoutHourMarkdown() {
-  const text = lastClosedPayoutHourToMarkdown(scenario);
-  return copyTextWithFallback(text, "#last-closed-payout-copy-fallback", "Last closed payout hour copied as one-line Markdown. This is a synthetic label, not live payout data.");
-}
-function copyLastWeekendFxClosedHourMarkdown() {
-  const text = lastWeekendFxClosedHourToMarkdown(scenario);
-  return copyTextWithFallback(text, "#last-weekend-fx-closed-copy-fallback", "Last weekend-FX-closed hour copied as one-line Markdown. This is a local drawing, not a live FX feed.");
-}
-function copyLastWeekdayFxClosedHourMarkdown() {
-  const text = lastWeekdayFxClosedHourToMarkdown(scenario);
-  return copyTextWithFallback(text, "#last-weekday-fx-closed-copy-fallback", "Last weekday-FX-closed hour copied as one-line Markdown. This is a local drawing, not a live FX feed.");
-}
-function copyLastWeekendFxOpenHourMarkdown() {
-  const text = lastWeekendFxOpenHourToMarkdown(scenario);
-  return copyTextWithFallback(text, "#last-weekend-fx-open-copy-fallback", "Last weekend-FX-open hour copied as one-line Markdown. This is a local drawing, not a live FX feed.");
-}
-function copyLastWeekdayFxOpenHourMarkdown() {
-  const text = lastWeekdayFxOpenHourToMarkdown(scenario);
-  return copyTextWithFallback(text, "#last-weekday-fx-open-copy-fallback", "Last weekday-FX-open hour copied as one-line Markdown. This is a local drawing, not a live FX feed.");
-}
-function copyFirstWeekdayFxOpenHourMarkdown() {
-  const text = firstWeekdayFxOpenHourToMarkdown(scenario);
-  return copyTextWithFallback(text, "#first-weekday-fx-open-copy-fallback", "First weekday-FX-open hour copied as one-line Markdown. This is a local drawing, not a live FX feed.");
-}
-function copyFirstWeekdayFxClosedHourMarkdown() {
-  const text = firstWeekdayFxClosedHourToMarkdown(scenario);
-  return copyTextWithFallback(text, "#first-weekday-fx-closed-copy-fallback", "First weekday-FX-closed hour copied as one-line Markdown. This is a local drawing, not a live FX feed.");
-}
-function copyFirstWeekendFxOpenHourMarkdown() {
-  const text = firstWeekendFxOpenHourToMarkdown(scenario);
-  return copyTextWithFallback(text, "#first-weekend-fx-open-copy-fallback", "First weekend-FX-open hour copied as one-line Markdown. This is a local drawing, not a live FX feed.");
-}
-function copyFirstWeekendFxClosedHourMarkdown() {
-  const text = firstWeekendFxClosedHourToMarkdown(scenario);
-  return copyTextWithFallback(text, "#first-weekend-fx-closed-copy-fallback", "First weekend-FX-closed hour copied as one-line Markdown. This is a local drawing, not a live FX feed.");
-}
-function jumpToFirstClosedBankCopy() {
-  const control = document.querySelector("#copy-first-closed-bank");
-  if (control) {
-    control.focus();
-    control.scrollIntoView?.({ block: "start" });
-    return true;
-  }
-  return jumpToGantt();
-}
-function jumpToFirstClosedIssuerCopy() {
-  const control = document.querySelector("#copy-first-closed-issuer");
-  if (control) {
-    control.focus();
-    control.scrollIntoView?.({ block: "start" });
-    return true;
-  }
-  return jumpToGantt();
-}
-function jumpToFirstClosedPayoutCopy() {
-  const control = document.querySelector("#copy-first-closed-payout");
-  if (control) {
-    control.focus();
-    control.scrollIntoView?.({ block: "start" });
-    return true;
-  }
-  return jumpToGantt();
-}
-function jumpToFirstOpenPayoutCopy() {
-  const control = document.querySelector("#copy-first-open-payout");
-  if (control) {
-    control.focus();
-    control.scrollIntoView?.({ block: "start" });
-    return true;
-  }
-  return jumpToGantt();
-}
-function jumpToFirstOpenFxCopy() {
-  const control = document.querySelector("#copy-first-open-fx");
-  if (control) {
-    control.focus();
-    control.scrollIntoView?.({ block: "start" });
-    return true;
-  }
-  return jumpToGantt();
-}
-function jumpToFirstOpenBankCopy() {
-  const control = document.querySelector("#copy-first-open-bank");
-  if (control) {
-    control.focus();
-    control.scrollIntoView?.({ block: "start" });
-    return true;
-  }
-  return jumpToGantt();
-}
-function jumpToFirstOpenIssuerCopy() {
-  const control = document.querySelector("#copy-first-open-issuer");
-  if (control) {
-    control.focus();
-    control.scrollIntoView?.({ block: "start" });
-    return true;
-  }
-  return jumpToGantt();
-}
-function jumpToLastOpenIssuerCopy() {
-  const control = document.querySelector("#copy-last-open-issuer");
-  if (control) {
-    control.focus();
-    control.scrollIntoView?.({ block: "start" });
-    return true;
-  }
-  return jumpToGantt();
-}
-function jumpToHideZeroQueueFilter() {
-  const control = document.querySelector("#gantt-hide-zero-queue");
-  if (control) {
-    control.focus();
-    control.scrollIntoView?.({ block: "start" });
-    return true;
-  }
-  return jumpToGantt();
-}
-function jumpToHideBankClosedFilter() {
-  const control = document.querySelector("#gantt-hide-bank-closed");
-  if (control) {
-    control.focus();
-    control.scrollIntoView?.({ block: "start" });
-    return true;
-  }
-  return jumpToGantt();
-}
-function jumpToHideIssuerClosedFilter() {
-  const control = document.querySelector("#gantt-hide-issuer-closed");
-  if (control) {
-    control.focus();
-    control.scrollIntoView?.({ block: "start" });
-    return true;
-  }
-  return jumpToGantt();
-}
-function jumpToHidePayoutClosedFilter() {
-  const control = document.querySelector("#gantt-hide-payout-closed");
-  if (control) {
-    control.focus();
-    control.scrollIntoView?.({ block: "start" });
-    return true;
-  }
-  return jumpToGantt();
-}
-function jumpToHideFxClosedFilter() {
-  const control = document.querySelector("#gantt-hide-fx-closed");
-  if (control) {
-    control.focus();
-    control.scrollIntoView?.({ block: "start" });
-    return true;
-  }
-  return jumpToGantt();
-}
-function jumpToHidePayoutOpenFilter() {
-  const control = document.querySelector("#gantt-hide-payout-open");
-  if (control) {
-    control.focus();
-    control.scrollIntoView?.({ block: "start" });
-    return true;
-  }
-  return jumpToGantt();
-}
-function jumpToHideFxOpenFilter() {
-  const control = document.querySelector("#gantt-hide-fx-open");
-  if (control) {
-    control.focus();
-    control.scrollIntoView?.({ block: "start" });
-    return true;
-  }
-  return jumpToGantt();
-}
-function jumpToHideIssuerOpenFilter() {
-  const control = document.querySelector("#gantt-hide-issuer-open");
-  if (control) {
-    control.focus();
-    control.scrollIntoView?.({ block: "start" });
-    return true;
-  }
-  return jumpToGantt();
-}
-function jumpToHideWeekendIssuerOpenFilter() {
-  const control = document.querySelector("#gantt-hide-weekend-issuer-open");
-  if (control) {
-    control.focus();
-    control.scrollIntoView?.({ block: "start" });
-    return true;
-  }
-  return jumpToGantt();
-}
-function jumpToLastClosedIssuerCopy() {
-  const control = document.querySelector("#copy-last-closed-issuer");
-  if (control) {
-    control.focus();
-    control.scrollIntoView?.({ block: "start" });
-    return true;
-  }
-  return jumpToGantt();
-}
-function jumpToLastClosedBankCopy() {
-  const control = document.querySelector("#copy-last-closed-bank");
-  if (control) {
-    control.focus();
-    control.scrollIntoView?.({ block: "start" });
-    return true;
-  }
-  return jumpToGantt();
-}
-function jumpToLastOpenBankCopy() {
-  const control = document.querySelector("#copy-last-open-bank");
-  if (control) {
-    control.focus();
-    control.scrollIntoView?.({ block: "start" });
-    return true;
-  }
-  return jumpToGantt();
-}
-function jumpToHideWeekendIssuerClosedFilter() {
-  const control = document.querySelector("#gantt-hide-weekend-issuer-closed");
-  if (control) {
-    control.focus();
-    control.scrollIntoView?.({ block: "start" });
-    return true;
-  }
-  return jumpToGantt();
-}
-function jumpToHideWeekendBankClosedFilter() {
-  const control = document.querySelector("#gantt-hide-weekend-bank-closed");
-  if (control) {
-    control.focus();
-    control.scrollIntoView?.({ block: "start" });
-    return true;
-  }
-  return jumpToGantt();
-}
-function jumpToHideWeekendBankOpenFilter() {
-  const control = document.querySelector("#gantt-hide-weekend-bank-open");
-  if (control) {
-    control.focus();
-    control.scrollIntoView?.({ block: "start" });
-    return true;
-  }
-  return jumpToGantt();
-}
-function jumpToLastOpenPayoutCopy() {
-  const control = document.querySelector("#copy-last-open-payout");
-  if (control) {
-    control.focus();
-    control.scrollIntoView?.({ block: "start" });
-    return true;
-  }
-  return jumpToGantt();
-}
-function jumpToHideWeekendPayoutOpenFilter() {
-  const control = document.querySelector("#gantt-hide-weekend-payout-open");
-  if (control) {
-    control.focus();
-    control.scrollIntoView?.({ block: "start" });
-    return true;
-  }
-  return jumpToGantt();
-}
-function jumpToLastOpenFxCopy() {
-  const control = document.querySelector("#copy-last-open-fx");
-  if (control) {
-    control.focus();
-    control.scrollIntoView?.({ block: "start" });
-    return true;
-  }
-  return jumpToGantt();
-}
-function jumpToHideWeekendFxOpenFilter() {
-  const control = document.querySelector("#gantt-hide-weekend-fx-open");
-  if (control) {
-    control.focus();
-    control.scrollIntoView?.({ block: "start" });
-    return true;
-  }
-  return jumpToGantt();
-}
-function jumpToLastClosedFxCopy() {
-  const control = document.querySelector("#copy-last-closed-fx");
-  if (control) {
-    control.focus();
-    control.scrollIntoView?.({ block: "start" });
-    return true;
-  }
-  return jumpToGantt();
-}
-function jumpToHideWeekendPayoutClosedFilter() {
-  const control = document.querySelector("#gantt-hide-weekend-payout-closed");
-  if (control) {
-    control.focus();
-    control.scrollIntoView?.({ block: "start" });
-    return true;
-  }
-  return jumpToGantt();
-}
-function jumpToLastClosedPayoutCopy() {
-  const control = document.querySelector("#copy-last-closed-payout");
-  if (control) {
-    control.focus();
-    control.scrollIntoView?.({ block: "start" });
-    return true;
-  }
-  return jumpToGantt();
-}
-function jumpToHideWeekendFxClosedFilter() {
-  const control = document.querySelector("#gantt-hide-weekend-fx-closed");
-  if (control) {
-    control.focus();
-    control.scrollIntoView?.({ block: "start" });
-    return true;
-  }
-  return jumpToGantt();
-}
-function jumpToLastWeekendFxClosedCopy() {
-  const control = document.querySelector("#copy-last-weekend-fx-closed");
-  if (control) {
-    control.focus();
-    control.scrollIntoView?.({ block: "start" });
-    return true;
-  }
-  return jumpToGantt();
-}
-function jumpToLastWeekdayFxClosedCopy() {
-  const control = document.querySelector("#copy-last-weekday-fx-closed");
-  if (control) {
-    control.focus();
-    control.scrollIntoView?.({ block: "start" });
-    return true;
-  }
-  return jumpToGantt();
-}
-function jumpToHideWeekdayFxClosedFilter() {
-  const control = document.querySelector("#gantt-hide-weekday-fx-closed");
-  if (control) {
-    control.focus();
-    control.scrollIntoView?.({ block: "start" });
-    return true;
-  }
-  return jumpToGantt();
-}
-function jumpToLastWeekendFxOpenCopy() {
-  const control = document.querySelector("#copy-last-weekend-fx-open");
-  if (control) {
-    control.focus();
-    control.scrollIntoView?.({ block: "start" });
-    return true;
-  }
-  return jumpToGantt();
-}
-function jumpToLastWeekdayFxOpenCopy() {
-  const control = document.querySelector("#copy-last-weekday-fx-open");
-  if (control) {
-    control.focus();
-    control.scrollIntoView?.({ block: "start" });
-    return true;
-  }
-  return jumpToGantt();
-}
-function jumpToFirstWeekdayFxOpenCopy() {
-  const control = document.querySelector("#copy-first-weekday-fx-open");
-  if (control) {
-    control.focus();
-    control.scrollIntoView?.({ block: "start" });
-    return true;
-  }
-  return jumpToGantt();
-}
-function jumpToFirstWeekdayFxClosedCopy() {
-  const control = document.querySelector("#copy-first-weekday-fx-closed");
-  if (control) {
-    control.focus();
-    control.scrollIntoView?.({ block: "start" });
-    return true;
-  }
-  return jumpToGantt();
-}
-function jumpToFirstWeekendFxOpenCopy() {
-  const control = document.querySelector("#copy-first-weekend-fx-open");
-  if (control) {
-    control.focus();
-    control.scrollIntoView?.({ block: "start" });
-    return true;
-  }
-  return jumpToGantt();
-}
-function jumpToFirstWeekendFxClosedCopy() {
-  const control = document.querySelector("#copy-first-weekend-fx-closed");
-  if (control) {
-    control.focus();
-    control.scrollIntoView?.({ block: "start" });
-    return true;
-  }
-  return jumpToGantt();
-}
-function jumpToHideWeekdayFxOpenFilter() {
-  const control = document.querySelector("#gantt-hide-weekday-fx-open");
-  if (control) {
-    control.focus();
-    control.scrollIntoView?.({ block: "start" });
-    return true;
-  }
-  return jumpToGantt();
+function copyGateHourEvidenceMarkdown(gate) {
+  const text = gateHourEvidenceToMarkdown(scenario, gate);
+  return copyTextWithFallback(text, `#gate-${gate}-evidence-fallback`, `${gate.toUpperCase() === "FX" ? "FX" : gate.charAt(0).toUpperCase() + gate.slice(1)} hour evidence copied as Markdown. Counts of modeled hours, not a bank calendar.`);
 }
 document.querySelector("#jump-monday").addEventListener("click",()=>{
-  selectedHour=65;setPlaying(false);render();saveWorkspace();
+  selectedHour=Math.min(65,simHours());setPlaying(false);render();saveWorkspace();
 });
 document.querySelector("#export-timeline").addEventListener("click",()=>{
   downloadText(timelineToCSV(scenario,baselineScenario),"weekend-gap-timeline.csv","text/csv;charset=utf-8");
@@ -2576,39 +1984,12 @@ document.querySelector("#print").addEventListener("click", () => {
 document.querySelector("#print-redacted").addEventListener("click", () => {
   document.body.classList.add("print-redacted");
   applyGateDisplayLabels(true);
-  const closedOnly = Boolean(document.querySelector("#gantt-closed-only")?.checked);
-  const everyClosedOnly = Boolean(document.querySelector("#gantt-every-closed")?.checked);
-  const hideWeekdayHours = Boolean(document.querySelector("#gantt-hide-weekdays")?.checked);
-  const hideWeekendHours = Boolean(document.querySelector("#gantt-hide-weekends")?.checked);
-  const hideOpenHours = Boolean(document.querySelector("#gantt-hide-open")?.checked);
-  const hideClosedHours = Boolean(document.querySelector("#gantt-hide-closed")?.checked);
-  const hideZeroQueueHours = Boolean(document.querySelector("#gantt-hide-zero-queue")?.checked);
-  const hideBankClosedHours = Boolean(document.querySelector("#gantt-hide-bank-closed")?.checked);
-  const hideIssuerClosedHours = Boolean(document.querySelector("#gantt-hide-issuer-closed")?.checked);
-  const hidePayoutClosedHours = Boolean(document.querySelector("#gantt-hide-payout-closed")?.checked);
-  const hideFxClosedHours = Boolean(document.querySelector("#gantt-hide-fx-closed")?.checked);
-  const hidePayoutOpenHours = Boolean(document.querySelector("#gantt-hide-payout-open")?.checked);
-  const hideFxOpenHours = Boolean(document.querySelector("#gantt-hide-fx-open")?.checked);
-  const hideBankOpenHours = Boolean(document.querySelector("#gantt-hide-bank-open")?.checked);
-  const hideIssuerOpenHours = Boolean(document.querySelector("#gantt-hide-issuer-open")?.checked);
-  const hideWeekendIssuerOpenHours = Boolean(document.querySelector("#gantt-hide-weekend-issuer-open")?.checked);
-  const hideWeekendIssuerClosedHours = Boolean(document.querySelector("#gantt-hide-weekend-issuer-closed")?.checked);
-  const hideWeekendBankClosedHours = Boolean(document.querySelector("#gantt-hide-weekend-bank-closed")?.checked);
-  const hideWeekendBankOpenHours = Boolean(document.querySelector("#gantt-hide-weekend-bank-open")?.checked);
-  const hideWeekendPayoutOpenHours = Boolean(document.querySelector("#gantt-hide-weekend-payout-open")?.checked);
-  const hideWeekendFxOpenHours = Boolean(document.querySelector("#gantt-hide-weekend-fx-open")?.checked);
-  const hideWeekendPayoutClosedHours = Boolean(document.querySelector("#gantt-hide-weekend-payout-closed")?.checked);
-  const hideWeekendFxClosedHours = Boolean(document.querySelector("#gantt-hide-weekend-fx-closed")?.checked);
-  const hideWeekdayFxClosedHours = Boolean(document.querySelector("#gantt-hide-weekday-fx-closed")?.checked);
-  const hideWeekdayFxOpenHours = Boolean(document.querySelector("#gantt-hide-weekday-fx-open")?.checked);
-  const rawGate = document.querySelector("#gantt-gate-filter")?.value || "all";
-  const gateFilter = GANTT_GATE_FILTERS.includes(rawGate) ? rawGate : "all";
-  document.querySelector("#gate-gantt").innerHTML = buildGateGanttSvg(scenario, selectedHour, { closedOnly, everyClosedOnly, hideWeekdayHours, hideWeekendHours, hideOpenHours, hideClosedHours, hideZeroQueueHours, hideBankClosedHours, hideIssuerClosedHours, hidePayoutClosedHours, hideFxClosedHours, hidePayoutOpenHours, hideFxOpenHours, hideBankOpenHours, hideIssuerOpenHours, hideWeekendIssuerOpenHours, hideWeekendIssuerClosedHours, hideWeekendBankClosedHours, hideWeekendBankOpenHours, hideWeekendPayoutOpenHours, hideWeekendFxOpenHours, hideWeekendPayoutClosedHours, hideWeekendFxClosedHours, hideWeekdayFxClosedHours, hideWeekdayFxOpenHours, gateFilter, redacted: true });
+  document.querySelector("#gate-gantt").innerHTML = buildGateGanttSvg(scenario, selectedHour, { hourFilter: currentGanttHourFilter(), gateFilter: (GANTT_GATE_FILTERS.includes(document.querySelector("#gantt-gate-filter")?.value) ? document.querySelector("#gantt-gate-filter").value : "all"), redacted: true });
   window.print();
   document.body.classList.remove("print-redacted");
   applyGateDisplayLabels(false);
   renderGantt();
-  document.querySelector("#workspace-status").textContent = "Print redacted uses generic Issuer, Bank, Payout and FX labels when custom names exist. Hours to clear the queue stay on the printed brief when a queue exists, with an honest empty when none, and the selected Gantt hour stay on the printed brief. Remaining reserve at that hour stays on the printed brief. Hours to first settlement stay on the printed brief. The first closed FX hour label stays on the printed brief when one exists, with an honest empty when none. The first closed bank hour stays on the printed brief when one exists, with an honest empty when none. The first closed issuer hour stays on the printed brief when one exists, with an honest empty when none. The first closed payout hour stays on the printed brief when one exists, with an honest empty when none. The first open payout hour stays on the printed brief when one exists, with an honest empty when none. The first open FX hour stays on the printed brief when one exists, with an honest empty when none. The first open bank hour stays on the printed brief when one exists, with an honest empty when none. These are counts of modeled hours, not a bank calendar. The saved scenario was not changed.";
+  document.querySelector("#workspace-status").textContent = "Print redacted uses generic Issuer, Bank, Payout and FX labels when custom names exist. Hours to clear the queue stay on the printed brief when a queue exists, with an honest empty when none, and the selected Gantt hour stay on the printed brief. Remaining reserve at that hour stays on the printed brief. Hours to first settlement stay on the printed brief. The hour evidence lines stay on the printed brief with honest empty values when none exist. These are counts of modeled hours, not a bank calendar. The saved scenario was not changed.";
 });
 document.querySelector("#copy-hours-to-clear").addEventListener("click", async () => {
   await copyHoursToClearMarkdown();
@@ -2780,16 +2161,6 @@ document.addEventListener("keydown", (event) => {
     jumpToHoursToFirstSettlementLine();
     return;
   }
-  if (event.key === "l" || event.key === "L" || event.key === ",") {
-    event.preventDefault();
-    copyHoursToFirstSettlementMarkdown();
-    return;
-  }
-  if (event.key === ";") {
-    event.preventDefault();
-    copyHoursToClearMarkdown();
-    return;
-  }
   if (event.key === "[") {
     event.preventDefault();
     jumpToHoursToClearCopy();
@@ -2798,186 +2169,6 @@ document.addEventListener("keydown", (event) => {
   if (event.key === "]") {
     event.preventDefault();
     jumpToPrint();
-    return;
-  }
-  if (event.key === ".") {
-    event.preventDefault();
-    jumpToFirstClosedFxCopy();
-    return;
-  }
-  if (event.key === "/") {
-    event.preventDefault();
-    jumpToRemainingReserveCopy();
-    return;
-  }
-  if (event.key === "'") {
-    event.preventDefault();
-    copyFirstClosedBankHourMarkdown();
-    return;
-  }
-  if (event.key === ":") {
-    event.preventDefault();
-    copyFirstClosedIssuerHourMarkdown();
-    return;
-  }
-  if (event.key === '"') {
-    event.preventDefault();
-    copyFirstClosedPayoutHourMarkdown();
-    return;
-  }
-  if (event.key === "}") {
-    event.preventDefault();
-    copyFirstClosedFxHourMarkdown();
-    return;
-  }
-  if (event.key === "~") {
-    event.preventDefault();
-    copyFirstOpenPayoutHourMarkdown();
-    return;
-  }
-  if (event.key === "(") {
-    event.preventDefault();
-    copyFirstOpenFxHourMarkdown();
-    return;
-  }
-  if (event.key === "*") {
-    event.preventDefault();
-    copyFirstOpenBankHourMarkdown();
-    return;
-  }
-  if (event.key === "$") {
-    event.preventDefault();
-    copyFirstOpenIssuerHourMarkdown();
-    return;
-  }
-  if (event.key === "5") {
-    event.preventDefault();
-    copyLastOpenIssuerHourMarkdown();
-    return;
-  }
-  if (event.key === "8") {
-    event.preventDefault();
-    copyLastClosedIssuerHourMarkdown();
-    return;
-  }
-  if (event.key === "1") {
-    event.preventDefault();
-    copyLastClosedBankHourMarkdown();
-    return;
-  }
-  if (event.key === "4") {
-    event.preventDefault();
-    copyLastOpenBankHourMarkdown();
-    return;
-  }
-  if (event.key === "<") {
-    event.preventDefault();
-    jumpToFirstClosedBankCopy();
-    return;
-  }
-  if (event.key === "-") {
-    event.preventDefault();
-    jumpToFirstClosedIssuerCopy();
-    return;
-  }
-  if (event.key === "_") {
-    event.preventDefault();
-    jumpToFirstClosedPayoutCopy();
-    return;
-  }
-  if (event.key === "+") {
-    event.preventDefault();
-    jumpToFirstClosedFxCopyOrGantt();
-    return;
-  }
-  if (event.key === "!") {
-    event.preventDefault();
-    jumpToFirstOpenPayoutCopy();
-    return;
-  }
-  if (event.key === ")") {
-    event.preventDefault();
-    jumpToFirstOpenFxCopy();
-    return;
-  }
-  if (event.key === "&") {
-    event.preventDefault();
-    jumpToFirstOpenBankCopy();
-    return;
-  }
-  if (event.key === "^") {
-    event.preventDefault();
-    jumpToFirstOpenIssuerCopy();
-    return;
-  }
-  if (event.key === "6") {
-    event.preventDefault();
-    jumpToLastOpenIssuerCopy();
-    return;
-  }
-  if (event.key === "9") {
-    event.preventDefault();
-    jumpToLastClosedIssuerCopy();
-    return;
-  }
-  if (event.key === "2") {
-    event.preventDefault();
-    jumpToLastClosedBankCopy();
-    return;
-  }
-  if (event.key === ">") {
-    event.preventDefault();
-    jumpToHideZeroQueueFilter();
-    return;
-  }
-  if (event.key === "=") {
-    event.preventDefault();
-    jumpToHideBankClosedFilter();
-    return;
-  }
-  if (event.key === "{") {
-    event.preventDefault();
-    jumpToHideIssuerClosedFilter();
-    return;
-  }
-  if (event.key === "|") {
-    event.preventDefault();
-    jumpToHidePayoutClosedFilter();
-    return;
-  }
-  if (event.key === "@") {
-    event.preventDefault();
-    jumpToHideFxClosedFilter();
-    return;
-  }
-  if (event.key === "#") {
-    event.preventDefault();
-    jumpToHidePayoutOpenFilter();
-    return;
-  }
-  if (event.key === "%") {
-    event.preventDefault();
-    jumpToHideFxOpenFilter();
-    return;
-  }
-  if (event.key === "`") {
-    event.preventDefault();
-    jumpToHideIssuerOpenFilter();
-    return;
-  }
-  if (event.key === "7") {
-    event.preventDefault();
-    jumpToHideWeekendIssuerOpenFilter();
-    return;
-  }
-  if (event.key === "0") {
-    event.preventDefault();
-    jumpToHideWeekendIssuerClosedFilter();
-    return;
-  }
-  if (event.key === "3") {
-    event.preventDefault();
-    jumpToHideWeekendBankClosedFilter();
     return;
   }
   if (event.key === "n" || event.key === "N") {
@@ -3023,21 +2214,6 @@ document.addEventListener("keydown", (event) => {
   if (event.key === "c" || event.key === "C") {
     event.preventDefault();
     copySelectedGanttHourMarkdown();
-    return;
-  }
-  if (event.key === "z" || event.key === "Z") {
-    event.preventDefault();
-    copyRemainingReserveMarkdown();
-    return;
-  }
-  if (event.key === "v" || event.key === "V") {
-    event.preventDefault();
-    copySelectedVersusPeakHourMarkdown();
-    return;
-  }
-  if (event.key === "x" || event.key === "X") {
-    event.preventDefault();
-    copyClosedHoursMarkdown();
     return;
   }
   if (event.key === "t" || event.key === "T") {

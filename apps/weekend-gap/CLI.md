@@ -28,9 +28,32 @@ rejected. Nonblocking file opens reject FIFOs without waiting for a writer.
 All inputs require valid UTF-8. Duplicate JSON object members are rejected at
 every depth, including names written with Unicode escapes, before model use.
 
-`simulate` returns the canonical scenario and 72-hour summary as JSON, or the
+`simulate` returns the canonical scenario and horizon summary as JSON, or the
 existing dashboard Markdown. Null settlement times mean no qualifying event
 within the modeled horizon, not hour zero or a later forecast.
+
+## Longer horizons and calendar overrides
+
+Set `horizonHours` to whole hours from 24 through 336 (default 72, Friday
+15:00 start in abstract local time) to model multi-day disruptions. Optional
+`calendarOverrides` (at most 32) name half-open hour ranges with gate states
+(`issuer`, `bank`, `payout` open or closed), FX depth (`weekday` or
+`weekend`), and throughput changes. Later entries win per field, so a closure
+can carry a narrower reopening. Ranges outside the horizon are rejected, not
+clamped. Every simulator, planner, comparison, CSV, and report follows the
+scenario horizon; the 72-hour case is unchanged byte-for-byte in its outputs.
+
+## Compare funded and unfunded runs
+
+`node scripts/analyze.mjs funding scenario.json` runs the scenario with its
+funding tranches and again with them stripped, then reports both summaries
+with signed deltas (funded minus unfunded). Add `--format markdown` for the
+tranche table with hours, amounts, costs, and totals. Costs are tracked
+expenses, not reserve deductions. This is not a funding recommendation.
+
+Scenario files may carry `calendarOverrides` and `fundingTranches` arrays;
+their contents are validated by the model and rejected files name the first
+problem. Unknown fields are still rejected.
 
 ## Compare assumptions
 
@@ -43,20 +66,20 @@ Null timing deltas preserve the absence of an event rather than inventing zero.
 ## Test a reserve target
 
 `node scripts/analyze.mjs reserve scenario.json 75 72` asks for the minimum
-whole-cent starting reserve to settle 75% of total 72-hour demand by hour 72.
+whole-cent starting reserve to settle 75% of total horizon demand by hour 72.
 The target accepts decimals from 0 to 100; the deadline is a whole hour from
-1 to 72. An `unreachable` result is a successful analysis with a null minimum,
+1 to the scenario horizon. An `unreachable` result is a successful analysis with a null minimum,
 not a CLI failure. Gates, arrival timing, throughput and nominal cap stay fixed.
 The result includes the complete assumptions and the planner's explanation.
 
 ## Inspect the hourly ledger
 
-`node scripts/analyze.mjs timeline scenario.json` returns 72 interval rows,
+`node scripts/analyze.mjs timeline scenario.json` returns one row per modeled interval,
 blocker observations, queue AUD-hours and backlog durations as JSON. Concurrent
 blocker counts overlap; they are not additive causal effects. Add `--format csv`
-for the existing 73-checkpoint ledger, including initial hour zero. CSV arrival
+for the checkpoint ledger, including initial hour zero. CSV arrival
 and settlement columns refer to the previous interval; next-hour capacity is
-distinct. The last checkpoint closes hour 72; it does not extend the horizon.
+distinct. The last checkpoint closes the horizon hour; it does not extend the horizon.
 
 ## Run a one-factor sensitivity
 

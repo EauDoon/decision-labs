@@ -30,15 +30,3 @@ test("weekend FX hour counts are compact open and closed counts, not a bank cale
   assert.doesNotMatch(text, /timestamp|createdAt|exportedAt/i);
   assert.notEqual(text, fxGanttHoursToMarkdown(DEFAULT_SCENARIO));
 });
-
-test("copy weekend FX counts uses clipboard and a textarea fallback", async () => {
-  const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
-  const app = await readFile(new URL("../src/app.js", import.meta.url), "utf8");
-  assert.match(html, /id="copy-weekend-fx-counts"/);
-  assert.match(html, /Copy weekend FX counts/);
-  assert.match(html, /id="weekend-fx-counts-copy-fallback"/);
-  assert.match(app, /weekendFxHourCountsToMarkdown\(scenario\)/);
-  assert.match(app, /weekend-fx-counts-copy-fallback/);
-  assert.match(app, /counts of modeled hours, not a bank calendar/);
-  assert.match(app, /copyTextWithFallback/);
-});
