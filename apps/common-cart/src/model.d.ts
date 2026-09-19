@@ -420,6 +420,8 @@ export interface MerchantResidualReport {
   leftoverBuyerCount: number; leftoverUnits: number; unfilledBuyerCount: number; unfilledUnits: number;
 }
 export function createScenarioHistory(initial: unknown): ScenarioHistory;
+export const EDGE_ROW_OPTIONS: readonly ["all", "hide-first", "hide-last", "hide-first-last"];
+export function edgeRowSelection(candidate: unknown, key: string): string;
 export function validateWorkspace(candidate: unknown): ScenarioWorkspace;
 export function duplicateEntry(rawScenario: unknown, kind: "buyers" | "offers", id: string): Scenario;
 export function copyOfferAsNewTierSet(rawScenario: unknown, offerId: string): Scenario;
@@ -556,6 +558,11 @@ export function createOfferCsv(rawScenario: unknown): string;
 export function redactBuyerLabels(rawScenario: unknown): Scenario;
 export function createOrganizerBriefing(rawScenario: unknown): string;
 export function createWinnerAggregatesMarkdown(rawScenario: unknown): string;
+export function leftoverFillEvidenceToMarkdown(rawScenario: unknown): string;
+export function uncoveredLeftoverEvidenceToMarkdown(rawScenario: unknown): string;
+export function leftoverOnlyEvidenceToMarkdown(rawScenario: unknown): string;
+export function tertiaryFillEvidenceToMarkdown(rawScenario: unknown): string;
+export function winningOfferEvidenceToMarkdown(rawScenario: unknown): string;
 export interface LeftoverCoverageRow {
   id: "leftover-after-winner" | "leftover-fill" | "tertiary-fill" | "uncovered-leftover";
   stage: string;
@@ -578,35 +585,20 @@ export function filterLeftoverCoverageRowsHidingLeftoverFill(rawScenario: unknow
 /** Organizer-private leftover Markdown. Buyer counts and units after the winner, including tertiary fill. */
 export function createLeftoverCoverageMarkdown(rawScenario: unknown): string;
 /** Merchant label only. Honest empty when none unlocked. No buyer data. */
-export function createWinningMerchantLabelMarkdown(rawScenario: unknown): string;
 /** Merchant-safe one-liner. Pickup or shipping, or None unlocked. No buyer data. */
-export function createWinningFulfillmentMarkdown(rawScenario: unknown): string;
 /** Organizer-private one-line leftover fill. Secondary leftover merchant and counts only. Not tertiary. */
-export function createLeftoverFillMarkdown(rawScenario: unknown): string;
 /** Organizer-private one-line leftover fill unit-count. Count only. Not a merchant export. */
-export function createLeftoverFillUnitCountMarkdown(rawScenario: unknown): string;
 /** Organizer-private one-line leftover fill merchant label. Merchant label only. Not a merchant export. */
-export function createLeftoverFillMerchantLabelMarkdown(rawScenario: unknown): string;
 /** Organizer-private one-line leftover fill remaining capacity. Count only. Not a merchant export. */
-export function createLeftoverFillRemainingCapacityMarkdown(rawScenario: unknown): string;
 /** Organizer-private one-line leftover fill fulfillment. Pickup or shipping. Not a merchant export. */
-export function createLeftoverFillFulfillmentMarkdown(rawScenario: unknown): string;
 /** Organizer-private one-line leftover fill delivery days. Count only. Not a merchant export. */
-export function createLeftoverFillDeliveryMarkdown(rawScenario: unknown): string;
 /** Organizer-private one-line leftover fill pickup days. Count only when leftover fill is pickup. Not a merchant export. */
-export function createLeftoverFillPickupMarkdown(rawScenario: unknown): string;
 /** Organizer-private one-line leftover fill offer label. Merchant and variant only. Not a merchant export. */
-export function createLeftoverFillLabelMarkdown(rawScenario: unknown): string;
 /** Organizer-private one-line leftover fill minimum units. Count only. Not a merchant export. */
-export function createLeftoverFillMinimumMarkdown(rawScenario: unknown): string;
 /** Organizer-private one-line leftover fill offer capacity. Count only. Not a merchant export. */
-export function createLeftoverFillMaximumMarkdown(rawScenario: unknown): string;
 /** Organizer-private one-line tertiary fill remaining capacity. Count only. Not a merchant export. */
-export function createTertiaryFillRemainingCapacityMarkdown(rawScenario: unknown): string;
 /** Organizer-private one-line tertiary fill offer capacity. Count only. Not a merchant export. */
-export function createTertiaryFillMaximumMarkdown(rawScenario: unknown): string;
 /** Merchant-safe remaining capacity on the unlocked winner. Honest empty when none unlocked. No buyer data. */
-export function createWinningRemainingCapacityMarkdown(rawScenario: unknown): string;
 /** Organizer-private one-line requested units. Count only. Not a merchant export. */
 export function createRequestedUnitsMarkdown(rawScenario: unknown): string;
 export interface OrganizerLeftoverRow {
@@ -620,32 +612,18 @@ export function organizerLeftoverRows(rawScenario: unknown): OrganizerLeftoverRo
 /** Organizer-private winner inspector Markdown. Winning offer label, leftover counts, and residual coverage. */
 export function createWinnerInspectorSummaryMarkdown(rawScenario: unknown): string;
 /** Organizer-private uncovered leftover Markdown. Counts and units only. */
-export function createUncoveredLeftoverCountsMarkdown(rawScenario: unknown): string;
 /** Organizer-private one-line uncovered leftover unit-count. Count only. Not a merchant export. */
-export function createUncoveredLeftoverUnitCountMarkdown(rawScenario: unknown): string;
 /** Organizer-private one-line leftover uncovered remaining units. Count only. Honest empty none. Not a merchant export. Distinct from leftover-fill remaining and tertiary remaining. */
-export function createLeftoverUncoveredRemainingMarkdown(rawScenario: unknown): string;
 /** Organizer-private one-line leftover uncovered maximum. Leftover-fill offer capacity. Honest empty none. Not a merchant export. Distinct prefix from leftover-fill maximum, leftover uncovered remaining, leftover uncovered minimum, tertiary maximum, and uncovered leftover unit-count. */
-export function createLeftoverUncoveredMaximumMarkdown(rawScenario: unknown): string;
 /** Organizer-private one-line leftover uncovered minimum. Leftover-fill offer minimum units. Honest empty none. Not a merchant export. Distinct prefix from leftover-fill minimum, leftover uncovered remaining, leftover uncovered maximum, and uncovered leftover unit-count. */
-export function createLeftoverUncoveredMinimumMarkdown(rawScenario: unknown): string;
 /** Organizer-private one-line leftover uncovered count. Uncovered leftover buyer count. Honest empty none. Not a merchant export. Distinct prefix from leftover uncovered remaining, leftover uncovered maximum, leftover uncovered minimum, uncovered leftover unit-count, and uncovered leftover counts. */
-export function createLeftoverUncoveredCountMarkdown(rawScenario: unknown): string;
 /** Organizer-private one-line leftover uncovered leftover-only count. Leftover-only buyer count. Honest empty none. Not a merchant export. Distinct prefix from leftover uncovered count, leftover uncovered remaining, leftover uncovered maximum, leftover uncovered minimum, uncovered leftover unit-count, and uncovered leftover counts. */
-export function createLeftoverUncoveredLeftoverOnlyCountMarkdown(rawScenario: unknown): string;
 /** Organizer-private one-line leftover uncovered leftover-only remaining. Leftover-only buyer units after the winner. Honest empty none. Not a merchant export. Distinct prefix from leftover uncovered remaining and leftover uncovered leftover-only count. */
-export function createLeftoverUncoveredLeftoverOnlyRemainingMarkdown(rawScenario: unknown): string;
 /** Organizer-private one-line leftover uncovered leftover-only maximum. Largest leftover-only buyer quantity. Honest empty none. Not a merchant export. Distinct prefix from leftover uncovered leftover-only remaining, leftover uncovered leftover-only count, leftover uncovered remaining, leftover uncovered maximum, leftover uncovered minimum, leftover uncovered count, uncovered leftover unit-count, leftover-fill remaining, leftover-fill maximum, and tertiary remaining. */
-export function createLeftoverUncoveredLeftoverOnlyMaximumMarkdown(rawScenario: unknown): string;
 /** Organizer-private one-line leftover uncovered leftover-only minimum. Smallest leftover-only buyer quantity. Honest empty none. Not a merchant export. Distinct prefix from leftover uncovered leftover-only maximum, leftover uncovered leftover-only remaining, leftover uncovered leftover-only count, leftover uncovered remaining, leftover uncovered maximum, leftover uncovered minimum, leftover uncovered count, uncovered leftover unit-count, leftover-fill remaining, leftover-fill minimum, leftover-fill maximum, leftover uncovered leftover-only headroom, and tertiary remaining. */
-export function createLeftoverUncoveredLeftoverOnlyMinimumMarkdown(rawScenario: unknown): string;
 /** Organizer-private one-line leftover uncovered leftover-only headroom. Leftover-fill remaining capacity after leftover-only units. Honest empty none. Not a merchant export. Distinct prefix from leftover uncovered leftover-only minimum, leftover uncovered leftover-only maximum, leftover uncovered leftover-only remaining, leftover uncovered leftover-only count, leftover uncovered remaining, leftover uncovered maximum, leftover uncovered minimum, leftover uncovered count, uncovered leftover unit-count, leftover-fill remaining, leftover-fill minimum, leftover-fill maximum, leftover unspent item headroom, and tertiary remaining. */
-export function createLeftoverUncoveredLeftoverOnlyHeadroomMarkdown(rawScenario: unknown): string;
-export function createLeftoverUncoveredLeftoverOnlyAllocatedMarkdown(rawScenario: unknown): string;
 /** Organizer-private one-line leftover uncovered leftover-only capacity. Leftover-fill offer capacity. Honest empty none. Not a merchant export. Distinct prefix from leftover uncovered leftover-only allocated, leftover uncovered leftover-only headroom, leftover uncovered leftover-only remaining, leftover uncovered leftover-only minimum, leftover uncovered leftover-only maximum, leftover uncovered leftover-only count, leftover uncovered remaining, leftover uncovered maximum, leftover uncovered minimum, leftover uncovered count, leftover-fill remaining, leftover-fill maximum, leftover unspent item headroom, leftover unit price, and leftover-only allocated units even when the number matches. */
-export function createLeftoverUncoveredLeftoverOnlyCapacityMarkdown(rawScenario: unknown): string;
 /** Organizer-private one-line leftover uncovered leftover-only unit price. Leftover-fill offer unit price. Honest empty none. Not a merchant export. Distinct prefix from leftover uncovered leftover-only capacity, leftover uncovered leftover-only allocated, leftover uncovered leftover-only headroom, leftover uncovered leftover-only remaining, leftover uncovered leftover-only minimum, leftover uncovered leftover-only maximum, leftover uncovered leftover-only count, leftover uncovered remaining, leftover uncovered maximum, leftover uncovered minimum, leftover uncovered count, leftover-fill remaining, leftover-fill maximum, leftover unspent item headroom, leftover unit price, and leftover-only allocated units even when the number matches. */
-export function createLeftoverUncoveredLeftoverOnlyUnitPriceMarkdown(rawScenario: unknown): string;
 
 export interface CartReview {
   tool: string; title: string; currency: string; columns: string[];

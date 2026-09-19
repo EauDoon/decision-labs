@@ -68,43 +68,20 @@ import {
   redactBuyerLabels,
   createOrganizerBriefing,
   createWinnerAggregatesMarkdown,
+  leftoverFillEvidenceToMarkdown,
+  uncoveredLeftoverEvidenceToMarkdown,
+  leftoverOnlyEvidenceToMarkdown,
+  tertiaryFillEvidenceToMarkdown,
+  winningOfferEvidenceToMarkdown,
+  EDGE_ROW_OPTIONS,
   leftoverCoverageRows,
   filterLeftoverCoverageRowsHidingCovered,
   filterLeftoverCoverageRowsHidingTertiary,
   filterLeftoverCoverageRowsHidingLeftoverFill,
   createLeftoverCoverageMarkdown,
-  createWinningMerchantLabelMarkdown,
-  createWinningFulfillmentMarkdown,
-  createLeftoverFillMarkdown,
-  createLeftoverFillUnitCountMarkdown,
-  createLeftoverFillMerchantLabelMarkdown,
-  createLeftoverFillRemainingCapacityMarkdown,
-  createLeftoverFillFulfillmentMarkdown,
-  createLeftoverFillDeliveryMarkdown,
-  createLeftoverFillPickupMarkdown,
-  createLeftoverFillLabelMarkdown,
-  createLeftoverFillMinimumMarkdown,
-  createLeftoverFillMaximumMarkdown,
-  createTertiaryFillRemainingCapacityMarkdown,
-  createTertiaryFillMaximumMarkdown,
-  createLeftoverUncoveredRemainingMarkdown,
-  createLeftoverUncoveredMaximumMarkdown,
-  createLeftoverUncoveredMinimumMarkdown,
-  createLeftoverUncoveredCountMarkdown,
-  createLeftoverUncoveredLeftoverOnlyCountMarkdown,
-  createLeftoverUncoveredLeftoverOnlyRemainingMarkdown,
-  createLeftoverUncoveredLeftoverOnlyMaximumMarkdown,
-  createLeftoverUncoveredLeftoverOnlyMinimumMarkdown,
-  createLeftoverUncoveredLeftoverOnlyHeadroomMarkdown,
-  createLeftoverUncoveredLeftoverOnlyAllocatedMarkdown,
-  createLeftoverUncoveredLeftoverOnlyCapacityMarkdown,
-  createLeftoverUncoveredLeftoverOnlyUnitPriceMarkdown,
-  createWinningRemainingCapacityMarkdown,
   createRequestedUnitsMarkdown,
   organizerLeftoverRows,
   createWinnerInspectorSummaryMarkdown,
-  createUncoveredLeftoverCountsMarkdown,
-  createUncoveredLeftoverUnitCountMarkdown,
   createLeftoverHeadroomMarkdown,
   createOfferIdentityCompareMarkdown,
   decodeScenario,
@@ -181,18 +158,12 @@ let hideUnservedBuyers = false;
 let hideLeftoverOnlyBuyers = false;
 let hideWinnerAllocatedBuyers = false;
 let hideBuyersFilledByLeftoverFill = false;
-let hideLastBuyerFilledByLeftoverFill = false;
-let hideFirstBuyerFilledByLeftoverFill = false;
-let hideFirstBuyerFilledByTertiaryFill = false;
-let hideLastBuyerFilledByTertiaryFill = false;
-let hideLastUnservedBuyer = false;
-let hideFirstUnservedBuyer = false;
-let hideLastLeftoverOnlyBuyer = false;
-let hideFirstLeftoverOnlyBuyer = false;
-let hideLastWinnerAllocatedBuyer = false;
-let hideFirstWinnerAllocatedBuyer = false;
-let hideFirstUncoveredLeftoverBuyer = false;
-let hideLastUncoveredLeftoverBuyer = false;
+let edgeLeftoverFill = "all";
+let edgeTertiaryFill = "all";
+let edgeUnserved = "all";
+let edgeLeftoverOnly = "all";
+let edgeWinnerAllocated = "all";
+let edgeUncoveredLeftover = "all";
 let lastRemovedBuyer = null;
 let saveTimer;
 let contingencyRuns = [];
@@ -221,18 +192,12 @@ function loadWorkspace() {
     hideLeftoverOnlyBuyers = workspace.hideLeftoverOnlyBuyers;
     hideWinnerAllocatedBuyers = workspace.hideWinnerAllocatedBuyers;
     hideBuyersFilledByLeftoverFill = workspace.hideBuyersFilledByLeftoverFill;
-    hideLastBuyerFilledByLeftoverFill = workspace.hideLastBuyerFilledByLeftoverFill;
-    hideFirstBuyerFilledByLeftoverFill = workspace.hideFirstBuyerFilledByLeftoverFill;
-    hideFirstBuyerFilledByTertiaryFill = workspace.hideFirstBuyerFilledByTertiaryFill;
-    hideLastBuyerFilledByTertiaryFill = workspace.hideLastBuyerFilledByTertiaryFill;
-    hideLastUnservedBuyer = workspace.hideLastUnservedBuyer;
-    hideFirstUnservedBuyer = workspace.hideFirstUnservedBuyer;
-    hideLastLeftoverOnlyBuyer = workspace.hideLastLeftoverOnlyBuyer;
-    hideFirstLeftoverOnlyBuyer = workspace.hideFirstLeftoverOnlyBuyer;
-    hideLastWinnerAllocatedBuyer = workspace.hideLastWinnerAllocatedBuyer;
-    hideFirstWinnerAllocatedBuyer = workspace.hideFirstWinnerAllocatedBuyer;
-    hideFirstUncoveredLeftoverBuyer = workspace.hideFirstUncoveredLeftoverBuyer;
-    hideLastUncoveredLeftoverBuyer = workspace.hideLastUncoveredLeftoverBuyer;
+    edgeLeftoverFill = workspace.edgeLeftoverFill;
+    edgeTertiaryFill = workspace.edgeTertiaryFill;
+    edgeUnserved = workspace.edgeUnserved;
+    edgeLeftoverOnly = workspace.edgeLeftoverOnly;
+    edgeWinnerAllocated = workspace.edgeWinnerAllocated;
+    edgeUncoveredLeftover = workspace.edgeUncoveredLeftover;
     return workspace.rooms;
   } catch (error) {
     workspaceReadFailed = true;
@@ -275,7 +240,7 @@ function renderWorkspace() {
 }
 
 function storeWorkspace(rooms) {
-  const clean = validateWorkspace({ version: 1, rooms, fulfillmentFilter: offerFulfillmentFilter, hideExcludedBuyers, hideUnwinnableOffers, hideCoveredLeftoverRows, hideTertiaryLeftoverRow, hideLeftoverFillRow, hideZeroRemainingCapacityOffers, hideOffersWithRemainingCapacity, hideFullyFilledBuyers, hideBuyersWithLeftover, hideUnservedBuyers, hideLeftoverOnlyBuyers, hideWinnerAllocatedBuyers, hideBuyersFilledByLeftoverFill, hideLastBuyerFilledByLeftoverFill, hideFirstBuyerFilledByLeftoverFill, hideFirstBuyerFilledByTertiaryFill, hideLastBuyerFilledByTertiaryFill, hideLastUnservedBuyer, hideFirstUnservedBuyer, hideLastLeftoverOnlyBuyer, hideFirstLeftoverOnlyBuyer, hideLastWinnerAllocatedBuyer, hideFirstWinnerAllocatedBuyer, hideFirstUncoveredLeftoverBuyer, hideLastUncoveredLeftoverBuyer });
+  const clean = validateWorkspace({ version: 1, rooms, fulfillmentFilter: offerFulfillmentFilter, hideExcludedBuyers, hideUnwinnableOffers, hideCoveredLeftoverRows, hideTertiaryLeftoverRow, hideLeftoverFillRow, hideZeroRemainingCapacityOffers, hideOffersWithRemainingCapacity, hideFullyFilledBuyers, hideBuyersWithLeftover, hideUnservedBuyers, hideLeftoverOnlyBuyers, hideWinnerAllocatedBuyers, hideBuyersFilledByLeftoverFill, edgeLeftoverFill, edgeTertiaryFill, edgeUnserved, edgeLeftoverOnly, edgeWinnerAllocated, edgeUncoveredLeftover });
   localStorage.setItem(WORKSPACE_KEY, JSON.stringify(clean));
   savedRooms = clean.rooms;
   renderWorkspace();
@@ -452,37 +417,11 @@ function bindStaticEvents() {
     } catch (error) { setStatus(`Winner copy failed: ${messageOf(error)}`); }
   });
   document.querySelector("#copy-leftover-coverage").addEventListener("click", copyLeftoverCoverage);
-  document.querySelector("#copy-leftover-fill").addEventListener("click", copyLeftoverFill);
-  document.querySelector("#copy-leftover-fill-units").addEventListener("click", copyLeftoverFillUnitCount);
-  document.querySelector("#copy-leftover-fill-merchant").addEventListener("click", copyLeftoverFillMerchantLabel);
-  document.querySelector("#copy-leftover-fill-remaining").addEventListener("click", copyLeftoverFillRemainingCapacity);
-  document.querySelector("#copy-leftover-fill-fulfillment").addEventListener("click", copyLeftoverFillFulfillment);
-  document.querySelector("#copy-leftover-fill-delivery").addEventListener("click", copyLeftoverFillDelivery);
-  document.querySelector("#copy-leftover-fill-pickup").addEventListener("click", copyLeftoverFillPickup);
-  document.querySelector("#copy-leftover-fill-label").addEventListener("click", copyLeftoverFillLabel);
-  document.querySelector("#copy-leftover-fill-minimum").addEventListener("click", copyLeftoverFillMinimum);
-  document.querySelector("#copy-leftover-fill-maximum").addEventListener("click", copyLeftoverFillMaximum);
-  document.querySelector("#copy-tertiary-fill-remaining").addEventListener("click", copyTertiaryFillRemainingCapacity);
-  document.querySelector("#copy-tertiary-fill-maximum").addEventListener("click", copyTertiaryFillMaximum);
-  document.querySelector("#copy-leftover-uncovered-remaining").addEventListener("click", copyLeftoverUncoveredRemaining);
-  document.querySelector("#copy-leftover-uncovered-maximum").addEventListener("click", copyLeftoverUncoveredMaximum);
-  document.querySelector("#copy-leftover-uncovered-minimum").addEventListener("click", copyLeftoverUncoveredMinimum);
-  document.querySelector("#copy-leftover-uncovered-count").addEventListener("click", copyLeftoverUncoveredCount);
-  document.querySelector("#copy-leftover-uncovered-leftover-only-count").addEventListener("click", copyLeftoverUncoveredLeftoverOnlyCount);
-  document.querySelector("#copy-leftover-uncovered-leftover-only-remaining").addEventListener("click", copyLeftoverUncoveredLeftoverOnlyRemaining);
-  document.querySelector("#copy-leftover-uncovered-leftover-only-maximum").addEventListener("click", copyLeftoverUncoveredLeftoverOnlyMaximum);
-  document.querySelector("#copy-leftover-uncovered-leftover-only-minimum").addEventListener("click", copyLeftoverUncoveredLeftoverOnlyMinimum);
-  document.querySelector("#copy-leftover-uncovered-leftover-only-headroom").addEventListener("click", copyLeftoverUncoveredLeftoverOnlyHeadroom);
-  document.querySelector("#copy-leftover-uncovered-leftover-only-allocated").addEventListener("click", copyLeftoverUncoveredLeftoverOnlyAllocated);
-  document.querySelector("#copy-leftover-uncovered-leftover-only-capacity").addEventListener("click", copyLeftoverUncoveredLeftoverOnlyCapacity);
-  document.querySelector("#copy-leftover-uncovered-leftover-only-unit-price").addEventListener("click", copyLeftoverUncoveredLeftoverOnlyUnitPrice);
-  document.querySelector("#copy-uncovered-leftover").addEventListener("click", copyUncoveredLeftoverCounts);
-  document.querySelector("#copy-uncovered-leftover-units").addEventListener("click", copyUncoveredLeftoverUnitCount);
-  document.querySelector("#copy-leftover-headroom").addEventListener("click", copyLeftoverHeadroom);
-  document.querySelector("#copy-winning-merchant").addEventListener("click", copyWinningMerchantLabel);
-  document.querySelector("#copy-winning-fulfillment").addEventListener("click", copyWinningFulfillment);
-  document.querySelector("#copy-winning-remaining-capacity").addEventListener("click", copyWinningRemainingCapacity);
-  document.querySelector("#copy-requested-units").addEventListener("click", copyRequestedUnits);
+  document.querySelector("#copy-leftover-fill-evidence").addEventListener("click", copyLeftoverFillEvidence);
+  document.querySelector("#copy-uncovered-leftover-evidence").addEventListener("click", copyUncoveredLeftoverEvidence);
+  document.querySelector("#copy-leftover-only-evidence").addEventListener("click", copyLeftoverOnlyEvidence);
+  document.querySelector("#copy-tertiary-fill-evidence").addEventListener("click", copyTertiaryFillEvidence);
+  document.querySelector("#copy-winning-offer-evidence").addEventListener("click", copyWinningOfferEvidence);
   document.querySelector("#copy-winner-inspector").addEventListener("click", () => {
     try {
       copyTextWithFallback(
@@ -929,150 +868,41 @@ function bindStaticEvents() {
       setStatus(messageOf(error));
     }
   });
-  document.querySelector("#hide-last-buyer-filled-by-leftover-fill").addEventListener("change", (event) => {
-    hideLastBuyerFilledByLeftoverFill = event.target.checked;
-    persistWorkspaceDisplaySettings();
-    try {
-      applyBuyerDisplayFilters();
-      setStatus(hideLastBuyerFilledByLeftoverFill
-        ? "Hiding the last leftover-fill buyer. Display only. Winner-allocated, unserved, and other leftover-fill buyers stay visible. Saved buyers and matching stay unchanged. Merchant views still show counts only. The last hide choice is kept in this browser."
-        : "Showing the last leftover-fill buyer again. Saved buyers and matching stay unchanged. The last hide choice is kept in this browser.", true);
-    } catch (error) {
-      setStatus(messageOf(error));
-    }
-  });
-  document.querySelector("#hide-first-buyer-filled-by-leftover-fill").addEventListener("change", (event) => {
-    hideFirstBuyerFilledByLeftoverFill = event.target.checked;
-    persistWorkspaceDisplaySettings();
-    try {
-      applyBuyerDisplayFilters();
-      setStatus(hideFirstBuyerFilledByLeftoverFill
-        ? "Hiding the first leftover-fill buyer. Display only. Winner-allocated, unserved, and other leftover-fill buyers stay visible. Saved buyers and matching stay unchanged. Merchant views still show counts only. The last hide choice is kept in this browser."
-        : "Showing the first leftover-fill buyer again. Saved buyers and matching stay unchanged. The last hide choice is kept in this browser.", true);
-    } catch (error) {
-      setStatus(messageOf(error));
-    }
-  });
-  document.querySelector("#hide-first-buyer-filled-by-tertiary-fill").addEventListener("change", (event) => {
-    hideFirstBuyerFilledByTertiaryFill = event.target.checked;
-    persistWorkspaceDisplaySettings();
-    try {
-      applyBuyerDisplayFilters();
-      setStatus(hideFirstBuyerFilledByTertiaryFill
-        ? "Hiding the first tertiary-fill buyer. Display only. Winner-allocated, leftover-fill, unserved, and other tertiary-fill buyers stay visible. Saved buyers and matching stay unchanged. Merchant views still show counts only. The last hide choice is kept in this browser."
-        : "Showing the first tertiary-fill buyer again. Saved buyers and matching stay unchanged. The last hide choice is kept in this browser.", true);
-    } catch (error) {
-      setStatus(messageOf(error));
-    }
-  });
-  document.querySelector("#hide-last-buyer-filled-by-tertiary-fill").addEventListener("change", (event) => {
-    hideLastBuyerFilledByTertiaryFill = event.target.checked;
-    persistWorkspaceDisplaySettings();
-    try {
-      applyBuyerDisplayFilters();
-      setStatus(hideLastBuyerFilledByTertiaryFill
-        ? "Hiding the last tertiary-fill buyer. Display only. Winner-allocated, leftover-fill, unserved, and other tertiary-fill buyers stay visible. Saved buyers and matching stay unchanged. Merchant views still show counts only. The last hide choice is kept in this browser."
-        : "Showing the last tertiary-fill buyer again. Saved buyers and matching stay unchanged. The last hide choice is kept in this browser.", true);
-    } catch (error) {
-      setStatus(messageOf(error));
-    }
-  });
-  document.querySelector("#hide-last-unserved-buyer").addEventListener("change", (event) => {
-    hideLastUnservedBuyer = event.target.checked;
-    persistWorkspaceDisplaySettings();
-    try {
-      applyBuyerDisplayFilters();
-      setStatus(hideLastUnservedBuyer
-        ? "Hiding the last unserved buyer. Display only. Winner-allocated, leftover-fill, tertiary-fill, and other unserved buyers stay visible. Saved buyers and matching stay unchanged. Merchant views still show counts only. The last hide choice is kept in this browser."
-        : "Showing the last unserved buyer again. Saved buyers and matching stay unchanged. The last hide choice is kept in this browser.", true);
-    } catch (error) {
-      setStatus(messageOf(error));
-    }
-  });
-  document.querySelector("#hide-first-unserved-buyer").addEventListener("change", (event) => {
-    hideFirstUnservedBuyer = event.target.checked;
-    persistWorkspaceDisplaySettings();
-    try {
-      applyBuyerDisplayFilters();
-      setStatus(hideFirstUnservedBuyer
-        ? "Hiding the first unserved buyer. Display only. Winner-allocated, leftover-fill, tertiary-fill, and other unserved buyers stay visible. Saved buyers and matching stay unchanged. Merchant views still show counts only. The last hide choice is kept in this browser."
-        : "Showing the first unserved buyer again. Saved buyers and matching stay unchanged. The last hide choice is kept in this browser.", true);
-    } catch (error) {
-      setStatus(messageOf(error));
-    }
-  });
-  document.querySelector("#hide-last-leftover-only-buyer").addEventListener("change", (event) => {
-    hideLastLeftoverOnlyBuyer = event.target.checked;
-    persistWorkspaceDisplaySettings();
-    try {
-      applyBuyerDisplayFilters();
-      setStatus(hideLastLeftoverOnlyBuyer
-        ? "Hiding the last leftover-only buyer. Display only. Winner-allocated, leftover-fill, tertiary-fill, unserved, and other leftover-only buyers stay visible. Saved buyers and matching stay unchanged. Merchant views still show counts only. The last hide choice is kept in this browser."
-        : "Showing the last leftover-only buyer again. Saved buyers and matching stay unchanged. The last hide choice is kept in this browser.", true);
-    } catch (error) {
-      setStatus(messageOf(error));
-    }
-  });
-  document.querySelector("#hide-first-leftover-only-buyer").addEventListener("change", (event) => {
-    hideFirstLeftoverOnlyBuyer = event.target.checked;
-    persistWorkspaceDisplaySettings();
-    try {
-      applyBuyerDisplayFilters();
-      setStatus(hideFirstLeftoverOnlyBuyer
-        ? "Hiding the first leftover-only buyer. Display only. Winner-allocated, leftover-fill, tertiary-fill, unserved, and other leftover-only buyers stay visible. Saved buyers and matching stay unchanged. Merchant views still show counts only. The last hide choice is kept in this browser."
-        : "Showing the first leftover-only buyer again. Saved buyers and matching stay unchanged. The last hide choice is kept in this browser.", true);
-    } catch (error) {
-      setStatus(messageOf(error));
-    }
-  });
-  document.querySelector("#hide-last-winner-allocated-buyer").addEventListener("change", (event) => {
-    hideLastWinnerAllocatedBuyer = event.target.checked;
-    persistWorkspaceDisplaySettings();
-    try {
-      applyBuyerDisplayFilters();
-      setStatus(hideLastWinnerAllocatedBuyer
-        ? "Hiding the last winner-allocated buyer. Display only. Leftover-only, leftover-fill, tertiary-fill, unserved, and other winner-allocated buyers stay visible. Saved buyers and matching stay unchanged. Merchant views still show counts only. The last hide choice is kept in this browser."
-        : "Showing the last winner-allocated buyer again. Saved buyers and matching stay unchanged. The last hide choice is kept in this browser.", true);
-    } catch (error) {
-      setStatus(messageOf(error));
-    }
-  });
-  document.querySelector("#hide-first-winner-allocated-buyer").addEventListener("change", (event) => {
-    hideFirstWinnerAllocatedBuyer = event.target.checked;
-    persistWorkspaceDisplaySettings();
-    try {
-      applyBuyerDisplayFilters();
-      setStatus(hideFirstWinnerAllocatedBuyer
-        ? "Hiding the first winner-allocated buyer. Display only. Leftover-only, leftover-fill, tertiary-fill, unserved, and other winner-allocated buyers stay visible. Saved buyers and matching stay unchanged. Merchant views still show counts only. The last hide choice is kept in this browser."
-        : "Showing the first winner-allocated buyer again. Saved buyers and matching stay unchanged. The last hide choice is kept in this browser.", true);
-    } catch (error) {
-      setStatus(messageOf(error));
-    }
-  });
-  document.querySelector("#hide-first-uncovered-leftover-buyer").addEventListener("change", (event) => {
-    hideFirstUncoveredLeftoverBuyer = event.target.checked;
-    persistWorkspaceDisplaySettings();
-    try {
-      applyBuyerDisplayFilters();
-      setStatus(hideFirstUncoveredLeftoverBuyer
-        ? "Hiding the first uncovered leftover buyer. Display only. Leftover-only, leftover-fill, tertiary-fill, winner-allocated, unserved, and other leftover buyers stay visible. Saved buyers and matching stay unchanged. Merchant views still show counts only. The last hide choice is kept in this browser."
-        : "Showing the first uncovered leftover buyer again. Saved buyers and matching stay unchanged. The last hide choice is kept in this browser.", true);
-    } catch (error) {
-      setStatus(messageOf(error));
-    }
-  });
-  document.querySelector("#hide-last-uncovered-leftover-buyer").addEventListener("change", (event) => {
-    hideLastUncoveredLeftoverBuyer = event.target.checked;
-    persistWorkspaceDisplaySettings();
-    try {
-      applyBuyerDisplayFilters();
-      setStatus(hideLastUncoveredLeftoverBuyer
-        ? "Hiding the last uncovered leftover buyer. Display only. Leftover-only, leftover-fill, tertiary-fill, winner-allocated, unserved, first uncovered leftover, and other leftover buyers stay visible. Saved buyers and matching stay unchanged. Merchant views still show counts only. The last hide choice is kept in this browser."
-        : "Showing the last uncovered leftover buyer again. Saved buyers and matching stay unchanged. The last hide choice is kept in this browser.", true);
-    } catch (error) {
-      setStatus(messageOf(error));
-    }
-  });
+  const EDGE_ROW_LABELS = {
+    "edge-leftover-fill": "leftover-fill",
+    "edge-tertiary-fill": "tertiary-fill",
+    "edge-unserved": "unserved",
+    "edge-leftover-only": "leftover-only",
+    "edge-winner-allocated": "winner-allocated",
+    "edge-uncovered-leftover": "uncovered leftover"
+  };
+  function edgeRowStatus(id, value) {
+    const group = EDGE_ROW_LABELS[id] ?? "edge";
+    if (value === "hide-first") return `Hiding the first ${group} buyer. Display only. Saved buyers and matching stay unchanged. Merchant views still show counts only. The last hide choice is kept in this browser.`;
+    if (value === "hide-last") return `Hiding the last ${group} buyer. Display only. Saved buyers and matching stay unchanged. Merchant views still show counts only. The last hide choice is kept in this browser.`;
+    if (value === "hide-first-last") return `Hiding the first and last ${group} buyers. Display only. Saved buyers and matching stay unchanged. Merchant views still show counts only. The last hide choice is kept in this browser.`;
+    return "Showing every buyer again. Saved buyers and matching stay unchanged. The last hide choice is kept in this browser.";
+  }
+  function bindEdgeRowSelect(id, assign) {
+    document.querySelector(`#${id}`).addEventListener("change", (event) => {
+      const value = EDGE_ROW_OPTIONS.includes(event.target.value) ? event.target.value : "all";
+      assign(value);
+      persistWorkspaceDisplaySettings();
+      try {
+        applyBuyerDisplayFilters();
+        setStatus(edgeRowStatus(id, value), true);
+      } catch (error) {
+        setStatus(messageOf(error));
+      }
+    });
+  }
+  bindEdgeRowSelect("edge-leftover-fill", (value) => { edgeLeftoverFill = value; });
+  bindEdgeRowSelect("edge-tertiary-fill", (value) => { edgeTertiaryFill = value; });
+  bindEdgeRowSelect("edge-unserved", (value) => { edgeUnserved = value; });
+  bindEdgeRowSelect("edge-leftover-only", (value) => { edgeLeftoverOnly = value; });
+  bindEdgeRowSelect("edge-winner-allocated", (value) => { edgeWinnerAllocated = value; });
+  bindEdgeRowSelect("edge-uncovered-leftover", (value) => { edgeUncoveredLeftover = value; });
+
   document.querySelector("#hide-covered-leftover-rows").addEventListener("change", (event) => {
     hideCoveredLeftoverRows = event.target.checked;
     persistWorkspaceDisplaySettings();
@@ -1336,209 +1166,14 @@ function handleShortcut(event) {
     focusPrivateBuyerReport();
     return;
   }
-  if (key === "y" || key === ";") {
+  if (key === "y") {
     event.preventDefault();
-    copyLeftoverFill();
+    copyLeftoverFillEvidence();
     return;
   }
   if (key === "z") {
     event.preventDefault();
     focusLeftoverFill();
-    return;
-  }
-  if (key === ",") {
-    event.preventDefault();
-    copyWinningRemainingCapacity();
-    return;
-  }
-  if (key === ".") {
-    event.preventDefault();
-    focusWinningRemainingCapacityCopy();
-    return;
-  }
-  if (key === "/" && !event.shiftKey) {
-    event.preventDefault();
-    focusLeftoverFillCopy();
-    return;
-  }
-  if (key === "[") {
-    event.preventDefault();
-    focusRequestedUnitsCopy();
-    return;
-  }
-  if (key === "]") {
-    event.preventDefault();
-    focusLeftoverPrintControl();
-    return;
-  }
-  if (key === "'") {
-    event.preventDefault();
-    copyLeftoverFillUnitCount();
-    return;
-  }
-  if (key === "<") {
-    event.preventDefault();
-    focusLeftoverFillUnitCountCopy();
-    return;
-  }
-  if (key === ">") {
-    event.preventDefault();
-    focusHideFullyFilledBuyers();
-    return;
-  }
-  if (key === ":") {
-    event.preventDefault();
-    copyUncoveredLeftoverUnitCount();
-    return;
-  }
-  if (key === "-") {
-    event.preventDefault();
-    focusUncoveredLeftoverUnitCountCopy();
-    return;
-  }
-  if (key === "=") {
-    event.preventDefault();
-    focusHideBuyersWithLeftover();
-    return;
-  }
-  if (key === '"') {
-    event.preventDefault();
-    copyLeftoverFillMerchantLabel();
-    return;
-  }
-  if (key === "_") {
-    event.preventDefault();
-    focusLeftoverFillMerchantCopy();
-    return;
-  }
-  if (key === "{") {
-    event.preventDefault();
-    focusHideOffersWithRemainingCapacity();
-    return;
-  }
-  if (key === "}") {
-    event.preventDefault();
-    copyLeftoverFillRemainingCapacity();
-    return;
-  }
-  if (key === "+") {
-    event.preventDefault();
-    focusLeftoverFillRemainingCopy();
-    return;
-  }
-  if (key === "|") {
-    event.preventDefault();
-    focusHideUnservedBuyers();
-    return;
-  }
-  if (key === "~") {
-    event.preventDefault();
-    copyLeftoverFillFulfillment();
-    return;
-  }
-  if (key === "!") {
-    event.preventDefault();
-    focusLeftoverFillFulfillmentCopy();
-    return;
-  }
-  if (key === "@") {
-    event.preventDefault();
-    focusHideLeftoverOnlyBuyers();
-    return;
-  }
-  if (key === "(") {
-    event.preventDefault();
-    copyLeftoverFillDelivery();
-    return;
-  }
-  if (key === ")") {
-    event.preventDefault();
-    focusLeftoverFillDeliveryCopy();
-    return;
-  }
-  if (key === "#") {
-    event.preventDefault();
-    focusHideWinnerAllocatedBuyers();
-    return;
-  }
-  if (key === "*") {
-    event.preventDefault();
-    copyLeftoverFillPickup();
-    return;
-  }
-  if (key === "&") {
-    event.preventDefault();
-    focusLeftoverFillPickupCopy();
-    return;
-  }
-  if (key === "%") {
-    event.preventDefault();
-    focusHideBuyersFilledByLeftoverFill();
-    return;
-  }
-  if (key === "$") {
-    event.preventDefault();
-    copyLeftoverFillLabel();
-    return;
-  }
-  if (key === "^") {
-    event.preventDefault();
-    focusLeftoverFillLabelCopy();
-    return;
-  }
-  if (key === "`") {
-    event.preventDefault();
-    focusHideLastBuyerFilledByLeftoverFill();
-    return;
-  }
-  if (key === "5") {
-    event.preventDefault();
-    copyLeftoverFillMinimum();
-    return;
-  }
-  if (key === "6") {
-    event.preventDefault();
-    focusLeftoverFillMinimumCopy();
-    return;
-  }
-  if (key === "7") {
-    event.preventDefault();
-    focusHideFirstBuyerFilledByTertiaryFill();
-    return;
-  }
-  if (key === "8") {
-    event.preventDefault();
-    copyLeftoverFillMaximum();
-    return;
-  }
-  if (key === "9") {
-    event.preventDefault();
-    focusLeftoverFillMaximumCopy();
-    return;
-  }
-  if (key === "0") {
-    event.preventDefault();
-    focusHideLastBuyerFilledByTertiaryFill();
-    return;
-  }
-  if (key === "1") {
-    event.preventDefault();
-    copyTertiaryFillRemainingCapacity();
-    return;
-  }
-  if (key === "2") {
-    event.preventDefault();
-    focusTertiaryFillRemainingCopy();
-    return;
-  }
-  if (key === "3") {
-    event.preventDefault();
-    focusHideLastUnservedBuyer();
-    return;
-  }
-  if (key === "4") {
-    event.preventDefault();
-    copyTertiaryFillMaximum();
     return;
   }
 }
@@ -1578,33 +1213,6 @@ function focusGroupHeadroom() {
 
 function focusRequestedUnits() {
   document.querySelector("#metric-units")?.focus();
-}
-
-function focusRequestedUnitsCopy() {
-  const buyerTab = document.querySelector("#buyer-tab");
-  if (buyerTab) activateTab(buyerTab);
-  const copy = document.querySelector("#copy-requested-units");
-  if (copy) {
-    copy.focus();
-    return;
-  }
-  const heading = document.querySelector("#metric-units");
-  if (heading) {
-    heading.focus();
-    return;
-  }
-  buyerTab?.focus();
-}
-
-function focusWinningRemainingCapacityCopy() {
-  const buyerTab = document.querySelector("#buyer-tab");
-  if (buyerTab) activateTab(buyerTab);
-  const copy = document.querySelector("#copy-winning-remaining-capacity");
-  if (copy) {
-    copy.focus();
-    return;
-  }
-  document.querySelector("#winner-summary")?.focus();
 }
 
 function focusPrivateBuyerReport() {
@@ -1691,565 +1299,6 @@ function focusLeftoverFill() {
   const row = document.querySelector("#leftover-fill");
   if (leftoverFill && row && !row.hidden) {
     row.focus();
-    return;
-  }
-  document.querySelector("#residual-title")?.focus();
-}
-
-function focusLeftoverFillCopy() {
-  const buyerTab = document.querySelector("#buyer-tab");
-  if (buyerTab) activateTab(buyerTab);
-  document.querySelector("#copy-leftover-fill")?.focus();
-}
-
-function focusLeftoverFillUnitCountCopy() {
-  const buyerTab = document.querySelector("#buyer-tab");
-  if (buyerTab) activateTab(buyerTab);
-  const copy = document.querySelector("#copy-leftover-fill-units");
-  if (copy) {
-    copy.focus();
-    return;
-  }
-  document.querySelector("#residual-title")?.focus();
-}
-
-function focusUncoveredLeftoverUnitCountCopy() {
-  const buyerTab = document.querySelector("#buyer-tab");
-  if (buyerTab) activateTab(buyerTab);
-  const copy = document.querySelector("#copy-uncovered-leftover-units");
-  if (copy) {
-    copy.focus();
-    return;
-  }
-  document.querySelector("#residual-title")?.focus();
-}
-
-function focusLeftoverFillMerchantCopy() {
-  const buyerTab = document.querySelector("#buyer-tab");
-  if (buyerTab) activateTab(buyerTab);
-  const copy = document.querySelector("#copy-leftover-fill-merchant");
-  if (copy) {
-    copy.focus();
-    return;
-  }
-  document.querySelector("#residual-title")?.focus();
-}
-
-function focusLeftoverFillRemainingCopy() {
-  const buyerTab = document.querySelector("#buyer-tab");
-  if (buyerTab) activateTab(buyerTab);
-  const copy = document.querySelector("#copy-leftover-fill-remaining");
-  if (copy) {
-    copy.focus();
-    return;
-  }
-  document.querySelector("#residual-title")?.focus();
-}
-
-function focusLeftoverFillFulfillmentCopy() {
-  const buyerTab = document.querySelector("#buyer-tab");
-  if (buyerTab) activateTab(buyerTab);
-  const copy = document.querySelector("#copy-leftover-fill-fulfillment");
-  if (copy) {
-    copy.focus();
-    return;
-  }
-  document.querySelector("#residual-title")?.focus();
-}
-
-function focusLeftoverFillDeliveryCopy() {
-  const buyerTab = document.querySelector("#buyer-tab");
-  if (buyerTab) activateTab(buyerTab);
-  const copy = document.querySelector("#copy-leftover-fill-delivery");
-  if (copy) {
-    copy.focus();
-    return;
-  }
-  document.querySelector("#residual-title")?.focus();
-}
-
-function focusLeftoverFillPickupCopy() {
-  const buyerTab = document.querySelector("#buyer-tab");
-  if (buyerTab) activateTab(buyerTab);
-  const copy = document.querySelector("#copy-leftover-fill-pickup");
-  if (copy) {
-    copy.focus();
-    return;
-  }
-  document.querySelector("#residual-title")?.focus();
-}
-
-function focusLeftoverFillLabelCopy() {
-  const buyerTab = document.querySelector("#buyer-tab");
-  if (buyerTab) activateTab(buyerTab);
-  const copy = document.querySelector("#copy-leftover-fill-label");
-  if (copy) {
-    copy.focus();
-    return;
-  }
-  document.querySelector("#residual-title")?.focus();
-}
-
-function focusLeftoverFillMinimumCopy() {
-  const buyerTab = document.querySelector("#buyer-tab");
-  if (buyerTab) activateTab(buyerTab);
-  const copy = document.querySelector("#copy-leftover-fill-minimum");
-  if (copy) {
-    copy.focus();
-    return;
-  }
-  document.querySelector("#residual-title")?.focus();
-}
-
-function focusLeftoverFillMaximumCopy() {
-  const buyerTab = document.querySelector("#buyer-tab");
-  if (buyerTab) activateTab(buyerTab);
-  const copy = document.querySelector("#copy-leftover-fill-maximum");
-  if (copy) {
-    copy.focus();
-    return;
-  }
-  document.querySelector("#residual-title")?.focus();
-}
-
-function focusTertiaryFillRemainingCopy() {
-  const buyerTab = document.querySelector("#buyer-tab");
-  if (buyerTab) activateTab(buyerTab);
-  const copy = document.querySelector("#copy-tertiary-fill-remaining");
-  if (copy) {
-    copy.focus();
-    return;
-  }
-  document.querySelector("#residual-title")?.focus();
-}
-
-function focusTertiaryFillMaximumCopy() {
-  const buyerTab = document.querySelector("#buyer-tab");
-  if (buyerTab) activateTab(buyerTab);
-  const copy = document.querySelector("#copy-tertiary-fill-maximum");
-  if (copy) {
-    copy.focus();
-    return;
-  }
-  document.querySelector("#residual-title")?.focus();
-}
-
-function focusHideFullyFilledBuyers() {
-  const buyerTab = document.querySelector("#buyer-tab");
-  if (buyerTab) activateTab(buyerTab);
-  const hide = document.querySelector("#hide-fully-filled-buyers");
-  if (hide) {
-    hide.focus();
-    return;
-  }
-  document.querySelector("#buyers-list")?.focus();
-}
-
-function focusHideBuyersWithLeftover() {
-  const buyerTab = document.querySelector("#buyer-tab");
-  if (buyerTab) activateTab(buyerTab);
-  const hide = document.querySelector("#hide-buyers-with-leftover");
-  if (hide) {
-    hide.focus();
-    return;
-  }
-  document.querySelector("#buyers-list")?.focus();
-}
-
-function focusHideUnservedBuyers() {
-  const buyerTab = document.querySelector("#buyer-tab");
-  if (buyerTab) activateTab(buyerTab);
-  const hide = document.querySelector("#hide-unserved-buyers");
-  if (hide) {
-    hide.focus();
-    return;
-  }
-  const heading = document.querySelector("#buyers-list");
-  if (heading) {
-    heading.focus();
-    return;
-  }
-  document.querySelector("#buyer-tab")?.focus();
-}
-
-function focusHideLeftoverOnlyBuyers() {
-  const buyerTab = document.querySelector("#buyer-tab");
-  if (buyerTab) activateTab(buyerTab);
-  const hide = document.querySelector("#hide-leftover-only-buyers");
-  if (hide) {
-    hide.focus();
-    return;
-  }
-  const heading = document.querySelector("#buyers-list");
-  if (heading) {
-    heading.focus();
-    return;
-  }
-  document.querySelector("#buyer-tab")?.focus();
-}
-
-function focusHideWinnerAllocatedBuyers() {
-  const buyerTab = document.querySelector("#buyer-tab");
-  if (buyerTab) activateTab(buyerTab);
-  const hide = document.querySelector("#hide-winner-allocated-buyers");
-  if (hide) {
-    hide.focus();
-    return;
-  }
-  const heading = document.querySelector("#buyers-list");
-  if (heading) {
-    heading.focus();
-    return;
-  }
-  document.querySelector("#buyer-tab")?.focus();
-}
-
-function focusHideBuyersFilledByLeftoverFill() {
-  const buyerTab = document.querySelector("#buyer-tab");
-  if (buyerTab) activateTab(buyerTab);
-  const hide = document.querySelector("#hide-buyers-filled-by-leftover-fill");
-  if (hide) {
-    hide.focus();
-    return;
-  }
-  const heading = document.querySelector("#buyers-list");
-  if (heading) {
-    heading.focus();
-    return;
-  }
-  document.querySelector("#buyer-tab")?.focus();
-}
-
-function focusHideLastBuyerFilledByLeftoverFill() {
-  const buyerTab = document.querySelector("#buyer-tab");
-  if (buyerTab) activateTab(buyerTab);
-  const hide = document.querySelector("#hide-last-buyer-filled-by-leftover-fill");
-  if (hide) {
-    hide.focus();
-    return;
-  }
-  const heading = document.querySelector("#buyers-list");
-  if (heading) {
-    heading.focus();
-    return;
-  }
-  document.querySelector("#buyer-tab")?.focus();
-}
-
-function focusHideFirstBuyerFilledByTertiaryFill() {
-  const buyerTab = document.querySelector("#buyer-tab");
-  if (buyerTab) activateTab(buyerTab);
-  const hide = document.querySelector("#hide-first-buyer-filled-by-tertiary-fill");
-  if (hide) {
-    hide.focus();
-    return;
-  }
-  const heading = document.querySelector("#buyers-list");
-  if (heading) {
-    heading.focus();
-    return;
-  }
-  document.querySelector("#buyer-tab")?.focus();
-}
-
-function focusHideLastBuyerFilledByTertiaryFill() {
-  const buyerTab = document.querySelector("#buyer-tab");
-  if (buyerTab) activateTab(buyerTab);
-  const hide = document.querySelector("#hide-last-buyer-filled-by-tertiary-fill");
-  if (hide) {
-    hide.focus();
-    return;
-  }
-  const heading = document.querySelector("#buyers-list");
-  if (heading) {
-    heading.focus();
-    return;
-  }
-  document.querySelector("#buyer-tab")?.focus();
-}
-
-function focusHideLastUnservedBuyer() {
-  const buyerTab = document.querySelector("#buyer-tab");
-  if (buyerTab) activateTab(buyerTab);
-  const hide = document.querySelector("#hide-last-unserved-buyer");
-  if (hide) {
-    hide.focus();
-    return;
-  }
-  const heading = document.querySelector("#buyers-list");
-  if (heading) {
-    heading.focus();
-    return;
-  }
-  document.querySelector("#buyer-tab")?.focus();
-}
-
-function focusHideFirstUnservedBuyer() {
-  const buyerTab = document.querySelector("#buyer-tab");
-  if (buyerTab) activateTab(buyerTab);
-  const hide = document.querySelector("#hide-first-unserved-buyer");
-  if (hide) {
-    hide.focus();
-    return;
-  }
-  const heading = document.querySelector("#buyers-list");
-  if (heading) {
-    heading.focus();
-    return;
-  }
-  document.querySelector("#buyer-tab")?.focus();
-}
-
-function focusHideLastLeftoverOnlyBuyer() {
-  const buyerTab = document.querySelector("#buyer-tab");
-  if (buyerTab) activateTab(buyerTab);
-  const hide = document.querySelector("#hide-last-leftover-only-buyer");
-  if (hide) {
-    hide.focus();
-    return;
-  }
-  const heading = document.querySelector("#buyers-list");
-  if (heading) {
-    heading.focus();
-    return;
-  }
-  document.querySelector("#buyer-tab")?.focus();
-}
-
-function focusHideFirstLeftoverOnlyBuyer() {
-  const buyerTab = document.querySelector("#buyer-tab");
-  if (buyerTab) activateTab(buyerTab);
-  const hide = document.querySelector("#hide-first-leftover-only-buyer");
-  if (hide) {
-    hide.focus();
-    return;
-  }
-  const heading = document.querySelector("#buyers-list");
-  if (heading) {
-    heading.focus();
-    return;
-  }
-  document.querySelector("#buyer-tab")?.focus();
-}
-
-function focusHideLastWinnerAllocatedBuyer() {
-  const buyerTab = document.querySelector("#buyer-tab");
-  if (buyerTab) activateTab(buyerTab);
-  const hide = document.querySelector("#hide-last-winner-allocated-buyer");
-  if (hide) {
-    hide.focus();
-    return;
-  }
-  const heading = document.querySelector("#buyers-list");
-  if (heading) {
-    heading.focus();
-    return;
-  }
-  document.querySelector("#buyer-tab")?.focus();
-}
-
-function focusHideFirstWinnerAllocatedBuyer() {
-  const buyerTab = document.querySelector("#buyer-tab");
-  if (buyerTab) activateTab(buyerTab);
-  const hide = document.querySelector("#hide-first-winner-allocated-buyer");
-  if (hide) {
-    hide.focus();
-    return;
-  }
-  const heading = document.querySelector("#buyers-list");
-  if (heading) {
-    heading.focus();
-    return;
-  }
-  document.querySelector("#buyer-tab")?.focus();
-}
-
-function focusHideFirstUncoveredLeftoverBuyer() {
-  const buyerTab = document.querySelector("#buyer-tab");
-  if (buyerTab) activateTab(buyerTab);
-  const hide = document.querySelector("#hide-first-uncovered-leftover-buyer");
-  if (hide) {
-    hide.focus();
-    return;
-  }
-  const heading = document.querySelector("#buyers-list");
-  if (heading) {
-    heading.focus();
-    return;
-  }
-  document.querySelector("#buyer-tab")?.focus();
-}
-
-function focusHideLastUncoveredLeftoverBuyer() {
-  const buyerTab = document.querySelector("#buyer-tab");
-  if (buyerTab) activateTab(buyerTab);
-  const hide = document.querySelector("#hide-last-uncovered-leftover-buyer");
-  if (hide) {
-    hide.focus();
-    return;
-  }
-  const heading = document.querySelector("#buyers-list");
-  if (heading) {
-    heading.focus();
-    return;
-  }
-  document.querySelector("#buyer-tab")?.focus();
-}
-
-function focusLeftoverUncoveredRemainingCopy() {
-  const buyerTab = document.querySelector("#buyer-tab");
-  if (buyerTab) activateTab(buyerTab);
-  const copy = document.querySelector("#copy-leftover-uncovered-remaining");
-  if (copy) {
-    copy.focus();
-    return;
-  }
-  document.querySelector("#residual-title")?.focus();
-}
-
-function focusLeftoverUncoveredMaximumCopy() {
-  const buyerTab = document.querySelector("#buyer-tab");
-  if (buyerTab) activateTab(buyerTab);
-  const copy = document.querySelector("#copy-leftover-uncovered-maximum");
-  if (copy) {
-    copy.focus();
-    return;
-  }
-  document.querySelector("#residual-title")?.focus();
-}
-
-function focusLeftoverUncoveredMinimumCopy() {
-  const buyerTab = document.querySelector("#buyer-tab");
-  if (buyerTab) activateTab(buyerTab);
-  const copy = document.querySelector("#copy-leftover-uncovered-minimum");
-  if (copy) {
-    copy.focus();
-    return;
-  }
-  document.querySelector("#residual-title")?.focus();
-}
-
-function focusLeftoverUncoveredCountCopy() {
-  const buyerTab = document.querySelector("#buyer-tab");
-  if (buyerTab) activateTab(buyerTab);
-  const copy = document.querySelector("#copy-leftover-uncovered-count");
-  if (copy) {
-    copy.focus();
-    return;
-  }
-  document.querySelector("#residual-title")?.focus();
-}
-
-function focusLeftoverUncoveredLeftoverOnlyCountCopy() {
-  const buyerTab = document.querySelector("#buyer-tab");
-  if (buyerTab) activateTab(buyerTab);
-  const copy = document.querySelector("#copy-leftover-uncovered-leftover-only-count");
-  if (copy) {
-    copy.focus();
-    return;
-  }
-  document.querySelector("#residual-title")?.focus();
-}
-
-function focusLeftoverUncoveredLeftoverOnlyRemainingCopy() {
-  const buyerTab = document.querySelector("#buyer-tab");
-  if (buyerTab) activateTab(buyerTab);
-  const copy = document.querySelector("#copy-leftover-uncovered-leftover-only-remaining");
-  if (copy) {
-    copy.focus();
-    return;
-  }
-  document.querySelector("#residual-title")?.focus();
-}
-
-function focusLeftoverUncoveredLeftoverOnlyMaximumCopy() {
-  const buyerTab = document.querySelector("#buyer-tab");
-  if (buyerTab) activateTab(buyerTab);
-  const copy = document.querySelector("#copy-leftover-uncovered-leftover-only-maximum");
-  if (copy) {
-    copy.focus();
-    return;
-  }
-  document.querySelector("#residual-title")?.focus();
-}
-
-function focusLeftoverUncoveredLeftoverOnlyMinimumCopy() {
-  const buyerTab = document.querySelector("#buyer-tab");
-  if (buyerTab) activateTab(buyerTab);
-  const copy = document.querySelector("#copy-leftover-uncovered-leftover-only-minimum");
-  if (copy) {
-    copy.focus();
-    return;
-  }
-  document.querySelector("#residual-title")?.focus();
-}
-
-function focusLeftoverUncoveredLeftoverOnlyHeadroomCopy() {
-  const buyerTab = document.querySelector("#buyer-tab");
-  if (buyerTab) activateTab(buyerTab);
-  const copy = document.querySelector("#copy-leftover-uncovered-leftover-only-headroom");
-  if (copy) {
-    copy.focus();
-    return;
-  }
-  document.querySelector("#residual-title")?.focus();
-}
-
-function focusLeftoverUncoveredLeftoverOnlyAllocatedCopy() {
-  const buyerTab = document.querySelector("#buyer-tab");
-  if (buyerTab) activateTab(buyerTab);
-  const copy = document.querySelector("#copy-leftover-uncovered-leftover-only-allocated");
-  if (copy) {
-    copy.focus();
-    return;
-  }
-  document.querySelector("#residual-title")?.focus();
-}
-
-function focusLeftoverUncoveredLeftoverOnlyCapacityCopy() {
-  const buyerTab = document.querySelector("#buyer-tab");
-  if (buyerTab) activateTab(buyerTab);
-  const copy = document.querySelector("#copy-leftover-uncovered-leftover-only-capacity");
-  if (copy) {
-    copy.focus();
-    return;
-  }
-  document.querySelector("#residual-title")?.focus();
-}
-
-function focusLeftoverUncoveredLeftoverOnlyUnitPriceCopy() {
-  const buyerTab = document.querySelector("#buyer-tab");
-  if (buyerTab) activateTab(buyerTab);
-  const copy = document.querySelector("#copy-leftover-uncovered-leftover-only-unit-price");
-  if (copy) {
-    copy.focus();
-    return;
-  }
-  document.querySelector("#residual-title")?.focus();
-}
-
-function focusHideOffersWithRemainingCapacity() {
-  const merchantTab = document.querySelector("#merchant-tab");
-  if (merchantTab) activateTab(merchantTab);
-  const hide = document.querySelector("#hide-offers-with-remaining-capacity");
-  if (hide) {
-    hide.focus();
-    return;
-  }
-  const heading = document.querySelector("#merchant-panel h2");
-  if (heading) {
-    heading.focus();
-    return;
-  }
-  document.querySelector("#offers-list")?.focus();
-}
-
-function focusLeftoverPrintControl() {
-  const buyerTab = document.querySelector("#buyer-tab");
-  if (buyerTab) activateTab(buyerTab);
-  const print = document.querySelector("#leftover-print-fill");
-  if (print) {
-    print.focus();
     return;
   }
   document.querySelector("#residual-title")?.focus();
@@ -2377,30 +1426,10 @@ function renderEditor() {
   if (hideWinnerAllocated) hideWinnerAllocated.checked = hideWinnerAllocatedBuyers;
   const hideLeftoverFillBuyers = document.querySelector("#hide-buyers-filled-by-leftover-fill");
   if (hideLeftoverFillBuyers) hideLeftoverFillBuyers.checked = hideBuyersFilledByLeftoverFill;
-  const hideLastLeftoverFillBuyer = document.querySelector("#hide-last-buyer-filled-by-leftover-fill");
-  if (hideLastLeftoverFillBuyer) hideLastLeftoverFillBuyer.checked = hideLastBuyerFilledByLeftoverFill;
-  const hideFirstLeftoverFillBuyer = document.querySelector("#hide-first-buyer-filled-by-leftover-fill");
-  if (hideFirstLeftoverFillBuyer) hideFirstLeftoverFillBuyer.checked = hideFirstBuyerFilledByLeftoverFill;
-  const hideFirstTertiaryFillBuyer = document.querySelector("#hide-first-buyer-filled-by-tertiary-fill");
-  if (hideFirstTertiaryFillBuyer) hideFirstTertiaryFillBuyer.checked = hideFirstBuyerFilledByTertiaryFill;
-  const hideLastTertiaryFillBuyer = document.querySelector("#hide-last-buyer-filled-by-tertiary-fill");
-  if (hideLastTertiaryFillBuyer) hideLastTertiaryFillBuyer.checked = hideLastBuyerFilledByTertiaryFill;
-  const hideLastUnserved = document.querySelector("#hide-last-unserved-buyer");
-  if (hideLastUnserved) hideLastUnserved.checked = hideLastUnservedBuyer;
-  const hideFirstUnserved = document.querySelector("#hide-first-unserved-buyer");
-  if (hideFirstUnserved) hideFirstUnserved.checked = hideFirstUnservedBuyer;
-  const hideLastLeftoverOnly = document.querySelector("#hide-last-leftover-only-buyer");
-  if (hideLastLeftoverOnly) hideLastLeftoverOnly.checked = hideLastLeftoverOnlyBuyer;
-  const hideFirstLeftoverOnly = document.querySelector("#hide-first-leftover-only-buyer");
-  if (hideFirstLeftoverOnly) hideFirstLeftoverOnly.checked = hideFirstLeftoverOnlyBuyer;
-  const hideLastWinnerAllocated = document.querySelector("#hide-last-winner-allocated-buyer");
-  if (hideLastWinnerAllocated) hideLastWinnerAllocated.checked = hideLastWinnerAllocatedBuyer;
-  const hideFirstWinnerAllocated = document.querySelector("#hide-first-winner-allocated-buyer");
-  if (hideFirstWinnerAllocated) hideFirstWinnerAllocated.checked = hideFirstWinnerAllocatedBuyer;
-  const hideFirstUncoveredLeftover = document.querySelector("#hide-first-uncovered-leftover-buyer");
-  if (hideFirstUncoveredLeftover) hideFirstUncoveredLeftover.checked = hideFirstUncoveredLeftoverBuyer;
-  const hideLastUncoveredLeftover = document.querySelector("#hide-last-uncovered-leftover-buyer");
-  if (hideLastUncoveredLeftover) hideLastUncoveredLeftover.checked = hideLastUncoveredLeftoverBuyer;
+  for (const [id, value] of [["#edge-leftover-fill", edgeLeftoverFill], ["#edge-tertiary-fill", edgeTertiaryFill], ["#edge-unserved", edgeUnserved], ["#edge-leftover-only", edgeLeftoverOnly], ["#edge-winner-allocated", edgeWinnerAllocated], ["#edge-uncovered-leftover", edgeUncoveredLeftover]]) {
+    const select = document.querySelector(id);
+    if (select && EDGE_ROW_OPTIONS.includes(value)) select.value = value;
+  }
   const restoreRemoved = document.querySelector("#restore-removed-buyer");
   if (restoreRemoved) {
     restoreRemoved.disabled = !lastRemovedBuyer || scenario.buyers.some((buyer) => buyer.id === lastRemovedBuyer.id);
@@ -2589,7 +1618,7 @@ function applyBuyerDisplayFilters() {
       visibleIds = new Set();
     }
   }
-  if (hideLastBuyerFilledByLeftoverFill) {
+  if (edgeLeftoverFill === "hide-last" || edgeLeftoverFill === "hide-first-last") {
     try {
       const lastLeftoverFillHidden = new Set(filterBuyerIdsHidingLastBuyerFilledByLeftoverFill(scenario, true));
       visibleIds = new Set([...visibleIds].filter((id) => lastLeftoverFillHidden.has(id)));
@@ -2597,7 +1626,7 @@ function applyBuyerDisplayFilters() {
       visibleIds = new Set();
     }
   }
-  if (hideFirstBuyerFilledByLeftoverFill) {
+  if (edgeLeftoverFill === "hide-first" || edgeLeftoverFill === "hide-first-last") {
     try {
       const firstLeftoverFillHidden = new Set(filterBuyerIdsHidingFirstBuyerFilledByLeftoverFill(scenario, true));
       visibleIds = new Set([...visibleIds].filter((id) => firstLeftoverFillHidden.has(id)));
@@ -2605,7 +1634,7 @@ function applyBuyerDisplayFilters() {
       visibleIds = new Set();
     }
   }
-  if (hideFirstBuyerFilledByTertiaryFill) {
+  if (edgeTertiaryFill === "hide-first" || edgeTertiaryFill === "hide-first-last") {
     try {
       const firstTertiaryFillHidden = new Set(filterBuyerIdsHidingFirstBuyerFilledByTertiaryFill(scenario, true));
       visibleIds = new Set([...visibleIds].filter((id) => firstTertiaryFillHidden.has(id)));
@@ -2613,7 +1642,7 @@ function applyBuyerDisplayFilters() {
       visibleIds = new Set();
     }
   }
-  if (hideLastBuyerFilledByTertiaryFill) {
+  if (edgeTertiaryFill === "hide-last" || edgeTertiaryFill === "hide-first-last") {
     try {
       const lastTertiaryFillHidden = new Set(filterBuyerIdsHidingLastBuyerFilledByTertiaryFill(scenario, true));
       visibleIds = new Set([...visibleIds].filter((id) => lastTertiaryFillHidden.has(id)));
@@ -2621,7 +1650,7 @@ function applyBuyerDisplayFilters() {
       visibleIds = new Set();
     }
   }
-  if (hideLastUnservedBuyer) {
+  if (edgeUnserved === "hide-last" || edgeUnserved === "hide-first-last") {
     try {
       const lastUnservedHidden = new Set(filterBuyerIdsHidingLastUnservedBuyer(scenario, true));
       visibleIds = new Set([...visibleIds].filter((id) => lastUnservedHidden.has(id)));
@@ -2629,7 +1658,7 @@ function applyBuyerDisplayFilters() {
       visibleIds = new Set();
     }
   }
-  if (hideFirstUnservedBuyer) {
+  if (edgeUnserved === "hide-first" || edgeUnserved === "hide-first-last") {
     try {
       const firstUnservedHidden = new Set(filterBuyerIdsHidingFirstUnservedBuyer(scenario, true));
       visibleIds = new Set([...visibleIds].filter((id) => firstUnservedHidden.has(id)));
@@ -2637,7 +1666,7 @@ function applyBuyerDisplayFilters() {
       visibleIds = new Set();
     }
   }
-  if (hideLastLeftoverOnlyBuyer) {
+  if (edgeLeftoverOnly === "hide-last" || edgeLeftoverOnly === "hide-first-last") {
     try {
       const lastLeftoverOnlyHidden = new Set(filterBuyerIdsHidingLastLeftoverOnlyBuyer(scenario, true));
       visibleIds = new Set([...visibleIds].filter((id) => lastLeftoverOnlyHidden.has(id)));
@@ -2645,7 +1674,7 @@ function applyBuyerDisplayFilters() {
       visibleIds = new Set();
     }
   }
-  if (hideFirstLeftoverOnlyBuyer) {
+  if (edgeLeftoverOnly === "hide-first" || edgeLeftoverOnly === "hide-first-last") {
     try {
       const firstLeftoverOnlyHidden = new Set(filterBuyerIdsHidingFirstLeftoverOnlyBuyer(scenario, true));
       visibleIds = new Set([...visibleIds].filter((id) => firstLeftoverOnlyHidden.has(id)));
@@ -2653,7 +1682,7 @@ function applyBuyerDisplayFilters() {
       visibleIds = new Set();
     }
   }
-  if (hideLastWinnerAllocatedBuyer) {
+  if (edgeWinnerAllocated === "hide-last" || edgeWinnerAllocated === "hide-first-last") {
     try {
       const lastWinnerAllocatedHidden = new Set(filterBuyerIdsHidingLastWinnerAllocatedBuyer(scenario, true));
       visibleIds = new Set([...visibleIds].filter((id) => lastWinnerAllocatedHidden.has(id)));
@@ -2661,7 +1690,7 @@ function applyBuyerDisplayFilters() {
       visibleIds = new Set();
     }
   }
-  if (hideFirstWinnerAllocatedBuyer) {
+  if (edgeWinnerAllocated === "hide-first" || edgeWinnerAllocated === "hide-first-last") {
     try {
       const firstWinnerAllocatedHidden = new Set(filterBuyerIdsHidingFirstWinnerAllocatedBuyer(scenario, true));
       visibleIds = new Set([...visibleIds].filter((id) => firstWinnerAllocatedHidden.has(id)));
@@ -2669,7 +1698,7 @@ function applyBuyerDisplayFilters() {
       visibleIds = new Set();
     }
   }
-  if (hideFirstUncoveredLeftoverBuyer) {
+  if (edgeUncoveredLeftover === "hide-first" || edgeUncoveredLeftover === "hide-first-last") {
     try {
       const firstUncoveredLeftoverHidden = new Set(filterBuyerIdsHidingFirstUncoveredLeftoverBuyer(scenario, true));
       visibleIds = new Set([...visibleIds].filter((id) => firstUncoveredLeftoverHidden.has(id)));
@@ -2677,7 +1706,7 @@ function applyBuyerDisplayFilters() {
       visibleIds = new Set();
     }
   }
-  if (hideLastUncoveredLeftoverBuyer) {
+  if (edgeUncoveredLeftover === "hide-last" || edgeUncoveredLeftover === "hide-first-last") {
     try {
       const lastUncoveredLeftoverHidden = new Set(filterBuyerIdsHidingLastUncoveredLeftoverBuyer(scenario, true));
       visibleIds = new Set([...visibleIds].filter((id) => lastUncoveredLeftoverHidden.has(id)));
@@ -2903,26 +1932,12 @@ function refresh() {
     if (leftoverHeadroom) leftoverHeadroom.textContent = "Unspent item headroom after winner will appear once every field is valid.";
     const leftoverOverlap = document.querySelector("#leftover-print-overlap-rows");
     if (leftoverOverlap) leftoverOverlap.replaceChildren();
-    const leftoverPrintUncovered = document.querySelector("#leftover-print-uncovered");
-    if (leftoverPrintUncovered) leftoverPrintUncovered.textContent = "Uncovered leftover: 0 buyers, 0 units";
-    const leftoverPrintRequested = document.querySelector("#leftover-print-requested");
-    if (leftoverPrintRequested) leftoverPrintRequested.textContent = "Requested units: 0";
-    const leftoverPrintWinner = document.querySelector("#leftover-print-winner");
-    if (leftoverPrintWinner) leftoverPrintWinner.textContent = "Winner merchant: None unlocked";
-    const leftoverPrintFill = document.querySelector("#leftover-print-fill");
-    if (leftoverPrintFill) leftoverPrintFill.textContent = "Leftover fill merchant: None";
-    const leftoverPrintFillMerchant = document.querySelector("#leftover-print-fill-merchant");
-    if (leftoverPrintFillMerchant) leftoverPrintFillMerchant.textContent = "Leftover fill merchant label: None";
-    const leftoverPrintFillRemaining = document.querySelector("#leftover-print-fill-remaining");
-    if (leftoverPrintFillRemaining) leftoverPrintFillRemaining.textContent = "Leftover fill remaining capacity: none";
-    const leftoverPrintFillFulfillment = document.querySelector("#leftover-print-fill-fulfillment");
-    if (leftoverPrintFillFulfillment) leftoverPrintFillFulfillment.textContent = "Leftover fill fulfillment: none";
-    const leftoverPrintFillDelivery = document.querySelector("#leftover-print-fill-delivery");
-    if (leftoverPrintFillDelivery) leftoverPrintFillDelivery.textContent = "Leftover fill delivery days: none";
-    const leftoverPrintFillPickup = document.querySelector("#leftover-print-fill-pickup");
-    if (leftoverPrintFillPickup) leftoverPrintFillPickup.textContent = "Leftover fill pickup days: none";
-    const leftoverPrintFillLabel = document.querySelector("#leftover-print-fill-label");
-    if (leftoverPrintFillLabel) leftoverPrintFillLabel.textContent = "Leftover fill label: none";
+    const leftoverPrintFillEvidence = document.querySelector("#leftover-print-fill-evidence");
+    if (leftoverPrintFillEvidence) leftoverPrintFillEvidence.textContent = "Leftover fill evidence: none";
+    const leftoverPrintTertiaryEvidence = document.querySelector("#leftover-print-tertiary-evidence");
+    if (leftoverPrintTertiaryEvidence) leftoverPrintTertiaryEvidence.textContent = "Tertiary fill evidence: none";
+    const leftoverPrintUncoveredEvidence = document.querySelector("#leftover-print-uncovered-evidence");
+    if (leftoverPrintUncoveredEvidence) leftoverPrintUncoveredEvidence.textContent = "Uncovered leftover evidence: none";
     const leftoverFallback = document.querySelector("#clipboard-fallback");
     if (leftoverFallback) leftoverFallback.hidden = true;
     elements.demandGroups.replaceChildren();
@@ -3239,158 +2254,17 @@ function renderLeftoverCoverageTable(rawScenario) {
       ? `Winner merchant: ${coverage.primary.merchant}`
       : "Winner merchant: None unlocked";
   }
-  const leftoverFillPrint = document.querySelector("#leftover-print-fill");
-  if (leftoverFillPrint) {
-    const coverage = computeResidualCoverage(rawScenario);
-    leftoverFillPrint.textContent = coverage.secondary
-      ? `Leftover fill merchant: ${coverage.secondary.merchant}, ${coverage.secondary.fulfilledUnits} units`
-      : "Leftover fill merchant: None";
+  const leftoverFillEvidencePrint = document.querySelector("#leftover-print-fill-evidence");
+  if (leftoverFillEvidencePrint) {
+    leftoverFillEvidencePrint.textContent = leftoverFillEvidenceToMarkdown(rawScenario);
   }
-  const leftoverFillMerchantPrint = document.querySelector("#leftover-print-fill-merchant");
-  if (leftoverFillMerchantPrint) {
-    const coverage = computeResidualCoverage(rawScenario);
-    leftoverFillMerchantPrint.textContent = coverage.secondary
-      ? `Leftover fill merchant label: ${coverage.secondary.merchant}`
-      : "Leftover fill merchant label: None";
+  const tertiaryFillEvidencePrint = document.querySelector("#leftover-print-tertiary-evidence");
+  if (tertiaryFillEvidencePrint) {
+    tertiaryFillEvidencePrint.textContent = tertiaryFillEvidenceToMarkdown(rawScenario);
   }
-  const leftoverFillRemainingPrint = document.querySelector("#leftover-print-fill-remaining");
-  if (leftoverFillRemainingPrint) {
-    const coverage = computeResidualCoverage(rawScenario);
-    const leftoverOffer = coverage.secondary
-      ? rawScenario.offers.find((offer) => offer.id === coverage.secondary.offerId)
-      : null;
-    const remaining = leftoverOffer
-      ? Math.max(0, leftoverOffer.capacity - coverage.secondary.fulfilledUnits)
-      : 0;
-    leftoverFillRemainingPrint.textContent = coverage.secondary
-      ? `Leftover fill remaining capacity: ${remaining} units`
-      : "Leftover fill remaining capacity: none";
-  }
-  const leftoverFillFulfillmentPrint = document.querySelector("#leftover-print-fill-fulfillment");
-  if (leftoverFillFulfillmentPrint) {
-    const coverage = computeResidualCoverage(rawScenario);
-    const leftoverOffer = coverage.secondary
-      ? rawScenario.offers.find((offer) => offer.id === coverage.secondary.offerId)
-      : null;
-    leftoverFillFulfillmentPrint.textContent = coverage.secondary && leftoverOffer
-      ? `Leftover fill fulfillment: ${leftoverOffer.fulfillment === "pickup" ? "pickup" : "shipping"}`
-      : "Leftover fill fulfillment: none";
-  }
-  const leftoverFillDeliveryPrint = document.querySelector("#leftover-print-fill-delivery");
-  if (leftoverFillDeliveryPrint) {
-    const coverage = computeResidualCoverage(rawScenario);
-    const leftoverOffer = coverage.secondary
-      ? rawScenario.offers.find((offer) => offer.id === coverage.secondary.offerId)
-      : null;
-    leftoverFillDeliveryPrint.textContent = coverage.secondary && leftoverOffer
-      ? `Leftover fill delivery days: ${leftoverOffer.deliveryDays} days`
-      : "Leftover fill delivery days: none";
-  }
-  const leftoverFillPickupPrint = document.querySelector("#leftover-print-fill-pickup");
-  if (leftoverFillPickupPrint) {
-    const coverage = computeResidualCoverage(rawScenario);
-    const leftoverOffer = coverage.secondary
-      ? rawScenario.offers.find((offer) => offer.id === coverage.secondary.offerId)
-      : null;
-    leftoverFillPickupPrint.textContent = coverage.secondary && leftoverOffer && leftoverOffer.fulfillment === "pickup"
-      ? `Leftover fill pickup days: ${leftoverOffer.deliveryDays} days`
-      : "Leftover fill pickup days: none";
-  }
-  const leftoverFillLabelPrint = document.querySelector("#leftover-print-fill-label");
-  if (leftoverFillLabelPrint) {
-    const coverage = computeResidualCoverage(rawScenario);
-    leftoverFillLabelPrint.textContent = coverage.secondary
-      ? `Leftover fill label: ${coverage.secondary.merchant} / ${coverage.secondary.variant}`
-      : "Leftover fill label: none";
-  }
-  const leftoverFillMinimumPrint = document.querySelector("#leftover-print-fill-minimum");
-  if (leftoverFillMinimumPrint) {
-    const coverage = computeResidualCoverage(rawScenario);
-    const leftoverOffer = coverage.secondary
-      ? rawScenario.offers.find((offer) => offer.id === coverage.secondary.offerId)
-      : null;
-    leftoverFillMinimumPrint.textContent = coverage.secondary && leftoverOffer
-      ? `Leftover fill minimum: ${leftoverOffer.minimumUnits} units`
-      : "Leftover fill minimum: none";
-  }
-  const leftoverFillMaximumPrint = document.querySelector("#leftover-print-fill-maximum");
-  if (leftoverFillMaximumPrint) {
-    const coverage = computeResidualCoverage(rawScenario);
-    const leftoverOffer = coverage.secondary
-      ? rawScenario.offers.find((offer) => offer.id === coverage.secondary.offerId)
-      : null;
-    leftoverFillMaximumPrint.textContent = coverage.secondary && leftoverOffer
-      ? `Leftover fill maximum: ${leftoverOffer.capacity} units`
-      : "Leftover fill maximum: none";
-  }
-  const tertiaryFillRemainingPrint = document.querySelector("#leftover-print-tertiary-remaining");
-  if (tertiaryFillRemainingPrint) {
-    const coverage = computeResidualCoverage(rawScenario);
-    const tertiaryOffer = coverage.tertiary
-      ? rawScenario.offers.find((offer) => offer.id === coverage.tertiary.offerId)
-      : null;
-    const remaining = tertiaryOffer
-      ? Math.max(0, tertiaryOffer.capacity - coverage.tertiary.fulfilledUnits)
-      : 0;
-    tertiaryFillRemainingPrint.textContent = coverage.tertiary
-      ? `Tertiary fill remaining capacity: ${remaining} units`
-      : "Tertiary fill remaining capacity: none";
-  }
-  const tertiaryFillMaximumPrint = document.querySelector("#leftover-print-tertiary-maximum");
-  if (tertiaryFillMaximumPrint) {
-    const coverage = computeResidualCoverage(rawScenario);
-    const tertiaryOffer = coverage.tertiary
-      ? rawScenario.offers.find((offer) => offer.id === coverage.tertiary.offerId)
-      : null;
-    tertiaryFillMaximumPrint.textContent = coverage.tertiary && tertiaryOffer
-      ? `Tertiary fill maximum: ${tertiaryOffer.capacity} units`
-      : "Tertiary fill maximum: none";
-  }
-  const uncoveredPrint = document.querySelector("#leftover-print-uncovered");
-  if (uncoveredPrint) {
-    const coverage = computeResidualCoverage(rawScenario);
-    uncoveredPrint.textContent = `Uncovered leftover: ${coverage.unfilledBuyerCount} buyers, ${coverage.unfilledUnits} units`;
-  }
-  const uncoveredUnitsPrint = document.querySelector("#leftover-print-uncovered-units");
-  if (uncoveredUnitsPrint) {
-    const coverage = computeResidualCoverage(rawScenario);
-    uncoveredUnitsPrint.textContent = coverage.leftoverBuyerCount > 0
-      ? `Uncovered leftover units: ${coverage.unfilledUnits}`
-      : "Uncovered leftover units: none";
-  }
-  const leftoverUncoveredRemainingPrint = document.querySelector("#leftover-print-uncovered-remaining");
-  if (leftoverUncoveredRemainingPrint) {
-    const coverage = computeResidualCoverage(rawScenario);
-    leftoverUncoveredRemainingPrint.textContent = coverage.leftoverBuyerCount > 0
-      ? `Leftover uncovered remaining: ${coverage.unfilledUnits} units`
-      : "Leftover uncovered remaining: none";
-  }
-  const leftoverUncoveredMaximumPrint = document.querySelector("#leftover-print-uncovered-maximum");
-  if (leftoverUncoveredMaximumPrint) {
-    const coverage = computeResidualCoverage(rawScenario);
-    const leftoverOffer = coverage.secondary
-      ? rawScenario.offers.find((offer) => offer.id === coverage.secondary.offerId)
-      : null;
-    leftoverUncoveredMaximumPrint.textContent = coverage.secondary && leftoverOffer
-      ? `Leftover uncovered maximum: ${leftoverOffer.capacity} units`
-      : "Leftover uncovered maximum: none";
-  }
-  const leftoverUncoveredMinimumPrint = document.querySelector("#leftover-print-uncovered-minimum");
-  if (leftoverUncoveredMinimumPrint) {
-    const coverage = computeResidualCoverage(rawScenario);
-    const leftoverOffer = coverage.secondary
-      ? rawScenario.offers.find((offer) => offer.id === coverage.secondary.offerId)
-      : null;
-    leftoverUncoveredMinimumPrint.textContent = coverage.secondary && leftoverOffer
-      ? `Leftover uncovered minimum: ${leftoverOffer.minimumUnits} units`
-      : "Leftover uncovered minimum: none";
-  }
-  const leftoverUncoveredCountPrint = document.querySelector("#leftover-print-uncovered-count");
-  if (leftoverUncoveredCountPrint) {
-    const coverage = computeResidualCoverage(rawScenario);
-    leftoverUncoveredCountPrint.textContent = coverage.leftoverBuyerCount > 0
-      ? `Leftover uncovered count: ${coverage.unfilledBuyerCount} buyers`
-      : "Leftover uncovered count: none";
+  const uncoveredEvidencePrint = document.querySelector("#leftover-print-uncovered-evidence");
+  if (uncoveredEvidencePrint) {
+    uncoveredEvidencePrint.textContent = uncoveredLeftoverEvidenceToMarkdown(rawScenario);
   }
   const requestedPrint = document.querySelector("#leftover-print-requested");
   if (requestedPrint) {
@@ -3956,6 +2830,52 @@ function exportScenario() {
   }
 }
 
+function copyLeftoverFillEvidence() {
+  try {
+    copyTextWithFallback(
+      leftoverFillEvidenceToMarkdown(scenario),
+      "Leftover fill evidence copied as organizer-private Markdown. Summary, units, merchant, offer, capacity, fulfillment, delivery, pickup, minimum, and maximum. This is not a merchant export.",
+      "Clipboard was blocked. Organizer-private leftover fill evidence Markdown is in the textarea. This is not a merchant export."
+    );
+  } catch (error) { setStatus(`Leftover fill evidence copy failed: ${messageOf(error)}`); }
+}
+function copyUncoveredLeftoverEvidence() {
+  try {
+    copyTextWithFallback(
+      uncoveredLeftoverEvidenceToMarkdown(scenario),
+      "Uncovered leftover evidence copied as organizer-private Markdown. Counts, units, remaining, and leftover-fill capacity facts. This is not a merchant export.",
+      "Clipboard was blocked. Organizer-private uncovered leftover evidence Markdown is in the textarea. This is not a merchant export."
+    );
+  } catch (error) { setStatus(`Uncovered leftover evidence copy failed: ${messageOf(error)}`); }
+}
+function copyLeftoverOnlyEvidence() {
+  try {
+    copyTextWithFallback(
+      leftoverOnlyEvidenceToMarkdown(scenario),
+      "Leftover-only evidence copied as organizer-private Markdown. Count, units, quantities, headroom, capacity, and unit price. This is not a merchant export.",
+      "Clipboard was blocked. Organizer-private leftover-only evidence Markdown is in the textarea. This is not a merchant export."
+    );
+  } catch (error) { setStatus(`Leftover-only evidence copy failed: ${messageOf(error)}`); }
+}
+function copyTertiaryFillEvidence() {
+  try {
+    copyTextWithFallback(
+      tertiaryFillEvidenceToMarkdown(scenario),
+      "Tertiary fill evidence copied as organizer-private Markdown. Remaining and offer capacity. This is not a merchant export.",
+      "Clipboard was blocked. Organizer-private tertiary fill evidence Markdown is in the textarea. This is not a merchant export."
+    );
+  } catch (error) { setStatus(`Tertiary fill evidence copy failed: ${messageOf(error)}`); }
+}
+function copyWinningOfferEvidence() {
+  try {
+    copyTextWithFallback(
+      winningOfferEvidenceToMarkdown(scenario),
+      "Winning offer evidence copied. Merchant label, fulfillment, and remaining capacity. Buyer identities omitted.",
+      "Clipboard was blocked. Winning offer evidence Markdown is in the textarea. Buyer identities omitted."
+    );
+  } catch (error) { setStatus(`Winning offer evidence copy failed: ${messageOf(error)}`); }
+}
+
 function copyLeftoverCoverage() {
   try {
     copyTextWithFallback(
@@ -3966,266 +2886,6 @@ function copyLeftoverCoverage() {
   } catch (error) { setStatus(`Leftover copy failed: ${messageOf(error)}`); }
 }
 
-function copyLeftoverFill() {
-  try {
-    copyTextWithFallback(
-      createLeftoverFillMarkdown(scenario),
-      "Leftover fill copied as organizer-private Markdown. Merchant label and leftover counts only. This is not a merchant export.",
-      "Clipboard was blocked. Organizer-private leftover fill Markdown is in the textarea. Merchant label and leftover counts only. This is not a merchant export."
-    );
-  } catch (error) { setStatus(`Leftover fill copy failed: ${messageOf(error)}`); }
-}
-
-function copyLeftoverFillUnitCount() {
-  try {
-    copyTextWithFallback(
-      createLeftoverFillUnitCountMarkdown(scenario),
-      "Leftover fill unit-count copied as organizer-private Markdown. Count only. This is not a merchant export.",
-      "Clipboard was blocked. Organizer-private leftover fill unit-count Markdown is in the textarea. Count only. This is not a merchant export."
-    );
-  } catch (error) { setStatus(`Leftover fill unit-count copy failed: ${messageOf(error)}`); }
-}
-
-function copyLeftoverFillMerchantLabel() {
-  try {
-    copyTextWithFallback(
-      createLeftoverFillMerchantLabelMarkdown(scenario),
-      "Leftover fill merchant copied as organizer-private Markdown. Merchant label only. This is not a merchant export.",
-      "Clipboard was blocked. Organizer-private leftover fill merchant Markdown is in the textarea. Merchant label only. This is not a merchant export."
-    );
-  } catch (error) { setStatus(`Leftover fill merchant copy failed: ${messageOf(error)}`); }
-}
-
-function copyLeftoverFillRemainingCapacity() {
-  try {
-    copyTextWithFallback(
-      createLeftoverFillRemainingCapacityMarkdown(scenario),
-      "Leftover fill remaining capacity copied as organizer-private Markdown. Remaining capacity only. This is not a merchant export.",
-      "Clipboard was blocked. Organizer-private leftover fill remaining-capacity Markdown is in the textarea. Remaining capacity only. This is not a merchant export."
-    );
-  } catch (error) { setStatus(`Leftover fill remaining capacity copy failed: ${messageOf(error)}`); }
-}
-
-function copyLeftoverFillFulfillment() {
-  try {
-    copyTextWithFallback(
-      createLeftoverFillFulfillmentMarkdown(scenario),
-      "Leftover fill fulfillment copied as organizer-private Markdown. Pickup or shipping only. This is not a merchant export.",
-      "Clipboard was blocked. Organizer-private leftover fill fulfillment Markdown is in the textarea. Pickup or shipping only. This is not a merchant export."
-    );
-  } catch (error) { setStatus(`Leftover fill fulfillment copy failed: ${messageOf(error)}`); }
-}
-
-function copyLeftoverFillDelivery() {
-  try {
-    copyTextWithFallback(
-      createLeftoverFillDeliveryMarkdown(scenario),
-      "Leftover fill delivery copied as organizer-private Markdown. Count only. This is not a merchant export.",
-      "Clipboard was blocked. Organizer-private leftover fill delivery Markdown is in the textarea. Count only. This is not a merchant export."
-    );
-  } catch (error) { setStatus(`Leftover fill delivery copy failed: ${messageOf(error)}`); }
-}
-
-function copyLeftoverFillPickup() {
-  try {
-    copyTextWithFallback(
-      createLeftoverFillPickupMarkdown(scenario),
-      "Leftover fill pickup copied as organizer-private Markdown. Count only. This is not a merchant export.",
-      "Clipboard was blocked. Organizer-private leftover fill pickup Markdown is in the textarea. Count only. This is not a merchant export."
-    );
-  } catch (error) { setStatus(`Leftover fill pickup copy failed: ${messageOf(error)}`); }
-}
-
-function copyLeftoverFillLabel() {
-  try {
-    copyTextWithFallback(
-      createLeftoverFillLabelMarkdown(scenario),
-      "Leftover fill label copied as organizer-private Markdown. Offer label only. This is not a merchant export.",
-      "Clipboard was blocked. Organizer-private leftover fill label Markdown is in the textarea. Offer label only. This is not a merchant export."
-    );
-  } catch (error) { setStatus(`Leftover fill label copy failed: ${messageOf(error)}`); }
-}
-
-function copyLeftoverFillMinimum() {
-  try {
-    copyTextWithFallback(
-      createLeftoverFillMinimumMarkdown(scenario),
-      "Leftover fill minimum copied as organizer-private Markdown. Count only. This is not a merchant export.",
-      "Clipboard was blocked. Organizer-private leftover fill minimum Markdown is in the textarea. Count only. This is not a merchant export."
-    );
-  } catch (error) { setStatus(`Leftover fill minimum copy failed: ${messageOf(error)}`); }
-}
-
-function copyLeftoverFillMaximum() {
-  try {
-    copyTextWithFallback(
-      createLeftoverFillMaximumMarkdown(scenario),
-      "Leftover fill maximum copied as organizer-private Markdown. Count only. This is not a merchant export.",
-      "Clipboard was blocked. Organizer-private leftover fill maximum Markdown is in the textarea. Count only. This is not a merchant export."
-    );
-  } catch (error) { setStatus(`Leftover fill maximum copy failed: ${messageOf(error)}`); }
-}
-
-function copyTertiaryFillRemainingCapacity() {
-  try {
-    copyTextWithFallback(
-      createTertiaryFillRemainingCapacityMarkdown(scenario),
-      "Tertiary fill remaining capacity copied as organizer-private Markdown. Count only. This is not a merchant export.",
-      "Clipboard was blocked. Organizer-private tertiary fill remaining capacity Markdown is in the textarea. Count only. This is not a merchant export."
-    );
-  } catch (error) { setStatus(`Tertiary fill remaining copy failed: ${messageOf(error)}`); }
-}
-
-function copyTertiaryFillMaximum() {
-  try {
-    copyTextWithFallback(
-      createTertiaryFillMaximumMarkdown(scenario),
-      "Tertiary fill maximum copied as organizer-private Markdown. Count only. This is not a merchant export.",
-      "Clipboard was blocked. Organizer-private tertiary fill maximum Markdown is in the textarea. Count only. This is not a merchant export."
-    );
-  } catch (error) { setStatus(`Tertiary fill maximum copy failed: ${messageOf(error)}`); }
-}
-
-function copyLeftoverUncoveredRemaining() {
-  try {
-    copyTextWithFallback(
-      createLeftoverUncoveredRemainingMarkdown(scenario),
-      "Leftover uncovered remaining copied as organizer-private Markdown. Count only. This is not a merchant export.",
-      "Clipboard was blocked. Organizer-private leftover uncovered remaining Markdown is in the textarea. Count only. This is not a merchant export."
-    );
-  } catch (error) { setStatus(`Leftover uncovered remaining copy failed: ${messageOf(error)}`); }
-}
-
-function copyLeftoverUncoveredMaximum() {
-  try {
-    copyTextWithFallback(
-      createLeftoverUncoveredMaximumMarkdown(scenario),
-      "Leftover uncovered maximum copied as organizer-private Markdown. Count only. This is not a merchant export.",
-      "Clipboard was blocked. Organizer-private leftover uncovered maximum Markdown is in the textarea. Count only. This is not a merchant export."
-    );
-  } catch (error) { setStatus(`Leftover uncovered maximum copy failed: ${messageOf(error)}`); }
-}
-
-function copyLeftoverUncoveredMinimum() {
-  try {
-    copyTextWithFallback(
-      createLeftoverUncoveredMinimumMarkdown(scenario),
-      "Leftover uncovered minimum copied as organizer-private Markdown. Count only. This is not a merchant export.",
-      "Clipboard was blocked. Organizer-private leftover uncovered minimum Markdown is in the textarea. Count only. This is not a merchant export."
-    );
-  } catch (error) { setStatus(`Leftover uncovered minimum copy failed: ${messageOf(error)}`); }
-}
-
-function copyLeftoverUncoveredCount() {
-  try {
-    copyTextWithFallback(
-      createLeftoverUncoveredCountMarkdown(scenario),
-      "Leftover uncovered count copied as organizer-private Markdown. Count only. This is not a merchant export.",
-      "Clipboard was blocked. Organizer-private leftover uncovered count Markdown is in the textarea. Count only. This is not a merchant export."
-    );
-  } catch (error) { setStatus(`Leftover uncovered count copy failed: ${messageOf(error)}`); }
-}
-
-function copyLeftoverUncoveredLeftoverOnlyCount() {
-  try {
-    copyTextWithFallback(
-      createLeftoverUncoveredLeftoverOnlyCountMarkdown(scenario),
-      "Leftover uncovered leftover-only count copied as organizer-private Markdown. Count only. This is not a merchant export.",
-      "Clipboard was blocked. Organizer-private leftover uncovered leftover-only count Markdown is in the textarea. Count only. This is not a merchant export."
-    );
-  } catch (error) { setStatus(`Leftover uncovered leftover-only count copy failed: ${messageOf(error)}`); }
-}
-
-function copyLeftoverUncoveredLeftoverOnlyRemaining() {
-  try {
-    copyTextWithFallback(
-      createLeftoverUncoveredLeftoverOnlyRemainingMarkdown(scenario),
-      "Leftover uncovered leftover-only remaining copied as organizer-private Markdown. Count only. This is not a merchant export.",
-      "Clipboard was blocked. Organizer-private leftover uncovered leftover-only remaining Markdown is in the textarea. Count only. This is not a merchant export."
-    );
-  } catch (error) { setStatus(`Leftover uncovered leftover-only remaining copy failed: ${messageOf(error)}`); }
-}
-
-function copyLeftoverUncoveredLeftoverOnlyMaximum() {
-  try {
-    copyTextWithFallback(
-      createLeftoverUncoveredLeftoverOnlyMaximumMarkdown(scenario),
-      "Leftover uncovered leftover-only maximum copied as organizer-private Markdown. Count only. This is not a merchant export.",
-      "Clipboard was blocked. Organizer-private leftover uncovered leftover-only maximum Markdown is in the textarea. Count only. This is not a merchant export."
-    );
-  } catch (error) { setStatus(`Leftover uncovered leftover-only maximum copy failed: ${messageOf(error)}`); }
-}
-
-function copyLeftoverUncoveredLeftoverOnlyMinimum() {
-  try {
-    copyTextWithFallback(
-      createLeftoverUncoveredLeftoverOnlyMinimumMarkdown(scenario),
-      "Leftover uncovered leftover-only minimum copied as organizer-private Markdown. Count only. This is not a merchant export.",
-      "Clipboard was blocked. Organizer-private leftover uncovered leftover-only minimum Markdown is in the textarea. Count only. This is not a merchant export."
-    );
-  } catch (error) { setStatus(`Leftover uncovered leftover-only minimum copy failed: ${messageOf(error)}`); }
-}
-
-function copyLeftoverUncoveredLeftoverOnlyHeadroom() {
-  try {
-    copyTextWithFallback(
-      createLeftoverUncoveredLeftoverOnlyHeadroomMarkdown(scenario),
-      "Leftover uncovered leftover-only headroom copied as organizer-private Markdown. Count only. This is not a merchant export.",
-      "Clipboard was blocked. Organizer-private leftover uncovered leftover-only headroom Markdown is in the textarea. Count only. This is not a merchant export."
-    );
-  } catch (error) { setStatus(`Leftover uncovered leftover-only headroom copy failed: ${messageOf(error)}`); }
-}
-
-function copyLeftoverUncoveredLeftoverOnlyAllocated() {
-  try {
-    copyTextWithFallback(
-      createLeftoverUncoveredLeftoverOnlyAllocatedMarkdown(scenario),
-      "Leftover uncovered leftover-only allocated copied as organizer-private Markdown. Count only. This is not a merchant export.",
-      "Clipboard was blocked. Organizer-private leftover uncovered leftover-only allocated Markdown is in the textarea. Count only. This is not a merchant export."
-    );
-  } catch (error) { setStatus(`Leftover uncovered leftover-only allocated copy failed: ${messageOf(error)}`); }
-}
-
-function copyLeftoverUncoveredLeftoverOnlyCapacity() {
-  try {
-    copyTextWithFallback(
-      createLeftoverUncoveredLeftoverOnlyCapacityMarkdown(scenario),
-      "Leftover uncovered leftover-only capacity copied as organizer-private Markdown. Count only. This is not a merchant export.",
-      "Clipboard was blocked. Organizer-private leftover uncovered leftover-only capacity Markdown is in the textarea. Count only. This is not a merchant export."
-    );
-  } catch (error) { setStatus(`Leftover uncovered leftover-only capacity copy failed: ${messageOf(error)}`); }
-}
-
-function copyLeftoverUncoveredLeftoverOnlyUnitPrice() {
-  try {
-    copyTextWithFallback(
-      createLeftoverUncoveredLeftoverOnlyUnitPriceMarkdown(scenario),
-      "Leftover uncovered leftover-only unit price copied as organizer-private Markdown. Count only. This is not a merchant export.",
-      "Clipboard was blocked. Organizer-private leftover uncovered leftover-only unit price Markdown is in the textarea. Count only. This is not a merchant export."
-    );
-  } catch (error) { setStatus(`Leftover uncovered leftover-only unit price copy failed: ${messageOf(error)}`); }
-}
-
-function copyUncoveredLeftoverCounts() {
-  try {
-    copyTextWithFallback(
-      createUncoveredLeftoverCountsMarkdown(scenario),
-      "Uncovered leftover counts copied as organizer-private Markdown. Counts and units only. This is not a merchant export.",
-      "Clipboard was blocked. Organizer-private uncovered leftover Markdown is in the textarea. Counts and units only. This is not a merchant export."
-    );
-  } catch (error) { setStatus(`Uncovered leftover copy failed: ${messageOf(error)}`); }
-}
-
-function copyUncoveredLeftoverUnitCount() {
-  try {
-    copyTextWithFallback(
-      createUncoveredLeftoverUnitCountMarkdown(scenario),
-      "Uncovered leftover unit-count copied as organizer-private Markdown. Count only. This is not a merchant export.",
-      "Clipboard was blocked. Organizer-private uncovered leftover unit-count Markdown is in the textarea. Count only. This is not a merchant export."
-    );
-  } catch (error) { setStatus(`Uncovered leftover unit-count copy failed: ${messageOf(error)}`); }
-}
-
 function copyLeftoverHeadroom() {
   try {
     copyTextWithFallback(
@@ -4234,36 +2894,6 @@ function copyLeftoverHeadroom() {
       "Clipboard was blocked. Organizer-private leftover headroom Markdown is in the textarea. Currency and counts only. Not a rebate. This is not a merchant export."
     );
   } catch (error) { setStatus(`Leftover headroom copy failed: ${messageOf(error)}`); }
-}
-
-function copyWinningMerchantLabel() {
-  try {
-    copyTextWithFallback(
-      createWinningMerchantLabelMarkdown(scenario),
-      "Winning merchant label copied. Merchant name only. Buyer identities omitted.",
-      "Clipboard was blocked. Winning merchant label is in the textarea. Merchant name only. Buyer identities omitted."
-    );
-  } catch (error) { setStatus(`Winning merchant copy failed: ${messageOf(error)}`); }
-}
-
-function copyWinningFulfillment() {
-  try {
-    copyTextWithFallback(
-      createWinningFulfillmentMarkdown(scenario),
-      "Winning fulfillment copied. Pickup or shipping only. Honest empty when none unlocked. Buyer identities omitted.",
-      "Clipboard was blocked. Winning fulfillment is in the textarea. Pickup or shipping only. Buyer identities omitted."
-    );
-  } catch (error) { setStatus(`Winning fulfillment copy failed: ${messageOf(error)}`); }
-}
-
-function copyWinningRemainingCapacity() {
-  try {
-    copyTextWithFallback(
-      createWinningRemainingCapacityMarkdown(scenario),
-      "Winning remaining capacity copied. Remaining units only. Honest empty when none unlocked. Buyer identities omitted.",
-      "Clipboard was blocked. Winning remaining capacity is in the textarea. Remaining units only. Buyer identities omitted."
-    );
-  } catch (error) { setStatus(`Winning remaining capacity copy failed: ${messageOf(error)}`); }
 }
 
 function copyRequestedUnits() {

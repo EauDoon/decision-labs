@@ -1,3 +1,16 @@
+## 1.7.0 - 2026-09-19
+
+Consolidated edge-row selects, evidence copies, and a trimmed keyboard set in Common Cart 1.7.0
+
+A maintainability release on 1.6.0. The matching math is unchanged. Common Cart remains an offline simulator. Evidence documents keep the privacy class of the single-field copies they replace: organizer-private stays organizer-private, merchant-safe stays merchant-safe. Analysis exports still carry no buyer records to merchant views.
+
+### Changed
+
+- The twelve first/last buyer hide checkboxes become six edge-row selects: leftover-fill, tertiary-fill, unserved, leftover-only, winner-allocated, and uncovered leftover buyers each offer show all, hide first, hide last, or hide first and last. The underlying row filters are unchanged.
+- Thirty-five single-field copy buttons become eleven evidence buttons: leftover-fill, uncovered-leftover, leftover-only, tertiary-fill, and winning-offer evidence documents plus the unchanged coverage, headroom, inspector, requested-units, exclusion-counts, and winner-aggregates copies. Twenty-one print paragraphs become seven evidence blocks.
+- The keyboard set is trimmed to letters, `?`, and `Esc`: punctuation, digit, and shifted keys bound to the retired controls no longer trigger copy or focus jumps, so browser Find, fullscreen, dev tools, and scrolling behave normally again.
+- Workspace JSON now writes six `edge*` values and stops writing the twelve first/last flags. Older workspace files still open: each legacy pair maps onto the closest edge value (`hide-first-last` when both were set), and files without the new keys show every buyer.
+
 ## 1.4.54 - 2026-09-13
 
 Bottle-hand cycling carnival lunch, leftover-uncovered leftover-only remaining copy, and first leftover-only hide jump in Common Cart 1.4.54.
