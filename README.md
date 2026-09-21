@@ -1,5 +1,9 @@
 # Decision Labs
 
+[![build](https://img.shields.io/github/actions/workflow/status/EauDoon/decision-labs/common-cart.yml?branch=main)](https://github.com/EauDoon/decision-labs/actions)
+[![license](https://img.shields.io/github/license/EauDoon/decision-labs)](https://github.com/EauDoon/decision-labs/blob/main/LICENSE)
+[![last commit](https://img.shields.io/github/last-commit/EauDoon/decision-labs)](https://github.com/EauDoon/decision-labs)
+
 Decision Labs is a small catalog of four independent, offline workbenches for
 making assumptions visible before a high stakes conversation. Change an input,
 inspect the effect, and carry a deliberate JSON export into the discussion.
