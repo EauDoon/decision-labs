@@ -32,6 +32,12 @@ move to another person or device.
 The optional local launcher serves only the catalog and the four standalone
 pages on loopback:
 
+```bash
+npm start
+```
+
+Or run the launcher directly without `npm install`: `node scripts/serve.mjs`. Requires Node.js 20 or newer.
+
 ## What's new
 
 - Weekend Gap 1.8.0 adds scheduled funding tranches with cost accounting:
