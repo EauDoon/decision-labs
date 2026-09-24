@@ -1,4 +1,4 @@
-# decision-labs regression baseline — 2026-09-23
+# decision-labs regression baseline : 2026-09-23
 
 ## Scope
 Monorepo `decision-labs` (4 workspace apps). Test target invoked: `npm test`,
