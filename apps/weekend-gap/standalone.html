@@ -1121,6 +1121,10 @@ textarea:focus-visible, select:focus-visible, .table-scroll:focus-visible { outl
             <h3 id="print-heading">Print / one-pager</h3>
             <div class="planning-actions"><button id="export-workspace" type="button">Export workspace</button><button id="export-report" type="button">Export printable report</button><button id="print" type="button">Print</button><button id="print-redacted" type="button">Print redacted</button><button id="copy-markdown-report" type="button">Copy Markdown report</button><button id="import-workspace" type="button">Import workspace</button><input id="workspace-file" type="file" accept="application/json,.json" hidden></div>
             <p id="workspace-status" role="status">Workspace autosave includes the current scenario, pinned baseline, reserve target, notes and selected hour. Share links contain only a scenario and take priority on reload.</p>
+            <div id="workspace-recovery" hidden role="status">
+              <p id="workspace-recovery-message"></p>
+              <button id="download-workspace-recovery" type="button">Download preserved workspace</button>
+            </div>
             <p id="changed-assumptions"></p>
             <div class="table-scroll" tabindex="0" role="region" aria-label="Scenario comparison">
               <table>
@@ -4893,6 +4897,10 @@ return { SIMULATION_HOURS, START_DAY_INDEX, START_HOUR, MIN_HORIZON_HOURS, MAX_H
 const { SIMULATION_HOURS, START_DAY_INDEX, START_HOUR, MIN_HORIZON_HOURS, MAX_HORIZON_HOURS, MAX_CALENDAR_OVERRIDES, MAX_FUNDING_TRANCHES, DEFAULT_SCENARIO, PRESETS, finiteNumber, clamp, normaliseWindow, sanitizeScenario, scenarioHours, sanitizeCalendarOverrides, overrideAtHour, sanitizeFundingTranches, fundingAtHour, throughputAtHour, dayAndHourAt, formatTime, isBusinessDay, weekendCloseOverlapNotice, mondaySaturdayHolidayNotice, isWithinHours, isOperational, getOperationalStatus, buildDemandSchedule, capacityForHour, estimateDiscountBps, nextPayoutTime, hoursToFirstSettlement, hoursToClearQueue, createSnapshot, runSimulation, compareScenarios, planReserve, analysisToJSON, scenarioToHash, scenarioFromHash, scenarioToJSON, scenarioFromJSON, compareScenarioFiles, compareThreeScenarioFiles, analyzeTimeline, runSensitivity, libraryFromJSON, CHART_VIEWS, legacyHourFilterFromKeys, workspaceToJSON, workspaceFromJSON, createScenarioHistory, timelineToCSV, queueToCSV, reportToHTML, hoursToClearLabel, hoursToFirstSettlementLabel, peakQueueHourLabel, reportToMarkdown, dashboardToMarkdown, fundingToMarkdown, hoursToClearQueueToMarkdown, hoursToFirstSettlementToMarkdown, dashboardToCSV, BOTTLENECK_LABELS, attributeBottlenecks, bottleneckCountsToMarkdown, WINDOW_GATES, shiftOperatingWindow, previewWindowShift, DEMAND_PROFILES, DEMAND_PROFILE_STEP_ORDER, stepDemandProfile, previewDemandProfileStep, compareDemandProfiles, GENERIC_GATE_LABELS, redactGateLabels, gateDisplayLabels, buildGateSchedule, firstClosedGanttHour, firstClosedFxGanttHour, firstClosedIssuerGanttHour, firstClosedPayoutGanttHour, firstOpenPayoutGanttHour, firstOpenFxGanttHour, firstOpenBankGanttHour, firstOpenIssuerGanttHour, lastOpenIssuerGanttHour, lastOpenBankGanttHour, lastOpenPayoutGanttHour, lastOpenFxGanttHour, lastClosedIssuerGanttHour, lastClosedBankGanttHour, lastClosedFxGanttHour, lastClosedPayoutGanttHour, lastWeekendFxClosedGanttHour, lastWeekdayFxClosedGanttHour, lastWeekendFxOpenGanttHour, lastWeekdayFxOpenGanttHour, firstWeekdayFxOpenGanttHour, firstWeekdayFxClosedGanttHour, firstWeekendFxOpenGanttHour, firstWeekendFxClosedGanttHour, ganttHourClosedOnAnyGate, ganttHourClosedOnEveryGate, ganttHourOpenOnEveryGate, ganttHourIsWeekend, ganttHourHasZeroQueue, ganttHourBankClosed, ganttHourIssuerClosed, ganttHourPayoutClosed, ganttHourFxClosed, ganttHourPayoutOpen, ganttHourFxOpen, ganttHourBankOpen, ganttHourIssuerOpen, ganttHourWeekendIssuerOpen, ganttHourWeekendIssuerClosed, ganttHourWeekendBankClosed, ganttHourWeekendBankOpen, ganttHourWeekendPayoutOpen, ganttHourWeekendFxOpen, ganttHourWeekdayFxOpen, ganttHourWeekendPayoutClosed, ganttHourWeekendFxClosed, ganttHourWeekdayFxClosed, GANTT_GATE_FILTERS, GANTT_HOUR_FILTERS, ganttHourMatchesFilter, gateHourToMarkdown, gateHourEvidenceToMarkdown, gateHourCountsToMarkdown, svgTickHours, buildGateGanttSvg, ganttToCSV, selectedGanttHourToMarkdown, remainingReserveAtHourToMarkdown, peakQueueHourToMarkdown, selectedVersusPeakHourToMarkdown, nextPayoutHourToMarkdown, closedGanttHoursToMarkdown, fxGanttHoursToMarkdown, weekendFxHourCountsToMarkdown, firstClosedFxHourToMarkdown, firstClosedBankHourToMarkdown, firstClosedIssuerHourToMarkdown, firstClosedPayoutHourToMarkdown, firstOpenPayoutHourToMarkdown, firstOpenFxHourToMarkdown, firstOpenBankHourToMarkdown, firstOpenIssuerHourToMarkdown, lastOpenIssuerHourToMarkdown, lastOpenBankHourToMarkdown, lastOpenPayoutHourToMarkdown, lastOpenFxHourToMarkdown, lastClosedIssuerHourToMarkdown, lastClosedBankHourToMarkdown, lastClosedFxHourToMarkdown, lastClosedPayoutHourToMarkdown, lastWeekendFxClosedHourToMarkdown, lastWeekdayFxClosedHourToMarkdown, lastWeekendFxOpenHourToMarkdown, lastWeekdayFxOpenHourToMarkdown, firstWeekdayFxOpenHourToMarkdown, firstWeekdayFxClosedHourToMarkdown, firstWeekendFxOpenHourToMarkdown, firstWeekendFxClosedHourToMarkdown, arrivalCohortsToMarkdown, compareGateSchedules, buildComparisonGanttSvg, buildQueueChartSvg, buildSensitivityBarsSvg, compareSavedExperiments, WEEKEND_REVIEW_TOOLS, analyzeWeekendReview, createWeekendReviewPacket, replayWeekendReviewPacket } = window.__WeekendGapModel;
 
 let workspaceReady = false;
+let workspaceRevision = 0;
+let importSequence = 0;
+let workspaceSaveProtected = false;
+let preservedWorkspace = null;
 let lastValidPlan = { targetPercent: 100, deadlineHour: 72, ganttDensity: "snapshots", selectedHour: 0, ganttHourIndex: 0, selectedChart: "queue", ganttClosedOnly: false, ganttGateFilter: "all", queueBacklogOnly: false, ganttEveryGateClosed: false, ganttHourFilter: "all" };
 const WORKSPACE_KEY = "weekend-gap:workspace:v1";
 const STORAGE_KEY = "weekend-gap:scenario:v1";
@@ -5034,6 +5042,7 @@ function setMessage(message = "") {
 }
 
 function setScenario(nextScenario, { normaliseForm = true, message = "", preserveShareHash = false, recordHistory = true, windowShiftStatus, demandStepStatus } = {}) {
+  workspaceRevision += 1;
   clearWeekendReview();
   weekendReviewDraftInvalid = false;
   const cleaned = sanitizeScenario(nextScenario);
@@ -5837,12 +5846,16 @@ async function copyShareLink() {
 
 async function importScenario(file) {
   if (!file) return;
+  const sequence = ++importSequence;
+  const revision = workspaceRevision;
   if (file.size > 250_000) {
     setMessage("Import failed. Scenario JSON must be 250 KB or smaller.");
     return;
   }
   try {
-    const imported = scenarioFromJSON(await file.text());
+    const text = await file.text();
+    if (!canApplyImport(sequence, revision, setMessage)) return;
+    const imported = scenarioFromJSON(text);
     if (!imported.scenario) {
       setMessage(imported.errors[0]);
       return;
@@ -5850,11 +5863,14 @@ async function importScenario(file) {
     userEdited = true;
     setScenario(imported.scenario, { message: imported.errors.length ? `Scenario imported with adjustments: ${imported.errors.join(" ")}` : "Scenario imported." });
   } catch {
+    if (!canApplyImport(sequence, revision, setMessage)) return;
     setMessage("Import failed. Choose a readable JSON file.");
   }
 }
 
 function applyFormEdit(normaliseForm) {
+  // Even an incomplete edit supersedes a file that is still being read.
+  workspaceRevision += 1;
   clearWeekendReview();
   const raw = readForm();
   let invalid = false;
@@ -5968,6 +5984,7 @@ function readOverridesFromEditor() {
 }
 
 function applyOverrideEdit() {
+  workspaceRevision += 1;
   const status = document.querySelector("#calendar-override-status");
   const parsed = readOverridesFromEditor();
   const checked = sanitizeCalendarOverrides(parsed, simHours());
@@ -6067,6 +6084,7 @@ function readFundingFromEditor() {
 }
 
 function applyFundingEdit() {
+  workspaceRevision += 1;
   const status = document.querySelector("#funding-status");
   const parsed = readFundingFromEditor();
   const checked = sanitizeFundingTranches(parsed, simHours());
@@ -6356,7 +6374,12 @@ function currentWorkspace() {
     ganttHourFilter: currentGanttHourFilter() });
 }
 function saveWorkspace() {
+  workspaceRevision += 1;
   if(!workspaceReady) return;
+  if (workspaceSaveProtected) {
+    document.querySelector("#workspace-status").textContent = "Workspace autosave is paused to preserve unreadable browser data. Export workspace to keep the current review.";
+    return;
+  }
   try {
     let serialized;
     let controlsValid = true;
@@ -6401,25 +6424,59 @@ document.querySelector("#export-workspace").addEventListener("click",()=>{
   catch(error) { document.querySelector("#workspace-status").textContent=error.message; }
 });
 document.querySelector("#import-workspace").addEventListener("click",()=>document.querySelector("#workspace-file").click());
+function canApplyImport(sequence, revision, notify) {
+  // A newer selection owns the status message, even if that selection fails.
+  if (sequence !== importSequence) return false;
+  if (revision !== workspaceRevision) {
+    notify("Import cancelled because the workspace changed while the file was being read. Your edits were kept. Choose the file again to import it.");
+    return false;
+  }
+  return true;
+}
 document.querySelector("#workspace-file").addEventListener("change",async(event)=>{
   const file=event.target.files?.[0];event.target.value="";if(!file) return;
+  const sequence = ++importSequence;
+  const revision = workspaceRevision;
+  const notify = message => { document.querySelector("#workspace-status").textContent = message; };
   if(file.size>250000) { document.querySelector("#workspace-status").textContent="Import failed. Workspace must be 250 KB or smaller.";return; }
   try {
-    const result=workspaceFromJSON(await file.text());
+    const text = await file.text();
+    if (!canApplyImport(sequence, revision, notify)) return;
+    const result=workspaceFromJSON(text);
     if(!result.workspace) { document.querySelector("#workspace-status").textContent="Import failed: "+result.errors.join(" ");return; }
     applyWorkspace(result.workspace);
-    if(result.errors.length) document.querySelector("#workspace-status").textContent="Workspace imported with adjustments: "+result.errors.join(" ");
-  } catch { document.querySelector("#workspace-status").textContent="Import failed. Choose a readable workspace JSON file."; }
+    if(result.errors.length) notify("Workspace imported with adjustments: "+result.errors.join(" ") + (workspaceSaveProtected ? " Workspace autosave is paused; export to keep this review." : ""));
+  } catch {
+    if (!canApplyImport(sequence, revision, notify)) return;
+    notify("Import failed. Choose a readable workspace JSON file.");
+  }
 });
-if(!window.location.hash) {
-  try {
-    const raw=localStorage.getItem(WORKSPACE_KEY);
-    if(raw) {
-      const result=workspaceFromJSON(raw);
-      if(result.workspace) applyWorkspace(result.workspace);
-      document.querySelector("#workspace-status").textContent=result.errors.length ? "Saved workspace: "+result.errors.join(" ") : "Restored the previous local workspace.";
+function protectSavedWorkspace(raw, reason) {
+  workspaceSaveProtected = true;
+  preservedWorkspace = raw;
+  document.querySelector("#workspace-recovery").hidden = false;
+  document.querySelector("#download-workspace-recovery").disabled = raw === null;
+  document.querySelector("#workspace-recovery-message").textContent = `${reason} Workspace autosave is paused. Existing browser data will not be replaced, including after an import. Export workspace to keep your current review. Download the preserved data for recovery with a compatible version; it may not be valid JSON.`;
+}
+document.querySelector("#download-workspace-recovery").addEventListener("click", () => {
+  if (preservedWorkspace === null) return;
+  downloadText(preservedWorkspace, "weekend-gap-preserved-workspace.json", "application/json");
+});
+// Check the saved workspace even when a share link supplies the initial scenario.
+// A link may take priority for display, but must not silently erase unreadable data.
+try {
+  const raw = localStorage.getItem(WORKSPACE_KEY);
+  if (raw !== null) {
+    const result = workspaceFromJSON(raw);
+    if (!result.workspace) {
+      protectSavedWorkspace(raw, "Saved workspace could not be loaded: " + result.errors.join(" "));
+    } else if (!window.location.hash) {
+      applyWorkspace(result.workspace);
+      document.querySelector("#workspace-status").textContent = result.errors.length ? "Saved workspace: " + result.errors.join(" ") : "Restored the previous local workspace.";
     }
-  } catch { document.querySelector("#workspace-status").textContent="Saved workspace could not be read. Current scenario was kept."; }
+  }
+} catch {
+  protectSavedWorkspace(null, "Browser storage could not be read. The current scenario was kept.");
 }
 workspaceReady=true;
 

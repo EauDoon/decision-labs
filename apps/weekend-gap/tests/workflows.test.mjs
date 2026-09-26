@@ -1,6 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
+import { DEFAULT_SCENARIO, PRESETS, workspaceToJSON, scenarioToJSON, scenarioToHash } from "../src/model.js";
 const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
 const source = await readFile(new URL("../src/app.js", import.meta.url), "utf8");
 let runId = 0;
@@ -206,6 +207,102 @@ test("workspace import replaces both scenarios and survives reload; invalid impo
   assert.match(reloaded.nodes.get("workspace-status").textContent, /Import failed/);
 });
 
+function deferredImport(ui, id) {
+  let resolve, reject;
+  const text = new Promise((yes, no) => { resolve = yes; reject = no; });
+  const input = ui.nodes.get(id);
+  input.files = [{ size: 100, text: () => text }];
+  return { done: input.emit("change"), resolve, reject };
+}
+
+const recoveryWorkspace = () => workspaceToJSON(PRESETS.weekendRush, DEFAULT_SCENARIO, { notes: "Imported review", targetPercent: 75 });
+
+test("pending workspace imports preserve newer notes, baseline, planner and incomplete assumptions", async () => {
+  for (const edit of [
+    async ui => ui.edit("workspace-notes", "New review conclusions"),
+    async ui => ui.nodes.get("pin-baseline").click(),
+    async ui => ui.edit("reserve-target", ""),
+    async ui => { ui.nodes.get("reserveCashAud").value = ""; await ui.nodes.get("scenario-form").emit("input"); },
+    async ui => ui.presets[2].click(),
+  ]) {
+    const ui = await boot();
+    await ui.presets[2].click();
+    const pending = deferredImport(ui, "workspace-file");
+    await edit(ui);
+    const storageBefore = new Map(ui.storage);
+    const notesBefore = ui.nodes.get("workspace-notes").value;
+    const reserveBefore = ui.nodes.get("reserveCashAud").value;
+    const baselineBefore = ui.nodes.get("baseline-name").textContent;
+    pending.resolve(recoveryWorkspace()); await pending.done;
+    assert.equal(ui.nodes.get("scenario-title").textContent, "Market Stress");
+    assert.equal(ui.nodes.get("workspace-notes").value, notesBefore);
+    assert.equal(ui.nodes.get("reserveCashAud").value, reserveBefore);
+    assert.equal(ui.nodes.get("baseline-name").textContent, baselineBefore);
+    assert.deepEqual(ui.storage, storageBefore);
+    assert.match(ui.nodes.get("workspace-status").textContent, /cancelled.*changed/i);
+  }
+});
+
+test("scenario and workspace imports share latest-request ordering", async () => {
+  for (const first of ["import-file", "workspace-file"]) {
+    for (const last of ["import-file", "workspace-file"]) {
+      const ui = await boot();
+      const older = deferredImport(ui, first);
+      const newer = deferredImport(ui, last);
+      newer.resolve(last === "workspace-file" ? recoveryWorkspace() : scenarioToJSON(PRESETS.weekendRush));
+      await newer.done;
+      const saved = new Map(ui.storage);
+      older.resolve(first === "workspace-file" ? workspaceToJSON(PRESETS.marketStress, DEFAULT_SCENARIO) : scenarioToJSON(PRESETS.marketStress));
+      await older.done;
+      assert.equal(ui.nodes.get("scenario-title").textContent, "Weekend Rush");
+      assert.deepEqual(ui.storage, saved);
+    }
+  }
+});
+
+test("scenario imports preserve intervening invalid input and late errors stay silent", async () => {
+  const ui = await boot();
+  const pending = deferredImport(ui, "import-file");
+  ui.nodes.get("reserveCashAud").value = "";
+  await ui.nodes.get("scenario-form").emit("input");
+  pending.resolve(scenarioToJSON(PRESETS.weekendRush)); await pending.done;
+  assert.equal(ui.nodes.get("reserveCashAud").value, "");
+  assert.match(ui.nodes.get("input-message").textContent, /cancelled.*changed/i);
+  const older = deferredImport(ui, "workspace-file");
+  const newer = deferredImport(ui, "workspace-file");
+  newer.resolve(recoveryWorkspace()); await newer.done;
+  const status = ui.nodes.get("workspace-status").textContent;
+  older.reject(new Error("late read failure")); await older.done;
+  assert.equal(ui.nodes.get("workspace-status").textContent, status);
+});
+
+test("unreadable saved workspaces survive edits and imports, including entry through a share link", async () => {
+  for (const raw of ["{broken", "", JSON.stringify({ ...JSON.parse(recoveryWorkspace()), version: 999 })]) {
+    for (const hash of ["", scenarioToHash(PRESETS.marketStress)]) {
+      const storage = new Map([["weekend-gap:workspace:v1", raw]]);
+      const ui = await boot(storage, { hash });
+      assert.equal(ui.nodes.get("workspace-recovery").hidden, false);
+      await ui.edit("workspace-notes", "New review conclusions");
+      await ui.presets[2].click();
+      const pending = deferredImport(ui, "workspace-file");
+      pending.resolve(recoveryWorkspace()); await pending.done;
+      assert.equal(storage.get("weekend-gap:workspace:v1"), raw);
+      assert.equal(ui.nodes.get("scenario-title").textContent, "Weekend Rush");
+      assert.match(ui.nodes.get("workspace-status").textContent, /autosave.*paused/i);
+      const blobs = [];
+      const createURL = URL.createObjectURL;
+      URL.createObjectURL = blob => { blobs.push(blob); return "blob:test"; };
+      try {
+        await ui.nodes.get("download-workspace-recovery").click();
+        await ui.nodes.get("export-workspace").click();
+      } finally { URL.createObjectURL = createURL; }
+      assert.equal(await blobs[0].text(), raw, "download preserves the original bytes");
+      assert.equal(JSON.parse(await blobs[1].text()).notes, "Imported review");
+      assert.equal(storage.get("weekend-gap:workspace:v1"), raw);
+    }
+  }
+});
+
 
 test("incomplete numeric drafts keep the simulation and do not overwrite saved assumptions", async () => {
   const ui=await boot();await ui.presets[1].click();
@@ -224,7 +321,9 @@ test("invalid planner drafts cannot make autosave restore an older scenario", as
 test("blocked storage and missing canvas leave the usable table and persistent warning",async()=>{
   const ui=await boot(new Map(),{blockedStorage:true,canvasAvailable:false});await ui.presets[1].click();
   assert.match(ui.nodes.get("storage-status").textContent,/autosave is unavailable/);
-  assert.match(ui.nodes.get("workspace-status").textContent,/could not be saved/);
+  assert.match(ui.nodes.get("workspace-status").textContent,/autosave is paused/);
+  assert.equal(ui.nodes.get("workspace-recovery").hidden, false);
+  assert.equal(ui.nodes.get("download-workspace-recovery").disabled, true);
   assert.ok(ui.nodes.get("timeline-table").children.length>0);
 });
 test("dashboard reports hours to clear the queue or that the queue remains", async () => {

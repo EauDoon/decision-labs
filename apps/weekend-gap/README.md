@@ -90,6 +90,28 @@ JSON and share links still carry only the current scenario. Analysis JSON is a
 report, not an importable scenario. Reduced queues are not evidence of a better
 strategy if the scenarios use different demand.
 
+## Preserve and reopen a review
+
+Use **Pin current as baseline**, change an assumption, and inspect the comparison.
+Add experiment notes and use **Export workspace** to carry both scenarios, notes,
+reserve target, deadline and selected hour to another session. **Import workspace**
+reopens that review; scenario JSON carries only a single scenario.
+
+Starting in 1.8.1, editing while a scenario or workspace file is being read cancels
+that import. The new edits remain in the tab, including incomplete numeric fields.
+Choose the file again if you still want to replace the current review. Selecting
+another file also supersedes the earlier read, even if the newer file is invalid.
+
+If a saved workspace cannot be parsed or uses an unsupported format, workspace
+autosave pauses and preserves the original browser data. **Download preserved
+workspace** saves that exact data for recovery with a compatible version; it may
+not be valid JSON. If browser storage itself is inaccessible, this download is
+unavailable. **Export workspace** still saves the current valid review, and imports
+can still be inspected in the tab. They do not resume autosave over protected data.
+Use a separate browser profile to reopen an exported review with fresh storage;
+keep both exports before clearing any browser data. A share link takes display
+priority but does not bypass the preservation check. Browser storage is not a backup.
+
 ## Longer horizons and calendar overrides
 
 Set the horizon to whole hours from 24 through 336 to model disruptions past

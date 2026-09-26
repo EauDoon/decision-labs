@@ -1,3 +1,9 @@
+## 1.8.1 - 2026-09-26
+
+- Scenario and workspace imports now discard delayed reads when the review has changed, including incomplete edits, notes, planner controls and the pinned baseline. A newer file selection supersedes older scenario or workspace reads, even if the new file is rejected.
+- Unreadable or unsupported saved workspaces stay untouched. A persistent recovery notice pauses workspace autosave and offers an exact download of the original data when it is readable from storage. Current work can still be exported and valid files can be opened in the tab. A share link does not bypass this protection.
+- Regenerated the dependency-free standalone build. Scenario arithmetic and workspace version-1 format are unchanged.
+
 ## 1.8.0 - 2026-09-12
 
 Scheduled funding tranches with cost accounting in Weekend Gap 1.8.0

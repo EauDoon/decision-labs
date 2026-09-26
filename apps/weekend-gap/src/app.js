@@ -82,6 +82,10 @@ import {
 } from "./model.js";
 
 let workspaceReady = false;
+let workspaceRevision = 0;
+let importSequence = 0;
+let workspaceSaveProtected = false;
+let preservedWorkspace = null;
 let lastValidPlan = { targetPercent: 100, deadlineHour: 72, ganttDensity: "snapshots", selectedHour: 0, ganttHourIndex: 0, selectedChart: "queue", ganttClosedOnly: false, ganttGateFilter: "all", queueBacklogOnly: false, ganttEveryGateClosed: false, ganttHourFilter: "all" };
 const WORKSPACE_KEY = "weekend-gap:workspace:v1";
 const STORAGE_KEY = "weekend-gap:scenario:v1";
@@ -223,6 +227,7 @@ function setMessage(message = "") {
 }
 
 function setScenario(nextScenario, { normaliseForm = true, message = "", preserveShareHash = false, recordHistory = true, windowShiftStatus, demandStepStatus } = {}) {
+  workspaceRevision += 1;
   clearWeekendReview();
   weekendReviewDraftInvalid = false;
   const cleaned = sanitizeScenario(nextScenario);
@@ -1026,12 +1031,16 @@ async function copyShareLink() {
 
 async function importScenario(file) {
   if (!file) return;
+  const sequence = ++importSequence;
+  const revision = workspaceRevision;
   if (file.size > 250_000) {
     setMessage("Import failed. Scenario JSON must be 250 KB or smaller.");
     return;
   }
   try {
-    const imported = scenarioFromJSON(await file.text());
+    const text = await file.text();
+    if (!canApplyImport(sequence, revision, setMessage)) return;
+    const imported = scenarioFromJSON(text);
     if (!imported.scenario) {
       setMessage(imported.errors[0]);
       return;
@@ -1039,11 +1048,14 @@ async function importScenario(file) {
     userEdited = true;
     setScenario(imported.scenario, { message: imported.errors.length ? `Scenario imported with adjustments: ${imported.errors.join(" ")}` : "Scenario imported." });
   } catch {
+    if (!canApplyImport(sequence, revision, setMessage)) return;
     setMessage("Import failed. Choose a readable JSON file.");
   }
 }
 
 function applyFormEdit(normaliseForm) {
+  // Even an incomplete edit supersedes a file that is still being read.
+  workspaceRevision += 1;
   clearWeekendReview();
   const raw = readForm();
   let invalid = false;
@@ -1157,6 +1169,7 @@ function readOverridesFromEditor() {
 }
 
 function applyOverrideEdit() {
+  workspaceRevision += 1;
   const status = document.querySelector("#calendar-override-status");
   const parsed = readOverridesFromEditor();
   const checked = sanitizeCalendarOverrides(parsed, simHours());
@@ -1256,6 +1269,7 @@ function readFundingFromEditor() {
 }
 
 function applyFundingEdit() {
+  workspaceRevision += 1;
   const status = document.querySelector("#funding-status");
   const parsed = readFundingFromEditor();
   const checked = sanitizeFundingTranches(parsed, simHours());
@@ -1545,7 +1559,12 @@ function currentWorkspace() {
     ganttHourFilter: currentGanttHourFilter() });
 }
 function saveWorkspace() {
+  workspaceRevision += 1;
   if(!workspaceReady) return;
+  if (workspaceSaveProtected) {
+    document.querySelector("#workspace-status").textContent = "Workspace autosave is paused to preserve unreadable browser data. Export workspace to keep the current review.";
+    return;
+  }
   try {
     let serialized;
     let controlsValid = true;
@@ -1590,25 +1609,59 @@ document.querySelector("#export-workspace").addEventListener("click",()=>{
   catch(error) { document.querySelector("#workspace-status").textContent=error.message; }
 });
 document.querySelector("#import-workspace").addEventListener("click",()=>document.querySelector("#workspace-file").click());
+function canApplyImport(sequence, revision, notify) {
+  // A newer selection owns the status message, even if that selection fails.
+  if (sequence !== importSequence) return false;
+  if (revision !== workspaceRevision) {
+    notify("Import cancelled because the workspace changed while the file was being read. Your edits were kept. Choose the file again to import it.");
+    return false;
+  }
+  return true;
+}
 document.querySelector("#workspace-file").addEventListener("change",async(event)=>{
   const file=event.target.files?.[0];event.target.value="";if(!file) return;
+  const sequence = ++importSequence;
+  const revision = workspaceRevision;
+  const notify = message => { document.querySelector("#workspace-status").textContent = message; };
   if(file.size>250000) { document.querySelector("#workspace-status").textContent="Import failed. Workspace must be 250 KB or smaller.";return; }
   try {
-    const result=workspaceFromJSON(await file.text());
+    const text = await file.text();
+    if (!canApplyImport(sequence, revision, notify)) return;
+    const result=workspaceFromJSON(text);
     if(!result.workspace) { document.querySelector("#workspace-status").textContent="Import failed: "+result.errors.join(" ");return; }
     applyWorkspace(result.workspace);
-    if(result.errors.length) document.querySelector("#workspace-status").textContent="Workspace imported with adjustments: "+result.errors.join(" ");
-  } catch { document.querySelector("#workspace-status").textContent="Import failed. Choose a readable workspace JSON file."; }
+    if(result.errors.length) notify("Workspace imported with adjustments: "+result.errors.join(" ") + (workspaceSaveProtected ? " Workspace autosave is paused; export to keep this review." : ""));
+  } catch {
+    if (!canApplyImport(sequence, revision, notify)) return;
+    notify("Import failed. Choose a readable workspace JSON file.");
+  }
 });
-if(!window.location.hash) {
-  try {
-    const raw=localStorage.getItem(WORKSPACE_KEY);
-    if(raw) {
-      const result=workspaceFromJSON(raw);
-      if(result.workspace) applyWorkspace(result.workspace);
-      document.querySelector("#workspace-status").textContent=result.errors.length ? "Saved workspace: "+result.errors.join(" ") : "Restored the previous local workspace.";
+function protectSavedWorkspace(raw, reason) {
+  workspaceSaveProtected = true;
+  preservedWorkspace = raw;
+  document.querySelector("#workspace-recovery").hidden = false;
+  document.querySelector("#download-workspace-recovery").disabled = raw === null;
+  document.querySelector("#workspace-recovery-message").textContent = `${reason} Workspace autosave is paused. Existing browser data will not be replaced, including after an import. Export workspace to keep your current review. Download the preserved data for recovery with a compatible version; it may not be valid JSON.`;
+}
+document.querySelector("#download-workspace-recovery").addEventListener("click", () => {
+  if (preservedWorkspace === null) return;
+  downloadText(preservedWorkspace, "weekend-gap-preserved-workspace.json", "application/json");
+});
+// Check the saved workspace even when a share link supplies the initial scenario.
+// A link may take priority for display, but must not silently erase unreadable data.
+try {
+  const raw = localStorage.getItem(WORKSPACE_KEY);
+  if (raw !== null) {
+    const result = workspaceFromJSON(raw);
+    if (!result.workspace) {
+      protectSavedWorkspace(raw, "Saved workspace could not be loaded: " + result.errors.join(" "));
+    } else if (!window.location.hash) {
+      applyWorkspace(result.workspace);
+      document.querySelector("#workspace-status").textContent = result.errors.length ? "Saved workspace: " + result.errors.join(" ") : "Restored the previous local workspace.";
     }
-  } catch { document.querySelector("#workspace-status").textContent="Saved workspace could not be read. Current scenario was kept."; }
+  }
+} catch {
+  protectSavedWorkspace(null, "Browser storage could not be read. The current scenario was kept.");
 }
 workspaceReady=true;
 
