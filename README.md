@@ -17,7 +17,7 @@ model, draft storage, version, standalone build, documentation, and tests.
 | --- | --- | --- | --- |
 | [Partnership Breakpoint](apps/partnership-breakpoint/) | 1.8.0 | Which participant in a revenue split reaches an exit threshold first as volume, fees, or costs move? | **Balanced** |
 | [Common Cart](apps/common-cart/) | 1.7.0 | How can buyer constraints be pooled and conditional merchant offers compared without exposing individual buyer records? | **Coffee**, Neighbourhood coffee run |
-| [The Smallest Agreement](apps/smallest-agreement/) | 1.6.0 | What is the lowest-cost set of clause changes that crosses an approval threshold while respecting floors, locks, and a change budget? | **Neighbourhood Plan** |
+| [The Smallest Agreement](apps/smallest-agreement/) | 1.6.1 | What is the lowest-cost set of clause changes that crosses an approval threshold while respecting floors, locks, and a change budget? | **Neighbourhood Plan** |
 | [Weekend Gap](apps/weekend-gap/) | 1.8.1 | How does synthetic AUD redemption demand move from Friday to Monday when reserves and settlement windows do not fully overlap? | **Normal Friday**, 72-hour case |
 
 Source model notes: [Partnership Breakpoint MODEL.md](apps/partnership-breakpoint/MODEL.md), [Common Cart MODEL.md](apps/common-cart/MODEL.md), [The Smallest Agreement MODEL.md](apps/smallest-agreement/MODEL.md), and [Weekend Gap MODEL.md](apps/weekend-gap/MODEL.md).

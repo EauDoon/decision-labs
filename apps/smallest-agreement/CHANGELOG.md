@@ -1,3 +1,19 @@
+## 1.6.1 - 2026-09-28
+
+Deferred blob URL release on every download in The Smallest Agreement 1.6.1
+
+### Fixed
+
+- `downloadText()` called `URL.revokeObjectURL()` in the same task as `link.click()`. The browser
+  has not begun reading the blob when the synthetic click returns, so Firefox can cancel the
+  save and the user gets no file. Partnership Breakpoint, Common Cart, and Weekend Gap already
+  release the object URL from a one second timer; this workbench now uses the same deferred
+  release. Exported bytes are unchanged. The helper is used by JSON export, workspace export,
+  evidence CSV, discussion worksheet CSV, and the copy fallbacks that need a file.
+- New `tests/download-revoke.test.mjs` runs the real helper in a stub DOM and asserts the object
+  URL is still live when the link is clicked and is released on a later task, so the fix cannot
+  regress to a synchronous revoke.
+
 ## 1.5.54 - 2026-09-13
 
 Bottle-hand cycling club hours, first-without-floor remaining copy, and last-without-floor hide jump in The Smallest Agreement 1.5.54
