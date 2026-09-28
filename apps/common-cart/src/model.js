@@ -2203,6 +2203,15 @@ function buyersFromCsvRows(rows) {
     const unknown = rows[0].filter((_, index) => columns[index] === null).map((value) => value.trim() || "(empty)");
     throw new ScenarioError(`Buyer CSV has unknown column: ${unknown[0]}.`);
   }
+  const seenFields = new Map();
+  header.forEach((name, index) => {
+    const field = columns[index];
+    if (!field) return;
+    if (seenFields.has(field)) {
+      throw new ScenarioError(`Buyer CSV column ${name} repeats ${seenFields.get(field)}.`);
+    }
+    seenFields.set(field, name);
+  });
   for (const required of REQUIRED_BUYER_CSV_FIELDS) {
     if (!columns.includes(required)) {
       throw new ScenarioError("Buyer CSV must include label, category, quantity, max unit price, latest delivery days, and variants.");
