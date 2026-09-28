@@ -2308,7 +2308,10 @@ function parseDelimited(text, delimiter = ',') {
         cell += ch;
       }
     } else if (ch === '"') {
-      inQuotes = true;
+      // A quote starts a quoted field only at the first character. An interior
+      // quotation mark is part of the name, not a reason to drop the marks.
+      if (cell.length === 0) inQuotes = true;
+      else cell += ch;
     } else if (ch === delimiter) {
       row.push(cell);
       cell = '';
