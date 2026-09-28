@@ -1536,7 +1536,9 @@ function parseSupportScore(raw, path) {
 export function parseSupportMatrixCsv(csvText, proposal) {
   const validation = validateProposal(proposal);
   if (!validation.valid) return { status: "invalid", errors: [namedCsvError("invalid_proposal", validation.errors[0])] };
-  const parsed = parseCsvRecords(csvText);
+  // Same TSV-or-CSV front door as the group and clause importers, so the same
+  // pasted block works in all three places instead of only in two of them.
+  const parsed = parseCsvRecords(tableTextToCsv(csvText));
   if (parsed.status !== "ok") return parsed;
   const [header, ...body] = parsed.records;
   if (!header || header.length < 3) {
