@@ -1,3 +1,15 @@
+## 1.7.8 - 2026-09-28
+
+Buyer and offer CSV accept thousands separators in numeric cells in Common Cart 1.7.8
+
+### Fixed
+
+- `finite()` passed `1,000` to `Number()`, which is NaN, so a quoted spreadsheet quantity or price was rejected as not a number. A comma, space, or no-break space used as a thousands separator is now removed before the number is read. `1,000.50` is 1000.5. A broken group such as `1,00` is still rejected. No matching or price result changes for plain numbers.
+
+### Added
+
+- `tests/csv-thousands.test.mjs` imports a quoted buyer quantity, price, and order total, a no-break-space quantity, and a quoted offer capacity and price.
+
 ## 1.7.7 - 2026-09-28
 
 Buyer and offer CSV keep an interior quotation mark in Common Cart 1.7.7
