@@ -2190,9 +2190,8 @@ function parseCsvRows(text) {
 }
 
 function buyerTableDelimiter(text) {
-  const source = text.replace(/^\uFEFF/u, "");
-  const end = source.search(/[\r\n]/u);
-  const firstLine = end === -1 ? source : source.slice(0, end);
+  const source = text.replace(/^\uFEFF/u, "").replace(/\r\n/gu, "\n").replace(/\r/gu, "\n");
+  const firstLine = source.split("\n").find((line) => line.trim() !== "") ?? "";
   return firstLine.includes("\t") ? "\t" : ",";
 }
 
