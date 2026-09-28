@@ -2165,9 +2165,10 @@ function parseDelimitedRows(text, delimiter) {
     } else if (character === delimiter) {
       row.push(cell);
       cell = "";
-    } else if (character === "\n" || character === "\r") {
+    } else if (character === "\n" || character === "\r" || character === "\u2028" || character === "\u2029") {
       // CR-only records are a real spreadsheet export. Dropping the CR merged
-      // the header and every following row into one line.
+      // the header and every following row into one line. U+2028 and U+2029
+      // are line breaks in some pastes and do the same if left inside the cell.
       if (character === "\r" && source[index + 1] === "\n") index += 1;
       row.push(cell);
       rows.push(row);
@@ -2190,7 +2191,7 @@ function parseCsvRows(text) {
 }
 
 function buyerTableDelimiter(text) {
-  const source = text.replace(/^\uFEFF/u, "").replace(/\r\n/gu, "\n").replace(/\r/gu, "\n");
+  const source = text.replace(/^\uFEFF/u, "").replace(/\r\n/gu, "\n").replace(/[\r\u2028\u2029]/gu, "\n");
   const firstLine = source.split("\n").find((line) => line.trim() !== "") ?? "";
   return firstLine.includes("\t") ? "\t" : ",";
 }
