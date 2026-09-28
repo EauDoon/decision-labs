@@ -1,3 +1,15 @@
+## 1.7.6 - 2026-09-28
+
+Buyer and offer CSV keep Unicode line separators as separate rows in Common Cart 1.7.6
+
+### Fixed
+
+- `parseDelimitedRows()` treated U+2028 and U+2029 as characters inside the cell. A paste separated by those line breaks collapsed the header and every buyer or offer into one row. They now end a record, the same way CR and LF do. A separator inside quotes stays in the cell. TSV detection uses the same breaks when it chooses the first non-blank line. No matching or price result changes.
+
+### Added
+
+- `tests/csv-unicode-separators.test.mjs` imports two buyers and two offers separated by U+2028 and by U+2029, keeps a quoted U+2028 inside a label, and imports a TSV separated only by U+2028.
+
 ## 1.7.5 - 2026-09-28
 
 Offer CSV rejects a repeated column in Common Cart 1.7.5
