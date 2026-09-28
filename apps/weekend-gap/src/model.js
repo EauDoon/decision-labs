@@ -1208,7 +1208,7 @@ export function buildDemandSchedule(totalDemandAud, hours = SIMULATION_HOURS, pr
     profile === "fridayBurst" && hour < 9 ? 8
       : profile === "saturdayBurst" && hour >= 9 && hour < 33 ? 8
       : profile === "sundayBurst" && hour >= 48 && hour < 57 ? 8
-      : profile === "mondayRush" && hour >= 57 ? 8
+      : profile === "mondayRush" && hour >= 57 && hour < 72 ? 8
       : 1);
   const weightTotal = weights.reduce((sum, weight) => sum + weight, 0);
   return weights.map(weight => total * (weight / weightTotal));
