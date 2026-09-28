@@ -1,3 +1,15 @@
+## 1.7.2 - 2026-09-28
+
+Buyer and offer CSV keep CR-only records as separate rows in Common Cart 1.7.2
+
+### Fixed
+
+- `parseDelimitedRows()` discarded a bare carriage return instead of ending the record. A classic Mac or spreadsheet export that separates rows with CR and no LF collapsed the header and every buyer or offer into one row, and the import then said the file had no data rows. LF and CRLF were already correct. CR, LF, and CRLF now end a record. Quoted CRs stay inside the cell. No matching or price result changes.
+
+### Added
+
+- `tests/csv-line-endings.test.mjs` imports a two-buyer CSV, a two-offer CSV, and a one-buyer TSV, each separated only by CR.
+
 ## 1.7.1 - 2026-09-28
 
 Dev server sends X-Content-Type-Options on served files in Common Cart 1.7.1
