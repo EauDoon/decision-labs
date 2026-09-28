@@ -1,3 +1,15 @@
+## 1.8.3 - 2026-09-28
+
+Scenario and analysis downloads defer blob URL release in Weekend Gap 1.8.3
+
+### Fixed
+
+- Scenario JSON and analysis JSON revoked their blob URLs in the same task as the download click. Firefox can cancel the save before it reads the blob. Workspace export already waited. Both downloads now use that same helper, which revokes the URL on a later timer. The exported JSON is unchanged.
+
+### Added
+
+- `tests/download-revoke.test.mjs` runs the scenario and analysis download helpers and checks the blob URL is still live when the link is clicked.
+
 ## 1.8.2 - 2026-09-28
 
 Monday rush stays on hours 57 through 71 and then a flat tail in Weekend Gap 1.8.2
