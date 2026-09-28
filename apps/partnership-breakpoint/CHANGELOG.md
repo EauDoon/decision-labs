@@ -725,3 +725,10 @@ One page title in Partnership Breakpoint 1.8.1
 - The viability card rendered its status line as a second `<h1>`: "Operating region holds" or "A participant exits" sat directly after that card's own `<h2>Partnership viability</h2>`. A document should have one page title, and a live status word is not one. The status is now an `<h2 class="status-line">` inside the same section, so it follows the card heading instead of outranking it. "Deal ledger" is the only `<h1>`.
 - The stylesheet rule that sized the status moves from `.status-card h1` to `.status-card h2.status-line` and pins `font-weight`, `letter-spacing`, and `text-transform` so the line renders exactly as before. No visible change, no model change, no export change, and `MODEL.md` is untouched.
 - New `tests/heading-structure.test.mjs` builds the real standalone bundle, runs the app module in a sandbox, and asserts the rendered markup: exactly one `<h1>`, that it is "Deal ledger", that the status line is a heading that follows the card's eyebrow heading, that no heading level is skipped going down, and that the stylesheet still sizes the status line. Three of the four fail against the old markup, where two `<h1>` were found.
+
+## 1.8.2
+
+Pasted roster TSV still imports when blank lines precede the header in Partnership Breakpoint 1.8.2
+
+- `detectRosterDelimiter()` looked at the first physical line. A leading blank line has no tab, so a spreadsheet TSV paste was read as CSV and the header became one unknown column. The first non-blank line now decides. A CSV that already starts with a blank line stays CSV. Deal terms are not read and are not changed.
+- `tests/roster-tsv-blank.test.mjs` pastes a two-person roster after a blank line, a CRLF blank line, spaces, and two blank lines, and checks that a leading blank line on CSV is still CSV.
