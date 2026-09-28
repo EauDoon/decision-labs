@@ -1,3 +1,30 @@
+## 1.6.3 - 2026-09-28
+
+The support matrix importer accepts pasted TSV like the other two in The Smallest Agreement 1.6.3
+
+### Fixed
+
+- `parseSupportMatrixCsv()` passed the pasted text straight to the CSV record
+  reader, while `parseParticipantGroupsCsv()` and `parseClauseOptionsCsv()` both
+  ran the same text through `tableTextToCsv()` first. TSV support is a
+  deliberate, tested, documented contract for those two importers: the paste
+  boxes are labelled "Paste participant groups TSV or CSV" and "Paste clause
+  options TSV or CSV", and each note says a first line with tabs is treated as
+  TSV. The support matrix was the one importer left out, so the same block of
+  support numbers copied out of a spreadsheet worked in two places and failed in
+  the third with `missing_header`. It now uses the same front door.
+- Validation is unchanged. A TSV support matrix rejects the same real errors as
+  its CSV form, with the same codes: `missing_clause_id_column`,
+  `missing_group_column`, `invalid_score`, and `truncated_row`. A quoted CSV with
+  a comma in a field is still detected as CSV and is still not split on a tab.
+  No computed result changes and `MODEL.md` is untouched.
+
+### Added
+
+- New `tests/csv-tsv.test.mjs` covers the shared TSV-or-CSV contract across all
+  three importers, pins the CSV-detection path, and pins the error codes on the
+  TSV path. It fails 2 of 4 against the old call.
+
 ## 1.6.2 - 2026-09-28
 
 Whitespace-only lines in pasted CSV no longer fail the whole import in The Smallest Agreement 1.6.2
