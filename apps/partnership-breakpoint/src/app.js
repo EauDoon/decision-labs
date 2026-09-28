@@ -1192,7 +1192,7 @@ function resultsPanel(result) {
     : `${result.participants.filter((participant) => !participant.viable).map((participant) => participant.name).join(', ')} fails at least one exit criterion.`);
   return `<section class="results" id="results-start">
     <section class="status-card ${statusClass}" id="viability-card" tabindex="-1" aria-labelledby="viability-heading" aria-live="polite">
-      <div><h2 class="eyebrow" id="viability-heading" tabindex="-1">Partnership viability</h2><h1>${status}</h1>${identity ? `<p>${identity}</p>` : ''}<p>${statusDetail}</p><div class="button-row"><button type="button" data-action="copy-viability">Copy viability card</button><button type="button" id="copy-viability-label" data-action="copy-viability-label">Copy least-headroom participant label</button></div></div>
+      <div><h2 class="eyebrow" id="viability-heading" tabindex="-1">Partnership viability</h2><h2 class="status-line">${status}</h2>${identity ? `<p>${identity}</p>` : ''}<p>${statusDetail}</p><div class="button-row"><button type="button" data-action="copy-viability">Copy viability card</button><button type="button" id="copy-viability-label" data-action="copy-viability-label">Copy least-headroom participant label</button></div></div>
       <div class="score"><strong>${result.viable ? 'VIABLE' : 'NOT VIABLE'}</strong><span>at ${formatVolume(result.effectiveVolume)} / month</span></div>
     </section>
     <section class="metric-strip" aria-label="Deal summary">

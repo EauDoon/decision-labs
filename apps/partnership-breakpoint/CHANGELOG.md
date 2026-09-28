@@ -717,3 +717,11 @@ Surf carnival, first-zero-share volume copy, and last-zero-share hide jump in Pa
 - Preserved v1 case imports and baseline calculations. Optional validated stress settings now travel with exported cases.
 - Added model and standalone interaction regression tests for compound failures, funding limits, operational constraints, invalid inputs, escaped names, and proposal application.
 - Rebuilt the no-install standalone GUI without new dependencies or network services.
+
+## 1.8.1
+
+One page title in Partnership Breakpoint 1.8.1
+
+- The viability card rendered its status line as a second `<h1>`: "Operating region holds" or "A participant exits" sat directly after that card's own `<h2>Partnership viability</h2>`. A document should have one page title, and a live status word is not one. The status is now an `<h2 class="status-line">` inside the same section, so it follows the card heading instead of outranking it. "Deal ledger" is the only `<h1>`.
+- The stylesheet rule that sized the status moves from `.status-card h1` to `.status-card h2.status-line` and pins `font-weight`, `letter-spacing`, and `text-transform` so the line renders exactly as before. No visible change, no model change, no export change, and `MODEL.md` is untouched.
+- New `tests/heading-structure.test.mjs` builds the real standalone bundle, runs the app module in a sandbox, and asserts the rendered markup: exactly one `<h1>`, that it is "Deal ledger", that the status line is a heading that follows the card's eyebrow heading, that no heading level is skipped going down, and that the stylesheet still sizes the status line. Three of the four fail against the old markup, where two `<h1>` were found.

@@ -175,7 +175,7 @@ button.danger:hover { background: var(--coral); color: white; }
 .status-card.fragile { border-left: 6px solid var(--coral); }
 .eyebrow { display: block; color: var(--muted); text-transform: uppercase; letter-spacing: .08em; font-size: .72rem; margin-bottom: .35rem; }
 .status-card h2.eyebrow { margin: 0 0 .35rem; font-weight: 650; }
-.status-card h1 { font-size: clamp(1.25rem, 2vw, 1.8rem); margin: 0; line-height: 1.05; }
+.status-card h2.status-line { font-size: clamp(1.25rem, 2vw, 1.8rem); margin: 0; line-height: 1.05; font-weight: 700; letter-spacing: normal; text-transform: none; }
 .status-card p { color: var(--muted); margin: .45rem 0 0; max-width: 50rem; }
 .score { text-align: right; }
 .score strong { display: block; font-size: 1.1rem; }
@@ -4569,7 +4569,7 @@ function resultsPanel(result) {
     : `${result.participants.filter((participant) => !participant.viable).map((participant) => participant.name).join(', ')} fails at least one exit criterion.`);
   return `<section class="results" id="results-start">
     <section class="status-card ${statusClass}" id="viability-card" tabindex="-1" aria-labelledby="viability-heading" aria-live="polite">
-      <div><h2 class="eyebrow" id="viability-heading" tabindex="-1">Partnership viability</h2><h1>${status}</h1>${identity ? `<p>${identity}</p>` : ''}<p>${statusDetail}</p><div class="button-row"><button type="button" data-action="copy-viability">Copy viability card</button><button type="button" id="copy-viability-label" data-action="copy-viability-label">Copy least-headroom participant label</button></div></div>
+      <div><h2 class="eyebrow" id="viability-heading" tabindex="-1">Partnership viability</h2><h2 class="status-line">${status}</h2>${identity ? `<p>${identity}</p>` : ''}<p>${statusDetail}</p><div class="button-row"><button type="button" data-action="copy-viability">Copy viability card</button><button type="button" id="copy-viability-label" data-action="copy-viability-label">Copy least-headroom participant label</button></div></div>
       <div class="score"><strong>${result.viable ? 'VIABLE' : 'NOT VIABLE'}</strong><span>at ${formatVolume(result.effectiveVolume)} / month</span></div>
     </section>
     <section class="metric-strip" aria-label="Deal summary">
