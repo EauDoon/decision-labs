@@ -1,3 +1,26 @@
+## 1.7.1 - 2026-09-28
+
+Dev server sends X-Content-Type-Options on served files in Common Cart 1.7.1
+
+### Fixed
+
+- The Common Cart dev server sent `cache-control`, `content-length`, and
+  `content-type` on a 200 response but never `x-content-type-options`. Partnership
+  Breakpoint, The Smallest Agreement, and Weekend Gap all send `nosniff` on
+  their 200 path. Without it a browser may content-sniff a served file as a type
+  the workbench never declared, which matters most for the undeclared-extension
+  fallback to `application/octet-stream`. One header is added to the existing
+  200 response. No routing, status code, body, or served content changes.
+
+### Added
+
+- New `tests/dev-server.test.mjs` covers the dev server directly. Common Cart had
+  no dev-server test at all, which is how the missing header survived. It runs
+  the real `createCommonCartServer()` over a temporary directory and pins
+  `nosniff` on the 200 path, on the undeclared-extension fallback, and on HEAD,
+  plus the `PORT` contract, traversal and missing-path 404s, and the 405 for
+  non-GET methods. It fails 3 of 5 against the old response headers.
+
 ## 1.7.0 - 2026-09-19
 
 Consolidated edge-row selects, evidence copies, and a trimmed keyboard set in Common Cart 1.7.0
