@@ -4265,6 +4265,11 @@ function finite(value, path, minimum, maximum) {
     if (trimmed === "") throw new ScenarioError(`${path} cannot be empty.`);
     if (trimmed.startsWith("+")) trimmed = trimmed.slice(1);
     if (trimmed === "") throw new ScenarioError(`${path} cannot be empty.`);
+    // Spreadsheet cells use a grouping mark every three digits: 1,000 or 1 000.
+    // Number() rejects those, so a quoted quantity imported as "not a number".
+    if (/^-?\d{1,3}(?:[, \u00A0\u202F]\d{3})+(?:\.\d+)?$/u.test(trimmed)) {
+      trimmed = trimmed.replace(/[, \u00A0\u202F]/gu, "");
+    }
     if (/^0[box]/i.test(trimmed) || /[eE+]/.test(trimmed)) {
       throw new ScenarioError(`${path} must be a number.`);
     }
