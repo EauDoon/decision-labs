@@ -1,3 +1,15 @@
+## 1.8.2 - 2026-09-28
+
+Monday rush stays on hours 57 through 71 and then a flat tail in Weekend Gap 1.8.2
+
+### Fixed
+
+- `buildDemandSchedule()` gave Monday rush weight 8 to every hour from 57 through the end of the horizon. MODEL.md gives that weight to hours 57 through 71 and says burst profiles concentrate early with a flat tail. On the 72-hour case the last hour is 71, so the results matched. On a longer horizon every later hour was also weighted 8, which moved demand out of the flat tail. Hours 72 and later now stay weight 1. The 72-hour schedule is unchanged. Total demand still sums to the input.
+
+### Added
+
+- `tests/monday-rush-tail.test.mjs` checks a 96-hour Monday rush: hours 57 through 71 are eight times the flat hours, hour 72 and hour 95 are flat, and a 72-hour run still weights hour 71 at eight.
+
 ## 1.8.1 - 2026-09-26
 
 - Scenario and workspace imports now discard delayed reads when the review has changed, including incomplete edits, notes, planner controls and the pinned baseline. A newer file selection supersedes older scenario or workspace reads, even if the new file is rejected.
