@@ -688,15 +688,7 @@ function setPlaying(nextPlaying) {
 }
 
 function downloadScenario() {
-  const blob = new Blob([scenarioToJSON(scenario)], { type: "application/json" });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement("a");
-  link.href = url;
-  link.download = "weekend-gap-scenario.json";
-  document.body.append(link);
-  link.click();
-  link.remove();
-  URL.revokeObjectURL(url);
+  downloadText(scenarioToJSON(scenario), "weekend-gap-scenario.json", "application/json");
   setMessage("Scenario JSON exported.");
 }
 
@@ -802,13 +794,13 @@ document.querySelector("#apply-reserve").addEventListener("click", () => {
   if (reservePlan?.status !== "reachable") return;
   setScenario({ ...scenario, reserveCashAud: reservePlan.minimumReserveAud }, { message: "Calculated reserve applied. Other scenario assumptions and baseline were kept." });
 });
-document.querySelector("#analysis-export").addEventListener("click", () => {
+function downloadAnalysis() {
   if (!reservePlan) return;
-  const blob = new Blob([analysisToJSON(baselineScenario, scenario, reservePlan.targetPercent, reservePlan.deadlineHour)], { type: "application/json" });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement("a"); link.href = url; link.download = "weekend-gap-analysis.json";
-  document.body.append(link); link.click(); link.remove(); URL.revokeObjectURL(url);
+  downloadText(analysisToJSON(baselineScenario, scenario, reservePlan.targetPercent, reservePlan.deadlineHour), "weekend-gap-analysis.json", "application/json");
   setMessage("Analysis exported with both scenarios, changed assumptions, hourly queue comparison, and reserve plan.");
+}
+document.querySelector("#analysis-export").addEventListener("click", () => {
+  downloadAnalysis();
 });
 
 function hourDeltaLabel(delta) {
