@@ -2312,7 +2312,7 @@ function parseDelimited(text, delimiter = ',') {
     } else if (ch === delimiter) {
       row.push(cell);
       cell = '';
-    } else if (ch === '\n') {
+    } else if (ch === '\n' || ch === '\u2028' || ch === '\u2029') {
       row.push(cell);
       rows.push(row);
       row = [];
@@ -2351,7 +2351,7 @@ export function parseCsv(text) {
  */
 function detectRosterDelimiter(text) {
   if (typeof text !== 'string') return ',';
-  const source = text.replace(/^\uFEFF/, '').replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+  const source = text.replace(/^\uFEFF/, '').replace(/\r\n/g, '\n').replace(/[\r\u2028\u2029]/g, '\n');
   const first = source.split('\n').find((line) => line.trim() !== '') ?? '';
   return first.includes('\t') ? '\t' : ',';
 }
