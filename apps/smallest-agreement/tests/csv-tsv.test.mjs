@@ -72,6 +72,27 @@ test("the other two importers already handled TSV, and still do", () => {
   assert.equal(clauses.status, "ok", JSON.stringify(clauses.errors));
 });
 
+test("a pasted TSV still imports when blank lines precede the header", () => {
+  // Spreadsheet and editor pastes often start with a blank line. The tab check
+  // used to look only at that empty first line, treat the paste as CSV, and
+  // reject the header as one cell. Blank lines before the header are skipped
+  // for all three importers. A leading blank line on a real CSV stays CSV.
+  const support = toTsv(formatSupportMatrixCsv(proposal));
+  for (const prefix of ["\n", "\r\n", "   \n", "\n\n"]) {
+    const imported = parseSupportMatrixCsv(`${prefix}${support}`, proposal);
+    assert.equal(imported.status, "ok", JSON.stringify(imported.errors));
+    assert.equal(imported.updatedCells, 6);
+  }
+  const groups = parseParticipantGroupsCsv(`\n${toTsv(formatParticipantGroupsCsv(proposal))}`, proposal);
+  assert.equal(groups.status, "ok", JSON.stringify(groups.errors));
+  const clauses = parseClauseOptionsCsv(`\n${toTsv(formatClauseOptionsCsv(proposal).csv)}`, proposal);
+  assert.equal(clauses.status, "ok", JSON.stringify(clauses.errors));
+
+  const csv = parseSupportMatrixCsv(`\n${formatSupportMatrixCsv(proposal)}`, proposal);
+  assert.equal(csv.status, "ok", JSON.stringify(csv.errors));
+  assert.equal(csv.updatedCells, 6);
+});
+
 test("a TSV support matrix still rejects the same real errors as CSV", () => {
   const missingColumn = parseSupportMatrixCsv("clause_id\toption_id\talpha\nvenue\thall\t50\n", proposal);
   assert.equal(missingColumn.status, "invalid");

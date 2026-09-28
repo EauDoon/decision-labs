@@ -1495,15 +1495,20 @@ function parseCsvRecords(text) {
   return { status: "ok", records };
 }
 
-/** Treat a first line that contains tabs as TSV and convert it to CSV. */
+/** Treat a tab in the first non-blank line as TSV and convert it to CSV. */
 function tableTextToCsv(text) {
   const source = String(text ?? "").replace(/^\uFEFF/u, "");
-  const newline = source.search(/\r\n|\n|\r/u);
-  const firstLine = newline === -1 ? source : source.slice(0, newline);
+  const lines = source.replace(/\r\n/gu, "\n").replace(/\r/gu, "\n").split("\n");
+  // A leading blank line is not a header. Spreadsheet and editor pastes leave
+  // one constantly, and checking only source line 1 then reads the real TSV
+  // header as a single CSV cell.
+  let start = 0;
+  while (start < lines.length && lines[start].trim() === "") start += 1;
+  const firstLine = lines[start] ?? "";
   if (!firstLine.includes("\t")) return source;
   const rows = [];
-  for (const line of source.replace(/\r\n/gu, "\n").replace(/\r/gu, "\n").split("\n")) {
-    if (line === "") continue;
+  for (const line of lines.slice(start)) {
+    if (line.trim() === "") continue;
     rows.push(line.split("\t"));
   }
   if (rows.length === 0) return source;
@@ -1686,8 +1691,8 @@ function groupIdFromName(name, used) {
 /**
  * Replace participant groups from a CSV of name, weight, optional min_support and veto,
  * and one support column per existing clause option (`clauseId:optionId`).
- * Unknown columns are rejected. A first line that contains tabs is treated as TSV
- * and converted to CSV before the same validation. Does not mutate the supplied proposal.
+ * Unknown columns are rejected. The first non-blank line that contains tabs is
+ * treated as TSV and converted to CSV before the same validation. Does not mutate the supplied proposal.
  */
 export function parseParticipantGroupsCsv(csvText, proposal) {
   const validation = validateProposal(proposal);
@@ -4182,8 +4187,8 @@ export function formatClauseOptionsCsv(proposal) {
  * original, and change_cost. Optional note and locked columns are accepted.
  * Unknown columns are rejected. Groups stay. Matching clause and option ids keep
  * their support scores; new options receive 50 for every group.
- * A first line that contains tabs is treated as TSV and converted to CSV before
- * the same validation. Does not mutate the supplied proposal.
+ * The first non-blank line that contains tabs is treated as TSV and converted
+ * to CSV before the same validation. Does not mutate the supplied proposal.
  */
 export function parseClauseOptionsCsv(csvText, proposal) {
   const validation = validateProposal(proposal);

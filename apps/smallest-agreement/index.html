@@ -278,7 +278,7 @@ SOFTWARE.
           <p id="veto-groups-status" class="visually-hidden" role="status" aria-live="polite"></p>
           <label class="groups-paste-label" for="groups-paste">Paste participant groups TSV or CSV</label>
           <textarea id="groups-paste" rows="8" spellcheck="false" aria-describedby="groups-paste-note"></textarea>
-          <p id="groups-paste-note" class="field-note">Use the same columns as groups CSV import. A first line with tabs is treated as TSV. Import is undoable. Illegal strings are rejected. A partial paste is not applied.</p>
+          <p id="groups-paste-note" class="field-note">Use the same columns as groups CSV import. The first non-blank line with tabs is treated as TSV. Import is undoable. Illegal strings are rejected. A partial paste is not applied.</p>
           <button class="text-button" type="button" id="groups-paste-button">Import pasted groups</button>
           <div id="groups-editor" class="groups-editor"></div>
           <p class="field-note">Weights describe the model you choose. They do not create a right to decide.</p>
@@ -339,7 +339,7 @@ SOFTWARE.
           <p id="clause-filter-status" class="visually-hidden" role="status" aria-live="polite"></p>
           <label class="clause-paste-label" for="clause-paste">Paste clause options TSV or CSV</label>
           <textarea id="clause-paste" rows="8" spellcheck="false" aria-describedby="clause-paste-note"></textarea>
-          <p id="clause-paste-note" class="field-note">Use the same columns as clause CSV import. A first line with tabs is treated as TSV. Import is undoable. Matching ids keep support scores; new options start at 50. The solver still ignores notes.</p>
+          <p id="clause-paste-note" class="field-note">Use the same columns as clause CSV import. The first non-blank line with tabs is treated as TSV. Import is undoable. Matching ids keep support scores; new options start at 50. The solver still ignores notes.</p>
           <button class="text-button" type="button" id="clause-paste-button">Import pasted clauses</button>
           <div id="clauses-editor" class="clauses-editor"></div>
         </section>

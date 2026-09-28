@@ -1,3 +1,15 @@
+## 1.6.4 - 2026-09-28
+
+Pasted TSV still imports when blank lines precede the header in The Smallest Agreement 1.6.4
+
+### Fixed
+
+- `tableTextToCsv()` decided CSV versus TSV from the first physical line. A leading blank line, which spreadsheet and editor pastes leave constantly, has no tab, so the paste was read as CSV and the real header became one cell. The support matrix, participant groups, and clause options importers all share that front door, so the same pasted block failed in all three. Blank lines before the header are skipped, and the first non-blank line decides. A CSV that already starts with a blank line stays CSV. No score, cost, or approval result changes.
+
+### Added
+
+- `tests/csv-tsv.test.mjs` now pastes the real exports with a leading blank line, a CRLF blank line, spaces, and two blank lines, and checks that a leading blank line on CSV is still CSV.
+
 ## 1.6.3 - 2026-09-28
 
 The support matrix importer accepts pasted TSV like the other two in The Smallest Agreement 1.6.3
