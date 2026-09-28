@@ -1,3 +1,15 @@
+## 1.7.4 - 2026-09-28
+
+Buyer CSV rejects a repeated column in Common Cart 1.7.4
+
+### Fixed
+
+- `buyersFromCsvRows()` mapped two headers onto one field and kept the later cell. A second `quantity` column, or `qty` followed by `quantity`, replaced the first number and the import still succeeded. A repeated column is now rejected. Offers and prices are unchanged.
+
+### Added
+
+- `tests/buyer-duplicate-columns.test.mjs` imports a repeated quantity column, a qty/quantity alias pair, and the same repeat in a pasted TSV.
+
 ## 1.7.3 - 2026-09-28
 
 Pasted buyer TSV still imports when blank lines precede the header in Common Cart 1.7.3
