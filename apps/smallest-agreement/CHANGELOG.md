@@ -1,3 +1,15 @@
+## 1.6.6 - 2026-09-28
+
+TSV import unquotes a spreadsheet field in The Smallest Agreement 1.6.6
+
+### Fixed
+
+- `tableTextToCsv()` split each line on tabs and left wrapping quotes in the cell. A name exported as `"North, Block"` was stored with the quote characters, and a quoted score `"50"` was rejected as not a number. Quoted TSV fields are now unquoted. A comma or tab inside the quotes stays in that field. An interior quotation mark in an unquoted cell stays. An unclosed quote is rejected. CSV parsing is unchanged.
+
+### Added
+
+- `tests/csv-quoted-tsv.test.mjs` imports a quoted group name containing a comma and a tab, keeps an unquoted quotation mark, accepts a quoted support score, and rejects an unclosed quote.
+
 ## 1.6.5 - 2026-09-28
 
 CSV and TSV imports keep Unicode line separators as separate rows in The Smallest Agreement 1.6.5
