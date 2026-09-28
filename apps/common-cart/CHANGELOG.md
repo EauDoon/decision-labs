@@ -1,3 +1,15 @@
+## 1.7.5 - 2026-09-28
+
+Offer CSV rejects a repeated column in Common Cart 1.7.5
+
+### Fixed
+
+- `parseOfferCsv()` mapped two headers onto one field and kept the later cell. A second `capacity` column, or `price` followed by `unit price`, replaced the first number and the import still succeeded. A repeated column is now rejected. Buyers and prices are unchanged.
+
+### Added
+
+- `tests/offer-duplicate-columns.test.mjs` imports a repeated capacity column and a price/unit price alias pair.
+
 ## 1.7.4 - 2026-09-28
 
 Buyer CSV rejects a repeated column in Common Cart 1.7.4
