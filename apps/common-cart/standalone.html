@@ -806,7 +806,7 @@ footer {
             <textarea id="paste-buyers" rows="6" spellcheck="false" aria-describedby="paste-buyers-help" placeholder="label, category, quantity, max unit price, latest delivery days, variants"></textarea>
           </label>
           <button id="paste-buyers-apply" type="button">Replace buyers from paste</button>
-          <p id="paste-buyers-help">Same columns and validation as buyer CSV import. A tab in the first line is read as TSV. Valid paste replaces buyers, keeps offers, and is undoable.</p>
+          <p id="paste-buyers-help">Same columns and validation as buyer CSV import. A tab in the first non-blank line is read as TSV. Valid paste replaces buyers, keeps offers, and is undoable.</p>
         </div>
         <article class="panel print-chrome" aria-labelledby="buyer-variant-counts-title">
           <div class="panel-heading">
@@ -3450,9 +3450,8 @@ function parseCsvRows(text) {
 }
 
 function buyerTableDelimiter(text) {
-  const source = text.replace(/^\uFEFF/u, "");
-  const end = source.search(/[\r\n]/u);
-  const firstLine = end === -1 ? source : source.slice(0, end);
+  const source = text.replace(/^\uFEFF/u, "").replace(/\r\n/gu, "\n").replace(/\r/gu, "\n");
+  const firstLine = source.split("\n").find((line) => line.trim() !== "") ?? "";
   return firstLine.includes("\t") ? "\t" : ",";
 }
 

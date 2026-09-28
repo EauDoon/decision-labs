@@ -595,7 +595,7 @@ Organizer tools for private buyer tables, leftover jumps, pasted intake, and mer
 
 - **Organizer buyer CSV export.** Write `label, category, quantity, max unit price, latest delivery days, variants`, with optional max order total. Formula prefixes are escaped. This is private organizer data, not a merchant export. The file round-trips through import.
 - **Keyboard leftover jump.** `l` focuses residual coverage when you are not typing. Help lists it.
-- **Paste buyers.** Paste TSV or CSV into a textarea. A tab on the first line is read as TSV. The same checks as buyer CSV import apply. Valid paste replaces buyers, keeps offers, and is undoable.
+- **Paste buyers.** Paste TSV or CSV into a textarea. A tab in the first non-blank line is read as TSV. The same checks as buyer CSV import apply. Valid paste replaces buyers, keeps offers, and is undoable.
 - **Offer identity compare.** Compare two room JSON files by offer id. Shared ids report unit and buyer counts. Missing ids are listed and are not filled with zeros. The open room stays in place. Buyer labels stay out.
 - **Hide excluded buyers.** Organizer display filter. Matching stays unchanged. Merchant views still show counts only. The last hide choice is kept in workspace JSON. Older files omit it and show every buyer.
 - **Overlap Markdown copy.** Copy the variant overlap matrix as Markdown. Cells and totals are counts only. CSV copy still exists.

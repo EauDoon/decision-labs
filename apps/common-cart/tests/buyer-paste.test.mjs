@@ -31,6 +31,18 @@ test("pasted TSV buyers replace buyers, keep offers, and share CSV validation", 
   assert.deepEqual(imported.buyers[0].allowedVariants, csvBuyers[0].allowedVariants);
 });
 
+test("pasted buyer TSV still imports when blank lines precede the header", () => {
+  const tsv = `${TSV}\nKitchen one\tPantry box\t8\t52\t5\tStandard\t\n`;
+  const original = clonePreset("neighbourhood");
+  for (const prefix of ["\n", "\r\n", "   \n", "\n\n"]) {
+    const imported = importBuyersFromTable(original, prefix + tsv);
+    assert.equal(imported.buyers.length, 1);
+    assert.equal(imported.buyers[0].label, "Kitchen one");
+    assert.equal(imported.buyers[0].quantity, 8);
+    assert.equal(imported.offers.length, original.offers.length);
+  }
+});
+
 test("pasted CSV without tabs uses the same buyer CSV import path", () => {
   const csv = `${HEADER}\nStudio A,Desk chair,4,280,14,Black,\n`;
   const fromTable = parseBuyerTable(csv);
@@ -69,7 +81,7 @@ test("the buyer room has a paste area that is ignored by shortcuts while typing"
   const buyerPanel = html.slice(html.indexOf('id="buyer-panel"'), html.indexOf('id="merchant-panel"'));
   assert.match(buyerPanel, /id="paste-buyers"/u);
   assert.match(buyerPanel, /id="paste-buyers-apply"/u);
-  assert.match(buyerPanel, /A tab in the first line is read as TSV/u);
+  assert.match(buyerPanel, /A tab in the first non-blank line is read as TSV/u);
   assert.match(app, /importBuyersFromTable\(/u);
   assert.match(app, /function pasteBuyersTable\(/u);
   assert.match(app, /function focusBuyerPaste\(/u);

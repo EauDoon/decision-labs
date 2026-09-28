@@ -1,3 +1,15 @@
+## 1.7.3 - 2026-09-28
+
+Pasted buyer TSV still imports when blank lines precede the header in Common Cart 1.7.3
+
+### Fixed
+
+- `buyerTableDelimiter()` looked only at the first physical line. A leading blank line has no tab, so a spreadsheet TSV paste was read as CSV and the header became one unknown column. The first non-blank line now decides. A CSV that already starts with a blank line stays CSV. Offers and prices are unchanged.
+
+### Added
+
+- `tests/buyer-paste.test.mjs` pastes a buyer TSV after a blank line, a CRLF blank line, spaces, and two blank lines.
+
 ## 1.7.2 - 2026-09-28
 
 Buyer and offer CSV keep CR-only records as separate rows in Common Cart 1.7.2
