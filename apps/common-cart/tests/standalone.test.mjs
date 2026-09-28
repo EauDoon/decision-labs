@@ -310,9 +310,9 @@ test("release 1.4.54 ships bottle-hand cycling carnival lunch, leftover uncovere
   const pkg = JSON.parse(await readFile(new URL("../package.json", import.meta.url), "utf8"));
   const changelog = await readFile(new URL("../CHANGELOG.md", import.meta.url), "utf8");
   const html = await readFile(new URL("../standalone.html", import.meta.url), "utf8");
-  assert.equal(pkg.version, "1.7.0");
+  assert.equal(pkg.version, "1.7.1");
   const firstHeading = changelog.match(/^## .+$/m)?.[0];
-  assert.equal(firstHeading, "## 1.7.0 - 2026-09-19");
+  assert.equal(firstHeading, "## 1.7.1 - 2026-09-28");
   assert.match(changelog, /Bottle-hand cycling carnival lunch, leftover-uncovered leftover-only remaining copy, and first leftover-only hide jump in Common Cart 1\.4\.54/);
   assert.match(html, /id="copy-leftover-only-evidence"/u);
   assert.match(html, /id="edge-leftover-only"/u);
@@ -332,7 +332,7 @@ test("release 1.4.53 ships domestique cycling carnival lunch, leftover uncovered
   const pkg = JSON.parse(await readFile(new URL("../package.json", import.meta.url), "utf8"));
   const changelog = await readFile(new URL("../CHANGELOG.md", import.meta.url), "utf8");
   const html = await readFile(new URL("../standalone.html", import.meta.url), "utf8");
-  assert.equal(pkg.version, "1.7.0");
+  assert.equal(pkg.version, "1.7.1");
   assert.match(changelog, /Domestique cycling carnival lunch, leftover-uncovered leftover-only remaining copy, and first leftover-only hide jump in Common Cart 1\.4\.53/);
   assert.match(html, /id="copy-leftover-only-evidence"/u);
   assert.match(html, /id="edge-leftover-only"/u);
@@ -352,7 +352,7 @@ test("release 1.4.52 ships soigneur cycling carnival lunch, leftover uncovered l
   const pkg = JSON.parse(await readFile(new URL("../package.json", import.meta.url), "utf8"));
   const changelog = await readFile(new URL("../CHANGELOG.md", import.meta.url), "utf8");
   const html = await readFile(new URL("../standalone.html", import.meta.url), "utf8");
-  assert.equal(pkg.version, "1.7.0");
+  assert.equal(pkg.version, "1.7.1");
   assert.match(changelog, /## 1\.4\.52 - 2026-09-13/);
   assert.match(changelog, /Soigneur cycling carnival lunch, leftover-uncovered leftover-only remaining copy, and first leftover-only hide jump in Common Cart 1\.4\.52/);
   assert.match(html, /id="copy-leftover-only-evidence"/u);
@@ -373,7 +373,7 @@ test("release 1.4.51 ships lead-out cycling carnival lunch, leftover uncovered l
   const pkg = JSON.parse(await readFile(new URL("../package.json", import.meta.url), "utf8"));
   const changelog = await readFile(new URL("../CHANGELOG.md", import.meta.url), "utf8");
   const html = await readFile(new URL("../standalone.html", import.meta.url), "utf8");
-  assert.equal(pkg.version, "1.7.0");
+  assert.equal(pkg.version, "1.7.1");
   assert.match(changelog, /## 1\.4\.51 - 2026-09-13/);
   assert.match(changelog, /Lead-out cycling carnival lunch, leftover-uncovered leftover-only remaining copy, and first leftover-only hide jump in Common Cart 1\.4\.51/);
   assert.match(html, /id="copy-leftover-only-evidence"/u);
@@ -394,7 +394,7 @@ test("release 1.4.50 ships feed-zone cycling carnival lunch, leftover uncovered 
   const pkg = JSON.parse(await readFile(new URL("../package.json", import.meta.url), "utf8"));
   const changelog = await readFile(new URL("../CHANGELOG.md", import.meta.url), "utf8");
   const html = await readFile(new URL("../standalone.html", import.meta.url), "utf8");
-  assert.equal(pkg.version, "1.7.0");
+  assert.equal(pkg.version, "1.7.1");
   assert.match(changelog, /## 1\.4\.50 - 2026-09-13/);
   assert.match(changelog, /Feed-zone cycling carnival lunch, leftover-uncovered leftover-only remaining copy, and first leftover-only hide jump in Common Cart 1\.4\.50/);
   assert.match(html, /id="copy-leftover-only-evidence"/u);
@@ -415,7 +415,7 @@ test("release 1.4.49 ships first-aid cycling carnival lunch, leftover uncovered 
   const pkg = JSON.parse(await readFile(new URL("../package.json", import.meta.url), "utf8"));
   const changelog = await readFile(new URL("../CHANGELOG.md", import.meta.url), "utf8");
   const html = await readFile(new URL("../standalone.html", import.meta.url), "utf8");
-  assert.equal(pkg.version, "1.7.0");
+  assert.equal(pkg.version, "1.7.1");
   assert.match(changelog, /## 1\.4\.49 - 2026-09-13/);
   assert.match(changelog, /First-aid cycling carnival lunch, leftover-uncovered leftover-only remaining copy, and first leftover-only hide jump in Common Cart 1\.4\.49/);
   assert.match(html, /id="copy-leftover-only-evidence"/u);
@@ -436,7 +436,7 @@ test("release 1.4.48 ships team-sprint cycling carnival lunch, leftover uncovere
   const pkg = JSON.parse(await readFile(new URL("../package.json", import.meta.url), "utf8"));
   const changelog = await readFile(new URL("../CHANGELOG.md", import.meta.url), "utf8");
   const html = await readFile(new URL("../standalone.html", import.meta.url), "utf8");
-  assert.equal(pkg.version, "1.7.0");
+  assert.equal(pkg.version, "1.7.1");
   assert.match(changelog, /## 1\.4\.48 - 2026-09-13/);
   assert.match(changelog, /Team-sprint cycling carnival lunch, leftover-uncovered leftover-only remaining copy, and first leftover-only hide jump in Common Cart 1\.4\.48/);
   assert.match(html, /id="copy-leftover-only-evidence"/u);
@@ -457,7 +457,7 @@ test("release 1.4.47 ships team-pursuit cycling carnival lunch, leftover uncover
   const pkg = JSON.parse(await readFile(new URL("../package.json", import.meta.url), "utf8"));
   const changelog = await readFile(new URL("../CHANGELOG.md", import.meta.url), "utf8");
   const html = await readFile(new URL("../standalone.html", import.meta.url), "utf8");
-  assert.equal(pkg.version, "1.7.0");
+  assert.equal(pkg.version, "1.7.1");
   assert.match(changelog, /## 1\.4\.47 - 2026-09-13/);
   assert.match(changelog, /Team-pursuit cycling carnival lunch, leftover-uncovered leftover-only remaining copy, and first leftover-only hide jump in Common Cart 1\.4\.47/);
   assert.match(html, /id="copy-leftover-only-evidence"/u);
@@ -478,7 +478,7 @@ test("release 1.4.46 ships individual-pursuit cycling carnival lunch, leftover u
   const pkg = JSON.parse(await readFile(new URL("../package.json", import.meta.url), "utf8"));
   const changelog = await readFile(new URL("../CHANGELOG.md", import.meta.url), "utf8");
   const html = await readFile(new URL("../standalone.html", import.meta.url), "utf8");
-  assert.equal(pkg.version, "1.7.0");
+  assert.equal(pkg.version, "1.7.1");
   assert.match(changelog, /## 1\.4\.46 - 2026-09-13/);
   assert.match(changelog, /Individual-pursuit cycling carnival lunch, leftover-uncovered leftover-only remaining copy, and first leftover-only hide jump in Common Cart 1\.4\.46/);
   assert.match(html, /id="copy-leftover-only-evidence"/u);
@@ -499,7 +499,7 @@ test("release 1.4.45 ships scratch cycling carnival lunch, leftover uncovered le
   const pkg = JSON.parse(await readFile(new URL("../package.json", import.meta.url), "utf8"));
   const changelog = await readFile(new URL("../CHANGELOG.md", import.meta.url), "utf8");
   const html = await readFile(new URL("../standalone.html", import.meta.url), "utf8");
-  assert.equal(pkg.version, "1.7.0");
+  assert.equal(pkg.version, "1.7.1");
   assert.match(changelog, /## 1\.4\.45 - 2026-09-13/);
   assert.match(changelog, /Scratch cycling carnival lunch, leftover-uncovered leftover-only remaining copy, and first leftover-only hide jump in Common Cart 1\.4\.45/);
   assert.match(html, /id="copy-leftover-only-evidence"/u);
@@ -520,7 +520,7 @@ test("release 1.4.44 ships points-race cycling carnival lunch, leftover uncovere
   const pkg = JSON.parse(await readFile(new URL("../package.json", import.meta.url), "utf8"));
   const changelog = await readFile(new URL("../CHANGELOG.md", import.meta.url), "utf8");
   const html = await readFile(new URL("../standalone.html", import.meta.url), "utf8");
-  assert.equal(pkg.version, "1.7.0");
+  assert.equal(pkg.version, "1.7.1");
   assert.match(changelog, /## 1\.4\.44 - 2026-09-12/);
   assert.match(changelog, /Points-race cycling carnival lunch, leftover-uncovered leftover-only remaining copy, and first leftover-only hide jump in Common Cart 1\.4\.44/);
   assert.match(html, /id="copy-leftover-only-evidence"/u);
@@ -541,7 +541,7 @@ test("release 1.4.43 ships omnium cycling carnival lunch, leftover uncovered lef
   const pkg = JSON.parse(await readFile(new URL("../package.json", import.meta.url), "utf8"));
   const changelog = await readFile(new URL("../CHANGELOG.md", import.meta.url), "utf8");
   const html = await readFile(new URL("../standalone.html", import.meta.url), "utf8");
-  assert.equal(pkg.version, "1.7.0");
+  assert.equal(pkg.version, "1.7.1");
   assert.match(changelog, /## 1\.4\.43 - 2026-09-12/);
   assert.match(changelog, /Omnium cycling carnival lunch, leftover-uncovered leftover-only remaining copy, and first leftover-only hide jump in Common Cart 1\.4\.43/);
   assert.match(html, /id="copy-leftover-only-evidence"/u);
@@ -561,7 +561,7 @@ test("release 1.4.43 ships omnium cycling carnival lunch, leftover uncovered lef
 test("release 1.4.42 ships madison cycling carnival lunch, leftover uncovered leftover-only remaining copy and first leftover-only hide jump", async () => {
   const pkg = JSON.parse(await readFile(new URL("../package.json", import.meta.url), "utf8"));
   const html = await readFile(new URL("../standalone.html", import.meta.url), "utf8");
-  assert.equal(pkg.version, "1.7.0");
+  assert.equal(pkg.version, "1.7.1");
   assert.match(html, /id="copy-leftover-only-evidence"/u);
   assert.match(html, /id="edge-leftover-only"/u);
   assert.match(html, /id="edge-leftover-only"/u);
@@ -579,7 +579,7 @@ test("release 1.4.42 ships madison cycling carnival lunch, leftover uncovered le
 test("release 1.4.41 ships keirin cycling carnival lunch, leftover uncovered leftover-only remaining copy and first leftover-only hide jump", async () => {
   const pkg = JSON.parse(await readFile(new URL("../package.json", import.meta.url), "utf8"));
   const html = await readFile(new URL("../standalone.html", import.meta.url), "utf8");
-  assert.equal(pkg.version, "1.7.0");
+  assert.equal(pkg.version, "1.7.1");
   assert.match(html, /id="copy-leftover-only-evidence"/u);
   assert.match(html, /id="edge-leftover-only"/u);
   assert.match(html, /id="edge-leftover-only"/u);

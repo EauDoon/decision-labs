@@ -59,7 +59,8 @@ export function createCommonCartServer(serveRoot = root) {
     response.writeHead(200, {
       "cache-control": "no-store",
       "content-length": fileInfo.size,
-      "content-type": types[extname(file)] ?? "application/octet-stream"
+      "content-type": types[extname(file)] ?? "application/octet-stream",
+      "x-content-type-options": "nosniff"
     });
     if (request.method === "HEAD") {
       response.end();
