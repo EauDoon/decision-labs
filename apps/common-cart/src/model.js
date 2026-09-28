@@ -2330,6 +2330,15 @@ export function parseOfferCsv(text, defaults = {}) {
     const unknown = rows[0].filter((_, index) => columns[index] === null).map((value) => value.trim() || "(empty)");
     throw new ScenarioError(`Offer CSV has unknown column: ${unknown[0]}.`);
   }
+  const seenFields = new Map();
+  header.forEach((name, index) => {
+    const field = columns[index];
+    if (!field) return;
+    if (seenFields.has(field)) {
+      throw new ScenarioError(`Offer CSV column ${name} repeats ${seenFields.get(field)}.`);
+    }
+    seenFields.set(field, name);
+  });
   for (const required of REQUIRED_OFFER_CSV_FIELDS) {
     if (!columns.includes(required)) {
       throw new ScenarioError("Offer CSV must include name, capacity, unit price, shipping, fulfillment, and variants.");
