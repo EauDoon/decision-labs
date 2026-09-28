@@ -1,3 +1,15 @@
+## 1.7.7 - 2026-09-28
+
+Buyer and offer CSV keep an interior quotation mark in Common Cart 1.7.7
+
+### Fixed
+
+- `parseDelimitedRows()` treated a quotation mark anywhere in a cell as the start of a quoted field and then discarded the marks. `Cafe "North"` imported as `Cafe North`. A quote now starts a quoted field only when it is the first character. An interior quotation mark stays in the value. A field that already starts with a quote still unquotes, and a doubled quote is still one quote. No matching or price result changes.
+
+### Added
+
+- `tests/csv-literal-quotes.test.mjs` imports a buyer label and an offer name that contain an interior quotation mark, and still unquotes a properly quoted field.
+
 ## 1.7.6 - 2026-09-28
 
 Buyer and offer CSV keep Unicode line separators as separate rows in Common Cart 1.7.6

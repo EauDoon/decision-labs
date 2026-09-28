@@ -2161,7 +2161,10 @@ function parseDelimitedRows(text, delimiter) {
         cell += character;
       }
     } else if (character === '"') {
-      quoted = true;
+      // A quote starts a quoted field only at the first character. An interior
+      // quotation mark is part of the label, not a reason to drop the marks.
+      if (cell.length === 0) quoted = true;
+      else cell += character;
     } else if (character === delimiter) {
       row.push(cell);
       cell = "";
