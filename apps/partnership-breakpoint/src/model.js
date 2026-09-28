@@ -2345,15 +2345,14 @@ export function parseCsv(text) {
 }
 
 /**
- * Uses a tab delimiter when the first line contains a tab; otherwise comma.
+ * Uses a tab delimiter when the first non-blank line contains a tab; otherwise comma.
  * @param {unknown} text
  * @returns {','|'\t'}
  */
 function detectRosterDelimiter(text) {
   if (typeof text !== 'string') return ',';
-  const source = text.replace(/^\uFEFF/, '');
-  const end = source.search(/\r\n|\n|\r/);
-  const first = end === -1 ? source : source.slice(0, end);
+  const source = text.replace(/^\uFEFF/, '').replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+  const first = source.split('\n').find((line) => line.trim() !== '') ?? '';
   return first.includes('\t') ? '\t' : ',';
 }
 
@@ -2500,8 +2499,9 @@ export function participantsFromCsv(text) {
 }
 
 /**
- * Builds a replacement roster from pasted CSV or TSV. Tab-separated first lines
- * are converted to CSV, then {@link participantsFromCsv} validates the roster.
+ * Builds a replacement roster from pasted CSV or TSV. A tab in the first
+ * non-blank line selects TSV; those rows are converted to CSV, then
+ * {@link participantsFromCsv} validates the roster. Leading blank lines are skipped.
  * @param {unknown} text
  * @returns {ParticipantInput[]}
  */
