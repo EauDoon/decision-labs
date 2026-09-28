@@ -1,3 +1,15 @@
+## 1.8.4 - 2026-09-28
+
+Grouped thousands in a numeric string stay that number in Weekend Gap 1.8.4
+
+### Fixed
+
+- `finiteNumber()` passed `1,000` to `Number()`, which is NaN, and then used the fallback. A demand string with a thousands separator became zero, so the schedule no longer summed to the entered demand. A comma, space, or no-break space used as a thousands separator is now removed before the number is read. `NaN` and a broken group such as `1,00` still use the fallback. The 72-hour weights are unchanged.
+
+### Added
+
+- `tests/thousands-separator.test.mjs` reads grouped numbers, checks a 72-hour flat schedule still sums to 1,000, and checks `NaN` and `1,00` still fall back.
+
 ## 1.8.3 - 2026-09-28
 
 Scenario and analysis downloads defer blob URL release in Weekend Gap 1.8.3
