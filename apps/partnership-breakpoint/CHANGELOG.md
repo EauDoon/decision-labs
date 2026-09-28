@@ -732,3 +732,10 @@ Pasted roster TSV still imports when blank lines precede the header in Partnersh
 
 - `detectRosterDelimiter()` looked at the first physical line. A leading blank line has no tab, so a spreadsheet TSV paste was read as CSV and the header became one unknown column. The first non-blank line now decides. A CSV that already starts with a blank line stays CSV. Deal terms are not read and are not changed.
 - `tests/roster-tsv-blank.test.mjs` pastes a two-person roster after a blank line, a CRLF blank line, spaces, and two blank lines, and checks that a leading blank line on CSV is still CSV.
+
+## 1.8.3
+
+Roster CSV and TSV keep Unicode line separators as separate rows in Partnership Breakpoint 1.8.3
+
+- `parseDelimited()` treated U+2028 and U+2029 as characters inside the cell. A roster separated by those breaks looked like it had no participant rows. They now end a record, the same way LF and CR do. A separator inside quotes stays in the name. TSV detection uses the same breaks for the first non-blank line. Deal terms are not read and are not changed.
+- `tests/roster-unicode-separators.test.mjs` imports a two-person CSV separated by U+2028 and by U+2029, keeps a quoted U+2028 inside a name, and imports a TSV separated only by U+2028.
