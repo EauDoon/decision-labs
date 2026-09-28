@@ -1,3 +1,22 @@
+## 1.6.2 - 2026-09-28
+
+Whitespace-only lines in pasted CSV no longer fail the whole import in The Smallest Agreement 1.6.2
+
+### Fixed
+
+- `parseCsvRecords()` dropped a row only when every cell was the empty string, so a
+  line holding nothing but spaces or a tab survived as a one-cell row. Every
+  importer that shares that parser then rejected the entire paste with a
+  `truncated_row` error naming a row the user never typed, for example
+  `Row 2 has 1 cells, expected 4.`. Spreadsheets and text editors leave
+  whitespace-only lines behind constantly, and this workbench exists to import
+  pasted data. Blank-row detection now trims, so `""`, `"   "` and `"\t"` are all
+  treated as blank. A file that is a header plus only blank rows is still
+  rejected as `empty_csv`, so no importer can silently accept nothing.
+  Importers affected: support matrix, participant groups, and clause options.
+  Valid pastes, validation of real malformed rows, and every computed result are
+  unchanged.
+
 ## 1.6.1 - 2026-09-28
 
 Deferred blob URL release on every download in The Smallest Agreement 1.6.1

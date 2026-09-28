@@ -2365,7 +2365,10 @@ function parseCsvRecords(text) {
     row.push(cell);
     rows.push(row);
   }
-  const records = rows.filter((entry) => entry.some((value) => value !== ""));
+  // A line holding only spaces or tabs is a blank line, not a one-cell row.
+  // Spreadsheets and text editors leave those behind constantly, and every
+  // importer here rejects the whole paste with a truncated_row error.
+  const records = rows.filter((entry) => entry.some((value) => value.trim() !== ""));
   if (records.length === 0) return { status: "invalid", errors: [namedCsvError("empty_csv", "CSV is empty.")] };
   return { status: "ok", records };
 }
