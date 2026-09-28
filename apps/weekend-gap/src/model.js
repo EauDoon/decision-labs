@@ -512,8 +512,16 @@ const FIELD_RULES = Object.freeze({
 });
 
 export function finiteNumber(value, fallback) {
-  if (typeof value !== "number" && (typeof value !== "string" || value.trim() === "")) return fallback;
-  const parsed = typeof value === "number" ? value : Number(value);
+  if (typeof value === "number") return Number.isFinite(value) ? value : fallback;
+  if (typeof value !== "string") return fallback;
+  let trimmed = value.trim();
+  if (trimmed === "") return fallback;
+  // Number("1,000") is NaN, so a grouped demand string used to become the
+  // fallback and a schedule summed to zero. NaN and a broken group still do.
+  if (/^[+-]?\d{1,3}(?:[, \u00A0\u202F]\d{3})+(?:\.\d+)?$/u.test(trimmed)) {
+    trimmed = trimmed.replace(/[, \u00A0\u202F]/gu, "");
+  }
+  const parsed = Number(trimmed);
   return Number.isFinite(parsed) ? parsed : fallback;
 }
 
