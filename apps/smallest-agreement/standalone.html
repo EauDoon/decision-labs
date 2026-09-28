@@ -2350,7 +2350,9 @@ function parseCsvRecords(text) {
       cell = "";
       continue;
     }
-    if (character === "\n" || character === "\r") {
+    if (character === "\n" || character === "\r" || character === "\u2028" || character === "\u2029") {
+      // U+2028 and U+2029 are line breaks in some pastes. Leaving them in the
+      // cell joined the header to the next row.
       if (character === "\r" && source[index + 1] === "\n") index += 1;
       row.push(cell);
       rows.push(row);
@@ -2376,7 +2378,7 @@ function parseCsvRecords(text) {
 /** Treat a tab in the first non-blank line as TSV and convert it to CSV. */
 function tableTextToCsv(text) {
   const source = String(text ?? "").replace(/^\uFEFF/u, "");
-  const lines = source.replace(/\r\n/gu, "\n").replace(/\r/gu, "\n").split("\n");
+  const lines = source.replace(/\r\n/gu, "\n").replace(/[\r\u2028\u2029]/gu, "\n").split("\n");
   // A leading blank line is not a header. Spreadsheet and editor pastes leave
   // one constantly, and checking only source line 1 then reads the real TSV
   // header as a single CSV cell.

@@ -1,3 +1,15 @@
+## 1.6.5 - 2026-09-28
+
+CSV and TSV imports keep Unicode line separators as separate rows in The Smallest Agreement 1.6.5
+
+### Fixed
+
+- `parseCsvRecords()` treated U+2028 and U+2029 as characters inside the cell. A paste separated by those breaks joined the header to the next row and reported an unknown column. They now end a record, the same way LF and CR do. A separator inside quotes stays in the cell. TSV detection uses the same breaks for the first non-blank line. Scores, weights, and clause text are otherwise unchanged.
+
+### Added
+
+- `tests/csv-unicode-separators.test.mjs` imports group and support rows separated by U+2028 and by U+2029, keeps a quoted U+2028 inside a group name, and imports a group TSV separated only by U+2028.
+
 ## 1.6.4 - 2026-09-28
 
 Pasted TSV still imports when blank lines precede the header in The Smallest Agreement 1.6.4
