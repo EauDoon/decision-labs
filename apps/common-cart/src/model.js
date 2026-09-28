@@ -2165,12 +2165,15 @@ function parseDelimitedRows(text, delimiter) {
     } else if (character === delimiter) {
       row.push(cell);
       cell = "";
-    } else if (character === "\n") {
+    } else if (character === "\n" || character === "\r") {
+      // CR-only records are a real spreadsheet export. Dropping the CR merged
+      // the header and every following row into one line.
+      if (character === "\r" && source[index + 1] === "\n") index += 1;
       row.push(cell);
       rows.push(row);
       row = [];
       cell = "";
-    } else if (character !== "\r") {
+    } else {
       cell += character;
     }
   }
