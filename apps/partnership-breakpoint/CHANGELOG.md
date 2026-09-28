@@ -739,3 +739,11 @@ Roster CSV and TSV keep Unicode line separators as separate rows in Partnership 
 
 - `parseDelimited()` treated U+2028 and U+2029 as characters inside the cell. A roster separated by those breaks looked like it had no participant rows. They now end a record, the same way LF and CR do. A separator inside quotes stays in the name. TSV detection uses the same breaks for the first non-blank line. Deal terms are not read and are not changed.
 - `tests/roster-unicode-separators.test.mjs` imports a two-person CSV separated by U+2028 and by U+2029, keeps a quoted U+2028 inside a name, and imports a TSV separated only by U+2028.
+
+## 1.8.4
+
+Roster CSV keeps an interior quotation mark in Partnership Breakpoint 1.8.4
+
+- `parseDelimited()` treated a quotation mark anywhere in a cell as the start of a quoted field and then discarded the marks. `Cafe "North"` imported as `Cafe North`. A quote now starts a quoted field only when it is the first character. An interior quotation mark stays in the name. A field that already starts with a quote still unquotes, and a doubled quote is still one quote. Deal terms are not read and are not changed.
+- `tests/roster-literal-quotes.test.mjs` imports a name with an interior quotation mark and still unquotes a properly quoted name.
+
