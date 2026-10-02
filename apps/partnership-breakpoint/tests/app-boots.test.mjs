@@ -67,7 +67,8 @@ class Element {
   getContext() { return new Proxy({}, { get: (target, key) => target[key] ?? (() => {}), set: (target, key, value) => (target[key] = value, true) }); }
 }
 
-test("app module evaluates top-to-bottom without a load-time throw", async () => {
+let bootCount = 0;
+async function boot(storedEntries = []) {
   const nodes = new Map();
   for (const match of html.matchAll(/<[^>]+\bid="([^"]+)"[^>]*>/g)) {
     const node = new Element();
@@ -97,7 +98,7 @@ test("app module evaluates top-to-bottom without a load-time throw", async () =>
     createDocumentFragment() { const node = new Element(); node.fragment = true; return node; },
     addEventListener() {},
   };
-  const store = new Map();
+  const store = new Map(storedEntries);
   const localStorage = {
     getItem: (key) => (store.has(key) ? store.get(key) : null),
     setItem: (key, value) => { store.set(key, String(value)); },
@@ -121,8 +122,26 @@ test("app module evaluates top-to-bottom without a load-time throw", async () =>
     history: window.history,
   });
   const executable = source.replace("'./model.js'", JSON.stringify(new URL("../src/model.js", import.meta.url).href));
-  await import("data:text/javascript;base64," + Buffer.from(executable).toString("base64"));
+  const app = await import("data:text/javascript;base64," + Buffer.from(executable + `\nexport { saveState, persistLibrary };\n// boot ${++bootCount}`).toString("base64"));
+  return { app, store, nodes };
+}
+
+test("app module evaluates top-to-bottom without a load-time throw", async () => {
+  const { app, store, nodes } = await boot();
   const workbench = nodes.get("workbench");
   assert.ok(workbench, "workbench mount exists in markup");
   assert.match(workbench.innerHTML, /app-grid/);
+  app.saveState();
+  assert.ok(store.has("partnership-breakpoint.v1"));
+  assert.equal(app.persistLibrary([]), true);
+});
+
+test("unreadable draft and case-library bytes survive subsequent saves", async () => {
+  const keys = ["partnership-breakpoint.v1", "partnership-breakpoint.cases.v1"];
+  for (const raw of ["{unreadable", "", "{}"] ) {
+    const { app, store } = await boot(keys.map(key => [key, raw]));
+    app.saveState();
+    assert.equal(app.persistLibrary([]), false);
+    for (const key of keys) assert.equal(store.get(key), raw);
+  }
 });

@@ -2737,7 +2737,7 @@ function leftoverOnlyAllocatedHeadroom(rawScenario) {
   if (!coverage.secondary) return 0;
   const leftoverOffer = scenario.offers.find((offer) => offer.id === coverage.secondary.offerId);
   if (!leftoverOffer) return 0;
-  return leftoverOffer.capacity - leftoverOnlyAllocatedUnits(rawScenario);
+  return leftoverOffer.capacity - coverage.secondary.fulfilledUnits;
 }
 
 function leftoverOnlyAllocatedCapacity(rawScenario) {

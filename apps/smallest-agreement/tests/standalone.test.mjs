@@ -755,7 +755,7 @@ test("invalid thresholds in storage and share links fail closed without replacin
     const storage = new Map([[key, JSON.stringify({ ...valid, threshold: value })]]);
     const app = await savedWorkbench(storage);
     assert.equal(app.title(), "Neighbourhood Plan: the shared green", `stored threshold ${String(value)}`);
-    assert.match(app.message(), /Local draft ignored: threshold must be a number from 0 to 100/u, `stored threshold ${String(value)}`);
+    assert.match(app.message(), /Local draft could not be read and is preserved: threshold must be a number from 0 to 100/u, `stored threshold ${String(value)}`);
     assert.doesNotMatch(app.alert(), /Fix the proposal before searching/u);
   }
   const encoded = Buffer.from(JSON.stringify({ ...valid, threshold: 101 })).toString("base64url");
@@ -798,7 +798,7 @@ test("share-link and storage parse failures name the decode or JSON cause", asyn
 
   const storedJson = await savedWorkbench(new Map([[key, "{not json"]]));
   assert.equal(storedJson.title(), "Neighbourhood Plan: the shared green");
-  assert.match(storedJson.message(), /Local draft ignored: the text is not valid JSON/u);
+  assert.match(storedJson.message(), /Local draft could not be read and is preserved: the text is not valid JSON/u);
 });
 
 test("import failures name JSON syntax, the first invalid field, and oversize files", async () => {
