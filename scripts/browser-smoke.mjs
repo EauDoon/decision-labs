@@ -34,8 +34,17 @@ async function edit(page, item, value) {
 
 try {
   for (const item of cases) {
-    for (const mode of ['file', 'server', 'storage-unavailable']) {
+    const storageKeys = item.id === 'partnership-breakpoint'
+      ? ['partnership-breakpoint.v1', 'partnership-breakpoint.cases.v1']
+      : item.id === 'smallest-agreement' ? ['smallest-agreement:proposal:v1'] : [];
+    let initialScenario;
+    for (const mode of ['file', 'server', 'storage-unavailable', ...(storageKeys.length ? ['corrupt-storage', 'empty-storage', 'corrupt-storage-share'] : [])]) {
       const context = await browser.newContext({ viewport: { width: 1280, height: 900 }, acceptDownloads: true });
+      const preserveStorage = mode === 'corrupt-storage' || mode === 'empty-storage' || mode === 'corrupt-storage-share';
+      const preserved = mode === 'empty-storage' ? '' : mode === 'corrupt-storage-share' ? '{}' : '{unreadable';
+      if (preserveStorage) await context.addInitScript(({ keys, raw }) => {
+        for (const key of keys) localStorage.setItem(key, raw);
+      }, { keys: storageKeys, raw: preserved });
       if (mode === 'storage-unavailable') await context.addInitScript(() => {
         for (const method of ['getItem', 'setItem', 'removeItem']) {
           Storage.prototype[method] = () => { throw new DOMException('Storage unavailable', 'SecurityError'); };
@@ -46,12 +55,14 @@ try {
       page.on('pageerror', error => errors.push(error.message));
       page.on('request', request => { if (/^https?:/.test(request.url()) && !request.url().startsWith(origin + '/')) remoteRequests.push(request.url()); });
       page.on('dialog', dialog => dialog.accept());
-      const url = mode === 'file'
+      let url = mode === 'file'
         ? new URL(`../apps/${item.id}/standalone.html`, import.meta.url).href
         : `${origin}/apps/${item.id}/standalone.html`;
+      if (mode === 'corrupt-storage-share') url += `#${item.id === 'partnership-breakpoint' ? 'deal' : 'agreement'}=${Buffer.from(JSON.stringify(initialScenario)).toString('base64url')}`;
       await page.goto(url);
       const dismiss = page.locator(item.dismiss).first();
       if (await dismiss.isVisible()) await dismiss.click();
+      if (mode === 'file') initialScenario = await exportJson(page, item.export);
       const before = await page.locator(item.metric).first().innerText();
       await edit(page, item, item.value);
       await page.waitForFunction(({ selector, before }) => document.querySelector(selector)?.textContent.trim() !== before.trim(), { selector: item.metric, before });
@@ -80,6 +91,18 @@ try {
         await page.waitForFunction(selector => /unavailable|could not|preserved/i.test(document.querySelector(selector)?.textContent || ''), storageStatus);
         assert.deepEqual(await exportJson(page, item.export), saved, `${item.id}: export without storage`);
       }
+      if (preserveStorage) {
+        await edit(page, item, item.alternate);
+        await page.waitForFunction(selector => /preserved/i.test(document.querySelector(selector)?.textContent || ''), item.status);
+        if (item.id === 'partnership-breakpoint') {
+          await page.locator('[data-action="case-name"]').fill('Synthetic recovery case');
+          await page.locator('[data-action="save-case"]').click();
+          assert.match(await page.locator(item.status).innerText(), /library.*preserved/i);
+        }
+        assert.deepEqual(await page.evaluate(keys => keys.map(key => localStorage.getItem(key)), storageKeys), storageKeys.map(() => preserved), `${item.id}: unreadable bytes preserved`);
+        await edit(page, item, item.value);
+        assert.deepEqual(await exportJson(page, item.export), saved, `${item.id}: export remains available with unreadable storage`);
+      }
       await page.setViewportSize({ width: 390, height: 844 });
       await page.locator(item.field).first().focus();
       await page.keyboard.press('Tab');
@@ -101,5 +124,6 @@ try {
   console.log(`Browser: Chromium ${browser.version()}; platform: ${process.platform}`);
 } finally {
   await browser.close();
+  server.closeAllConnections();
   await new Promise(resolve => server.close(resolve));
 }

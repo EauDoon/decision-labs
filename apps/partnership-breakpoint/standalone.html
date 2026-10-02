@@ -3431,6 +3431,8 @@ let importSequence = 0;
 let activePreset = 'balanced';
 let pendingNotice = '';
 let persistenceWarning = '';
+let draftStorageBlocked = false;
+let libraryStorageBlocked = false;
 let partnershipReviewPacket = null;
 let partnershipReviewSequence = 0;
 let state = withStress(loadInitialState());
@@ -3632,15 +3634,23 @@ function travelHistory(direction) {
 function loadCaseLibrary() {
   try {
     const raw = localStorage.getItem(LIBRARY_KEY);
-    if (!raw) return [];
+    if (raw === null) return [];
     if (raw.length > 3_000_000) throw new Error('Library too large');
     const cases = JSON.parse(raw);
     if (!Array.isArray(cases) || cases.length > 12 || new Set(cases.map((item) => item?.id)).size !== cases.length || cases.some((item) => !item || typeof item.id !== 'string' || !/^case-[0-9]+$/.test(item.id) || typeof item.name !== 'string' || !item.name.trim() || item.name.length > 80 || !validateConfiguration(item.config).valid)) throw new Error('Invalid library');
     return cases;
-  } catch { pendingNotice += ' Saved case library is unavailable or invalid. Export individual JSON backups for recovery.'; return []; }
+  } catch {
+    libraryStorageBlocked = true;
+    pendingNotice += ' Saved case library could not be read and is preserved. Export JSON to keep new cases.';
+    return [];
+  }
 }
 
 function persistLibrary(candidate) {
+  if (libraryStorageBlocked) {
+    setNotice('Saved case library could not be read and is preserved. Export JSON to keep this case.');
+    return false;
+  }
   try { localStorage.setItem(LIBRARY_KEY, JSON.stringify(candidate)); }
   catch { setNotice('Case library could not be saved. Export JSON to keep this case.'); return false; }
   caseLibrary = candidate;
@@ -3855,18 +3865,19 @@ function loadStoredState() {
     if (!validateConfiguration(parsed).valid) throw new Error('Invalid saved case');
     return parsed;
   } catch {
-    pendingNotice = 'The previous local case could not be read. Showing Balanced; import an exported JSON backup to recover.';
+    draftStorageBlocked = true;
+    pendingNotice = 'The previous local case could not be read and is preserved. Export JSON to keep current edits.';
     return null;
   }
 }
 
 function loadInitialState() {
+  const fromStorage = loadStoredState();
   const fromHash = decodeHash(window.location.hash);
   if (fromHash.kind === 'ok') {
     openedFromShareLink = true;
     return fromHash.config;
   }
-  const fromStorage = loadStoredState();
   if (fromHash.kind === 'invalid') {
     const fallback = fromStorage
       ? 'Showing the last saved case.'
@@ -3887,7 +3898,10 @@ function saveState() {
   const validation = validateConfiguration(state);
   if (!validation.valid) return;
   persistenceWarning = '';
-  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch {
+  try {
+    if (draftStorageBlocked) persistenceWarning = 'Previous local case bytes are preserved. Export JSON to keep current edits.';
+    else localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  } catch {
     persistenceWarning = 'Local saving is unavailable. Export JSON before closing this tab.';
   }
   if (standaloneFileMode) return;

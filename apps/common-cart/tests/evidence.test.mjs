@@ -83,6 +83,21 @@ test("tertiary-fill evidence carries remaining and offer capacity", () => {
   assert.doesNotMatch(text, /SECRET_LABEL/);
 });
 
+test("leftover-only headroom excludes units filled by a different tertiary offer", () => {
+  const scenario = evidenceFixture();
+  scenario.offers[1].capacity = 10;
+  scenario.buyers.push({ ...scenario.buyers[0], id: "B05", category: "Pantry", quantity: 8, allowedVariants: ["Standard"] });
+  scenario.offers.push({ ...scenario.offers[0], id: "O03", category: "Pantry", variant: "Standard", minimumUnits: 1, capacity: 8 });
+  const coverage = computeResidualCoverage(scenario);
+  assert.equal(coverage.secondary.offerId, "O02");
+  assert.equal(coverage.secondary.fulfilledUnits, 9);
+  assert.equal(coverage.tertiary.fulfilledUnits, 8);
+  const text = leftoverOnlyEvidenceToMarkdown(scenario);
+  assert.match(text, /- Allocated units: 17\./);
+  assert.match(text, /- Offer capacity: 10\./);
+  assert.match(text, /- Headroom: 1\./);
+});
+
 test("winning-offer evidence is merchant-safe and names no buyers", () => {
   const scenario = evidenceFixture();
   const text = winningOfferEvidenceToMarkdown(scenario);

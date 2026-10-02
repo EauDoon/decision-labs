@@ -103,6 +103,7 @@ const COACH_KEY = "smallest-agreement:coach:v1";
 const WORKSPACE_KEY = "smallest-agreement:workspace:v1";
 const MAX_SCENARIOS = 20;
 let libraryBlocked = false;
+let draftStorageBlocked = false;
 let libraryRaw = null;
 let hasUnsavedEdits = false;
 const HASH_PREFIX = "#agreement=";
@@ -2441,20 +2442,22 @@ function defaultSupport(groups, value = 50) {
 
 function loadInitialProposal() {
   const shared = parseHash();
-  if (shared) return shared;
   let raw;
   try {
     raw = localStorage.getItem(STORAGE_KEY);
   } catch {
-    initialLoadMessage = "Browser storage is unavailable. Started from the Neighbourhood Plan preset.";
-    return clone(presets.neighbourhood);
+    draftStorageBlocked = true;
+    initialLoadMessage = "Browser storage could not be read. Export to keep current edits.";
+    return shared ?? clone(presets.neighbourhood);
   }
-  if (raw == null || raw === "") return clone(presets.neighbourhood);
+  if (raw === null) return shared ?? clone(presets.neighbourhood);
   const parsed = parseProposalJson(raw);
   if (parsed.cause) {
-    initialLoadMessage = `Local draft ignored: ${parsed.cause}`;
-    return clone(presets.neighbourhood);
+    draftStorageBlocked = true;
+    initialLoadMessage = `Local draft could not be read and is preserved: ${parsed.cause} Export to keep current edits.`;
+    return shared ?? clone(presets.neighbourhood);
   }
+  if (shared) return shared;
   initialLoadMessage = "Loaded local draft.";
   return parsed.proposal;
 }
@@ -2529,6 +2532,10 @@ function save(recordHistory = true) {
     return;
   }
   if (location.hash.startsWith(HASH_PREFIX)) history.replaceState(null, "", `${location.pathname}${location.search}`);
+  if (draftStorageBlocked) {
+    state.saveMessage = "Previous local draft bytes are preserved. Export to keep current edits.";
+    return;
+  }
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(canonicalProposal(state.proposal)));
     hasUnsavedEdits = false;
