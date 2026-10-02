@@ -13,6 +13,7 @@ const scripts = [
   'scripts/apps.mjs',
   'scripts/serve.mjs',
   'scripts/run-apps.mjs',
+  'scripts/browser-smoke.mjs',
   'scripts/check-hub.mjs',
   ...tests,
 ];

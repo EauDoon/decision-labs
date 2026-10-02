@@ -1,5 +1,21 @@
 # Partnership Breakpoint
 
+## Start here
+
+**Question:** which participant reaches an exit threshold first when shared economics change?
+
+1. Open [standalone.html](standalone.html), or run `npm start` from this app directory with Node.js 20 or newer. No install is required.
+2. Load **Balanced**. Change **Fee / transaction** from 0.20 to 0.19. The Liquidity Partner falls below its profit floor although total monthly profit remains positive. The [worked case](../../docs/CASE_STUDY.md) gives reproducible inputs and results.
+3. Use **Export JSON** for a portable case, then **Import JSON** to reopen it. Use the redacted export when names and the deal title should be removed.
+
+Drafts stay in browser storage until deliberately shared or exported. Browser storage is not a backup. These are deterministic model thresholds, not forecasts or executed commercial decisions. Use visible controls with Tab and Enter; active shortcuts are in the app's help.
+
+Read [formulas and limits](MODEL.md), [CLI commands](CLI.md), and [security limits](SECURITY.md). The [catalog](../../README.md) lists current versions.
+
+## Detailed reference and release history
+
+Version-specific descriptions below are retained as release records and may describe retired controls. Start with the workflow above and current in-app help.
+
 > **Current keyboard behavior:** Home, End, Page Up, Page Down, arrow keys, Insert, Delete, Backspace, and F1 through F12 keep their native browser behavior. Older descriptions of those key bindings below are historical and no longer apply. Use the visible controls with Tab and Enter, or open the in-app shortcut help for retained application shortcuts.
 
 Partnership Breakpoint is a static browser workbench for locating participant-level exit thresholds in a shared commercial arrangement, then ranking the smallest adverse percentage movements in volume, fee, or variable cost that reach those boundaries. A reachable capacity limit is ranked as a volume-increase shock.

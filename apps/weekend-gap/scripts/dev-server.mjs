@@ -3,7 +3,7 @@ import { createServer } from "node:http";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+const root = await fs.realpath(path.resolve(path.dirname(fileURLToPath(import.meta.url)), ".."));
 const requestedPort = Number(process.env.PORT || 5173);
 const canSelectFallbackPort = !process.env.PORT;
 let currentPort = requestedPort;
@@ -28,6 +28,11 @@ function resolvedFile(urlPath) {
 }
 
 const server = createServer(async (request, response) => {
+  if (!/^(127\.0\.0\.1|localhost)(?::[0-9]+)?$/.test(request.headers.host ?? "")) {
+    response.writeHead(403, { "Content-Type": "text/plain; charset=utf-8" });
+    response.end("Host not allowed");
+    return;
+  }
   if (request.method !== "GET" && request.method !== "HEAD") {
     response.writeHead(405, {
       "Allow": "GET, HEAD",
@@ -52,7 +57,7 @@ const server = createServer(async (request, response) => {
   try {
     const realPath = await fs.realpath(filePath);
     const relative = path.relative(root, realPath);
-    if (relative.startsWith("..") || path.isAbsolute(relative)) {
+    if (relative.split(path.sep).some(segment => segment.startsWith(".")) || path.isAbsolute(relative)) {
       response.writeHead(403, { "Content-Type": "text/plain; charset=utf-8" });
       response.end("Forbidden");
       return;
@@ -68,7 +73,7 @@ const server = createServer(async (request, response) => {
       response.end();
       return;
     }
-    createReadStream(realPath).pipe(response);
+    createReadStream(realPath).on("error", () => response.destroy()).pipe(response);
   } catch {
     response.writeHead(404, { "Content-Type": "text/plain; charset=utf-8" });
     response.end("Not found");

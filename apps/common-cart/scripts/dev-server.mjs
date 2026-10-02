@@ -1,4 +1,4 @@
-import { createReadStream, statSync } from "node:fs";
+import { createReadStream, realpathSync, statSync } from "node:fs";
 import { createServer } from "node:http";
 import { fileURLToPath } from "node:url";
 import { dirname, extname, isAbsolute, join, normalize, relative, sep } from "node:path";
@@ -21,6 +21,11 @@ const types = {
 
 export function createCommonCartServer(serveRoot = root) {
   return createServer((request, response) => {
+    if (!/^(127\.0\.0\.1|localhost)(?::[0-9]+)?$/.test(request.headers.host ?? "")) {
+      response.writeHead(403, { "content-type": "text/plain; charset=utf-8" });
+      response.end("Host not allowed");
+      return;
+    }
     if (request.method !== "GET" && request.method !== "HEAD") {
       response.writeHead(405, {
         "allow": "GET, HEAD",
@@ -43,6 +48,11 @@ export function createCommonCartServer(serveRoot = root) {
       response.end("Bad request");
       return;
     }
+    if (requestedPath.split("/").some((segment) => segment.startsWith("."))) {
+      response.writeHead(404, { "content-type": "text/plain; charset=utf-8" });
+      response.end("Not found");
+      return;
+    }
     const file = normalize(join(serveRoot, requestedPath));
     const fromRoot = relative(serveRoot, file);
     if (fromRoot === ".." || fromRoot.startsWith(`..${sep}`) || isAbsolute(fromRoot)) {
@@ -50,7 +60,11 @@ export function createCommonCartServer(serveRoot = root) {
       response.end("Not found");
       return;
     }
-    const fileInfo = statSafe(file);
+    let realFile;
+    let realRoot;
+    try { realRoot = realpathSync(serveRoot); realFile = realpathSync(file); } catch { /* Missing files use the generic response below. */ }
+    const realRelative = realFile ? relative(realRoot, realFile) : "..";
+    const fileInfo = realRelative.split(sep).some(segment => segment.startsWith(".")) || isAbsolute(realRelative) ? null : statSafe(realFile);
     if (fileInfo === null) {
       response.writeHead(404, { "content-type": "text/plain; charset=utf-8" });
       response.end("Not found");
@@ -66,7 +80,7 @@ export function createCommonCartServer(serveRoot = root) {
       response.end();
       return;
     }
-    createReadStream(file).pipe(response);
+    createReadStream(realFile).on("error", () => response.destroy()).pipe(response);
   });
 }
 

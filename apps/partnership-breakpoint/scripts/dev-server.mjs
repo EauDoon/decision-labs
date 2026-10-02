@@ -1,4 +1,4 @@
-import { createReadStream, existsSync, statSync } from 'node:fs';
+import { createReadStream, realpathSync, statSync } from 'node:fs';
 import { createServer } from 'node:http';
 import { extname, isAbsolute, join, normalize, relative, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -34,6 +34,11 @@ export function resolveListenOptions(env = process.env) {
 
 export function createWorkbenchServer(serveRoot = root) {
   return createServer((request, response) => {
+    if (!/^(127\.0\.0\.1|localhost)(?::[0-9]+)?$/.test(request.headers.host ?? '')) {
+      response.writeHead(403, { 'content-type': 'text/plain; charset=utf-8' });
+      response.end('Host not allowed');
+      return;
+    }
     if (request.method !== 'GET' && request.method !== 'HEAD') {
       response.writeHead(405, { allow: 'GET, HEAD', 'content-type': 'text/plain; charset=utf-8' });
       response.end('Method not allowed');
@@ -53,9 +58,21 @@ export function createWorkbenchServer(serveRoot = root) {
       return;
     }
     const relativePath = requestPath === '/' ? 'index.html' : requestPath.replace(/^\/+/, '');
+    if (relativePath.split('/').some((segment) => segment.startsWith('.'))) {
+      response.writeHead(403, { 'content-type': 'text/plain; charset=utf-8' });
+      response.end('Forbidden');
+      return;
+    }
     const target = normalize(join(serveRoot, relativePath));
     const fromRoot = relative(serveRoot, target);
-    if (fromRoot === '..' || fromRoot.startsWith(`..${sep}`) || isAbsolute(fromRoot) || !existsSync(target) || !statSync(target).isFile()) {
+    let realTarget;
+    let isFile = false;
+    try {
+      realTarget = realpathSync(target);
+      const realRelative = relative(realpathSync(serveRoot), realTarget);
+      isFile = !realRelative.split(sep).some(segment => segment.startsWith('.')) && !isAbsolute(realRelative) && statSync(realTarget).isFile();
+    } catch { /* Missing and unreadable files use the same public response. */ }
+    if (fromRoot === '..' || fromRoot.startsWith(`..${sep}`) || isAbsolute(fromRoot) || !isFile) {
       response.writeHead(404, { 'content-type': 'text/plain; charset=utf-8' });
       response.end('Not found');
       return;
@@ -69,7 +86,7 @@ export function createWorkbenchServer(serveRoot = root) {
       response.end();
       return;
     }
-    createReadStream(target).pipe(response);
+    createReadStream(realTarget).on('error', () => response.destroy()).pipe(response);
   });
 }
 
