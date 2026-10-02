@@ -1,10 +1,10 @@
 import { createServer } from "node:http";
-import { readFile } from "node:fs/promises";
+import { readFile, realpath } from "node:fs/promises";
 import { extname, normalize, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 import { BIND_HOST, parsePort } from "./listen-config.mjs";
 
-const root = resolve(fileURLToPath(new URL("..", import.meta.url)));
+const root = await realpath(resolve(fileURLToPath(new URL("..", import.meta.url))));
 const parsedPort = parsePort(process.env.PORT);
 if (parsedPort.error) {
   console.error(parsedPort.error);
@@ -15,12 +15,18 @@ const types = { ".html": "text/html; charset=utf-8", ".js": "text/javascript; ch
 
 function safePath(urlPath) {
   const pathname = decodeURIComponent(urlPath.split("?")[0]);
+  if (pathname.split(/[/\\]/).some((segment) => segment.startsWith("."))) return null;
   const relative = pathname === "/" ? "index.html" : pathname.replace(/^[/\\]+/, "");
   const target = resolve(root, normalize(relative));
   return target === root || target.startsWith(`${root}${sep}`) ? target : null;
 }
 
 createServer(async (request, response) => {
+  if (!/^(127\.0\.0\.1|localhost)(?::[0-9]+)?$/.test(request.headers.host ?? "")) {
+    response.writeHead(403, { "Content-Type": "text/plain; charset=utf-8" });
+    response.end("Host not allowed");
+    return;
+  }
   if (request.method !== "GET" && request.method !== "HEAD") {
     response.writeHead(405, { Allow: "GET, HEAD" });
     response.end("Method not allowed");
@@ -29,7 +35,9 @@ createServer(async (request, response) => {
   try {
     const target = safePath(request.url || "/");
     if (!target) throw new Error("not found");
-    const content = await readFile(target);
+    const resolved = await realpath(target);
+    if (!resolved.startsWith(`${root}${sep}`) || resolved.slice(root.length + 1).split(sep).some(segment => segment.startsWith("."))) throw new Error("not found");
+    const content = await readFile(resolved);
     response.writeHead(200, { "Content-Type": types[extname(target)] || "application/octet-stream", "Cache-Control": "no-store", "X-Content-Type-Options": "nosniff" });
     response.end(request.method === "HEAD" ? undefined : content);
   } catch {

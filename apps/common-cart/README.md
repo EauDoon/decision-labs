@@ -1,5 +1,21 @@
 # Common Cart
 
+## Start here
+
+**Question:** which conditional offer can this group's declared demand unlock?
+
+1. Open [standalone.html](standalone.html) in a browser, or run `npm start` from this app directory with Node.js 20 or newer. No install is required.
+2. Start with **Coffee run**. The synthetic room requests 14 units. Change the first buyer's quantity from 2 to 3 and confirm requested units becomes 15; then inspect which offers still qualify.
+3. Use **Export** to save the complete room JSON. **Import** reopens it. Keep organizer exports private; merchant reports contain aggregates only.
+
+Drafts remain in this browser. Local storage is not a backup, and share links expose their complete contents to anyone receiving them. Use visible controls with Tab and Enter. Model results are deterministic comparisons, not live prices, recommendations, or transactions.
+
+Read [model assumptions](MODEL.md), [CLI commands](CLI.md), and [security limits](SECURITY.md). Current versions and all-app checks are listed in the [catalog](../../README.md).
+
+## Detailed reference and release history
+
+The historical keyboard descriptions below are retained as release records. Use the current in-app shortcut help for active bindings.
+
 > **Current keyboard behavior:** Home, End, Page Up, Page Down, arrow keys, Insert, Delete, Backspace, and F1 through F12 keep their native browser behavior. Older descriptions of those key bindings below are historical and no longer apply. Use the visible controls with Tab and Enter, or open the in-app shortcut help for retained application shortcuts.
 
 Common Cart is a local-first pooled purchase simulator. Buyers enter compatible product constraints, merchants enter conditional offers, and the app shows which offers the group can unlock without exposing individual buyer records in the merchant view.

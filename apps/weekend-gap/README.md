@@ -1,5 +1,21 @@
 # Weekend Gap
 
+## Start here
+
+**Question:** when can synthetic redemption demand settle through the declared reserve and operating windows?
+
+1. Open [standalone.html](standalone.html), or run `npm start` from this app directory with Node.js 20 or newer. No install is required.
+2. Start with **Normal Friday**. Set reserve cash to 0 and inspect the settled total and residual queue. With no funding tranches, zero reserve prevents settlement even when operating windows overlap.
+3. Use **Export JSON** for the scenario or **Export workspace** for the baseline, notes and review settings. Reopen the matching export through its corresponding import control.
+
+These are deterministic synthetic scenarios, not live issuer data or liquidity recommendations. Browser storage is not a backup; unreadable saved reviews are preserved for explicit recovery. File-mode sharing uses JSON exports. Use visible controls with Tab and Enter, and current in-app shortcut help.
+
+Read [formulas and limits](MODEL.md), [CLI commands](CLI.md), and [security limits](SECURITY.md). The [catalog](../../README.md) lists current versions.
+
+## Detailed reference and release history
+
+Historical keyboard and release descriptions below are retained as records. Current in-app controls and help take precedence for usage.
+
 > **Current keyboard behavior:** Home, End, Page Up, Page Down, arrow keys, Insert, Delete, Backspace, and F1 through F12 keep their native browser behavior. Older descriptions of those key bindings below are historical and no longer apply. Use the visible controls with Tab and Enter, or open the in-app shortcut help for retained application shortcuts.
 
 Weekend Gap is a responsive, zero-dependency browser simulator for a specific operational question: what can happen to synthetic AUD stablecoin redemption liquidity from Friday afternoon to Monday when the onchain ledger remains open but issuer redemption, banking, FX and Australian AUD payout windows do not fully overlap?

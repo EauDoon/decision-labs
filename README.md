@@ -1,6 +1,6 @@
 # Decision Labs
 
-[![build](https://img.shields.io/github/actions/workflow/status/EauDoon/decision-labs/common-cart.yml?branch=main)](https://github.com/EauDoon/decision-labs/actions)
+[![build](https://img.shields.io/github/actions/workflow/status/EauDoon/decision-labs/decision-labs.yml?branch=main)](https://github.com/EauDoon/decision-labs/actions/workflows/decision-labs.yml)
 [![license](https://img.shields.io/github/license/EauDoon/decision-labs)](https://github.com/EauDoon/decision-labs/blob/main/LICENSE)
 [![last commit](https://img.shields.io/github/last-commit/EauDoon/decision-labs)](https://github.com/EauDoon/decision-labs)
 
@@ -93,5 +93,9 @@ npm run check
 
 `npm test` runs the root catalog and all workbench tests. `npm run check`
 validates the catalog and each app's standalone build.
+
+The optional [browser acceptance check](docs/BROWSER_CHECKS.md) exercises all
+four actual standalone pages, including JSON round trips and unavailable storage.
+It uses separately installed browser tooling and adds no application dependency.
 
 The repository is released under the [MIT License](LICENSE).

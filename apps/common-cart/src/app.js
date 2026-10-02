@@ -166,6 +166,8 @@ let edgeWinnerAllocated = "all";
 let edgeUncoveredLeftover = "all";
 let lastRemovedBuyer = null;
 let saveTimer;
+let importSequence = 0;
+let scenarioRevision = 0;
 let contingencyRuns = [];
 renderEditor();
 refresh();
@@ -1875,6 +1877,7 @@ function updateRoot(field, value) {
 }
 
 function refresh() {
+  scenarioRevision += 1;
   clearCartReview();
   try {
     const market = evaluateMarket(scenario);
@@ -2692,11 +2695,13 @@ async function importScenario(event) {
   const file = event.target.files?.[0];
   event.target.value = "";
   if (!file) return;
+  const sequence = ++importSequence;
   if (file.size === 0) return setStatus("Import failed: the file is empty.");
   if (file.size > 250_000) return setStatus("Import files must be smaller than 250 KB.");
   try {
     const beforeRead = JSON.stringify(scenario);
     const text = await file.text();
+    if (sequence !== importSequence) return;
     if (!text.trim()) return setStatus("Import failed: the file is empty.");
     let parsed;
     try {
@@ -2715,6 +2720,7 @@ async function importScenario(event) {
     refresh();
     setStatus("Scenario imported.", true);
   } catch (error) {
+    if (sequence !== importSequence) return;
     setStatus(`Import failed: ${messageOf(error)}`);
   }
 }
@@ -2766,10 +2772,13 @@ async function importOffersCsv(event) {
   const file = event.target.files?.[0];
   event.target.value = "";
   if (!file) return;
+  const sequence = ++importSequence;
+  const revision = scenarioRevision;
   if (file.size === 0) return setStatus("Offer CSV import failed: the file is empty.");
   if (file.size > 250_000) return setStatus("Offer CSV files must be smaller than 250 KB.");
   try {
     const text = await file.text();
+    if (sequence !== importSequence || revision !== scenarioRevision) return;
     if (!text.trim()) return setStatus("Offer CSV import failed: the file is empty.");
     const imported = importOffersFromCsv(scenario, text);
     if (!allowReplaceDraft()) return;
@@ -2780,6 +2789,7 @@ async function importOffersCsv(event) {
     refresh();
     setStatus(`Imported ${imported.offers.length} offers from CSV. Buyers were left unchanged.`, true);
   } catch (error) {
+    if (sequence !== importSequence || revision !== scenarioRevision) return;
     setStatus(`Offer CSV import failed: ${messageOf(error)}`);
   }
 }
@@ -2788,10 +2798,13 @@ async function importBuyersCsv(event) {
   const file = event.target.files?.[0];
   event.target.value = "";
   if (!file) return;
+  const sequence = ++importSequence;
+  const revision = scenarioRevision;
   if (file.size === 0) return setStatus("Buyer CSV import failed: the file is empty.");
   if (file.size > 250_000) return setStatus("Buyer CSV files must be smaller than 250 KB.");
   try {
     const text = await file.text();
+    if (sequence !== importSequence || revision !== scenarioRevision) return;
     if (!text.trim()) return setStatus("Buyer CSV import failed: the file is empty.");
     const imported = importBuyersFromCsv(scenario, text);
     if (!allowReplaceDraft()) return;
@@ -2800,6 +2813,7 @@ async function importBuyersCsv(event) {
     refresh();
     setStatus(`Imported ${imported.buyers.length} buyers from CSV. Offers were left unchanged.`, true);
   } catch (error) {
+    if (sequence !== importSequence || revision !== scenarioRevision) return;
     setStatus(`Buyer CSV import failed: ${messageOf(error)}`);
   }
 }

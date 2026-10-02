@@ -1,5 +1,21 @@
 # The Smallest Agreement
 
+## Start here
+
+**Question:** what is the lowest-cost allowed clause package that meets the declared approval rules?
+
+1. Open [standalone.html](standalone.html), or run `npm start` from this app directory with Node.js 20 or newer. No install is required.
+2. Load **Neighbourhood Plan**. Raise **Exact threshold (%)** from 68 to 75 and compare the recommendation with the original proposal. Scores, weights and costs are synthetic assumptions, not observed consent.
+3. Use **Export JSON** to preserve the proposal and **Import JSON** to reopen it. Export the brief for a readable explanation, or workspace JSON when the saved workspace settings matter.
+
+Drafts stay in browser storage, which is not a backup. Shared fragments and exports disclose their contents. People define the rules and make the decision; the solver does not establish legitimacy. Use Tab and Enter for visible controls and the in-app help for current shortcuts.
+
+Read [model limits](MODEL.md), [analyst commands](ANALYST.md), and [security limits](SECURITY.md). The [catalog](../../README.md) lists current versions.
+
+## Detailed reference and release history
+
+Older control and keyboard descriptions below are release records. Follow the current workflow above and the app's shortcut help.
+
 > **Current keyboard behavior:** Home, End, Page Up, Page Down, arrow keys, Insert, Delete, Backspace, and F1 through F12 keep their native browser behavior. Older descriptions of those key bindings below are historical and no longer apply. Use the visible controls with Tab and Enter, or open the in-app shortcut help for retained application shortcuts.
 
 The Smallest Agreement is a local, static workshop for a group that wants to test structured clause changes against a chosen approval threshold. It finds the lowest-cost combination that also respects optional group support floors, optional veto groups, a change-cost budget, and locked clause choices.
