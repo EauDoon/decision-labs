@@ -7863,6 +7863,59 @@ test('pasted TSV roster reuses CSV validation and leaves the deal unchanged', as
   assert.deepEqual(app.saved().participants.map((item) => item.name), ['Alpha', 'Beta']);
 });
 
+test('roster changes reject dangling plan and investment references before changing the draft or history', async () => {
+  const extensions = {
+    plan: { periods: [{ volume: 100000, feePerTransaction: 0.2, participants: { platform: { fixedMonthlyCost: 2000 } } }] },
+    alternatives: { feeLevels: [0.2], shareModes: ['current'], capacityInvestments: [{ participantId: 'platform', addedCapacity: 10000, investmentCost: 400 }] },
+  };
+  for (const [field, value] of Object.entries(extensions)) {
+    for (const action of ['csv', 'paste', 'remove']) {
+      const app = await workbench();
+      app.import({ ...clonePreset('balanced'), [field]: value });
+      app.edit('deal.title', 'Pending redo', { type: 'text' });
+      app.click('undo');
+      const before = app.saved();
+      const markup = app.markup();
+      const roster = ['name,share,variable cost,fixed cost,min profit,risk', 'Alpha,0.5,0,0,0,0', 'Beta,0.5,0,0,0,0'].join('\n');
+      const pasted = roster.replaceAll(',', '\t');
+      if (action === 'csv') app.importParticipantsCsv(roster);
+      if (action === 'paste') { app.pasteRoster(pasted); app.click('import-roster-paste'); }
+      if (action === 'remove') app.click('remove-participant', { index: '0' });
+      assert.match(app.notice(), /rejected:/, `${field} ${action} rejects the change`);
+      assert.match(app.notice(), field === 'plan' ? /overrides unknown participant id: platform/ : /must name a current participant/);
+      assert.deepEqual(app.saved(), before);
+      assert.equal(app.markup(), markup, 'the invalid candidate never replaces the rendered draft');
+      app.click('redo');
+      assert.equal(app.saved().deal.title, 'Pending redo', 'a rejected edit preserves redo history');
+      if (action === 'paste') assert.ok(app.markup().includes(pasted), 'the rejected pasted roster remains editable');
+      app.click('undo');
+      assert.deepEqual(app.saved(), before);
+    }
+  }
+});
+
+test('compatible roster imports and removals preserve plans and investments and remain undoable', async () => {
+  const config = clonePreset('balanced');
+  config.plan = { periods: [{ volume: 100000, feePerTransaction: 0.2, participants: { platform: { fixedMonthlyCost: 2000 } } }] };
+  config.alternatives = { feeLevels: [0.2], shareModes: ['current'], capacityInvestments: [{ participantId: 'platform', addedCapacity: 10000, investmentCost: 400 }] };
+  const roster = ['name,share,variable cost,fixed cost,min profit,risk', 'Platform,0.5,0,0,0,0', 'Other,0.5,0,0,0,0'].join('\n');
+  for (const action of ['csv', 'paste', 'remove']) {
+    const app = await workbench();
+    app.import(config);
+    const before = app.saved();
+    if (action === 'csv') app.importParticipantsCsv(roster);
+    if (action === 'paste') { app.pasteRoster(roster.replaceAll(',', '\t')); app.click('import-roster-paste'); }
+    if (action === 'remove') app.click('remove-participant', { index: '1' });
+    assert.match(app.notice(), action === 'remove' ? /Removed Distributor/ : /Participant roster replaced/);
+    const after = app.saved();
+    assert.deepEqual(after.plan, before.plan);
+    assert.deepEqual(after.alternatives, before.alternatives);
+    assert.deepEqual(after.participants.map(participant => participant.id), action === 'remove' ? ['platform', 'liquidity-partner'] : ['platform', 'other']);
+    app.click('undo');
+    assert.deepEqual(app.saved(), before);
+  }
+});
+
 test('participant CSV export uses import columns and formula-safe names', async () => {
   const app = await workbench();
   app.click('dismiss-coach');
