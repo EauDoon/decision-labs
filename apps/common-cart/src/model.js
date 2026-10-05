@@ -2186,7 +2186,13 @@ function parseDelimitedRows(text, delimiter) {
     row.push(cell);
     rows.push(row);
   }
-  return rows.filter((entry) => entry.some((value) => value.trim() !== ""));
+  const populatedRows = rows.filter((entry) => entry.some((value) => value.trim() !== ""));
+  populatedRows.forEach((entry, index) => {
+    if (entry.length > populatedRows[0].length) {
+      throw new ScenarioError(`CSV row ${index + 1} has ${entry.length} columns, but the header has ${populatedRows[0].length}. Quote values containing the delimiter.`);
+    }
+  });
+  return populatedRows;
 }
 
 function parseCsvRows(text) {

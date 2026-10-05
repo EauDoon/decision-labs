@@ -109,7 +109,7 @@ node scripts/analyze.mjs redact scenario.json > redacted-scenario.json
 node scripts/analyze.mjs review redacted-scenario.json slack > redacted-review.json
 ```
 
-Redaction removes the title and notes, replaces names with Participant 1 through N, and replaces custom IDs with `participant-1` through `participant-N`. The model's redaction helper also omits display preferences. Economics, currency and stress settings remain. This is label removal, not anonymization: amounts or circumstances may still identify a deal, so review the output before sharing. Generate any review packets or CSV from the redacted scenario, since existing artifacts are not rewritten. Remapped IDs prevent reliable alignment with the original roster by ID; roster position is preserved. No file is uploaded or changed.
+Redaction removes the title and notes, replaces names with Participant 1 through N, and replaces custom IDs with `participant-1` through `participant-N`, including references in commercial-plan overrides and negotiation capacity investments. Economics, currency, stress settings, commercial plans, negotiation explorations and display preferences remain. This is label removal, not anonymization: amounts or circumstances may still identify a deal, so review the output before sharing. Generate any review packets or CSV from the redacted scenario, since existing artifacts are not rewritten. Remapped IDs prevent reliable alignment with the original roster by ID; roster position is preserved. No file is uploaded or changed.
 
 ## Batch checks for repeatable reviews
 
