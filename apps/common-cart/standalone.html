@@ -4533,8 +4533,8 @@ function computeResidualCoverage(rawScenario) {
 
 /**
  * Base-band compatibility of every buyer with one offer: category, variant,
- * ceiling price, landed-order budget, and delivery deadline. Tier bands only
- * lower the unit price, so base-band compatibility is exact for every band.
+ * ceiling price, landed-order budget, and delivery deadline. Buyers excluded
+ * at the base price may still qualify when a cheaper quantity tier is reached.
  */
 function offerBuyerCompatibility(rawScenario, rawOffer) {
   const scenario = validateScenario(rawScenario);
@@ -4579,9 +4579,13 @@ function planMultiMerchant(rawScenario, options = {}) {
   const buyerById = new Map(buyers.map((buyer) => [buyer.id, buyer]));
   const compatibility = new Map();
   for (const offer of offers) {
-    for (const { buyerId, reasons } of offerBuyerCompatibility(scenario, offer.id)) {
-      if (!compatibility.has(buyerId)) compatibility.set(buyerId, []);
-      compatibility.get(buyerId).push({ offer, reasons });
+    // Cheapest-band eligibility is only a candidate bound; each final cohort
+    // must afford the tier reached by its actual assigned units.
+    const cheapest = { ...offer, unitPrice: offer.tiers?.at(-1)?.unitPrice ?? offer.unitPrice, shippingPerBuyer: chargedShipping(offer) };
+    for (const buyer of buyers) {
+      const reasons = incompatibilityReasons(buyer, cheapest);
+      if (!compatibility.has(buyer.id)) compatibility.set(buyer.id, []);
+      compatibility.get(buyer.id).push({ offer, reasons });
     }
   }
   const remainingUnits = [];
@@ -4614,6 +4618,8 @@ function planMultiMerchant(rawScenario, options = {}) {
       if (entry.units < offer.minimumUnits) return;
       const price = tierPriceForUnits(offer, entry.units);
       const shipping = chargedShipping(offer);
+      const pricedOffer = { ...offer, unitPrice: price, shippingPerBuyer: shipping };
+      if (entry.buyers.some(id => incompatibilityReasons(buyerById.get(id), pricedOffer).length > 0)) return;
       const items = entry.units * price;
       const delivery = entry.buyers.length * shipping;
       fulfilled += entry.units;
@@ -4647,7 +4653,8 @@ function planMultiMerchant(rawScenario, options = {}) {
     }
     // Sound upper bound ignoring capacity and minimums: remaining units can add at most their total.
     if (best && fulfilledUnits + remainingUnits[index] < best.fulfilled) return;
-    if (best && fulfilledUnits + remainingUnits[index] === best.fulfilled && landedCost >= best.cost) return;
+    // Equal-cost plans can still improve merchant count or deterministic order.
+    if (best && fulfilledUnits + remainingUnits[index] === best.fulfilled && landedCost > best.cost) return;
     const buyer = buyers[index];
     const options = (compatibility.get(buyer.id) ?? [])
       .filter(({ reasons }) => reasons.length === 0)
@@ -4675,7 +4682,7 @@ function planMultiMerchant(rawScenario, options = {}) {
       buyerId: buyer.id, quantity: buyer.quantity, compatibleOfferIds,
       note: compatibleOfferIds.length === 0
         ? 'No compatible offer: ' + entries.map(({ offer, reasons }) => `${offer.id} (${reasons.join(', ') || 'unknown'})`).join('; ')
-        : 'Compatible offers exist; capacity or minimum orders prevented assignment.',
+        : 'Compatible offers exist; capacity or minimum orders (including affordable tier thresholds) prevented assignment.',
     };
   });
   const fulfilledUnits = active.reduce((sum, entry) => sum + entry.units, 0);

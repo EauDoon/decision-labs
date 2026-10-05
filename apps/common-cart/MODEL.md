@@ -114,11 +114,11 @@ Organizer views may list leftover buyer identifiers. Merchant residual JSON repo
 
 ## Multi-merchant plan (v1.5.0)
 
-The bounded exact planner assigns every buyer order whole to at most one merchant. Each used merchant must meet its minimum order and capacity, and reprices from its actual assigned units through the same quantity bands, with shipping and totals recomputed per assignment. Compatibility uses the base price band; tier bands only lower unit prices, so base-band compatibility is exact for every band.
+The bounded exact planner assigns every buyer order whole to at most one merchant. Each used merchant must meet its minimum order and capacity, and reprices from its actual assigned units through the same quantity bands, with shipping and totals recomputed per assignment. Candidate discovery uses the cheapest declared tier so buyers who jointly unlock an affordable price are not excluded. Every assigned buyer is then checked against the price actually reached by that merchant's assigned units, including item ceilings, charged shipping, and landed-order budgets. An unreached discount cannot justify an allocation. The exported `offerBuyerCompatibility` helper continues to report base-price compatibility only.
 
 The objective is stated before the search: maximum fulfilled units, then minimum landed cost, then fewest merchants, then the lexicographically smallest assignment. This does not maximize every possible fairness objective. Branch and bound explores buyers in ID order with a 250,000-node budget; rooms above the bound return status `too_large` with the best plan found, never a claimed optimum. Duplicate allocation is impossible by construction.
 
-Unserved buyers explain themselves: no compatible offer (with per-offer reasons), or compatible offers blocked by capacity or minimum orders. Merchant plan summaries carry per-merchant aggregates only: no buyer records. Organizer plan exports carry buyer labels and allocations and are labeled organizer-private.
+Unserved buyers explain themselves: no compatible offer even at the cheapest tier (with per-offer reasons), or candidate offers blocked by capacity, minimum orders, or affordable tier thresholds. Merchant plan summaries carry per-merchant aggregates only: no buyer records. Organizer plan exports carry buyer labels and allocations and are labeled organizer-private.
 
 ## Supplier contingency (v1.6.0)
 
