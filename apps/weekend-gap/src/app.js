@@ -702,6 +702,17 @@ function signedAud(amount) {
 }
 
 function renderPlanning() {
+  const deadline = document.querySelector("#reserve-deadline");
+  const horizon = simHours();
+  if (Number(deadline.max) !== horizon) {
+    const value = deadline.valueAsNumber;
+    if (Number.isInteger(value) && value > horizon && value <= Number(deadline.max)) {
+      deadline.value = String(horizon);
+    }
+    lastValidPlan.deadlineHour = Math.min(lastValidPlan.deadlineHour, horizon);
+    deadline.max = String(horizon);
+  }
+  document.querySelector("#reserve-deadline-label").textContent = `Deadline (hour 1 to ${horizon})`;
   document.querySelector("#baseline-name").textContent = baselineScenario.name;
   const rows = [
     ["Starting reserve", comparison.baseline.scenario.reserveCashAud, scenario.reserveCashAud],
