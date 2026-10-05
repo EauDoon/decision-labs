@@ -4,12 +4,15 @@ import {
   DEFAULT_SCENARIO,
   PRESETS,
   SIMULATION_HOURS,
+  analyzeTimeline,
   buildDemandSchedule,
+  buildGateGanttSvg,
   capacityForHour,
   createSnapshot,
   finiteNumber,
   getOperationalStatus,
   nextPayoutTime,
+  nextPayoutHourToMarkdown,
   runSimulation,
   sanitizeScenario,
   scenarioFromHash,
@@ -147,6 +150,62 @@ test("next payout searches through the weekend to Monday business hours", () => 
   assert.equal(nextPayoutTime({ ...DEFAULT_SCENARIO, issuerThroughputAudPerHour: 0 }, 0), null);
   assert.equal(nextPayoutTime({ ...DEFAULT_SCENARIO, fxDepthAudPerHour: 0 }, 0), null);
   assert.equal(nextPayoutTime({ ...DEFAULT_SCENARIO, payoutThroughputAudPerHour: 0 }, 0), null);
+});
+
+test("payout diagnostics count pending funding without reusing spent tranches", () => {
+  for (const [fundingHour, payoutHour] of [[0, 0], [10, 65], [65, 65]]) {
+    const input = { ...DEFAULT_SCENARIO, reserveCashAud: 0,
+      fundingTranches: [{ hour: fundingHour, amountAud: 100, costAud: 999 }] };
+    const result = runSimulation(input);
+    // Pin the existing settlement recurrence; only its diagnostics change.
+    assert.equal(result.summary.totalSettledAud, 100);
+    assert.equal(result.summary.finalReserveAud, 0);
+    assert.equal(result.summary.totalFundedAud, 100);
+    assert.equal(result.summary.totalFundingCostAud, 999);
+    assert.equal(result.summary.hoursToFirstSettlement, payoutHour);
+    assert.equal(nextPayoutTime(input, 0), payoutHour);
+    assert.equal(result.timeline[0].nextPayoutHour, payoutHour);
+    assert.equal(result.timeline[payoutHour].immediateAud, 100);
+    assert.equal(result.timeline[payoutHour].limitingGate, "AUD reserve");
+    assert.equal(result.timeline[payoutHour + 1].immediateAud, 0);
+    assert.equal(result.timeline[payoutHour + 1].nextPayoutHour, null);
+    assert.equal(nextPayoutTime(input, payoutHour + 1, 0), null);
+    assert.equal(result.timeline[fundingHour].fundedTotalAud, 0);
+    assert.equal(result.timeline[fundingHour + 1].fundedTotalAud, 100);
+    assert.match(nextPayoutHourToMarkdown(input), new RegExp(`\\(hour ${payoutHour}\\)`));
+    assert.match(buildGateGanttSvg(input), new RegExp(`>First payout ${result.timeline[payoutHour].timeLabel}`));
+    const row = analyzeTimeline(input).rows[payoutHour];
+    assert.equal(row.capacityAud, 100);
+    assert.equal(row.settledAud, 100);
+    assert.deepEqual(row.blockers, ["AUD reserve"]);
+  }
+});
+
+test("funding diagnostics keep gate, throughput, validation and search limits", () => {
+  const input = { ...DEFAULT_SCENARIO, reserveCashAud: 0,
+    fundingTranches: [{ hour: 0, amountAud: 40 }, { hour: 0, amountAud: 60 }] };
+  const result = runSimulation(input);
+  assert.equal(result.summary.totalSettledAud, 100);
+  assert.equal(result.summary.finalReserveAud, 0);
+  assert.equal(result.summary.totalFundedAud, 100);
+  assert.equal(result.timeline[0].immediateAud, 100);
+  assert.equal(nextPayoutTime(input, 1), null);
+  assert.equal(nextPayoutTime({ ...input, reserveCashAud: 50 }, 1), 1);
+  assert.equal(nextPayoutTime({ ...input, reserveCashAud: 50 }, 1, 0), null);
+  const replenished = { ...input, fundingTranches: [{ hour: 0, amountAud: 100 }, { hour: 65, amountAud: 200 }] };
+  const replenishedResult = runSimulation(replenished);
+  assert.equal(replenishedResult.summary.totalSettledAud, 300);
+  assert.equal(replenishedResult.summary.finalReserveAud, 0);
+  assert.equal(replenishedResult.summary.totalFundedAud, 300);
+  assert.equal(nextPayoutTime(replenished, 1, 0), 65);
+  assert.equal(replenishedResult.timeline[1].nextPayoutHour, 65);
+  assert.equal(replenishedResult.timeline[65].immediateAud, 200);
+  assert.equal(nextPayoutTime(replenished, 66, 0), null);
+  assert.equal(nextPayoutTime({ ...input, payoutThroughputAudPerHour: 0 }, 0), null);
+  assert.equal(nextPayoutTime({ ...input, fundingTranches: [{ hour: 72, amountAud: 100 }] }, 0), null);
+  const late = { ...input, horizonHours: 336, fundingTranches: [{ hour: 200, amountAud: 100 }] };
+  assert.equal(nextPayoutTime(late, 0), null);
+  assert.equal(nextPayoutTime(late, 168, 0), 233);
 });
 
 test("scenario JSON and hash round trips preserve valid editable assumptions", () => {
