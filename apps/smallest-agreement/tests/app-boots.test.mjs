@@ -1,6 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
+import { createRound, formatWorkspaceJson } from "../src/model.js";
 
 // M9 final-review regression guard: only weekend-gap executed its app module
 // in tests, so load-time evaluation-order crashes (like the Common Cart
@@ -143,4 +144,89 @@ test("unreadable draft bytes survive subsequent saves", async () => {
     app.save();
     assert.equal(store.get(key), raw);
   }
+});
+
+test("workspace import preserves unreadable saved rounds and the current draft", async () => {
+  const key = "smallest-agreement:rounds:v1";
+  for (const raw of ["{unreadable", "", "{}"] ) {
+    const { app, store, nodes } = await boot([[key, raw]]);
+    app.save();
+    const proposal = JSON.parse(store.get("smallest-agreement:proposal:v1"));
+    proposal.title = "Imported workspace";
+    const { json } = formatWorkspaceJson(proposal, { clauseDensity: "compact" });
+    const before = new Map(store);
+    const input = nodes.get("import-file");
+    input.files = [{ size: json.length, text: async () => json }];
+    await input.emit("change");
+    assert.deepEqual(store, before, "failed imports must preserve every stored value");
+    assert.notEqual(nodes.get("proposal-heading").textContent, proposal.title);
+    assert.match(nodes.get("autosave-status").textContent, /round.*preserv/i);
+  }
+});
+
+test("workspace import detects rounds changed by another tab during the file read", async () => {
+  const { app, store, nodes } = await boot();
+  app.save();
+  const proposal = JSON.parse(store.get("smallest-agreement:proposal:v1"));
+  proposal.title = "Imported workspace";
+  const { json } = formatWorkspaceJson(proposal, { clauseDensity: "compact" });
+  let finishRead;
+  const input = nodes.get("import-file");
+  input.files = [{ size: json.length, text: () => new Promise(resolve => { finishRead = resolve; }) }];
+  const pendingImport = input.emit("change");
+  const newerRound = createRound(proposal, { name: "Saved in another tab" }).round;
+  store.set("smallest-agreement:rounds:v1", JSON.stringify([newerRound]));
+  const before = new Map(store);
+  finishRead(json);
+  await pendingImport;
+  assert.deepEqual(store, before);
+  assert.notEqual(nodes.get("proposal-heading").textContent, proposal.title);
+  assert.match(nodes.get("autosave-status").textContent, /changed in another tab/);
+});
+
+test("workspace import still replaces valid rounds and applies its draft and preferences", async () => {
+  const { app, store, nodes } = await boot();
+  app.save();
+  const proposal = JSON.parse(store.get("smallest-agreement:proposal:v1"));
+  proposal.title = "Imported workspace";
+  const round = createRound(proposal, { name: "Imported round" }).round;
+  const { json } = formatWorkspaceJson(proposal, { clauseDensity: "compact" }, [round]);
+  const input = nodes.get("import-file");
+  input.files = [{ size: json.length, text: async () => json }];
+  await input.emit("change");
+  assert.deepEqual(JSON.parse(store.get("smallest-agreement:rounds:v1")), [round]);
+  assert.equal(JSON.parse(store.get("smallest-agreement:proposal:v1")).title, proposal.title);
+  assert.equal(nodes.get("proposal-heading").textContent, proposal.title);
+  assert.equal(nodes.get("clause-density").value, "compact");
+});
+
+test("workspace import leaves the draft unchanged when round storage cannot be written", async () => {
+  const { app, store, nodes } = await boot();
+  app.save();
+  const proposal = JSON.parse(store.get("smallest-agreement:proposal:v1"));
+  proposal.title = "Imported workspace";
+  const { json } = formatWorkspaceJson(proposal, { clauseDensity: "compact" });
+  const before = new Map(store);
+  localStorage.setItem = () => { throw new Error("Storage quota exceeded"); };
+  const input = nodes.get("import-file");
+  input.files = [{ size: json.length, text: async () => json }];
+  await input.emit("change");
+  assert.deepEqual(store, before);
+  assert.notEqual(nodes.get("proposal-heading").textContent, proposal.title);
+  assert.match(nodes.get("autosave-status").textContent, /could not be saved/);
+});
+
+test("proposal-only import remains available when stored rounds are invalid", async () => {
+  const key = "smallest-agreement:rounds:v1";
+  const { app, store, nodes } = await boot([[key, "{unreadable"]]);
+  app.save();
+  const proposal = JSON.parse(store.get("smallest-agreement:proposal:v1"));
+  proposal.title = "Imported proposal";
+  const json = JSON.stringify(proposal);
+  const input = nodes.get("import-file");
+  input.files = [{ size: json.length, text: async () => json }];
+  await input.emit("change");
+  assert.equal(store.get(key), "{unreadable");
+  assert.equal(JSON.parse(store.get("smallest-agreement:proposal:v1")).title, proposal.title);
+  assert.equal(nodes.get("proposal-heading").textContent, proposal.title);
 });

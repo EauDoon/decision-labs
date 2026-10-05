@@ -4462,6 +4462,10 @@ function loadRounds() {
 }
 
 function persistRounds(next) {
+  if (roundsBlocked) {
+    notifyDraft("Saved rounds are unavailable or invalid. Existing stored bytes are preserved; the workspace was not changed.");
+    return false;
+  }
   try {
     if (localStorage.getItem(ROUNDS_KEY) !== roundsRaw) {
       notifyDraft("The rounds list changed in another tab. Export this draft, then reload before saving a round.");
@@ -5476,6 +5480,7 @@ $("#import-file").addEventListener("change", async (event) => {
   if (sequence !== importSequence) return;
   const workspace = parseWorkspaceJson(text);
   if (workspace.status === "ok") {
+    if (workspace.kind === "workspace" && !persistRounds(workspace.rounds ?? [])) return;
     state.proposal = workspace.proposal;
     if (workspace.kind === "workspace") {
       if (workspace.clauseDensity === "compact" || workspace.clauseDensity === "comfortable") clauseDensity = workspace.clauseDensity;
@@ -5508,16 +5513,6 @@ $("#import-file").addEventListener("change", async (event) => {
       hideFirstGroupWithoutFloor = workspace.hideFirstGroupWithoutFloor === true;
       noCheaperRemainingClausesOnly = workspace.noCheaperRemainingClausesOnly === true;
       persistWorkspacePrefs();
-      if (workspace.kind === "workspace") {
-        rounds = workspace.rounds ?? [];
-        try {
-          const serialized = JSON.stringify(rounds);
-          localStorage.setItem(ROUNDS_KEY, serialized);
-          roundsRaw = serialized;
-        } catch {
-          roundsBlocked = true;
-        }
-      }
     } else if (workspace.clauseDensity === "compact" || workspace.clauseDensity === "comfortable") {      clauseDensity = workspace.clauseDensity;
       persistWorkspacePrefs();
     }

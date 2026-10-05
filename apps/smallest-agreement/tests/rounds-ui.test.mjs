@@ -34,6 +34,6 @@ test('workspace export and import thread rounds through the envelope', async () 
   const { readFile } = await import('node:fs/promises');
   const app = await readFile(new URL('../src/app.js', import.meta.url), 'utf8');
   assert.match(app, /formatWorkspaceJson\(state\.proposal, \{[^}]*\}, rounds\)/);
-  assert.match(app, /rounds = workspace\.rounds \?\? \[\]/);
+  assert.match(app, /persistRounds\(workspace\.rounds \?\? \[\]\)/);
   assert.match(app, /localStorage\.setItem\(ROUNDS_KEY/);
 });
