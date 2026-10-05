@@ -28,6 +28,7 @@ async function boot(storage = new Map(), { blockedStorage = false, hash = "", re
     const value = match[0].match(/\bvalue="([^"]*)"/)?.[1] || "";
     const node = new Element(value);
     node.type = match[0].match(/\btype="([^"]*)"/)?.[1] || "";
+    node.max = match[0].match(/\bmax="([^"]*)"/)?.[1] || "";
     node.checked = /\bchecked\b/.test(match[0]);
     node.hidden = /\shidden(?:\s|>)/.test(match[0]);
     node.disabled = /\sdisabled(?:\s|>)/.test(match[0]);
@@ -153,6 +154,61 @@ test("horizon change extends the timeline and persists through reload", async ()
   assert.equal(reloaded.nodes.get("timeline-range").max, "144");
   assert.equal(reloaded.nodes.get("horizonHours").value, "144");
   assert.equal(reloaded.nodes.get("gantt-table").children.length, 25);
+});
+
+test("shorter horizons reconcile valid planner deadlines and keep later notes on reload", async () => {
+  const ui = await boot();
+  await ui.edit("workspace-notes", "Original saved review");
+  ui.nodes.get("horizonHours").value = "48";
+  await ui.nodes.get("scenario-form").emit("change");
+  await ui.edit("workspace-notes", "Notes after shortening the horizon");
+  const saved = JSON.parse(ui.storage.get("weekend-gap:workspace:v1"));
+  assert.equal(saved.current.horizonHours, 48);
+  assert.equal(saved.deadlineHour, 48);
+  assert.equal(saved.notes, "Notes after shortening the horizon");
+  assert.equal(ui.nodes.get("reserve-deadline").value, "48");
+  assert.equal(ui.nodes.get("reserve-deadline").max, "48");
+  assert.equal(ui.nodes.get("reserve-deadline-label").textContent, "Deadline (hour 1 to 48)");
+  assert.equal(ui.nodes.get("analysis-export").disabled, false);
+  const reloaded = await boot(ui.storage);
+  assert.equal(reloaded.nodes.get("horizonHours").value, "48");
+  assert.equal(reloaded.nodes.get("workspace-notes").value, saved.notes);
+  reloaded.nodes.get("horizonHours").value = "144";
+  await reloaded.nodes.get("scenario-form").emit("change");
+  assert.equal(reloaded.nodes.get("reserve-deadline").value, "48");
+  assert.equal(reloaded.nodes.get("reserve-deadline").max, "144");
+  assert.equal(reloaded.nodes.get("reserve-deadline-label").textContent, "Deadline (hour 1 to 144)");
+  await reloaded.edit("reserve-deadline", 144);
+  assert.equal(JSON.parse(reloaded.storage.get("weekend-gap:workspace:v1")).deadlineHour, 144);
+});
+
+test("horizon changes preserve invalid planner drafts with a valid recovery deadline", async () => {
+  for (const draft of ["", "incomplete", "60.5", "80"]) {
+    const ui = await boot();
+    await ui.edit("reserve-target", 75);
+    await ui.edit("reserve-deadline", draft);
+    ui.nodes.get("horizonHours").value = "48";
+    await ui.nodes.get("scenario-form").emit("change");
+    await ui.edit("workspace-notes", "Keep this review");
+    assert.equal(ui.nodes.get("reserve-deadline").value, draft);
+    assert.equal(ui.nodes.get("analysis-export").disabled, true);
+    const saved = JSON.parse(ui.storage.get("weekend-gap:workspace:v1"));
+    assert.equal(saved.current.horizonHours, 48);
+    assert.equal(saved.deadlineHour, 48);
+    assert.equal(saved.targetPercent, 75);
+    assert.equal(saved.notes, "Keep this review");
+  }
+  const ui = await boot();
+  await ui.edit("reserve-target", "");
+  ui.nodes.get("horizonHours").value = "48";
+  await ui.nodes.get("scenario-form").emit("change");
+  assert.equal(ui.nodes.get("reserve-target").value, "");
+  assert.equal(ui.nodes.get("reserve-deadline").value, "48");
+  assert.equal(JSON.parse(ui.storage.get("weekend-gap:workspace:v1")).deadlineHour, 48);
+  const shared = await boot(new Map(), { hash: scenarioToHash({ ...DEFAULT_SCENARIO, horizonHours: 24 }) });
+  await shared.edit("workspace-notes", "Short imported review");
+  assert.equal(shared.nodes.get("reserve-deadline").value, "24");
+  assert.equal(JSON.parse(shared.storage.get("weekend-gap:workspace:v1")).current.horizonHours, 24);
 });
 
 test("calendar override closes a gate and invalid ranges keep the scenario", async () => {

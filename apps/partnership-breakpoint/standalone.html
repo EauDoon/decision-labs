@@ -5944,6 +5944,8 @@ function attachEvents() {
       try {
         const removed = state.participants[Number(button.dataset.index)];
         const next = dropAndReallocate(state.participants, Number(button.dataset.index));
+        const validation = validateConfiguration({ ...state, participants: next });
+        if (!validation.valid) throw new ValidationError(validation.errors);
         checkpoint();
         state.participants = next;
         activePreset = '';
@@ -6181,6 +6183,8 @@ function importParticipantCsv(file) {
     const text = String(reader.result ?? '');
     try {
       const participants = participantsFromCsv(text);
+      const validation = validateConfiguration({ ...state, participants });
+      if (!validation.valid) throw new ValidationError(validation.errors);
       checkpoint();
       state.participants = participants;
       activePreset = '';
@@ -6204,6 +6208,8 @@ function importParticipantCsv(file) {
 function importPastedRoster() {
   try {
     const participants = participantsFromRosterText(rosterPasteText);
+    const validation = validateConfiguration({ ...state, participants });
+    if (!validation.valid) throw new ValidationError(validation.errors);
     checkpoint();
     state.participants = participants;
     activePreset = '';

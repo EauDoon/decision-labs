@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import {
-  clonePreset, validateScenario, planMultiMerchant, createMerchantPlanReport,
+  clonePreset, validateScenario, planMultiMerchant, planContingency, createMerchantPlanReport,
   multiMerchantPlanCsv, offerBuyerCompatibility, analyzeCartReview, CART_REVIEW_TOOLS,
   createCartReviewPacket, replayCartReviewPacket, evaluateMarket, MAX_PLAN_NODES,
 } from "../src/model.js";
@@ -137,6 +137,114 @@ test("tier prices reprice from actual assigned units", () => {
   assert.equal(plan.assignments[0].unitPrice, 15);
   assert.equal(plan.totalCost, 180);
 });
+
+function tierOnlyScenario() {
+  const scenario = splitScenario();
+  scenario.buyers = scenario.buyers.slice(0, 2).map(buyer => ({ ...buyer, quantity: 6, maxUnitPrice: 15 }));
+  scenario.offers = [{ ...scenario.offers[0], capacity: 12, shippingPerBuyer: 0, tiers: [{ minimumUnits: 10, unitPrice: 15 }] }];
+  return validateScenario(scenario);
+}
+
+test("planner admits buyers who jointly unlock their price ceiling, including CLI and contingency callers", () => {
+  const scenario = tierOnlyScenario();
+  const before = structuredClone(scenario);
+  const winner = evaluateMarket(scenario).winner;
+  assert.equal(winner.fulfilledUnits, 12);
+  assert.equal(winner.totalCost, 180);
+  // Keep the public helper's base-price semantics unchanged.
+  assert.deepEqual(offerBuyerCompatibility(scenario, "O1").map(entry => entry.reasons), [["price"], ["price"]]);
+  const plan = planMultiMerchant(scenario);
+  assert.equal(plan.status, "optimal");
+  assert.equal(plan.fulfilledUnits, 12);
+  assert.equal(plan.totalCost, 180);
+  assert.deepEqual(plan.assignments[0].buyerIds, ["B1", "B2"]);
+  assert.deepEqual(scenario, before);
+  const result = spawnSync(process.execPath, [cli, "plan", "--input", "-"], {
+    input: JSON.stringify(scenario), encoding: "utf8", timeout: 10000
+  });
+  assert.equal(result.status, 0, result.stderr);
+  assert.equal(JSON.parse(result.stdout).plan.fulfilledUnits, 12);
+  const contingency = planContingency(scenario, { type: "capacity", offerId: "O1", capacity: 10 });
+  assert.equal(contingency.baseline.fulfilledUnits, 12);
+  assert.equal(contingency.fulfilledUnitsDelta, -12);
+});
+
+test("tier-only landed budgets include charged shipping and preserve pickup semantics", () => {
+  for (const [fulfillment, shipping, budget, expectedUnits, expectedCost] of [
+    ["shipping", 5, 95, 12, 190],
+    ["shipping", 5.01, 95, 0, 0],
+    ["pickup", 999, 90, 12, 180]
+  ]) {
+    const scenario = tierOnlyScenario();
+    scenario.buyers.forEach(buyer => { buyer.maxUnitPrice = 30; buyer.maxOrderTotal = budget; });
+    Object.assign(scenario.offers[0], { fulfillment, shippingPerBuyer: shipping });
+    const plan = planMultiMerchant(scenario);
+    assert.equal(plan.fulfilledUnits, expectedUnits);
+    assert.equal(plan.totalCost, expectedCost);
+    assert.equal(plan.status, "optimal");
+  }
+});
+
+test("unreached tiers cannot justify an allocation and valid smaller cohorts remain available", () => {
+  const scenario = tierOnlyScenario();
+  scenario.buyers.forEach(buyer => { buyer.quantity = 5; buyer.maxUnitPrice = 17; });
+  scenario.offers[0].tiers = [{ minimumUnits: 10, unitPrice: 18 }, { minimumUnits: 12, unitPrice: 15 }];
+  assert.equal(planMultiMerchant(scenario).fulfilledUnits, 0);
+  for (const useBudget of [false, true]) {
+    const partial = tierOnlyScenario();
+    partial.offers[0].capacity = 10;
+    partial.buyers[1].maxUnitPrice = 30;
+    if (useBudget) {
+      partial.buyers.forEach((buyer, index) => { buyer.maxUnitPrice = 30; buyer.maxOrderTotal = index === 0 ? 90 : 120; });
+    }
+    const plan = planMultiMerchant(partial);
+    assert.equal(plan.fulfilledUnits, 6);
+    assert.equal(plan.unservedUnits, 6);
+    assert.equal(plan.totalCost, 120);
+    assert.deepEqual(plan.assignments[0].buyerIds, ["B2"]);
+    assert.equal(plan.assignments[0].unitPrice, 20);
+  }
+});
+
+test("tier-eligible whole orders can combine with another merchant without splitting buyers", () => {
+  const scenario = tierOnlyScenario();
+  scenario.buyers.push({ ...scenario.buyers[0], id: "B3", label: "Three", quantity: 5 });
+  scenario.offers.push({ ...scenario.offers[0], id: "O2", merchant: "Beta", unitPrice: 14, capacity: 5, tiers: [] });
+  const plan = planMultiMerchant(scenario);
+  assert.equal(plan.status, "optimal");
+  assert.equal(plan.fulfilledUnits, 17);
+  assert.equal(plan.totalCost, 250);
+  assert.equal(plan.unservedUnits, 0);
+  assert.deepEqual(plan.assignments.map(entry => [entry.offerId, entry.buyerIds, entry.units, entry.unitPrice]), [
+    ["O1", ["B1", "B2"], 12, 15], ["O2", ["B3"], 5, 14]
+  ]);
+});
+
+for (const tiered of [false, true]) {
+  test(`zero ${tiered ? "tier" : "base"} prices still minimize merchants and break exact ties deterministically`, () => {
+    const scenario = tierOnlyScenario();
+    scenario.buyers = Array.from({ length: 4 }, (_, index) => ({
+      ...scenario.buyers[0], id: `B${index + 1}`, quantity: 1, maxUnitPrice: 0
+    }));
+    const offer = { ...scenario.offers[0], unitPrice: tiered ? 1 : 0, capacity: 4,
+      fulfillment: "pickup", tiers: tiered ? [{ minimumUnits: 2, unitPrice: 0 }] : [] };
+    scenario.offers = [offer, { ...offer, id: "O2", merchant: "Beta" }];
+    for (const reverse of [false, true]) {
+      if (reverse) { scenario.buyers.reverse(); scenario.offers.reverse(); }
+      const tied = planMultiMerchant(scenario);
+      assert.equal(tied.fulfilledUnits, 4);
+      assert.equal(tied.totalCost, 0);
+      assert.deepEqual(tied.assignments.map(entry => entry.offerId), ["O1"]);
+    }
+    scenario.offers.find(entry => entry.id === "O1").capacity = 2;
+    const plan = planMultiMerchant(scenario);
+    assert.equal(plan.status, "optimal");
+    assert.equal(plan.fulfilledUnits, 4);
+    assert.equal(plan.totalCost, 0);
+    assert.equal(plan.merchantCount, 1);
+    assert.deepEqual(plan.assignments.map(entry => entry.offerId), ["O2"]);
+  });
+}
 
 test("minimum orders release sub-minimum assignments instead of splitting buyers", () => {
   const scenario = validateScenario({

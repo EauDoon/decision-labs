@@ -5517,9 +5517,7 @@ $("#import-file").addEventListener("change", async (event) => {
       persistWorkspacePrefs();
     }
     save();
-    state.saveMessage = workspace.kind === "workspace"
-      ? "Imported workspace and saved locally."
-      : "Imported and saved locally.";
+    state.saveMessage = `Imported ${workspace.kind}. ${state.saveMessage}`;
     render();
     return;
   }
@@ -5536,7 +5534,7 @@ $("#import-file").addEventListener("change", async (event) => {
   }
   state.proposal = parsed.proposal;
   save();
-  state.saveMessage = "Imported and saved locally.";
+  state.saveMessage = `Imported proposal. ${state.saveMessage}`;
   render();
 });
 $("#share-button").addEventListener("click", async () => {
