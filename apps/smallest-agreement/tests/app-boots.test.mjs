@@ -230,3 +230,56 @@ test("proposal-only import remains available when stored rounds are invalid", as
   assert.equal(JSON.parse(store.get("smallest-agreement:proposal:v1")).title, proposal.title);
   assert.equal(nodes.get("proposal-heading").textContent, proposal.title);
 });
+
+for (const kind of ["proposal", "workspace"]) {
+  test(`${kind} import keeps the storage failure warning instead of claiming a save`, async () => {
+    const { app, store, nodes } = await boot();
+    app.save();
+    const key = "smallest-agreement:proposal:v1";
+    const original = store.get(key);
+    const proposal = JSON.parse(original);
+    proposal.title = "Imported draft";
+    const json = kind === "workspace" ? formatWorkspaceJson(proposal).json : JSON.stringify(proposal);
+    const setItem = localStorage.setItem;
+    localStorage.setItem = (name, value) => {
+      if (name === key) throw new Error("Storage quota exceeded");
+      setItem(name, value);
+    };
+    const input = nodes.get("import-file");
+    input.files = [{ size: json.length, text: async () => json }];
+    await input.emit("change");
+    assert.equal(store.get(key), original);
+    assert.equal(nodes.get("proposal-heading").textContent, proposal.title);
+    assert.match(nodes.get("autosave-status").textContent, /Browser storage is unavailable\. Export to keep this draft\./);
+  });
+
+  test(`${kind} import explains that unreadable saved draft bytes are preserved`, async () => {
+    const initial = await boot();
+    initial.app.save();
+    const key = "smallest-agreement:proposal:v1";
+    const proposal = JSON.parse(initial.store.get(key));
+    proposal.title = "Imported draft";
+    const { store, nodes } = await boot([[key, "{unreadable"]]);
+    const json = kind === "workspace" ? formatWorkspaceJson(proposal).json : JSON.stringify(proposal);
+    const input = nodes.get("import-file");
+    input.files = [{ size: json.length, text: async () => json }];
+    await input.emit("change");
+    assert.equal(store.get(key), "{unreadable");
+    assert.equal(nodes.get("proposal-heading").textContent, proposal.title);
+    assert.match(nodes.get("autosave-status").textContent, /Previous local draft bytes are preserved\. Export to keep current edits\./);
+  });
+
+  test(`${kind} import confirms successful persistence`, async () => {
+    const { app, store, nodes } = await boot();
+    app.save();
+    const key = "smallest-agreement:proposal:v1";
+    const proposal = JSON.parse(store.get(key));
+    proposal.title = "Imported draft";
+    const json = kind === "workspace" ? formatWorkspaceJson(proposal).json : JSON.stringify(proposal);
+    const input = nodes.get("import-file");
+    input.files = [{ size: json.length, text: async () => json }];
+    await input.emit("change");
+    assert.equal(JSON.parse(store.get(key)).title, proposal.title);
+    assert.match(nodes.get("autosave-status").textContent, /saved (?:locally|in this browser)/i);
+  });
+}
