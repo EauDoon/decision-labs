@@ -17,7 +17,7 @@ test('sanitizeExportSlug lowercases, hyphenates, and drops path punctuation', ()
 test('exportDownloadName includes a title slug and falls back to the current names', () => {
   assert.equal(exportDownloadName('json', 'Harbor JV'), 'partnership-breakpoint-harbor-jv.json');
   assert.equal(exportDownloadName('json', ''), 'partnership-breakpoint.json');
-  assert.equal(exportDownloadName('redacted', 'Harbor JV'), 'partnership-breakpoint-harbor-jv-redacted.json');
+  assert.equal(exportDownloadName('redacted', 'Harbor JV'), 'partnership-breakpoint-redacted.json');
   assert.equal(exportDownloadName('redacted', '   '), 'partnership-breakpoint-redacted.json');
   assert.equal(exportDownloadName('report', 'Harbor JV'), 'partnership-breakpoint-harbor-jv-report.md');
   assert.equal(exportDownloadName('brief', null), 'partnership-breakpoint-brief.md');

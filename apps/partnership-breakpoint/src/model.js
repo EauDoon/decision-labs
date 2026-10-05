@@ -2228,16 +2228,11 @@ export function solveMinimumShareToHold(config, participantId) {
 
 /**
  * Portable case JSON with participant display names replaced and the deal title and notes cleared.
- * Identifiers, shares, costs, and stress settings are unchanged.
+ * All other fields, including plans, alternatives, and identifiers, are copied unchanged.
  * @param {PartnershipConfig} config
  */
 export function redactConfiguration(config) {
-  assertValidConfiguration(config);
-  const copy = {
-    deal: { ...config.deal },
-    participants: config.participants.map((item) => ({ ...item })),
-    ...(Object.hasOwn(config, 'stress') ? { stress: { ...config.stress } } : {}),
-  };
+  const copy = JSON.parse(JSON.stringify(assertValidConfiguration(config)));
   delete copy.deal.title;
   delete copy.deal.notes;
   copy.participants.forEach((item, index) => {
@@ -2685,7 +2680,7 @@ export function sanitizeExportSlug(title) {
 export function exportDownloadName(kind, title) {
   const slug = sanitizeExportSlug(title);
   if (kind === 'json') return slug ? `partnership-breakpoint-${slug}.json` : 'partnership-breakpoint.json';
-  if (kind === 'redacted') return slug ? `partnership-breakpoint-${slug}-redacted.json` : 'partnership-breakpoint-redacted.json';
+  if (kind === 'redacted') return 'partnership-breakpoint-redacted.json';
   if (kind === 'report') return slug ? `partnership-breakpoint-${slug}-report.md` : 'partnership-breakpoint-report.md';
   if (kind === 'brief') return slug ? `partnership-breakpoint-${slug}-brief.md` : 'partnership-breakpoint-brief.md';
   if (kind === 'csv') return slug ? `partnership-breakpoint-${slug}-stress.csv` : 'partnership-breakpoint-stress.csv';

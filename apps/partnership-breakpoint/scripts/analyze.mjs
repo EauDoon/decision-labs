@@ -188,7 +188,16 @@ function run(command, args) {
     case 'redact': {
       arity(args, 1);
       const config = redactConfiguration(readJSON(args[0]));
-      config.participants.forEach((participant, index) => { participant.id = `participant-${index + 1}`; });
+      const ids = new Map(config.participants.map((participant, index) => [participant.id, `participant-${index + 1}`]));
+      config.participants.forEach(participant => { participant.id = ids.get(participant.id); });
+      for (const period of config.plan?.periods ?? []) {
+        if (period.participants) {
+          period.participants = Object.fromEntries(Object.entries(period.participants).map(([id, terms]) => [ids.get(id), terms]));
+        }
+      }
+      for (const investment of config.alternatives?.capacityInvestments ?? []) {
+        investment.participantId = ids.get(investment.participantId);
+      }
       return assertValidConfiguration(config);
     }
     case 'batch': {

@@ -3681,13 +3681,21 @@ test('keyboard p prints the one-pager when valid and ignores focused inputs', as
 test('redacted export replaces names, clears the title, and keeps identifiers', async () => {
   const app = await workbench();
   app.edit('deal.title', 'Secret Alliance', { type: 'text' });
+  app.edit('deal.notes', 'Synthetic private notes', { type: 'text' });
+  app.click('plan-create');
+  app.click('alternatives-create');
+  const before = app.saved();
   app.click('export-redacted');
   const file = app.downloads()[0];
-  assert.equal(file.filename, 'partnership-breakpoint-secret-alliance-redacted.json');
+  assert.equal(file.filename, 'partnership-breakpoint-redacted.json');
   const parsed = JSON.parse(await file.blob.text());
   assert.equal(Object.hasOwn(parsed.deal, 'title'), false);
+  assert.equal(Object.hasOwn(parsed.deal, 'notes'), false);
+  assert.deepEqual(parsed.plan, before.plan);
+  assert.deepEqual(parsed.alternatives, before.alternatives);
   assert.deepEqual(parsed.participants.map((item) => item.name), ['Participant 1', 'Participant 2', 'Participant 3']);
   assert.deepEqual(parsed.participants.map((item) => item.id), ['platform', 'distributor', 'liquidity-partner']);
+  assert.deepEqual(app.saved(), before);
   assert.match(app.markup(), /Export redacted JSON \(names replaced, title cleared\)/);
   app.edit('deal.monthlyVolume', '');
   app.click('export-redacted');
@@ -7792,7 +7800,7 @@ test('export filenames include a sanitized deal title and fall back without one'
   app.click('export');
   assert.equal(app.downloads()[1].filename, 'partnership-breakpoint-harbor-jv.json');
   app.click('export-redacted');
-  assert.equal(app.downloads()[2].filename, 'partnership-breakpoint-harbor-jv-redacted.json');
+  assert.equal(app.downloads()[2].filename, 'partnership-breakpoint-redacted.json');
   app.click('export-report');
   assert.equal(app.downloads()[3].filename, 'partnership-breakpoint-harbor-jv-report.md');
   app.click('export-csv');

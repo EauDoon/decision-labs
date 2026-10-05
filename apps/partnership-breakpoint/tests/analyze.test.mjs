@@ -221,12 +221,24 @@ test('redact removes free text and custom IDs while preserving scenario economic
   config.participants[0].id = 'synthetic-sensitive-id';
   config.participants[0].name = 'Synthetic sensitive participant';
   config.stress = { volumeDropPct: 7, volumeGrowthPct: 0, feeDropPct: 0, variableCostRisePct: 0 };
+  config.plan = {
+    periods: [{ volume: 90000, feePerTransaction: 0.21, setupExpense: 500,
+      participants: { 'synthetic-sensitive-id': { fixedMonthlyCost: 2000 } } }],
+  };
+  config.alternatives = {
+    feeLevels: [0.2], shareModes: ['current'],
+    capacityInvestments: [{ participantId: 'synthetic-sensitive-id', addedCapacity: 10000, investmentCost: 400 }],
+  };
+  config.hideHoldingParticipants = true;
   const [path] = files(t, [config]);
   const result = run(['redact', path]);
   const redacted = output(result);
   assert.doesNotMatch(result.stdout, /sensitive/i);
   assert.equal(redacted.deal.currency, 'USD');
   assert.deepEqual(redacted.stress, config.stress);
+  assert.deepEqual(redacted.plan, { periods: [{ ...config.plan.periods[0], participants: { 'participant-1': { fixedMonthlyCost: 2000 } } }] });
+  assert.deepEqual(redacted.alternatives, { ...config.alternatives, capacityInvestments: [{ ...config.alternatives.capacityInvestments[0], participantId: 'participant-1' }] });
+  assert.equal(redacted.hideHoldingParticipants, true);
   assert.deepEqual(redacted.participants.map(p => p.id), config.participants.map((_, i) => `participant-${i + 1}`));
   const before = output(run(['summary', path]));
   const after = output(run(['summary', '-'], redacted));
