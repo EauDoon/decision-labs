@@ -2,16 +2,22 @@
 
 ## Reporting a Vulnerability
 
-Please do not file public GitHub issues for security problems.
+Please do not put the details of a security problem in a public GitHub
+issue, pull request or discussion.
 
-Use GitHub private vulnerability reporting on this repository:
+When GitHub private vulnerability reporting is enabled for this repository,
+use it:
 
-1. Go to https://github.com/EauDoon/decision-labs/security/advisories/new
+1. Open the repository's Security tab and choose Report a vulnerability
+   (https://github.com/EauDoon/decision-labs/security/advisories/new).
 2. Provide a clear title and reproduction steps.
 3. Wait for a maintainer acknowledgement before any public disclosure.
 
-You can also email the maintainer listed in CODEOWNERS if the advisory flow
-is unavailable.
+If the Report a vulnerability button is not shown, private reporting is not
+enabled. In that case open a public issue titled "Security contact request"
+that contains no technical detail, not even the affected file or feature,
+and wait for a maintainer to arrange a private channel before sharing
+anything else.
 
 ## Scope
 
