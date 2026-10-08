@@ -19,7 +19,7 @@ function fixture(t) {
   t.after(() => rmSync(root, { recursive: true, force: true }));
   const files = [
     ...SURFACE_FILES, 'package.json', 'CHANGELOG.md',
-    ...APPS.flatMap(({ id }) => [`apps/${id}/package.json`, `apps/${id}/CHANGELOG.md`]),
+    ...APPS.flatMap(({ id }) => [`apps/${id}/package.json`, `apps/${id}/CHANGELOG.md`, `apps/${id}/standalone.html`]),
   ];
   for (const file of files) {
     mkdirSync(dirname(join(root, file)), { recursive: true });
@@ -51,6 +51,12 @@ test('the real tree already matches its package versions', (t) => {
   for (const file of SURFACE_FILES) assert.equal(read(root, file), read(repo, file));
 });
 
+// What npm run build:standalone changes in a page when only the version moves.
+function restamp(root, id, version) {
+  const { label } = APPS.find((app) => app.id === id);
+  edit(root, `apps/${id}/standalone.html`, (text) => text.replace(/(<meta name="generator" content=")[^"]*"/, `$1${label} ${version}"`));
+}
+
 function prependEntry(root, id, heading) {
   edit(root, `apps/${id}/CHANGELOG.md`, (text) => text.replace('# Changelog\n\n', `# Changelog\n\n${heading}\n\n- Synthetic entry.\n\n`));
 }
@@ -59,9 +65,11 @@ test('sync writes a bumped version to every surface and check then passes', (t) 
   const root = fixture(t);
   setVersion(root, 'common-cart', '9.8.7');
   const problems = checkVersions(root);
-  assert.equal(problems.length, 6, problems.join('\n'));
-  assert.match(problems.at(-1), /apps\/common-cart\/CHANGELOG\.md: the first entry is .* but package\.json says 9\.8\.7\./);
+  assert.equal(problems.length, 7, problems.join('\n'));
+  assert.ok(problems.some((problem) => /apps\/common-cart\/CHANGELOG\.md: the first entry is .* but package\.json says 9\.8\.7\./.test(problem)));
+  assert.ok(problems.some((problem) => /apps\/common-cart\/standalone\.html: was built as "Common Cart [^"]+" but the package is "Common Cart 9\.8\.7"; run npm run build:standalone\./.test(problem)));
   prependEntry(root, 'common-cart', '## 9.8.7 - 2026-10-09');
+  restamp(root, 'common-cart', '9.8.7');
   assert.deepEqual(syncVersions(root).sort(), ['404.html', 'README.md', 'index.html']);
   assert.deepEqual(checkVersions(root), []);
   const html = read(root, 'index.html');
@@ -110,12 +118,32 @@ test('the versions command rejects unknown commands and options', (t) => {
   }
 });
 
-test('a bump needs only the package version, a matching changelog entry and sync', (t) => {
+test('a bump needs only the package version, a matching changelog entry, sync and a rebuild', (t) => {
   const root = fixture(t);
   setVersion(root, 'weekend-gap', '99.0.0');
   prependEntry(root, 'weekend-gap', '## 99.0.0');
   syncVersions(root);
+  restamp(root, 'weekend-gap', '99.0.0');
   assert.deepEqual(checkVersions(root), []);
+});
+
+test('each standalone page must carry exactly one generator stamp for its package version', (t) => {
+  const cases = [
+    ['a stale stamp', (text) => text.replace(/(<meta name="generator" content="The Smallest Agreement )[^"]*"/, '$10.0.1"'), /apps\/smallest-agreement\/standalone\.html: was built as "The Smallest Agreement 0\.0\.1" but the package is "The Smallest Agreement \d+\.\d+\.\d+"/],
+    ['a missing stamp', (text) => text.replace(/<meta name="generator" content="[^"]*">\n/, ''), /apps\/smallest-agreement\/standalone\.html: needs exactly one generator meta tag/],
+    ['a second stamp', (text) => text.replace('<head>', '<head>\n<meta name="generator" content="Other 1.0.0">'), /apps\/smallest-agreement\/standalone\.html: needs exactly one generator meta tag/],
+  ];
+  for (const [name, change, message] of cases) {
+    const root = fixture(t);
+    edit(root, 'apps/smallest-agreement/standalone.html', (text) => {
+      const next = change(text);
+      assert.notEqual(next, text, `${name}: fixture edit did not apply`);
+      return next;
+    });
+    const problems = checkVersions(root);
+    assert.equal(problems.length, 1, `${name}: ${problems.join(' | ')}`);
+    assert.match(problems[0], message, name);
+  }
 });
 
 test('app changelogs must stay unique and in descending SemVer order', (t) => {

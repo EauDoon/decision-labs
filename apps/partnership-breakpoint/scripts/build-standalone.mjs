@@ -82,7 +82,15 @@ function cspMeta() {
   return `<meta http-equiv="Content-Security-Policy" content="${policy}" />`;
 }
 
-export function renderStandalone({ html, css, model, app }) {
+// The artifact names the release that produced it when a version is given, so
+// a version bump also makes build-standalone --check fail until the page is
+// rebuilt. buildStandalone always passes the package version.
+function generatorMeta(version) {
+  if (!/^\d+\.\d+\.\d+$/.test(version)) throw new Error('Standalone build refused: package.json version must be x.y.z.');
+  return `<meta name="generator" content="Partnership Breakpoint ${version}" />`;
+}
+
+export function renderStandalone({ html, css, model, app, version }) {
   if (!app.startsWith(appImport)) {
     throw new Error('Standalone build refused: app module import marker is missing or changed.');
   }
@@ -98,7 +106,8 @@ export function renderStandalone({ html, css, model, app }) {
   const inlineStyle = `\n${css}\n`;
   const inlineScript = `\n${inlineModel}\n${inlineApp}`;
   let output = normaliseLf(html);
-  output = replaceExactlyOnce(output, titleMarker, `${titleMarker}\n    ${cspMeta()}`, 'title');
+  const stamp = version === undefined ? '' : `\n    ${generatorMeta(version)}`;
+  output = replaceExactlyOnce(output, titleMarker, `${titleMarker}\n    ${cspMeta()}${stamp}`, 'title');
   output = replaceExactlyOnce(output, styleMarker, `<style>${inlineStyle}</style>`, 'stylesheet');
   output = replaceExactlyOnce(output, modelLinkMarker, '<span>Single-file local workbench. Export JSON to transfer a case.</span>', 'model link');
   output = replaceExactlyOnce(output, scriptMarker, `<script type="module">${inlineScript}</script>`, 'app script');
@@ -109,17 +118,19 @@ export function renderStandalone({ html, css, model, app }) {
 }
 
 export async function buildStandalone() {
-  const [html, css, model, app] = await Promise.all([
+  const [html, css, model, app, packageJson] = await Promise.all([
     readFile(new URL('../index.html', import.meta.url), 'utf8'),
     readFile(new URL('../styles.css', import.meta.url), 'utf8'),
     readFile(new URL('../src/model.js', import.meta.url), 'utf8'),
     readFile(new URL('../src/app.js', import.meta.url), 'utf8'),
+    readFile(new URL('../package.json', import.meta.url), 'utf8'),
   ]);
   return renderStandalone({
     html: normaliseLf(html),
     css: normaliseLf(css),
     model: normaliseLf(model),
     app: normaliseLf(app),
+    version: JSON.parse(packageJson).version,
   });
 }
 

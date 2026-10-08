@@ -18,12 +18,17 @@ function replaceExactly(source, needle, replacement, label) {
 }
 
 export async function buildStandalone() {
-  const [indexSource, cssSource, modelSource, appSource] = await Promise.all([
+  const [indexSource, cssSource, modelSource, appSource, packageSource] = await Promise.all([
     readFile(resolve(root, "index.html"), "utf8"),
     readFile(resolve(root, "styles.css"), "utf8"),
     readFile(resolve(root, "src", "model.js"), "utf8"),
     readFile(resolve(root, "src", "app.js"), "utf8"),
+    readFile(resolve(root, "package.json"), "utf8"),
   ]);
+  // The artifact names the release that produced it, so a version bump also
+  // makes build-standalone --check fail until the page is rebuilt.
+  const { version } = JSON.parse(packageSource);
+  if (!/^\d+\.\d+\.\d+$/u.test(version)) throw new Error("package.json version must be x.y.z.");
 
   let html = lf(indexSource);
   const css = lf(cssSource).trimEnd();
@@ -55,7 +60,7 @@ export async function buildStandalone() {
   html = replaceExactly(
     html,
     '  <meta charset="utf-8">',
-    `  <meta charset="utf-8">\n  <meta http-equiv="Content-Security-Policy" content="${policy}">`,
+    `  <meta charset="utf-8">\n  <meta name="generator" content="Common Cart ${version}">\n  <meta http-equiv="Content-Security-Policy" content="${policy}">`,
     "charset",
   );
   html = replaceExactly(html, '  <link rel="stylesheet" href="./styles.css">', `  <style>${css}</style>`, "stylesheet");

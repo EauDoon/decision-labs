@@ -2,7 +2,7 @@
 // the single source of truth for that workbench's version, and the root
 // package.json for the catalog's. Every other place a version appears is
 // written by `sync` or verified by `check`, including the order of every
-// changelog.
+// changelog and the version stamped into each generated standalone.html.
 //
 //   node scripts/versions.mjs sync [--root <dir>]
 //   node scripts/versions.mjs check [--root <dir>]
@@ -115,6 +115,16 @@ export function rootChangelogProblems(text, version) {
   return [];
 }
 
+// Each generated standalone.html names the release that built it in a
+// generator meta tag. The app builders write it; this only verifies it.
+export function standaloneStampProblems(file, html, label, version) {
+  const stamps = [...html.matchAll(/<meta name="generator" content="([^"]*)"/g)].map((match) => match[1]);
+  const expected = `${label} ${version}`;
+  if (stamps.length !== 1) return [`${file}: needs exactly one generator meta tag ("${expected}"); run npm run build:standalone.`];
+  if (stamps[0] !== expected) return [`${file}: was built as "${stamps[0]}" but the package is "${expected}"; run npm run build:standalone.`];
+  return [];
+}
+
 // Rewrite every surface from the package versions. Returns the changed files.
 export function syncVersions(root = DEFAULT_ROOT) {
   const versions = readVersions(root);
@@ -151,9 +161,10 @@ export function checkVersions(root = DEFAULT_ROOT) {
     if (found === undefined) problems.push(`${surface.file}: the ${surface.what} is missing.`);
     else if (found !== surface.expected) problems.push(`${surface.file}: the ${surface.what} says "${found}" but should say "${surface.expected}".`);
   }
-  for (const { id } of APPS) {
+  for (const { id, label } of APPS) {
     const file = `apps/${id}/CHANGELOG.md`;
     problems.push(...appChangelogProblems(file, readText(root, file), versions.apps[id]));
+    problems.push(...standaloneStampProblems(`apps/${id}/standalone.html`, readText(root, `apps/${id}/standalone.html`), label, versions.apps[id]));
   }
   if (versions.catalog !== null) problems.push(...rootChangelogProblems(readText(root, 'CHANGELOG.md'), versions.catalog));
   return problems;
@@ -176,10 +187,10 @@ function main(argv) {
     const problems = checkVersions(root);
     for (const problem of problems) console.error(problem);
     if (problems.length) {
-      console.error('Run npm run versions:sync after changing a package version, and keep each changelog in descending SemVer order with the package version on top.');
+      console.error('After changing a package version, run npm run versions:sync and npm run build:standalone, and put the matching entry at the top of that changelog, which stays in descending SemVer order.');
       return 1;
     }
-    console.log('Version surfaces and changelogs match the packages.');
+    console.log('Version surfaces, changelogs and standalone stamps match the packages.');
     return 0;
   }
   console.error('Usage: node scripts/versions.mjs <sync|check> [--root <dir>]');
