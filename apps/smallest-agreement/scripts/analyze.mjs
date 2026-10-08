@@ -1,5 +1,5 @@
 import { constants } from 'node:fs';
-import { open } from 'node:fs/promises';
+import { open, readFile } from 'node:fs/promises';
 import {
   findSmallestAgreement, proposalFromWorkshopDocument, evaluatePackage, stressPackage,
   compareScenarioInputs, createAgreementReviewPacket, replayAgreementReviewPacket,
@@ -24,7 +24,8 @@ const usage = `Usage: node scripts/analyze.mjs <command> <input.json|-> [argumen
   sweep <threshold|maxChangeCost> <numeric levels separated by commas>
   rounds
   lock <clause ID> <option ID>
-  export <brief|evidence|support|groups|options|worksheet>`;
+  export <brief|evidence|support|groups|options|worksheet>
+Without an input: --help prints this text, --version prints the workbench name and version.`;
 
 function localPath(path) {
   if (!path || /^[\\/]{2}/.test(path) || path.split(/[\\/]/).some(part => /^(con|conin\$|conout\$|prn|aux|nul|com[0-9¹²³]|lpt[0-9¹²³])$/i.test(part.split('.')[0].trimEnd())) || /:/.test(path.replace(/^[A-Za-z]:[\\/]/, ''))) {
@@ -113,6 +114,9 @@ try {
   const [command, path, ...args] = process.argv.slice(2);
   if (command === '--help' && path === undefined) {
     process.stdout.write(usage + '\n');
+  } else if (command === '--version' && path === undefined) {
+    const { name, version } = JSON.parse(await readFile(new URL('../package.json', import.meta.url), 'utf8'));
+    process.stdout.write(`${name} ${version}\n`);
   } else {
     const arity = { solve: 0, evaluate: 1, stress: 2, compare: 1, review: 1, replay: 0, batch: 0, sweep: 2, lock: 2, export: 1, rounds: 0 };
     if (!Object.hasOwn(arity, command) || !path || args.length !== arity[command]) throw new TypeError(usage);

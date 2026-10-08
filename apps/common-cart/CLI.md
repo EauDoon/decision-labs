@@ -9,7 +9,11 @@ as merchant aggregates. Keep private outputs out of public repositories.
 npm run analyze -- market --input scenario.json --output market.json
 node scripts/analyze.mjs market --input -
 node scripts/analyze.mjs --help
+node scripts/analyze.mjs --version
 ```
+
+`--version` prints `common-cart` and the package version on one line and
+accepts no other arguments; quote it in bug reports.
 
 `market` evaluates every offer and ranks candidates using the existing model.
 It includes allocations, buyer identifiers, normalized inputs, and the winner,
@@ -69,6 +73,39 @@ Replay recomputes through the model and rejects changed snapshots, result cells,
 metadata or unsupported packet shapes. Success writes the recomputed packet.
 Packets are unsigned: internal consistency does not authenticate the author or
 prove inputs are real. Keep the original packet when investigating a failure.
+
+## Plan across several merchants
+
+```sh
+node scripts/analyze.mjs plan --input scenario.json --output plan.json
+```
+
+`plan` runs the bounded exact multi-merchant planner: every buyer order stays
+whole and goes to at most one merchant, each used merchant meets its minimum and
+capacity, and prices come from the units actually assigned to it. The objective
+is maximum fulfilled units, then minimum landed cost, then fewest merchants.
+The result has two parts. `plan` is organizer-private, with assignments, buyer
+identifiers and explanations for unserved buyers. `merchant` holds per-merchant
+aggregates only (offers, buyers, units and landed total) with no buyer records.
+A room above the search bound reports status `too_large` with the best plan
+found, never a claimed optimum. See MODEL.md for the full rules. This is a
+planning projection, not an order, split invoice or verified saving.
+
+## Test a supplier contingency
+
+```sh
+node scripts/analyze.mjs contingency --input scenario.json --experiment '{"type":"withdraw","offerId":"O01"}'
+```
+
+`contingency` applies one declared change to one offer and replans the same
+buyer demand with the same planner. `--experiment` is JSON with `type` and an
+existing `offerId`: `withdraw`; `capacity` with a whole `capacity` from 0
+through 5,000; `price` with a `priceMultiplier` above zero and at most 10, which
+scales every band price; or `delay` with whole `deliveryDays` from 0 through
+365. Other fields are rejected. The organizer-private `contingency` part lists
+lost and newly feasible orders by buyer with fulfillment and landed-cost deltas;
+the `merchant` part carries aggregate deltas only. These are planning
+experiments, not forecasts of supplier behavior.
 
 ## Compare negotiations
 

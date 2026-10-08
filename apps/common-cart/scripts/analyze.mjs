@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { open, unlink } from 'node:fs/promises';
+import { open, readFile, unlink } from 'node:fs/promises';
 import { constants } from 'node:fs';
 import { parseArgs } from 'node:util';
 import { evaluateMarket, evaluateOffer, groupExclusionReasons, unitsToNextTier, capacityBar } from '../src/model.js';
@@ -30,6 +30,7 @@ Usage: node scripts/analyze.mjs market --input scenario.json [--output result.js
        node scripts/analyze.mjs contingency --input scenario.json --experiment '{"type":"withdraw","offerId":"O01"}'
        node scripts/analyze.mjs market --input workspace.json --room 2
        node scripts/analyze.mjs compare --input workspace.json --room 1 --against workspace.json --against-room 2
+       node scripts/analyze.mjs --version
 Use --input - for piped UTF-8 JSON. Output defaults to stdout.
 Inputs are limited to 1 MiB. Output files must not exist.
 Results are organizer-private, synthetic planning aids, never orders.
@@ -119,7 +120,7 @@ async function writeResult(value, path, jsonl = false) {
 
 async function main() {
   const { values, positionals, tokens } = parseArgs({ allowPositionals: true, tokens: true, options: {
-    input: { type: 'string' }, output: { type: 'string' }, help: { type: 'boolean' }, offer: { type: 'string' },
+    input: { type: 'string' }, output: { type: 'string' }, help: { type: 'boolean' }, version: { type: 'boolean' }, offer: { type: 'string' },
     tool: { type: 'string' },
     against: { type: 'string' },
     field: { type: 'string' }, values: { type: 'string' },
@@ -129,6 +130,12 @@ async function main() {
   const names = tokens.filter(token => token.kind === 'option').map(token => token.name);
   if (new Set(names).size !== names.length) throw new Error('Duplicate options are not allowed.');
   if (Object.values(values).some(value => value === '')) throw new Error('Option values must not be empty.');
+  if (values.version) {
+    if (names.length !== 1 || positionals.length) throw new Error('--version takes no command or other options.');
+    const { name, version } = JSON.parse(await readFile(new URL('../package.json', import.meta.url), 'utf8'));
+    process.stdout.write(`${name} ${version}\n`);
+    return;
+  }
   if (values.help) { process.stdout.write(help); return; }
   const [command] = positionals;
   const allowed = { market: [], offer: ['offer'], merchant: [], tools: [], review: ['tool'], packet: ['tool'], replay: [], compare: ['against', 'against-room'], sweep: ['offer', 'field', 'values'], batch: [], import: ['kind', 'csv'], rooms: [], plan: [], contingency: ['experiment'] };

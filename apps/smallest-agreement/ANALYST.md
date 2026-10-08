@@ -28,7 +28,8 @@ successful reports, never fabricated recommendations.
 Exit 0 means a report was produced. Exit 2 means invalid usage, input, or an
 unreadable file; a JSON error appears on stderr with no stdout result. JSON
 parse errors do not echo input text. Run `node scripts/analyze.mjs --help`
-for syntax. Use the direct `node` command or npm's `--silent` flag for clean
+for syntax, or `node scripts/analyze.mjs --version` to print
+`smallest-agreement` and the package version for a bug report. Use the direct `node` command or npm's `--silent` flag for clean
 machine-readable stdout. Scores, weights, and costs are human assumptions.
 These reports cannot establish fairness, consent, legal validity, or authority.
 An output-stream failure also exits 2 with a controlled JSON error on stderr.

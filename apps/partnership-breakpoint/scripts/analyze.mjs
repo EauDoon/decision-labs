@@ -1,4 +1,4 @@
-import { constants, openSync, readSync, closeSync, fstatSync } from 'node:fs';
+import { constants, openSync, readSync, closeSync, fstatSync, readFileSync } from 'node:fs';
 import { assertValidConfiguration, calculatePartnership, evaluateStressGrid, stressGridCsv } from '../src/model.js';
 import { solveFeeForAllHold, solveMinimumShareToHold, solveMinimumVolumeToHold } from '../src/model.js';
 import { compareImportedCase, compareThreeSnapshots } from '../src/model.js';
@@ -26,6 +26,7 @@ Usage: node scripts/analyze.mjs COMMAND INPUT [ARGUMENTS]
   roster INPUT [ROSTER_FILE]     Export CSV, or replace roster from CSV/TSV
   redact INPUT                  Remove labels and remap IDs in a portable scenario
   batch [--require-hold] INPUT...  Analyze all inputs; optional current-hold gate
+  --version                     Print the workbench name and version
 Review tools: ${PARTNERSHIP_REVIEW_TOOLS.map(tool => tool.id).join(', ')}
 INPUT is a JSON file or - for standard input. Output is JSON or requested CSV.
 Errors are JSON on stderr, exit 1. Success is exit 0.
@@ -231,7 +232,10 @@ process.stdout.on('error', () => {
 try {
   const [command, ...args] = process.argv.slice(2);
   if (command === '--help' && args.length === 0) process.stdout.write(HELP);
-  else {
+  else if (command === '--version' && args.length === 0) {
+    const { name, version } = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8'));
+    process.stdout.write(`${name} ${version}\n`);
+  } else {
     const result = run(command, args);
     process.stdout.write(typeof result === 'string' ? result : `${JSON.stringify(result, null, 2)}\n`);
   }
