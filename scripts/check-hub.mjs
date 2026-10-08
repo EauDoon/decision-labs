@@ -5,19 +5,17 @@ import { fileURLToPath } from 'node:url';
 import { APPS } from './apps.mjs';
 
 const root = new URL('../', import.meta.url);
-const tests = readdirSync(new URL('../tests/', import.meta.url))
-  .filter((name) => name.endsWith('.mjs'))
-  .sort()
-  .map((name) => `tests/${name}`);
-const scripts = [
-  'scripts/apps.mjs',
-  'scripts/serve.mjs',
-  'scripts/run-apps.mjs',
-  'scripts/browser-smoke.mjs',
-  'scripts/check-hub.mjs',
-  ...tests,
-];
-const copy = ['index.html', '404.html', 'README.md', 'package.json', '.github/workflows/decision-labs.yml', ...scripts];
+// Discover every hub script, test and workflow so a new file cannot slip past
+// the syntax and dash checks because a fixed list was not updated.
+function listed(directory, extension) {
+  return readdirSync(new URL(`../${directory}/`, import.meta.url))
+    .filter((name) => name.endsWith(extension))
+    .sort()
+    .map((name) => `${directory}/${name}`);
+}
+const scripts = [...listed('scripts', '.mjs'), ...listed('tests', '.mjs')];
+const workflows = listed('.github/workflows', '.yml');
+const copy = ['index.html', '404.html', 'README.md', 'package.json', ...workflows, ...scripts];
 
 let failed = 0;
 for (const file of scripts) {
