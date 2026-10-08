@@ -37,7 +37,12 @@ function launch() {
     process.exitCode = 1;
   });
   child.once('exit', (code) => {
-    if (!ready && !stopping) console.error('The local server stopped before it began listening.');
+    if (!ready && !stopping) {
+      // A server that stops before it is ready is a failed launch even when it exits 0.
+      console.error('The local server stopped before it began listening.');
+      process.exitCode = code || 1;
+      return;
+    }
     process.exitCode = code ?? (stopping ? 0 : 1);
   });
 

@@ -3,9 +3,30 @@ import { createServer } from "node:http";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
+const DEFAULT_PORT = 5173;
+const LAST_FALLBACK_PORT = 5183;
+
+// PORT unset or blank keeps the default with fallback through 5183. Any other
+// value must be a plain base-10 integer from 0 through 65535 (0 asks the
+// operating system for a free port); values like "abc", "5173.0" or "0x1F90"
+// are rejected instead of crashing or being silently coerced.
+function parsePort(raw) {
+  const text = raw === undefined ? "" : String(raw).trim();
+  if (text === "") return { port: DEFAULT_PORT, fallback: true };
+  if (!/^[0-9]{1,5}$/.test(text) || Number(text) > 65535) {
+    return { error: "PORT must be an integer from 0 through 65535." };
+  }
+  return { port: Number(text), fallback: false };
+}
+
+const parsedPort = parsePort(process.env.PORT);
+if (parsedPort.error) {
+  console.error(parsedPort.error);
+  process.exit(1);
+}
 const root = await fs.realpath(path.resolve(path.dirname(fileURLToPath(import.meta.url)), ".."));
-const requestedPort = Number(process.env.PORT || 5173);
-const canSelectFallbackPort = !process.env.PORT;
+const requestedPort = parsedPort.port;
+const canSelectFallbackPort = parsedPort.fallback;
 let currentPort = requestedPort;
 const types = {
   ".css": "text/css; charset=utf-8",
@@ -89,13 +110,20 @@ function listen(port) {
 }
 
 server.on("error", (error) => {
-  if (error.code === "EADDRINUSE" && canSelectFallbackPort && currentPort < 5183) {
+  if (error.code === "EADDRINUSE" && canSelectFallbackPort && currentPort < LAST_FALLBACK_PORT) {
     currentPort += 1;
     console.warn(`Port ${currentPort - 1} is busy. Trying http://127.0.0.1:${currentPort}`);
     listen(currentPort);
     return;
   }
-  throw error;
+  if (error.code === "EADDRINUSE") {
+    console.error(canSelectFallbackPort
+      ? `Ports ${DEFAULT_PORT} through ${LAST_FALLBACK_PORT} are all in use. Set PORT to a free integer from 0 through 65535.`
+      : `Port ${currentPort} is already in use. Set PORT to a free integer from 0 through 65535, or unset PORT to try ${DEFAULT_PORT} through ${LAST_FALLBACK_PORT}.`);
+  } else {
+    console.error(`Could not start the local server: ${error.message}`);
+  }
+  process.exitCode = 1;
 });
 
 listen(requestedPort);

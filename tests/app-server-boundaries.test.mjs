@@ -3,6 +3,7 @@ import { spawn } from 'node:child_process';
 import { once } from 'node:events';
 import { mkdir, mkdtemp, rm, symlink, unlink, writeFile } from 'node:fs/promises';
 import { createServer, request } from 'node:http';
+import { createServer as createTcpServer } from 'node:net';
 import { tmpdir } from 'node:os';
 import { basename, join } from 'node:path';
 import test from 'node:test';
@@ -85,3 +86,76 @@ for (const { id } of APPS) {
     assert.equal(head.body, '');
   });
 }
+
+// Each launcher's switch for skipping the browser. The busy port below means no
+// launcher ever reaches readiness, so no browser opens on a developer machine.
+const NO_OPEN = {
+  'partnership-breakpoint': { args: [], env: { PARTNERSHIP_BREAKPOINT_NO_OPEN: '1' } },
+  'common-cart': { args: ['--no-open'], env: {} },
+  'smallest-agreement': { args: ['--no-open'], env: {} },
+  'weekend-gap': { args: ['--no-open'], env: {} },
+};
+
+function runToExit(script, { args = [], env = {} } = {}) {
+  return new Promise((resolve, reject) => {
+    const child = spawn(process.execPath, [script, ...args], {
+      env: { ...process.env, ...env }, stdio: ['ignore', 'pipe', 'pipe'],
+    });
+    let stdout = '';
+    let stderr = '';
+    child.stdout.setEncoding('utf8').on('data', chunk => { stdout += chunk; });
+    child.stderr.setEncoding('utf8').on('data', chunk => { stderr += chunk; });
+    const timer = setTimeout(() => {
+      child.kill();
+      reject(new Error(`${basename(script)} did not exit within 10 s. stdout: ${stdout} stderr: ${stderr}`));
+    }, 10000);
+    child.once('error', error => { clearTimeout(timer); reject(error); });
+    child.once('close', (code, signal) => { clearTimeout(timer); resolve({ code, signal, stdout, stderr }); });
+  });
+}
+
+async function holdLoopbackPort(t) {
+  const holder = createTcpServer();
+  await new Promise((resolve, reject) => {
+    holder.once('error', reject);
+    holder.listen(0, '127.0.0.1', resolve);
+  });
+  t.after(() => new Promise(resolve => holder.close(resolve)));
+  return holder.address().port;
+}
+
+const STACK_FRAME = /^\s+at |node:events|Unhandled 'error' event/m;
+
+for (const { id } of APPS) {
+  test(`${id}: busy port makes the dev server and launcher fail loudly`, async t => {
+    const port = await holdLoopbackPort(t);
+    const server = await runToExit(fileURLToPath(new URL(`../apps/${id}/scripts/dev-server.mjs`, import.meta.url)), {
+      env: { PORT: String(port) },
+    });
+    assert.equal(server.code, 1, `${id} dev server exit. stderr: ${server.stderr}`);
+    assert.match(server.stderr, /already in use/);
+    assert.match(server.stderr, new RegExp(`Port ${port}`));
+    assert.doesNotMatch(server.stderr, STACK_FRAME);
+    assert.doesNotMatch(server.stdout, /http:\/\/127\.0\.0\.1/);
+
+    const { args, env } = NO_OPEN[id];
+    const launcher = await runToExit(fileURLToPath(new URL(`../apps/${id}/scripts/launch.mjs`, import.meta.url)), {
+      args, env: { ...env, PORT: String(port) },
+    });
+    assert.notEqual(launcher.code, 0, `${id} launcher exit. stderr: ${launcher.stderr}`);
+    assert.notEqual(launcher.code, null, `${id} launcher ended by signal ${launcher.signal}`);
+    assert.match(launcher.stderr, /already in use/);
+    assert.doesNotMatch(launcher.stderr, STACK_FRAME);
+  });
+}
+
+test('weekend-gap: dev server rejects a PORT it cannot parse instead of crashing', async () => {
+  const script = fileURLToPath(new URL('../apps/weekend-gap/scripts/dev-server.mjs', import.meta.url));
+  for (const value of ['abc', '5173.0', '0x1F90', '-1', '65536']) {
+    const result = await runToExit(script, { env: { PORT: value } });
+    assert.equal(result.code, 1, `PORT=${JSON.stringify(value)} stderr: ${result.stderr}`);
+    assert.match(result.stderr, /PORT must be an integer from 0 through 65535\./);
+    assert.doesNotMatch(result.stderr, STACK_FRAME);
+    assert.equal(result.stdout, '');
+  }
+});

@@ -110,7 +110,10 @@ export async function main(args = process.argv.slice(2)) {
     server.once("exit", (code, signal) => {
       if (!stopping && !listening) console.error("Weekend Gap stopped before its local server was ready.");
       if (!stopping && signal) console.error(`Weekend Gap stopped with ${signal}.`);
-      resolve(stopping ? 0 : code ?? 1);
+      if (stopping) resolve(0);
+      // A server that stops before it is ready is a failed launch even when it exits 0.
+      else if (!listening) resolve(code || 1);
+      else resolve(code ?? 1);
     });
   });
 }
