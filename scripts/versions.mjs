@@ -1,6 +1,8 @@
 // Version surfaces for the catalog. Each workbench's apps/<id>/package.json is
-// the single source of truth for that workbench's version. Every other place a
-// version appears is written by `sync` or verified by `check`.
+// the single source of truth for that workbench's version, and the root
+// package.json for the catalog's. Every other place a version appears is
+// written by `sync` or verified by `check`, including the order of every
+// changelog.
 //
 //   node scripts/versions.mjs sync [--root <dir>]
 //   node scripts/versions.mjs check [--root <dir>]
@@ -12,6 +14,8 @@ import { parseArgs } from 'node:util';
 import { APPS } from './apps.mjs';
 
 export const DEFAULT_ROOT = fileURLToPath(new URL('../', import.meta.url));
+
+const SEMVER = /^(\d+)\.(\d+)\.(\d+)$/;
 
 function escape(text) {
   return text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -26,7 +30,14 @@ export function readVersions(root = DEFAULT_ROOT) {
   for (const { id } of APPS) {
     apps[id] = JSON.parse(readText(root, `apps/${id}/package.json`)).version;
   }
-  return { apps };
+  const catalog = JSON.parse(readText(root, 'package.json')).version ?? null;
+  return { catalog, apps };
+}
+
+export function compareVersions(left, right) {
+  const a = left.match(SEMVER).slice(1).map(Number);
+  const b = right.match(SEMVER).slice(1).map(Number);
+  return a[0] - b[0] || a[1] - b[1] || a[2] - b[2];
 }
 
 export function versionList(versions) {
@@ -58,6 +69,52 @@ function surfaces(versions) {
   return items;
 }
 
+// Lines outside fenced code blocks, so example output cannot pass for a heading.
+function proseLines(text) {
+  let fenced = false;
+  const lines = [];
+  for (const line of text.split(/\r?\n/)) {
+    if (line.startsWith('```')) fenced = !fenced;
+    else if (!fenced) lines.push(line);
+  }
+  return lines;
+}
+
+// An app changelog has one "# Changelog" title on line 1 and "## x.y.z" entry
+// headings (optionally followed by a space and a date) that are unique and in
+// strictly descending SemVer order, with the package version on top. Dates are
+// not ordered: two parallel version lines made date and SemVer order diverge.
+export function appChangelogProblems(file, text, version) {
+  const problems = [];
+  const lines = proseLines(text);
+  const titles = lines.filter((line) => line.startsWith('# '));
+  if (titles.length !== 1 || lines[0] !== '# Changelog') problems.push(`${file}: needs exactly one "# Changelog" title, on line 1.`);
+  const versions = [];
+  for (const heading of lines.filter((line) => line.startsWith('## '))) {
+    const found = heading.match(/^## (\d+\.\d+\.\d+)(?:$| )/)?.[1];
+    if (found) versions.push(found);
+    else problems.push(`${file}: "${heading}" is not a "## x.y.z" release heading.`);
+  }
+  for (let index = 1; index < versions.length; index += 1) {
+    if (compareVersions(versions[index - 1], versions[index]) <= 0) {
+      problems.push(`${file}: ${versions[index - 1]} is followed by ${versions[index]}; entries must be unique and in descending SemVer order.`);
+    }
+  }
+  if (versions[0] !== version) problems.push(`${file}: the first entry is ${versions[0] ?? 'missing'} but package.json says ${version}.`);
+  return problems;
+}
+
+// The root changelog follows Keep a Changelog: an optional "## [Unreleased]"
+// section, then "## [x.y.z] - YYYY-MM-DD" for the current catalog version.
+export function rootChangelogProblems(text, version) {
+  const headings = proseLines(text).filter((line) => line.startsWith('## '));
+  const release = headings[0] === '## [Unreleased]' ? headings[1] : headings[0];
+  const found = release?.match(/^## \[(\d+\.\d+\.\d+)\] - \d{4}-\d{2}-\d{2}$/)?.[1];
+  if (!found) return [`CHANGELOG.md: the first release heading must be "## [${version}] - YYYY-MM-DD" but is "${release ?? 'missing'}".`];
+  if (found !== version) return [`CHANGELOG.md: the first release is ${found} but package.json says ${version}.`];
+  return [];
+}
+
 // Rewrite every surface from the package versions. Returns the changed files.
 export function syncVersions(root = DEFAULT_ROOT) {
   const versions = readVersions(root);
@@ -77,10 +134,16 @@ export function syncVersions(root = DEFAULT_ROOT) {
   return changed;
 }
 
-// Every disagreement between the package versions and the surfaces, as messages.
+// Every disagreement between the package versions and the surfaces and
+// changelogs, as messages.
 export function checkVersions(root = DEFAULT_ROOT) {
   const versions = readVersions(root);
   const problems = [];
+  if (versions.catalog !== null && !SEMVER.test(String(versions.catalog))) problems.push(`package.json: version "${versions.catalog}" is not x.y.z.`);
+  for (const [id, version] of Object.entries(versions.apps)) {
+    if (!SEMVER.test(String(version))) problems.push(`apps/${id}/package.json: version "${version}" is not x.y.z.`);
+  }
+  if (problems.length) return problems;
   const texts = new Map();
   for (const surface of surfaces(versions)) {
     if (!texts.has(surface.file)) texts.set(surface.file, readText(root, surface.file));
@@ -88,6 +151,11 @@ export function checkVersions(root = DEFAULT_ROOT) {
     if (found === undefined) problems.push(`${surface.file}: the ${surface.what} is missing.`);
     else if (found !== surface.expected) problems.push(`${surface.file}: the ${surface.what} says "${found}" but should say "${surface.expected}".`);
   }
+  for (const { id } of APPS) {
+    const file = `apps/${id}/CHANGELOG.md`;
+    problems.push(...appChangelogProblems(file, readText(root, file), versions.apps[id]));
+  }
+  if (versions.catalog !== null) problems.push(...rootChangelogProblems(readText(root, 'CHANGELOG.md'), versions.catalog));
   return problems;
 }
 
@@ -108,10 +176,10 @@ function main(argv) {
     const problems = checkVersions(root);
     for (const problem of problems) console.error(problem);
     if (problems.length) {
-      console.error('Run npm run versions:sync after changing a package version.');
+      console.error('Run npm run versions:sync after changing a package version, and keep each changelog in descending SemVer order with the package version on top.');
       return 1;
     }
-    console.log('Version surfaces match the packages.');
+    console.log('Version surfaces and changelogs match the packages.');
     return 0;
   }
   console.error('Usage: node scripts/versions.mjs <sync|check> [--root <dir>]');

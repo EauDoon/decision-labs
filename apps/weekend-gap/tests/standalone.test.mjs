@@ -19,11 +19,18 @@ test("standalone build is self-contained, LF-only, and deterministic", async () 
   assert.doesNotMatch(first, /\r/);
 });
 
-test("standalone build ships the consolidated filter and gate evidence controls", async () => {
+// Release contract: derived from package.json, so a version bump needs no test edit.
+test("release contract: the package version heads the changelog", async () => {
   const pkg = JSON.parse(await readFile(new URL("../package.json", import.meta.url), "utf8"));
   const changelog = await readFile(new URL("../CHANGELOG.md", import.meta.url), "utf8");
+  assert.match(pkg.version, /^\d+\.\d+\.\d+$/);
+  const firstHeading = changelog.match(/^## .+$/m)?.[0] ?? "";
+  const expected = `## ${pkg.version}`;
+  assert.ok(firstHeading === expected || firstHeading.startsWith(`${expected} `), `first changelog heading "${firstHeading}" must be ${expected}`);
+});
+
+test("standalone build ships the consolidated filter and gate evidence controls", async () => {
   const html = await buildStandalone();
-  assert.match(changelog, new RegExp(pkg.version.replace(/\./g, "\\.")));
   for (const marker of [
     /id="gantt-hour-filter"/,
     /Hours closed on at least one gate/,

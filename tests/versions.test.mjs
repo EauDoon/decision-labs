@@ -17,7 +17,10 @@ const SURFACE_FILES = ['index.html', '404.html', 'README.md'];
 function fixture(t) {
   const root = mkdtempSync(join(tmpdir(), 'decision-labs-versions-'));
   t.after(() => rmSync(root, { recursive: true, force: true }));
-  const files = [...SURFACE_FILES, ...APPS.map(({ id }) => `apps/${id}/package.json`)];
+  const files = [
+    ...SURFACE_FILES, 'package.json', 'CHANGELOG.md',
+    ...APPS.flatMap(({ id }) => [`apps/${id}/package.json`, `apps/${id}/CHANGELOG.md`]),
+  ];
   for (const file of files) {
     mkdirSync(dirname(join(root, file)), { recursive: true });
     cpSync(join(repo, file), join(root, file));
@@ -48,11 +51,17 @@ test('the real tree already matches its package versions', (t) => {
   for (const file of SURFACE_FILES) assert.equal(read(root, file), read(repo, file));
 });
 
+function prependEntry(root, id, heading) {
+  edit(root, `apps/${id}/CHANGELOG.md`, (text) => text.replace('# Changelog\n\n', `# Changelog\n\n${heading}\n\n- Synthetic entry.\n\n`));
+}
+
 test('sync writes a bumped version to every surface and check then passes', (t) => {
   const root = fixture(t);
   setVersion(root, 'common-cart', '9.8.7');
   const problems = checkVersions(root);
-  assert.equal(problems.length, 5, problems.join('\n'));
+  assert.equal(problems.length, 6, problems.join('\n'));
+  assert.match(problems.at(-1), /apps\/common-cart\/CHANGELOG\.md: the first entry is .* but package\.json says 9\.8\.7\./);
+  prependEntry(root, 'common-cart', '## 9.8.7 - 2026-10-09');
   assert.deepEqual(syncVersions(root).sort(), ['404.html', 'README.md', 'index.html']);
   assert.deepEqual(checkVersions(root), []);
   const html = read(root, 'index.html');
@@ -99,4 +108,54 @@ test('the versions command rejects unknown commands and options', (t) => {
     assert.equal(result.stdout, '');
     assert.notEqual(result.stderr, '');
   }
+});
+
+test('a bump needs only the package version, a matching changelog entry and sync', (t) => {
+  const root = fixture(t);
+  setVersion(root, 'weekend-gap', '99.0.0');
+  prependEntry(root, 'weekend-gap', '## 99.0.0');
+  syncVersions(root);
+  assert.deepEqual(checkVersions(root), []);
+});
+
+test('app changelogs must stay unique and in descending SemVer order', (t) => {
+  const cases = [
+    ['swapped entries', (text) => {
+      const lines = text.split('\n');
+      const [first, second] = lines.map((line, index) => (line.startsWith('## ') ? index : -1)).filter((index) => index >= 0);
+      [lines[first], lines[second]] = [lines[second], lines[first]];
+      return lines.join('\n');
+    }, /is followed by .*descending SemVer order/],
+    ['a duplicate entry', (text) => `${text}\n## 1.0.0\n\n- Again.\n\n## 1.0.0\n\n- Twice.\n`, /1\.0\.0 is followed by 1\.0\.0/],
+    ['a stray title', (text) => `${text}\n# Changelog\n`, /needs exactly one "# Changelog" title/],
+    ['a missing title', (text) => text.replace('# Changelog\n\n', ''), /needs exactly one "# Changelog" title/],
+    ['a heading that is not a version', (text) => `${text}\n## Unreleased\n`, /"## Unreleased" is not a "## x\.y\.z" release heading/],
+  ];
+  for (const [name, change, message] of cases) {
+    const root = fixture(t);
+    edit(root, 'apps/smallest-agreement/CHANGELOG.md', change);
+    const problems = checkVersions(root);
+    assert.ok(problems.some((problem) => problem.startsWith('apps/smallest-agreement/CHANGELOG.md: ') && message.test(problem)), `${name}: ${problems.join(' | ')}`);
+    assert.equal(run(root, 'check').status, 1, name);
+  }
+});
+
+test('changelog headings inside fenced code are ignored', (t) => {
+  const root = fixture(t);
+  edit(root, 'apps/common-cart/CHANGELOG.md', (text) => `${text}\n\`\`\`text\n# Changelog\n## 0.0.0 example output\n\`\`\`\n`);
+  assert.deepEqual(checkVersions(root), []);
+});
+
+test('a versioned catalog needs a matching Keep a Changelog release heading', (t) => {
+  const root = fixture(t);
+  assert.equal(JSON.parse(read(root, 'package.json')).version ?? null, null, 'the catalog is unversioned in this fixture');
+  assert.deepEqual(checkVersions(root), [], 'an unversioned catalog skips the root changelog rule');
+  edit(root, 'package.json', (text) => text.replace('"private": true,', '"private": true,\n  "version": "2.3.4",'));
+  assert.match(checkVersions(root).join('\n'), /CHANGELOG\.md: the first release heading must be "## \[2\.3\.4\] - YYYY-MM-DD"/);
+  edit(root, 'CHANGELOG.md', (text) => text.replace('## [Unreleased]', '## [Unreleased]\n\n## [2.3.3] - 2026-10-01'));
+  assert.match(checkVersions(root).join('\n'), /CHANGELOG\.md: the first release is 2\.3\.3 but package\.json says 2\.3\.4\./);
+  edit(root, 'CHANGELOG.md', (text) => text.replace('## [2.3.3] - 2026-10-01', '## [2.3.4] - 2026-10-02'));
+  assert.deepEqual(checkVersions(root), []);
+  edit(root, 'package.json', (text) => text.replace('"version": "2.3.4"', '"version": "2.3"'));
+  assert.deepEqual(checkVersions(root), ['package.json: version "2.3" is not x.y.z.']);
 });
