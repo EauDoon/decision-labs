@@ -1,5 +1,13 @@
 # Progress: decision-labs consolidation and depth session
 
+> **Historical record (note added 2026-10-09).** This is the log of the
+> 2026-09-12 consolidation and depth session, merged in PR #322 on
+> 2026-09-19. It is not current status. The catalog copy controls, key
+> bindings, `?` help and Esc handling it describes are no longer in the
+> catalog, which is now a static page with no scripts or key handlers (see
+> `tests/hub-page.test.mjs`). For current state, read the README, the root
+> CHANGELOG.md and each app's CHANGELOG.md.
+
 Started 2026-09-12. Branch: `improve/consolidation-and-depth-20260912`.
 
 ## Baseline (recorded, all green)

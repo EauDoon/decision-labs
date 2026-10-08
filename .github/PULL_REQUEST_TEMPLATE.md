@@ -1,14 +1,5 @@
----
-name: Pull request
-about: Submit changes for review
-title: ''
-labels: ''
-assignees: ''
-
----
-
 **Description**
-A clear and concise description of the changes in this PR.
+What this pull request changes and why.
 
 **Changes**
 - List the changes
@@ -17,7 +8,8 @@ A clear and concise description of the changes in this PR.
 How were these changes tested?
 
 **Checklist**
-- [ ] Code follows project style
-- [ ] Tests added or updated
-- [ ] Documentation updated
-- [ ] No breaking changes
+- [ ] `npm test` passes from the repository root (run it through npm)
+- [ ] `npm run check` passes from the repository root
+- [ ] `standalone.html` rebuilt with `npm run build:standalone` when an app's `index.html`, `styles.css` or `src/` changed
+- [ ] App `CHANGELOG.md` entry added and `package.json` version bumped for app changes
+- [ ] No en or em dashes in hub files (`index.html`, `404.html`, `README.md`, `package.json`, workflows, `scripts/`, `tests/`) and no em dashes or private paths anywhere in `apps/partnership-breakpoint/`

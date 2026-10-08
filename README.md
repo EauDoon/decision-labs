@@ -25,9 +25,10 @@ Source model notes: [Partnership Breakpoint MODEL.md](apps/partnership-breakpoin
 ## Quickstart
 
 Open [index.html](index.html), choose a workbench, and start with its built-in
-synthetic case. Each app also has a self-contained `standalone.html` file that
-can be opened directly in a browser. Use **Export JSON** when a draft needs to
-move to another person or device.
+synthetic case. Each app also has a generated `standalone.html` with the
+interface, styles, and model in one file. Open it directly in a browser; it
+makes no network requests. Use **Export JSON** when a draft needs to move to
+another person or device.
 
 The optional local launcher serves only the catalog and the four standalone
 pages on loopback:
@@ -36,38 +37,20 @@ pages on loopback:
 npm start
 ```
 
-Or run the launcher directly without `npm install`: `node scripts/serve.mjs`. Requires Node.js 20 or newer.
-
-## What's new
-
-- Weekend Gap 1.8.1 protects workspace recovery: delayed imports cannot overwrite newer edits, and unreadable saved reviews are preserved with an exact recovery download.
-
-- Weekend Gap 1.8.0 adds scheduled funding tranches with cost accounting:
-  reserve cash added before a named hour settles, with the cost of securing
-  it tracked as an expense. The reserve planner, comparisons, dashboard,
-  reports, and review packets all account for tranches, and the CLI gains a
-  `funding` command. Review tools now run at any horizon and accept scheduled
-  scenarios.
-- Earlier releases keep their own changelogs in each app folder. Each
-  workbench ships its own version and release notes; this catalog does not
-  version the four tools together.
-
-All four apps are static and dependency-free. Pick the mode you want and swap in
-any app folder where you see `apps/partnership-breakpoint`.
-
-### No install: open the single-file build
-
-Every app includes a generated `standalone.html` with the interface, styles, and
-model in one file. Open it directly in a browser; it makes no network requests.
-
-```text
-node scripts/serve.mjs
-```
-
-Node.js 20 or newer is needed for the launcher and checks. There are no runtime
-package dependencies and no `npm install` step.
+Or run the launcher directly: `node scripts/serve.mjs`. Node.js 20 or newer is
+needed for the launcher and checks. There are no runtime package dependencies
+and no `npm install` step.
 
 For a worked example, read the [CASE_STUDY.md repository documentation](https://github.com/EauDoon/decision-labs/blob/main/docs/CASE_STUDY.md).
+
+## Release notes
+
+Each workbench ships its own version and release notes:
+[Partnership Breakpoint](apps/partnership-breakpoint/CHANGELOG.md),
+[Common Cart](apps/common-cart/CHANGELOG.md),
+[The Smallest Agreement](apps/smallest-agreement/CHANGELOG.md), and
+[Weekend Gap](apps/weekend-gap/CHANGELOG.md). Catalog-level changes are in
+[CHANGELOG.md](CHANGELOG.md).
 
 ## Model limits
 
@@ -92,7 +75,8 @@ npm run check
 ```
 
 `npm test` runs the root catalog and all workbench tests. `npm run check`
-validates the catalog and each app's standalone build.
+validates the catalog and each app's standalone build. See
+[CONTRIBUTING.md](CONTRIBUTING.md) for the full local workflow.
 
 The optional [browser acceptance check](docs/BROWSER_CHECKS.md) exercises all
 four actual standalone pages, including JSON round trips and unavailable storage.
