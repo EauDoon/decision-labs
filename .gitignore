@@ -7,3 +7,6 @@ coverage/
 .env.*
 !.env.example
 .DS_Store
+
+# Interrupted root boundary tests can leave these fixtures behind.
+apps/*/server-boundary-*/
