@@ -16,18 +16,18 @@ permissions:
 
 concurrency:
   group: smallest-agreement-ci-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   verify:
     name: ${{ matrix.os }} / Node ${{ matrix.node }}
     runs-on: ${{ matrix.os }}
-    timeout-minutes: 5
+    timeout-minutes: 10
     strategy:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, windows-latest]
-        node: ["20.x", "22.x"]
+        node: ["20.x", "22.x", "24.x"]
     steps:
       - name: Check out exact source
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
@@ -38,9 +38,9 @@ jobs:
         with:
           node-version: ${{ matrix.node }}
           package-manager-cache: false
-      - name: Check syntax and standalone artifact
-        run: npm run check
-        working-directory: apps/smallest-agreement
-      - name: Run tests
+      - name: Run deterministic tests
         run: npm test
+        working-directory: apps/smallest-agreement
+      - name: Check repository integrity and standalone build
+        run: npm run check
         working-directory: apps/smallest-agreement
