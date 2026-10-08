@@ -9,7 +9,9 @@
     "test": "node scripts/test-catalog.mjs && node scripts/run-apps.mjs test",
     "check": "node scripts/check-hub.mjs && node scripts/run-apps.mjs check",
     "test:browser": "node scripts/browser-smoke.mjs",
-    "build:standalone": "node scripts/run-apps.mjs build:standalone"
+    "build:standalone": "node scripts/run-apps.mjs build:standalone",
+    "versions:sync": "node scripts/versions.mjs sync",
+    "versions:check": "node scripts/versions.mjs check"
   },
   "license": "MIT"
 }
