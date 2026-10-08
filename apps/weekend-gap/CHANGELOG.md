@@ -1,3 +1,5 @@
+# Changelog
+
 ## 1.8.4 - 2026-09-28
 
 Grouped thousands in a numeric string stay that number in Weekend Gap 1.8.4
@@ -71,8 +73,6 @@ A capability release on 1.6.0. Weekend Gap remains a local-first decision aid, n
 - Dated calendar overrides (at most 32): half-open hour ranges with gate states, FX depth, and throughput changes. Later entries win per field so a closure can carry a narrower reopening. Out-of-horizon ranges are rejected, not clamped.
 - Scenario editor gains a horizon field and an override list with add, edit, and remove actions; edits are undoable and travel in scenario JSON, share links, and autosave. The timeline slider, Gantt, charts, tables, comparisons, CSVs, reports, and workspace bounds all follow the horizon.
 - Saturday/Sunday rules, Monday and Saturday holidays, dated presets, and demand profiles apply at any horizon; Monday holidays close every Monday in the window.
-
-# Changelog
 
 ## 1.6.0 - 2026-09-12
 

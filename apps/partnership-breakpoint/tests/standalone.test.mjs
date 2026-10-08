@@ -58,7 +58,7 @@ test('release 1.5.54 ships bottle-hand cycling carnival, last-over-capacity rema
   assert.match(readme, /Bottle-hand cycling carnival, last-over-capacity remaining listed capacity copy, and last-over-capacity hide jump in Partnership Breakpoint 1\.5\.54/);
   assert.match(readme, /Cyclo-cross first-aid stays variable cost 1\.56 after the Bottle-hand cycling carnival starting point is loaded/);
   const firstHeading = changelog.match(/^## .+$/m)?.[0];
-  assert.equal(firstHeading, '## 1.5.54');
+  assert.equal(firstHeading, '## 1.8.4');
   assert.match(changelog, /Bottle-hand cycling carnival, last-over-capacity remaining listed capacity copy, and last-over-capacity hide jump in Partnership Breakpoint 1\.5\.54/);
   assert.match(html, /bottleHandCyclingCarnivalSplit/);
   assert.match(html, /Bottle-hand cycling carnival split/);
