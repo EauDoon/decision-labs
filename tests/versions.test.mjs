@@ -187,3 +187,129 @@ test('a versioned catalog needs a matching Keep a Changelog release heading', (t
   edit(root, 'package.json', (text) => text.replace('"version": "2.3.4"', '"version": "2.3"'));
   assert.deepEqual(checkVersions(root), ['package.json: version "2.3" is not x.y.z.']);
 });
+
+// A fixture whose catalog is released as 2.3.4, in Keep a Changelog form with
+// link references at the end, as the root CHANGELOG.md is for a real release.
+function releaseFixture(t) {
+  const root = fixture(t);
+  edit(root, 'package.json', (text) => text.replace('"private": true,', '"private": true,\n  "version": "2.3.4",'));
+  edit(root, 'CHANGELOG.md', () => [
+    '# Changelog',
+    '',
+    '## [Unreleased]',
+    '',
+    '### Added',
+    '- Not released yet.',
+    '',
+    '## [2.3.4] - 2026-10-09',
+    '',
+    '### Added',
+    '- Release workflow.',
+    '',
+    '```text',
+    '## [9.9.9] - inside a fence, not a heading',
+    '[not]: a link reference',
+    '```',
+    '',
+    '### Fixed',
+    '- Port errors.',
+    '',
+    '## [2.3.3] - 2026-10-01',
+    '',
+    '### Fixed',
+    '- Older fix.',
+    '',
+    '[Unreleased]: https://github.com/EauDoon/decision-labs/compare/v2.3.4...HEAD',
+    '[2.3.4]: https://github.com/EauDoon/decision-labs/compare/v2.3.3...v2.3.4',
+    '[2.3.3]: https://github.com/EauDoon/decision-labs/releases/tag/v2.3.3',
+    '',
+  ].join('\n'));
+  assert.deepEqual(checkVersions(root), []);
+  return root;
+}
+
+test('check --tag accepts only the tag that names the catalog version', (t) => {
+  const root = releaseFixture(t);
+  assert.deepEqual(checkVersions(root, { tag: 'v2.3.4' }), []);
+  const passed = run(root, 'check', '--tag', 'v2.3.4');
+  assert.equal(passed.status, 0, passed.stderr);
+  assert.match(passed.stdout, /v2\.3\.4 names the catalog version/);
+  for (const [tag, message] of [
+    ['v2.3.5', /Tag v2\.3\.5 does not match the catalog version 2\.3\.4 in package\.json; the tag must be v2\.3\.4\./],
+    ['2.3.4', /Tag "2\.3\.4" is not a vX\.Y\.Z release tag\./],
+    ['v2.3', /Tag "v2\.3" is not a vX\.Y\.Z release tag\./],
+    ['', /Tag "" is not a vX\.Y\.Z release tag\./],
+  ]) {
+    assert.match(checkVersions(root, { tag }).join('\n'), message, tag);
+    const failed = run(root, 'check', '--tag', tag);
+    assert.equal(failed.status, 1, tag);
+    assert.match(failed.stderr, message, tag);
+  }
+});
+
+test('check --tag fails clearly while the catalog has no version', (t) => {
+  const root = fixture(t);
+  assert.equal(JSON.parse(read(root, 'package.json')).version ?? null, null);
+  const result = run(root, 'check', '--tag', 'v1.0.0');
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /package\.json has no version, so there is no catalog release to tag as "v1\.0\.0"\./);
+  assert.match(run(root, 'check', '--tag', 'v').stderr, /package\.json has no version/);
+});
+
+test('notes prints only the release section body for a tag', (t) => {
+  const root = releaseFixture(t);
+  const result = run(root, 'notes', 'v2.3.4');
+  assert.equal(result.status, 0, result.stderr);
+  assert.equal(result.stdout, [
+    '### Added',
+    '- Release workflow.',
+    '',
+    '```text',
+    '## [9.9.9] - inside a fence, not a heading',
+    '[not]: a link reference',
+    '```',
+    '',
+    '### Fixed',
+    '- Port errors.',
+    '',
+  ].join('\n'));
+  const older = run(root, 'notes', 'v2.3.3');
+  assert.equal(older.stdout, '### Fixed\n- Older fix.\n', 'link references at the end are not notes');
+  for (const [tag, message] of [
+    ['v9.9.9', /CHANGELOG\.md has no "## \[9\.9\.9\]" section for v9\.9\.9\./],
+    ['latest', /Tag "latest" is not a vX\.Y\.Z release tag\./],
+  ]) {
+    const failed = run(root, 'notes', tag);
+    assert.equal(failed.status, 1, tag);
+    assert.equal(failed.stdout, '');
+    assert.match(failed.stderr, message, tag);
+  }
+  edit(root, 'CHANGELOG.md', (text) => text.replace('### Fixed\n- Older fix.\n', ''));
+  assert.match(run(root, 'notes', 'v2.3.3').stderr, /CHANGELOG\.md: the 2\.3\.3 section is empty\./);
+});
+
+test('assets writes each standalone page under its workbench name and version', (t) => {
+  const root = releaseFixture(t);
+  const out = join(root, 'release-assets');
+  const result = run(root, 'assets', out);
+  assert.equal(result.status, 0, result.stderr);
+  const versions = Object.fromEntries(APPS.map(({ id }) => [id, JSON.parse(read(root, `apps/${id}/package.json`)).version]));
+  const expected = APPS.map(({ id }) => join(out, `${id}-${versions[id]}.html`));
+  assert.deepEqual(result.stdout.trim().split(/\r?\n/), expected);
+  for (const { id } of APPS) {
+    assert.equal(read(out, `${id}-${versions[id]}.html`), read(root, `apps/${id}/standalone.html`));
+  }
+  edit(root, 'apps/weekend-gap/standalone.html', (text) => text.replace(/(<meta name="generator" content="Weekend Gap )[^"]*"/, '$10.0.1"'));
+  const refused = run(root, 'assets', join(root, 'stale-assets'));
+  assert.equal(refused.status, 1);
+  assert.match(refused.stderr, /Refusing to package release assets:\napps\/weekend-gap\/standalone\.html: was built as "Weekend Gap 0\.0\.1"/);
+});
+
+test('only check takes --tag, and notes and assets take one argument', (t) => {
+  const root = releaseFixture(t);
+  for (const args of [['sync', '--tag', 'v2.3.4'], ['notes', 'v2.3.4', '--tag', 'v2.3.4'], ['notes'], ['notes', 'v2.3.4', 'extra'], ['assets'], ['assets', 'a', 'b']]) {
+    const result = run(root, ...args);
+    assert.equal(result.status, 1, args.join(' '));
+    assert.match(result.stderr, /^Usage: node scripts\/versions\.mjs/, args.join(' '));
+  }
+});

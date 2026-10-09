@@ -52,6 +52,9 @@ Each workbench ships its own version and release notes:
 [Weekend Gap](apps/weekend-gap/CHANGELOG.md). Catalog-level changes are in
 [CHANGELOG.md](CHANGELOG.md).
 
+Catalog releases are tagged `vX.Y.Z`. Each GitHub release attaches the four
+standalone pages as `<app>-<version>.html`, ready to open without a clone.
+
 ## Model limits
 
 - The workbenches are deterministic decision aids. They do not forecast,

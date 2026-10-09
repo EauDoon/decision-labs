@@ -1,0 +1,63 @@
+name: Release
+
+# Pushing a catalog tag vX.Y.Z verifies that the tag, every package version,
+# every changelog and every standalone stamp agree, then publishes a GitHub
+# release with the four standalone pages attached as <app>-<version>.html.
+# A manual dispatch runs the same gates and packaging as a dry run and never
+# publishes, so a release can be rehearsed on main before the tag exists.
+on:
+  push:
+    tags: ["v*.*.*"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  release:
+    name: Verify and publish
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    # Write access only for this job, and only the publish step uses it.
+    permissions:
+      contents: write
+    concurrency:
+      group: release-${{ github.ref }}
+      cancel-in-progress: false
+    steps:
+      - name: Check out exact source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - name: Set up Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        with:
+          node-version: "24.x"
+          package-manager-cache: false
+      - name: Resolve the release tag
+        run: |
+          if [ "$GITHUB_REF_TYPE" = "tag" ]; then
+            TAG="$GITHUB_REF_NAME"
+          else
+            TAG="v$(node -p "require('./package.json').version || ''")"
+          fi
+          echo "Release tag: $TAG"
+          echo "TAG=$TAG" >> "$GITHUB_ENV"
+      - name: Verify the tag against packages, changelogs, catalog and stamps
+        run: node scripts/versions.mjs check --tag "$TAG"
+      - name: Test catalog launcher and cross-app contracts
+        run: node scripts/test-catalog.mjs
+      - name: Check hub and every workbench
+        run: npm run check
+      - name: Extract release notes from CHANGELOG.md
+        run: |
+          node scripts/versions.mjs notes "$TAG" > "$RUNNER_TEMP/notes.md"
+          cat "$RUNNER_TEMP/notes.md"
+      - name: Package the standalone pages
+        run: node scripts/versions.mjs assets "$RUNNER_TEMP/dist"
+      - name: Publish the GitHub release
+        if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: gh release create "$TAG" "$RUNNER_TEMP"/dist/*.html --verify-tag --title "Decision Labs $TAG" --notes-file "$RUNNER_TEMP/notes.md"

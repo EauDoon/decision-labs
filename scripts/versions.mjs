@@ -3,10 +3,14 @@
 // package.json for the catalog's. Every other place a version appears is
 // written by `sync` or verified by `check`, including the order of every
 // changelog and the version stamped into each generated standalone.html.
+// The release workflow uses the same script to verify a tag, extract its
+// release notes and name the standalone files it attaches.
 //
 //   node scripts/versions.mjs sync [--root <dir>]
-//   node scripts/versions.mjs check [--root <dir>]
-import { readFileSync, writeFileSync } from 'node:fs';
+//   node scripts/versions.mjs check [--tag vX.Y.Z] [--root <dir>]
+//   node scripts/versions.mjs notes vX.Y.Z [--root <dir>]
+//   node scripts/versions.mjs assets <dir> [--root <dir>]
+import { copyFileSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parseArgs } from 'node:util';
@@ -144,11 +148,51 @@ export function syncVersions(root = DEFAULT_ROOT) {
   return changed;
 }
 
+const TAG = /^v(\d+\.\d+\.\d+)$/;
+
+// A release tag names the catalog version: vX.Y.Z for root package.json X.Y.Z.
+// Workbench versions travel in the release notes and asset names, not in tags.
+export function tagProblems(tag, catalog) {
+  if (catalog === null) return [`package.json has no version, so there is no catalog release to tag as "${tag}". Add the version and its CHANGELOG.md entry first.`];
+  const tagged = String(tag).match(TAG)?.[1];
+  if (!tagged) return [`Tag "${tag}" is not a vX.Y.Z release tag.`];
+  if (tagged !== catalog) return [`Tag ${tag} does not match the catalog version ${catalog} in package.json; the tag must be v${catalog}.`];
+  return [];
+}
+
+// The body of the root CHANGELOG.md section for a release tag, without its
+// heading or the link references that close the file. This is the text the
+// GitHub release publishes. Throws when the section is missing or empty.
+export function releaseNotes(text, tag) {
+  const version = String(tag).match(TAG)?.[1];
+  if (!version) throw new Error(`Tag "${tag}" is not a vX.Y.Z release tag.`);
+  const heading = new RegExp(`^## \\[${escape(version)}\\](?: |$)`);
+  let fenced = false;
+  let inside = false;
+  let found = false;
+  const body = [];
+  for (const line of text.split(/\r?\n/)) {
+    const prose = !fenced;
+    if (line.startsWith('```')) fenced = !fenced;
+    if (prose && line.startsWith('## ')) {
+      if (inside) break;
+      inside = found = heading.test(line);
+      continue;
+    }
+    if (inside && !(prose && /^\[[^\]]+\]:\s*\S/.test(line))) body.push(line);
+  }
+  if (!found) throw new Error(`CHANGELOG.md has no "## [${version}]" section for ${tag}.`);
+  const notes = body.join('\n').trim();
+  if (!notes) throw new Error(`CHANGELOG.md: the ${version} section is empty.`);
+  return `${notes}\n`;
+}
+
 // Every disagreement between the package versions and the surfaces and
-// changelogs, as messages.
-export function checkVersions(root = DEFAULT_ROOT) {
+// changelogs, as messages. With a tag, the tag must also name the catalog
+// version, which is how the release workflow gates a publish.
+export function checkVersions(root = DEFAULT_ROOT, { tag } = {}) {
   const versions = readVersions(root);
-  const problems = [];
+  const problems = tag === undefined ? [] : tagProblems(tag, versions.catalog);
   if (versions.catalog !== null && !SEMVER.test(String(versions.catalog))) problems.push(`package.json: version "${versions.catalog}" is not x.y.z.`);
   for (const [id, version] of Object.entries(versions.apps)) {
     if (!SEMVER.test(String(version))) problems.push(`apps/${id}/package.json: version "${version}" is not x.y.z.`);
@@ -170,30 +214,62 @@ export function checkVersions(root = DEFAULT_ROOT) {
   return problems;
 }
 
+// Copies each workbench's standalone.html to <dir>/<id>-<version>.html, the
+// files a release attaches, after the same check `npm run check` runs.
+// Returns the written paths.
+export function writeReleaseAssets(dir, root = DEFAULT_ROOT) {
+  const problems = checkVersions(root);
+  if (problems.length) throw new Error(`Refusing to package release assets:\n${problems.join('\n')}`);
+  const versions = readVersions(root);
+  mkdirSync(dir, { recursive: true });
+  return APPS.map(({ id }) => {
+    const target = resolve(dir, `${id}-${versions.apps[id]}.html`);
+    copyFileSync(resolve(root, `apps/${id}/standalone.html`), target);
+    return target;
+  });
+}
+
+const USAGE = 'Usage: node scripts/versions.mjs <sync | check [--tag vX.Y.Z] | notes vX.Y.Z | assets <dir>> [--root <dir>]';
+
 function main(argv) {
   const { values, positionals } = parseArgs({
     args: argv,
     allowPositionals: true,
-    options: { root: { type: 'string' } },
+    options: { root: { type: 'string' }, tag: { type: 'string' } },
   });
   const [command, ...extra] = positionals;
   const root = values.root ? resolve(values.root) : DEFAULT_ROOT;
+  if (values.tag !== undefined && command !== 'check') {
+    console.error(USAGE);
+    return 1;
+  }
   if (command === 'sync' && extra.length === 0) {
     const changed = syncVersions(root);
     console.log(changed.length ? `Updated ${changed.join(', ')}.` : 'Version surfaces already match the packages.');
     return 0;
   }
   if (command === 'check' && extra.length === 0) {
-    const problems = checkVersions(root);
+    const problems = checkVersions(root, { tag: values.tag });
+    const tagIssues = values.tag === undefined ? [] : tagProblems(values.tag, readVersions(root).catalog);
     for (const problem of problems) console.error(problem);
-    if (problems.length) {
+    if (problems.length > tagIssues.length) {
       console.error('After changing a package version, run npm run versions:sync and npm run build:standalone, and put the matching entry at the top of that changelog, which stays in descending SemVer order.');
-      return 1;
     }
-    console.log('Version surfaces, changelogs and standalone stamps match the packages.');
+    if (problems.length) return 1;
+    console.log(values.tag === undefined
+      ? 'Version surfaces, changelogs and standalone stamps match the packages.'
+      : `Version surfaces, changelogs and standalone stamps match the packages, and ${values.tag} names the catalog version.`);
     return 0;
   }
-  console.error('Usage: node scripts/versions.mjs <sync|check> [--root <dir>]');
+  if (command === 'notes' && extra.length === 1) {
+    process.stdout.write(releaseNotes(readText(root, 'CHANGELOG.md'), extra[0]));
+    return 0;
+  }
+  if (command === 'assets' && extra.length === 1) {
+    for (const file of writeReleaseAssets(resolve(extra[0]), root)) console.log(file);
+    return 0;
+  }
+  console.error(USAGE);
   return 1;
 }
 

@@ -45,6 +45,35 @@ a version bump in its `package.json`. The catalog page, the 404 page and the
 README table repeat each app's version, and the tests and checks fail until
 they match the package.
 
+## Releasing
+
+Each workbench versions itself in `apps/<id>/package.json`; the catalog
+version in the root `package.json` names a release of all four together.
+`scripts/versions.mjs` keeps every other copy of those numbers in step.
+
+1. Bump each changed app by SemVer in its `package.json` and add its entry
+   at the top of its `CHANGELOG.md` (entries stay in descending SemVer
+   order).
+2. Run `npm run versions:sync` to update the catalog page, the 404 page and
+   the README table, then `npm run build:standalone` to restamp the
+   standalone pages.
+3. Bump the root `package.json` version by the highest app bump level in the
+   release (a catalog-only change bumps the catalog alone) and add a
+   `## [X.Y.Z] - YYYY-MM-DD` section to the root `CHANGELOG.md`, with its
+   link reference.
+4. Run `npm test`, `npm run check` and
+   `node scripts/versions.mjs check --tag vX.Y.Z`.
+5. Merge the pull request with a merge commit once its checks are green.
+6. Run the Release workflow on `main` from the Actions tab (or
+   `gh workflow run release.yml --ref main`). A manual run is a dry run: it
+   verifies the tag, runs the checks, extracts the notes and packages the
+   files without publishing.
+7. Tag the merge commit and push the tag:
+   `git tag -a vX.Y.Z -m "Decision Labs X.Y.Z" <merge commit>` then
+   `git push origin vX.Y.Z`. The tag push publishes the GitHub release with
+   the root changelog section as its notes and the four standalone pages
+   attached as `<app>-<version>.html`.
+
 ## Review
 
 A maintainer listed in CODEOWNERS will review your pull request. Address
