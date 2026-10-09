@@ -1,5 +1,26 @@
 # Changelog
 
+## 1.9.0 - 2026-10-09
+
+Release identity, PORT validation, port failures and a top-level landmark in Weekend Gap 1.9.0
+
+### Added
+
+- `node scripts/analyze.mjs --version` prints `weekend-gap 1.9.0` and exits 0. Any extra argument is rejected. The usage text and CLI.md mention it, and the bug report template asks for its output.
+- `standalone.html` now carries `<meta name="generator" content="Weekend Gap 1.9.0">`, written from `package.json` by the builder. A version bump makes `build-standalone --check` fail until the page is rebuilt. No model or export format changes.
+- The README launch section documents `PORT` and the 5173 through 5183 fallback.
+
+### Fixed
+
+- A busy port made the dev server exit 0 with no output on Windows and throw an uncaught error on Linux, both when `PORT` was set and when 5173 through 5183 were all in use. It now names the busy port, or the exhausted range, and exits 1.
+- The launcher exited 0 when the server stopped before it was ready. It now exits with the server's code, or 1 when the server exited 0.
+- The assumptions panel was an `aside` nested inside `main`, a complementary landmark that is not top level. It is now a `section`; nothing else in the markup, styles or behaviour changed.
+
+### Changed
+
+- `PORT` is validated. Unset or blank keeps 5173 with fallback through 5183. Otherwise it must be a base-10 integer from 0 through 65535, and 0 still lets the system choose. `abc` used to crash with `ERR_SOCKET_BAD_PORT`, and values such as `5173.0` or `0x1F90` were silently coerced; they now print `PORT must be an integer from 0 through 65535.` and exit 1.
+- The stray second `# Changelog` title is removed. The release test now reads the expected version from `package.json`.
+
 ## 1.8.4 - 2026-09-28
 
 Grouped thousands in a numeric string stay that number in Weekend Gap 1.8.4

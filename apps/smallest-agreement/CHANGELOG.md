@@ -1,5 +1,24 @@
 # Changelog
 
+## 1.7.0 - 2026-10-09
+
+Release identity, port failures and pencil text contrast in The Smallest Agreement 1.7.0
+
+### Added
+
+- `node scripts/analyze.mjs --version` prints `smallest-agreement 1.7.0` and exits 0. Any extra argument is rejected. The usage text and ANALYST.md mention it, and the bug report template asks for its output.
+- `standalone.html` now carries `<meta name="generator" content="The Smallest Agreement 1.7.0">`, written from `package.json` by the builder. A version bump makes `build-standalone --check` fail until the page is rebuilt. No model, UI or export format changes.
+
+### Fixed
+
+- A busy port made the dev server exit 0 with no output on Windows and print an uncaught error on Linux. It now prints `Port N is already in use. Set PORT to a free integer from 1 through 65535.` and exits 1.
+- The launcher exited 0 when the server stopped before it began listening. It now exits with the server's code, or 1 when the server exited 0.
+- Text buttons, margin-note numbers and original-option markers drew pencil blue at 3.86:1 on the control panel, below WCAG AA. They now use a text-safe `--pencil-ink` (#2c6189), 5.34:1 on the control panel, 5.82:1 on paper and 6.35:1 on cards. Focus outlines and the margin-note rule keep the decorative pencil colour.
+
+### Changed
+
+- This changelog is back in SemVer order under one title: 1.6.0 moved above 1.5.54. The 1.5.35 and 1.5.34 entries written on the consolidation branch, whose code first reached main in 1.6.0, are now subsections of 1.6.0, and main's dated 1.5.35 and 1.5.34 stay the released versions. No entry text changed. The release test now reads the expected version from `package.json` instead of literal pins.
+
 ## 1.6.6 - 2026-09-28
 
 TSV import unquotes a spreadsheet field in The Smallest Agreement 1.6.6

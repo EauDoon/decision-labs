@@ -1,5 +1,27 @@
 # Changelog
 
+## 1.8.0 - 2026-10-09
+
+Release identity, documented planner commands and port failures in Common Cart 1.8.0
+
+### Added
+
+- `node scripts/analyze.mjs --version` prints `common-cart 1.8.0` and exits 0. It accepts no command or other option. `--help` and CLI.md list it, and the bug report template asks for its output.
+- CLI.md documents the `plan` and `contingency` commands that the CLI already shipped, including the experiment fields and the split between the organizer-private part and the merchant aggregates.
+- `standalone.html` now carries `<meta name="generator" content="Common Cart 1.8.0">`, written from `package.json` by the builder. A version bump makes `build-standalone --check` fail until the page is rebuilt. No model, UI or export format changes.
+
+### Fixed
+
+- A busy port crashed the dev server with an unhandled `error` event and a stack trace. It now prints `Port N is already in use. Set PORT to a free integer from 1 through 65535.` and exits 1. Partnership Breakpoint, Common Cart and The Smallest Agreement all default to 4173, so starting two of them hit this.
+- Importing `createCommonCartServer` read `PORT` at load time and exited the importing process when it was invalid. `PORT` is now read only when `dev-server.mjs` runs as the server.
+- The launcher exited 0 when the server stopped before the GUI was ready. It now exits with the server's code, or 1 when the server exited 0.
+- The kicker and section numbers drew orange text at 2.61:1 on the paper colour, below WCAG AA. They now use a text-safe `--orange-ink` (#b5481c), 4.78:1 on paper and 5.29:1 on the surface colour. The dark-panel override and decorative orange are unchanged.
+
+### Changed
+
+- `npm run check` no longer reruns the whole test suite; run `npm test` for that. It now also syntax-checks `scripts/analyze.mjs`.
+- This changelog is back in SemVer order under one title: the 1.4.34 through 1.4.54 entries moved below 1.5.0. No entry text changed. The release test now reads the expected version from `package.json` instead of literal pins.
+
 ## 1.7.8 - 2026-09-28
 
 Buyer and offer CSV accept thousands separators in numeric cells in Common Cart 1.7.8

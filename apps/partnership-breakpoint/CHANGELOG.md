@@ -1,5 +1,23 @@
 # Changelog
 
+## 1.9.0 - 2026-10-09
+
+Release identity, launch failures and danger button contrast in Partnership Breakpoint 1.9.0
+
+### Added
+
+- `node scripts/analyze.mjs --version` prints `partnership-breakpoint 1.9.0` and exits 0. Any extra argument is rejected. `--help` and CLI.md list it, and the bug report template asks for its output.
+- `standalone.html` now carries `<meta name="generator" content="Partnership Breakpoint 1.9.0" />`, written from `package.json` by the builder. A version bump makes `build-standalone --check` fail until the page is rebuilt. `renderStandalone()` takes the version as an optional input, so existing callers keep working. No model, UI or export format changes.
+
+### Fixed
+
+- The launcher exited 0 when the local server stopped before it began listening, for example on a busy port, so `launch-windows.cmd` and scripts treated a dead launch as success. It now exits with the server's code, or 1 when the server exited 0.
+- The danger button drew coral text at 3.68:1 on the paper colour, below WCAG AA. Its text, border and hover fill now use a text-safe `--coral-ink` (#ad3828): 5.02:1 on the tinted first-fail row and 6.23:1 for white text on the hover fill. Decorative coral marks are unchanged.
+
+### Changed
+
+- This changelog is back in SemVer order under one title. 1.8.1 through 1.8.4 moved from the end of the file to the top, and the 1.5.34 through 1.5.54 entries moved below 1.6.0, where their numbers belong. No entry text changed, and 1.5.18 was never recorded. The release test now reads the expected version from `package.json` instead of literal pins.
+
 ## 1.8.4
 
 Roster CSV keeps an interior quotation mark in Partnership Breakpoint 1.8.4
