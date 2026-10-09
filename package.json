@@ -1,5 +1,6 @@
 {
   "name": "decision-labs",
+  "version": "1.0.0",
   "private": true,
   "type": "module",
   "description": "A local catalog of four independent, offline decision workbenches.",

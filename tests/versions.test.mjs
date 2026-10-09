@@ -7,7 +7,7 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { APPS } from '../scripts/apps.mjs';
-import { checkVersions, syncVersions } from '../scripts/versions.mjs';
+import { checkVersions, readVersions, releaseNotes, syncVersions } from '../scripts/versions.mjs';
 
 const repo = fileURLToPath(new URL('../', import.meta.url));
 const script = fileURLToPath(new URL('../scripts/versions.mjs', import.meta.url));
@@ -60,6 +60,16 @@ test('the real tree already matches its package versions', (t) => {
   const root = fixture(t);
   assert.deepEqual(syncVersions(root), [], 'sync on a copy of the real tree changes nothing');
   for (const file of SURFACE_FILES) assert.equal(read(root, file), read(repo, file));
+});
+
+test('the real catalog version is ready to tag and has release notes', () => {
+  const { catalog } = readVersions(repo);
+  assert.match(String(catalog), /^\d+\.\d+\.\d+$/, 'the root package.json carries the catalog version');
+  const tag = `v${catalog}`;
+  assert.deepEqual(checkVersions(repo, { tag }), []);
+  const notes = releaseNotes(read(repo, 'CHANGELOG.md'), tag);
+  assert.match(notes, /^### (?:Added|Changed|Deprecated|Removed|Fixed|Security)$/m, 'the notes use Keep a Changelog sections');
+  assert.doesNotMatch(notes, /^## |^\[[^\]]+\]: /m, 'the notes hold one section body without link references');
 });
 
 // What npm run build:standalone changes in a page when only the version moves.
