@@ -40,6 +40,17 @@ function setVersion(root, id, version) {
   edit(root, `apps/${id}/package.json`, (text) => text.replace(/"version": "[^"]+"/, `"version": "${version}"`));
 }
 
+// Sets the catalog version in a fixture's root package.json, or removes it when
+// version is null, so no test depends on whether the real catalog is versioned.
+function setCatalogVersion(root, version) {
+  edit(root, 'package.json', (text) => {
+    const pkg = JSON.parse(text);
+    delete pkg.version;
+    const next = version === null ? pkg : { name: pkg.name, version, ...pkg };
+    return `${JSON.stringify(next, null, 2)}\n`;
+  });
+}
+
 function run(root, ...args) {
   return spawnSync(process.execPath, [script, ...args, '--root', root], { encoding: 'utf8' });
 }
@@ -176,9 +187,10 @@ test('changelog headings inside fenced code are ignored', (t) => {
 
 test('a versioned catalog needs a matching Keep a Changelog release heading', (t) => {
   const root = fixture(t);
-  assert.equal(JSON.parse(read(root, 'package.json')).version ?? null, null, 'the catalog is unversioned in this fixture');
+  setCatalogVersion(root, null);
+  edit(root, 'CHANGELOG.md', () => '# Changelog\n\n## [Unreleased]\n\n### Added\n- Not released yet.\n');
   assert.deepEqual(checkVersions(root), [], 'an unversioned catalog skips the root changelog rule');
-  edit(root, 'package.json', (text) => text.replace('"private": true,', '"private": true,\n  "version": "2.3.4",'));
+  setCatalogVersion(root, '2.3.4');
   assert.match(checkVersions(root).join('\n'), /CHANGELOG\.md: the first release heading must be "## \[2\.3\.4\] - YYYY-MM-DD"/);
   edit(root, 'CHANGELOG.md', (text) => text.replace('## [Unreleased]', '## [Unreleased]\n\n## [2.3.3] - 2026-10-01'));
   assert.match(checkVersions(root).join('\n'), /CHANGELOG\.md: the first release is 2\.3\.3 but package\.json says 2\.3\.4\./);
@@ -192,7 +204,7 @@ test('a versioned catalog needs a matching Keep a Changelog release heading', (t
 // link references at the end, as the root CHANGELOG.md is for a real release.
 function releaseFixture(t) {
   const root = fixture(t);
-  edit(root, 'package.json', (text) => text.replace('"private": true,', '"private": true,\n  "version": "2.3.4",'));
+  setCatalogVersion(root, '2.3.4');
   edit(root, 'CHANGELOG.md', () => [
     '# Changelog',
     '',
@@ -249,7 +261,8 @@ test('check --tag accepts only the tag that names the catalog version', (t) => {
 
 test('check --tag fails clearly while the catalog has no version', (t) => {
   const root = fixture(t);
-  assert.equal(JSON.parse(read(root, 'package.json')).version ?? null, null);
+  setCatalogVersion(root, null);
+  assert.equal(JSON.parse(read(root, 'package.json')).version, undefined);
   const result = run(root, 'check', '--tag', 'v1.0.0');
   assert.equal(result.status, 1);
   assert.match(result.stderr, /package\.json has no version, so there is no catalog release to tag as "v1\.0\.0"\./);
