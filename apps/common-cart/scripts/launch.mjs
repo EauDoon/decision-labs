@@ -96,6 +96,11 @@ server.on("error", (error) => {
 });
 
 server.on("exit", (code, signal) => {
-  if (!opened && !stopping) console.error("Common Cart stopped before the GUI was ready.");
+  if (!opened && !stopping) {
+    // A server that stops before it is ready is a failed launch even when it exits 0.
+    console.error("Common Cart stopped before the GUI was ready.");
+    process.exitCode = code || 1;
+    return;
+  }
   process.exitCode = stopping ? 0 : (code ?? (signal ? 1 : 0));
 });

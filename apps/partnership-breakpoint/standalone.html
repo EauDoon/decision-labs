@@ -29,6 +29,7 @@ SOFTWARE.
     <meta name="description" content="A transparent negotiation workbench for participant-level partnership exit thresholds, share-to-hold floors, and compound stress evidence." />
     <title>Partnership Breakpoint</title>
     <meta http-equiv="Content-Security-Policy" content="default-src 'none'; base-uri 'none'; connect-src 'none'; form-action 'none'; img-src 'none'; media-src 'none'; object-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'" />
+    <meta name="generator" content="Partnership Breakpoint 1.9.0" />
     <style>
 :root {
   --paper: #f5f3ed;
@@ -39,6 +40,8 @@ SOFTWARE.
   --cobalt: #1558d6;
   --cobalt-pale: #dce8ff;
   --coral: #d94f3d;
+  /* Text-safe coral: at least 4.5:1 on --paper and --coral-pale, and white on it. */
+  --coral-ink: #ad3828;
   --coral-pale: #ffe0da;
   --warning: #8a5a05;
   --radius: 3px;
@@ -135,8 +138,8 @@ button:hover { background: var(--ink); color: white; }
 button:disabled { cursor: not-allowed; opacity: .55; }
 button.primary { background: var(--cobalt); border-color: var(--cobalt); color: white; }
 button.primary:hover { background: #1044a8; }
-button.danger { color: var(--coral); border-color: var(--coral); }
-button.danger:hover { background: var(--coral); color: white; }
+button.danger { color: var(--coral-ink); border-color: var(--coral-ink); }
+button.danger:hover { background: var(--coral-ink); color: white; }
 .preset-row button[aria-pressed="true"] { background: var(--ink); color: white; }
 .file-button { position: relative; overflow: hidden; display: inline-flex; align-items: center; }
 .file-button input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }

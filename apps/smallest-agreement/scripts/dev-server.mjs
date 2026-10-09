@@ -21,7 +21,7 @@ function safePath(urlPath) {
   return target === root || target.startsWith(`${root}${sep}`) ? target : null;
 }
 
-createServer(async (request, response) => {
+const server = createServer(async (request, response) => {
   if (!/^(127\.0\.0\.1|localhost)(?::[0-9]+)?$/.test(request.headers.host ?? "")) {
     response.writeHead(403, { "Content-Type": "text/plain; charset=utf-8" });
     response.end("Host not allowed");
@@ -44,6 +44,17 @@ createServer(async (request, response) => {
     response.writeHead(404, { "Content-Type": "text/plain; charset=utf-8" });
     response.end("Not found");
   }
-}).listen(port, BIND_HOST, () => {
+});
+
+// Without this listener a busy port surfaces as an uncaught error, or on some
+// platforms as a silent exit 0, so report it and exit 1.
+server.on("error", (error) => {
+  console.error(error.code === "EADDRINUSE"
+    ? `Port ${port} is already in use. Set PORT to a free integer from 1 through 65535.`
+    : `Could not start the local server: ${error.message}`);
+  process.exitCode = 1;
+});
+
+server.listen(port, BIND_HOST, () => {
   console.log(`The Smallest Agreement is serving at http://${BIND_HOST}:${port}`);
 });

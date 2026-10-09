@@ -340,12 +340,17 @@ function assertSelfContained(html) {
 }
 
 export async function buildStandalone() {
-  const [rawHtml, rawCss, rawModel, rawApp] = await Promise.all([
+  const [rawHtml, rawCss, rawModel, rawApp, rawPackage] = await Promise.all([
     readFile(sourcePaths.html, "utf8"),
     readFile(sourcePaths.css, "utf8"),
     readFile(sourcePaths.model, "utf8"),
     readFile(sourcePaths.app, "utf8"),
+    readFile(path.join(projectRoot, "package.json"), "utf8"),
   ]);
+  // The artifact names the release that produced it, so a version bump also
+  // makes build-standalone --check fail until the page is rebuilt.
+  const { version } = JSON.parse(rawPackage);
+  if (!/^\d+\.\d+\.\d+$/.test(version)) throw new Error("package.json version must be x.y.z.");
   const html = normaliseLf(rawHtml);
   const css = normaliseLf(rawCss);
   const model = normaliseLf(rawModel);
@@ -360,7 +365,7 @@ export async function buildStandalone() {
   output = replaceExactlyOnce(
     output,
     cspMarker,
-    `${cspMarker}\n    <meta http-equiv="Content-Security-Policy" content="${standaloneCsp}">`,
+    `${cspMarker}\n    <meta name="generator" content="Weekend Gap ${version}">\n    <meta http-equiv="Content-Security-Policy" content="${standaloneCsp}">`,
     "Content Security Policy",
   );
   output = replaceExactlyOnce(output, cssMarker, `<style>\n${css}\n</style>`, "Stylesheet");

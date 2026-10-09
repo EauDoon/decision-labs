@@ -1,0 +1,14 @@
+# Store text with LF in the repository and check it out with LF everywhere,
+# so Windows clones match the index and commits cannot flip files to CRLF.
+* text=auto eol=lf
+
+# Windows batch launchers need CRLF in the working tree.
+*.cmd text eol=crlf
+
+# Binary assets.
+*.jpg binary
+*.png binary
+
+# Generated single-file builds: collapsed in pull request diffs on GitHub.
+# Local diffs stay readable because no -diff attribute is set.
+apps/*/standalone.html linguist-generated=true

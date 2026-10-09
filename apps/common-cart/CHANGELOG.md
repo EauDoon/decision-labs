@@ -1,3 +1,27 @@
+# Changelog
+
+## 1.8.0 - 2026-10-09
+
+Release identity, documented planner commands and port failures in Common Cart 1.8.0
+
+### Added
+
+- `node scripts/analyze.mjs --version` prints `common-cart 1.8.0` and exits 0. It accepts no command or other option. `--help` and CLI.md list it, and the bug report template asks for its output.
+- CLI.md documents the `plan` and `contingency` commands that the CLI already shipped, including the experiment fields and the split between the organizer-private part and the merchant aggregates.
+- `standalone.html` now carries `<meta name="generator" content="Common Cart 1.8.0">`, written from `package.json` by the builder. A version bump makes `build-standalone --check` fail until the page is rebuilt. No model, UI or export format changes.
+
+### Fixed
+
+- A busy port crashed the dev server with an unhandled `error` event and a stack trace. It now prints `Port N is already in use. Set PORT to a free integer from 1 through 65535.` and exits 1. Partnership Breakpoint, Common Cart and The Smallest Agreement all default to 4173, so starting two of them hit this.
+- Importing `createCommonCartServer` read `PORT` at load time and exited the importing process when it was invalid. `PORT` is now read only when `dev-server.mjs` runs as the server.
+- The launcher exited 0 when the server stopped before the GUI was ready. It now exits with the server's code, or 1 when the server exited 0.
+- The kicker and section numbers drew orange text at 2.61:1 on the paper colour, below WCAG AA. They now use a text-safe `--orange-ink` (#b5481c), 4.78:1 on paper and 5.29:1 on the surface colour. The dark-panel override and decorative orange are unchanged.
+
+### Changed
+
+- `npm run check` no longer reruns the whole test suite; run `npm test` for that. It now also syntax-checks `scripts/analyze.mjs`.
+- This changelog is back in SemVer order under one title: the 1.4.34 through 1.4.54 entries moved below 1.5.0. No entry text changed. The release test now reads the expected version from `package.json` instead of literal pins.
+
 ## 1.7.8 - 2026-09-28
 
 Buyer and offer CSV accept thousands separators in numeric cells in Common Cart 1.7.8
@@ -117,6 +141,30 @@ A maintainability release on 1.6.0. The matching math is unchanged. Common Cart 
 - Thirty-five single-field copy buttons become eleven evidence buttons: leftover-fill, uncovered-leftover, leftover-only, tertiary-fill, and winning-offer evidence documents plus the unchanged coverage, headroom, inspector, requested-units, exclusion-counts, and winner-aggregates copies. Twenty-one print paragraphs become seven evidence blocks.
 - The keyboard set is trimmed to letters, `?`, and `Esc`: punctuation, digit, and shifted keys bound to the retired controls no longer trigger copy or focus jumps, so browser Find, fullscreen, dev tools, and scrolling behave normally again.
 - Workspace JSON now writes six `edge*` values and stops writing the twelve first/last flags. Older workspace files still open: each legacy pair maps onto the closest edge value (`hide-first-last` when both were set), and files without the new keys show every buyer.
+
+## 1.6.0 - 2026-09-12
+
+Supplier contingency planning in Common Cart 1.6.0.
+
+A workshop addition on 1.5.0. Common Cart remains an offline simulator. Contingency results are planning experiments, not forecasts of supplier behavior, orders, or verified savings. Merchant summaries still receive aggregates only. Organizer contingency exports are labeled organizer-private.
+
+### Added
+
+- Supplier contingency experiments: withdraw an offer, reduce capacity, scale band prices, or delay delivery, each replanned against identical demand with lost orders, newly feasible orders, and landed-cost deltas.
+- Supplier contingency panel with an experiment builder, standard merchant-withdrawal set, organizer JSON export, and aggregates-only merchant summary. Editing the room clears experiment results.
+- Supplier withdrawal dependency review question with packet replay, CLI `contingency --input --experiment`, and merchant-report privacy tests for every new export.
+
+## 1.5.0 - 2026-09-12
+
+Multi-merchant procurement planning in Common Cart 1.5.0.
+
+A workshop addition on 1.4.33. Common Cart remains an offline simulator. Plans are projections, not orders, checkouts, or verified savings. Merchant views, JSON, CSV, overlap Markdown, and plan summaries still receive aggregates, counts, merchant labels, or fulfillment modes only. Organizer plan exports are labeled organizer-private.
+
+### Added
+
+- Bounded exact multi-merchant planner: whole buyer orders to at most one merchant, minimum orders and capacities honored, tiers repriced from actual assigned units, objective maximum fulfilled units then minimum landed cost then fewest merchants then deterministic order. Rooms above the 250,000-assignment bound return the best plan found with an explicit limit status.
+- Multi-merchant plan panel with winner comparison, per-merchant assignments, unmet demand with reasons, organizer JSON and CSV exports, and an aggregates-only merchant summary.
+- Multi-merchant review question with packet replay, CLI `plan --input`, and merchant-plan privacy tests proving no buyer records in merchant outputs.
 
 ## 1.4.54 - 2026-09-13
 
@@ -391,34 +439,6 @@ A workshop follow-up on 1.4.33. Common Cart remains an offline simulator. Residu
 - Keyboard `Shift+F8` jumps to the leftover uncovered leftover-only allocated copy control, or the leftover heading if that control is missing. Does not copy. Ignored while typing. Distinct from unshifted `F8` leftover uncovered leftover-only count jump and leftover uncovered leftover-only headroom jump.
 - Keyboard `Shift+F9` jumps to hide last leftover-only buyer (`hide-last-leftover-only-buyer`), or the buyer list if that control is missing. Ignored while typing. Distinct from 1.4.33 `Shift+F9` hide first leftover-only buyer. That first leftover-only hide stays. Distinct from unshifted `F9` and `Shift+F12` hide first uncovered leftover buyer. `ArrowUp` still jumps to hide last leftover-only buyer. `ArrowLeft` still jumps to hide first leftover-only buyer.
 - Cyclo-cross carnival lunch (synthetic) preset after BMX carnival lunch. Winner Court-side Cyclo-cross Delivery. Leftover Hall Cyclo-cross Pickup with pickup minimum 27, unit price 22, and capacity 54. Leftover uncovered leftover-only allocated on this room is 28 leftover-only units. Leftover uncovered leftover-only headroom is 26. Leftover uncovered leftover-only capacity reports 54, not 26. Leftover uncovered leftover-only minimum is the smallest leftover-only buyer quantity 13. Distinct from BMX leftover minimum 26, unit price 21, capacity 52, allocated 27, and headroom 25. Soccer 11 through BMX 26 stay. Synthetic. Not live inventory.
-
-## 1.6.0 - 2026-09-12
-
-Supplier contingency planning in Common Cart 1.6.0.
-
-A workshop addition on 1.5.0. Common Cart remains an offline simulator. Contingency results are planning experiments, not forecasts of supplier behavior, orders, or verified savings. Merchant summaries still receive aggregates only. Organizer contingency exports are labeled organizer-private.
-
-### Added
-
-- Supplier contingency experiments: withdraw an offer, reduce capacity, scale band prices, or delay delivery, each replanned against identical demand with lost orders, newly feasible orders, and landed-cost deltas.
-- Supplier contingency panel with an experiment builder, standard merchant-withdrawal set, organizer JSON export, and aggregates-only merchant summary. Editing the room clears experiment results.
-- Supplier withdrawal dependency review question with packet replay, CLI `contingency --input --experiment`, and merchant-report privacy tests for every new export.
-
-# Changelog
-
-## 1.5.0 - 2026-09-12
-
-Multi-merchant procurement planning in Common Cart 1.5.0.
-
-A workshop addition on 1.4.33. Common Cart remains an offline simulator. Plans are projections, not orders, checkouts, or verified savings. Merchant views, JSON, CSV, overlap Markdown, and plan summaries still receive aggregates, counts, merchant labels, or fulfillment modes only. Organizer plan exports are labeled organizer-private.
-
-### Added
-
-- Bounded exact multi-merchant planner: whole buyer orders to at most one merchant, minimum orders and capacities honored, tiers repriced from actual assigned units, objective maximum fulfilled units then minimum landed cost then fewest merchants then deterministic order. Rooms above the 250,000-assignment bound return the best plan found with an explicit limit status.
-- Multi-merchant plan panel with winner comparison, per-merchant assignments, unmet demand with reasons, organizer JSON and CSV exports, and an aggregates-only merchant summary.
-- Multi-merchant review question with packet replay, CLI `plan --input`, and merchant-plan privacy tests proving no buyer records in merchant outputs.
-
-# Changelog
 
 ## 1.4.33 - 2026-09-12
 

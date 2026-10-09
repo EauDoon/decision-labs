@@ -14,8 +14,10 @@ errors go to stderr with exit status 1. Success returns status 0. The CLI never
 writes input files. Redirect stdout to a different path to save results.
 If the receiving process closes its pipe, output fails with a controlled error
 and exit status 1 rather than an unhandled stack trace.
-Use `node scripts/analyze.mjs --help` for syntax. Use the direct Node command
-when piping JSON because npm may print its own command header.
+Use `node scripts/analyze.mjs --help` for syntax and
+`node scripts/analyze.mjs --version` to print `weekend-gap` and the package
+version for a bug report. Use the direct Node command when piping JSON because
+npm may print its own command header.
 
 Scenario input accepts raw objects or the browser's `weekend-gap-scenario` v1
 envelope, including a UTF-8 BOM. Missing fields use the model's defaults, which

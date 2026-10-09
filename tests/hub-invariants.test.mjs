@@ -1,8 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync, readdirSync } from 'node:fs';
 
 import { APP_PATHS, APP_ROUTES } from '../scripts/apps.mjs';
+import { catalogTestFiles } from '../scripts/test-catalog.mjs';
 
 const root = new URL('../', import.meta.url);
 const html = readFileSync(new URL('index.html', root), 'utf8');
@@ -16,6 +17,16 @@ test('root package remains a private dependency-free catalog', () => {
   assert.equal(packageJson.dependencies, undefined);
   assert.equal(packageJson.devDependencies, undefined);
   assert.match(packageJson.engines.node, />=20/);
+});
+
+test('root test script discovers catalog tests instead of listing them', () => {
+  assert.match(packageJson.scripts.test, /^node scripts\/test-catalog\.mjs && node scripts\/run-apps\.mjs test$/);
+  assert.doesNotMatch(packageJson.scripts.test, /tests\/[^ ]+\.test\.mjs/);
+  assert.ok(existsSync(new URL('scripts/test-catalog.mjs', root)));
+  const discovered = catalogTestFiles();
+  const onDisk = readdirSync(new URL('tests/', root)).filter((name) => name.endsWith('.test.mjs'));
+  assert.equal(discovered.length, onDisk.length);
+  assert.ok(discovered.includes('tests/hub-invariants.test.mjs'));
 });
 
 test('catalog IDs are unique and all local hrefs stay in the intended surface', () => {

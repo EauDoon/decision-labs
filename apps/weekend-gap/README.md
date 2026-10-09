@@ -67,6 +67,8 @@ To run only the server without opening a browser:
 npm start
 ```
 
+The server listens only on `127.0.0.1`. With `PORT` unset or blank it uses 5173 and, if that port is busy, tries each port up to 5183. Set `PORT` to an integer from 0 through 65535 to use that port only (0 lets the operating system choose a free one). Any other `PORT` value, a busy chosen port, or 5173 through 5183 all being busy prints a message and exits with status 1, and the launcher then exits nonzero too.
+
 ```sh
 npm test
 npm run check

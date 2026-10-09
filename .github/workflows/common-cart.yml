@@ -14,10 +14,20 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: common-cart-ci-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
-  check:
-    runs-on: ubuntu-latest
+  verify:
+    name: ${{ matrix.os }} / Node ${{ matrix.node }}
+    runs-on: ${{ matrix.os }}
     timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+        node: ["20.x", "22.x", "24.x"]
     steps:
       - name: Check out exact source
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
@@ -26,7 +36,11 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
         with:
-          node-version: "20.x"
+          node-version: ${{ matrix.node }}
           package-manager-cache: false
-      - run: npm run check
+      - name: Run deterministic tests
+        run: npm test
+        working-directory: apps/common-cart
+      - name: Check repository integrity and standalone build
+        run: npm run check
         working-directory: apps/common-cart

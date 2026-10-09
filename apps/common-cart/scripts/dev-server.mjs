@@ -5,12 +5,6 @@ import { dirname, extname, isAbsolute, join, normalize, relative, sep } from "no
 import { DEFAULT_HOST, parsePort } from "./listen-config.mjs";
 
 const root = normalize(join(dirname(fileURLToPath(import.meta.url)), ".."));
-const parsedPort = parsePort(process.env.PORT);
-if (parsedPort.error) {
-  console.error(parsedPort.error);
-  process.exit(1);
-}
-const port = parsedPort.port;
 const types = {
   ".css": "text/css; charset=utf-8",
   ".html": "text/html; charset=utf-8",
@@ -84,8 +78,23 @@ export function createCommonCartServer(serveRoot = root) {
   });
 }
 
+// PORT is read only when this file runs as the server, so importing
+// createCommonCartServer never exits the importing process.
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
-  createCommonCartServer().listen(port, DEFAULT_HOST, () => {
+  const parsedPort = parsePort(process.env.PORT);
+  if (parsedPort.error) {
+    console.error(parsedPort.error);
+    process.exit(1);
+  }
+  const port = parsedPort.port;
+  const server = createCommonCartServer();
+  server.on("error", (error) => {
+    console.error(error.code === "EADDRINUSE"
+      ? `Port ${port} is already in use. Set PORT to a free integer from 1 through 65535.`
+      : `Could not start the local server: ${error.message}`);
+    process.exitCode = 1;
+  });
+  server.listen(port, DEFAULT_HOST, () => {
     console.log(`Common Cart is running at http://${DEFAULT_HOST}:${port}`);
   });
 }

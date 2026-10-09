@@ -148,6 +148,10 @@ const standaloneCsp = "default-src 'none'; base-uri 'none'; object-src 'none'; s
  */
 export async function standaloneBytes() {
   const [html, css, model, app] = await Promise.all(Object.values(inputs).map(async (path) => lf(await readFile(path, "utf8"))));
+  // The artifact names the release that produced it, so a version bump also
+  // makes build-standalone --check fail until the page is rebuilt.
+  const { version } = JSON.parse(await readFile(new URL("../package.json", import.meta.url), "utf8"));
+  if (!/^\d+\.\d+\.\d+$/u.test(version)) throw new Error("package.json version must be x.y.z.");
   requireSafeInline(css, "Stylesheet");
   requireSafeInline(model, "Model");
   requireSafeInline(app, "Application");
@@ -160,7 +164,7 @@ export async function standaloneBytes() {
   const inlineScript = `\n${combinedScript}`;
   let standalone = replaceOnce(html, stylesheetMarker, `<style>${inlineStyle}</style>`, "Stylesheet");
   standalone = replaceOnce(standalone, scriptMarker, `<script type="module">${inlineScript}</script>`, "Application script");
-  standalone = replaceOnce(standalone, cspMarker, `    <meta http-equiv="Content-Security-Policy" content="${standaloneCsp}">\n${cspMarker}`, "Content Security Policy");
+  standalone = replaceOnce(standalone, cspMarker, `    <meta http-equiv="Content-Security-Policy" content="${standaloneCsp}">\n    <meta name="generator" content="The Smallest Agreement ${version}">\n${cspMarker}`, "Content Security Policy");
   standalone = `${lf(standalone).trimEnd()}\n`;
 
   if (/<link\b/iu.test(standalone) || /<script\b[^>]*\bsrc\s*=/iu.test(standalone) || /\bhttps?:\/\//iu.test(standalone)) {

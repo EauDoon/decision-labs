@@ -1,15 +1,21 @@
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import { mkdir } from 'node:fs/promises';
 import { createRequire } from 'node:module';
 import { resolve } from 'node:path';
-import { createLauncher } from './serve.mjs';
+import { APP_ROUTES } from './apps.mjs';
+import { createLauncher, notFoundPage } from './serve.mjs';
 
 // Optional developer tooling only. The applications remain dependency-free.
 const { chromium } = createRequire(import.meta.url)(process.env.PLAYWRIGHT_MODULE || 'playwright');
+// AXE_MODULE optionally points at an axe-core package directory; when set,
+// every shipped page must report zero axe violations.
+const axeSource = process.env.AXE_MODULE ? readFileSync(resolve(process.env.AXE_MODULE, 'axe.min.js'), 'utf8') : null;
 const browser = await chromium.launch({ headless: true, executablePath: process.env.BROWSER_EXECUTABLE || undefined });
 const server = createLauncher();
 await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
 const origin = `http://127.0.0.1:${server.address().port}`;
+const AXE_PAGES = ['index.html', '404.html', ...APP_ROUTES];
 const cases = [
   { id: 'common-cart', field: 'input[data-field="quantity"]', value: '3', alternate: '4', metric: '#metric-units', result: /^15$/, dismiss: '#coach-dismiss', export: '#export-button', import: '#import-file', status: '#status', share: '#share-button' },
   { id: 'partnership-breakpoint', field: '[data-path="deal.feePerTransaction"]', value: '0.19', alternate: '0.18', metric: '.status-line', result: /exit|fail|not|break/i, dismiss: '[data-action="dismiss-coach"]', export: '[data-action="export"]', import: '[data-action="import"]', status: '#notice' },
@@ -32,7 +38,70 @@ async function edit(page, item, value) {
   await page.locator(item.field).first().press('Tab');
 }
 
+function watch(page) {
+  const errors = [], remoteRequests = [];
+  page.on('pageerror', error => errors.push(error.message));
+  page.on('request', request => { if (/^https?:/.test(request.url()) && !request.url().startsWith(origin + '/')) remoteRequests.push(request.url()); });
+  return { errors, remoteRequests };
+}
+
+async function pageWidth(page) {
+  return page.evaluate(() => ({ width: document.documentElement.scrollWidth, viewport: innerWidth }));
+}
+
+// Each shipped page in file mode at 1280x900 on first load, before any edit.
+async function axePass() {
+  for (const path of AXE_PAGES) {
+    const context = await browser.newContext({ viewport: { width: 1280, height: 900 } });
+    const page = await context.newPage();
+    await page.goto(new URL(`../${path}`, import.meta.url).href);
+    await page.addScriptTag({ content: axeSource });
+    const result = await page.evaluate(() => globalThis.axe.run(document, { resultTypes: ['violations'] }));
+    const found = result.violations.flatMap(violation => violation.nodes.map(node => `${violation.id} (${violation.impact}): ${node.target.join(' ')}`));
+    assert.deepEqual(found, [], `${path}: axe violations`);
+    console.log(`PASS axe ${path}: 0 violations (axe-core ${result.testEngine.version})`);
+    await context.close();
+  }
+}
+
+// The catalog through the loopback launcher: every Open workbench link serves
+// its standalone page, the skip link moves focus, the page fits 390px, and an
+// unknown path serves the 404 page.
+async function catalogJourney() {
+  const context = await browser.newContext({ viewport: { width: 1280, height: 900 } });
+  const page = await context.newPage();
+  const { errors, remoteRequests } = watch(page);
+  const response = await page.goto(`${origin}/`);
+  assert.equal(response.status(), 200, 'catalog status');
+  const links = await page.locator('a.open').evaluateAll(anchors => anchors.map(anchor => anchor.getAttribute('href')));
+  assert.deepEqual(links, [...APP_ROUTES], 'catalog: Open workbench links');
+  for (const href of links) {
+    const opened = await page.request.get(new URL(href, `${origin}/`).href);
+    assert.equal(opened.status(), 200, `catalog: ${href}`);
+    assert.match(await opened.text(), /<!doctype html>/i, `catalog: ${href} is a page`);
+  }
+  await page.keyboard.press('Tab');
+  assert.equal(await page.evaluate(() => document.activeElement?.closest('.skip-links') !== null), true, 'catalog: first Tab reaches the skip links');
+  const target = await page.evaluate(() => document.activeElement.getAttribute('href'));
+  await page.keyboard.press('Enter');
+  await page.waitForFunction(id => document.activeElement?.id === id, target.slice(1));
+  await page.setViewportSize({ width: 390, height: 844 });
+  const width = await pageWidth(page);
+  assert.ok(width.width <= width.viewport + 1, `catalog: 390px page overflow ${JSON.stringify(width)}`);
+  const missing = await page.goto(`${origin}/missing`);
+  assert.equal(missing.status(), 404, 'catalog: unknown path status');
+  assert.equal(await missing.text(), notFoundPage(), 'catalog: unknown path serves 404.html');
+  assert.match(await page.locator('h1').innerText(), /not in the catalog/);
+  assert.ok((await pageWidth(page)).width <= 391, 'catalog: 404 fits 390px');
+  assert.deepEqual(errors, [], 'catalog: browser errors');
+  assert.deepEqual(remoteRequests, [], 'catalog: external requests');
+  console.log('PASS catalog: four workbench links, skip link focus, 390px, 404 page, no external requests');
+  await context.close();
+}
+
 try {
+  if (axeSource) await axePass();
+  await catalogJourney();
   for (const item of cases) {
     const storageKeys = item.id === 'partnership-breakpoint'
       ? ['partnership-breakpoint.v1', 'partnership-breakpoint.cases.v1']
@@ -51,9 +120,7 @@ try {
         }
       });
       const page = await context.newPage();
-      const errors = [], remoteRequests = [];
-      page.on('pageerror', error => errors.push(error.message));
-      page.on('request', request => { if (/^https?:/.test(request.url()) && !request.url().startsWith(origin + '/')) remoteRequests.push(request.url()); });
+      const { errors, remoteRequests } = watch(page);
       page.on('dialog', dialog => dialog.accept());
       let url = mode === 'file'
         ? new URL(`../apps/${item.id}/standalone.html`, import.meta.url).href

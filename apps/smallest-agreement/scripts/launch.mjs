@@ -98,7 +98,12 @@ function startServer(port, { noOpen, exitAfterReady }) {
     console.error(`Could not start the local server: ${error.message}`);
   });
   server.once("exit", (code, signal) => {
-    if (!ready && !shuttingDown) console.error("The local server exited before it began listening.");
+    if (!ready && !shuttingDown) {
+      // A server that stops before it is ready is a failed launch even when it exits 0.
+      console.error("The local server exited before it began listening.");
+      process.exitCode = code || 1;
+      return;
+    }
     process.exitCode = shuttingDown ? 0 : code ?? (signal ? 1 : 0);
   });
   process.once("SIGINT", () => shutdown("SIGINT"));

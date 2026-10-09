@@ -1,4 +1,4 @@
-import { open } from 'node:fs/promises';
+import { open, readFile } from 'node:fs/promises';
 import { constants } from 'node:fs';
 import {
   DEFAULT_SCENARIO, scenarioFromJSON, runSimulation, dashboardToMarkdown, fundingToMarkdown,
@@ -25,6 +25,7 @@ const usage = `Weekend Gap offline analysis (synthetic AUD only)
   batch LIBRARY
   review SCENARIO TOOL
   replay PACKET
+  --version (print the workbench name and version)
 Review tools: ${WEEKEND_REVIEW_TOOLS.map(tool => tool.id).join(', ')}
 Use - instead of a file to read stdin. JSON goes to stdout; errors to stderr.
 Scenario files may be partial raw objects or supported scenario envelopes.
@@ -127,6 +128,10 @@ function argumentsFor(args, count, formats = ['json']) {
 
 async function main([command, ...rest]) {
   if (command === '--help' && !rest.length) return usage;
+  if (command === '--version' && !rest.length) {
+    const { name, version } = JSON.parse(await readFile(new URL('../package.json', import.meta.url), 'utf8'));
+    return `${name} ${version}\n`;
+  }
   switch (command) {
     case 'replay': {
       const { args: [path] } = argumentsFor(rest, 1);

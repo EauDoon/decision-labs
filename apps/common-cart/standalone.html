@@ -26,6 +26,7 @@ SOFTWARE.
 <html lang="en">
 <head>
   <meta charset="utf-8">
+  <meta name="generator" content="Common Cart 1.8.0">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data: blob:; connect-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="description" content="Pool compatible purchase constraints and compare synthetic merchant offers without exposing individual buyer records.">
@@ -40,6 +41,8 @@ SOFTWARE.
   --indigo: #211f55;
   --indigo-2: #373385;
   --orange: #f36f3d;
+  /* Text-safe orange: at least 4.5:1 on --paper and --surface. */
+  --orange-ink: #b5481c;
   --green: #16745a;
   --red: #a5332c;
   --line: #d8d0c3;
@@ -163,7 +166,7 @@ main { width: min(1500px, 100%); margin: 0 auto; padding: 0 clamp(1rem, 4vw, 4re
   padding: clamp(3rem, 8vw, 7rem) 0 clamp(2.4rem, 5vw, 4rem);
   border-bottom: 1px solid var(--line-strong);
 }
-.kicker { margin: 0 0 0.75rem; color: var(--orange); font-weight: 800; }
+.kicker { margin: 0 0 0.75rem; color: var(--orange-ink); font-weight: 800; }
 h1, h2, h3 { font-family: Georgia, "Times New Roman", serif; line-height: 1.05; }
 h1 { margin: 0; max-width: 850px; font-size: clamp(2.7rem, 6vw, 5.2rem); letter-spacing: -0.045em; }
 h2 { margin: 0.25rem 0 0.65rem; font-size: clamp(1.8rem, 3vw, 2.8rem); }
@@ -215,7 +218,7 @@ small { color: var(--muted); }
 [role="tabpanel"] { padding: clamp(1.25rem, 3vw, 2.25rem); }
 .section-heading { display: flex; justify-content: space-between; align-items: end; gap: 2rem; margin-bottom: 1.3rem; }
 .section-heading p { max-width: 780px; margin: 0.25rem 0 0; color: var(--muted); }
-.section-number { margin: 0; color: var(--orange); font-size: 0.73rem; font-weight: 900; letter-spacing: 0.12em; text-transform: uppercase; }
+.section-number { margin: 0; color: var(--orange-ink); font-size: 0.73rem; font-weight: 900; letter-spacing: 0.12em; text-transform: uppercase; }
 
 .table-shell { width: 100%; overflow-x: auto; border: 1px solid var(--line); }
 pre.canvas-note { white-space: pre-wrap; overflow-wrap: anywhere; }

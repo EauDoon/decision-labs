@@ -26,5 +26,5 @@ What actually happened.
 - OS:
 - Node version:
 - Browser (if applicable):
-- Package version:
+- Workbench and version (output of `node scripts/analyze.mjs --version` in that app):
 - Any other relevant context:

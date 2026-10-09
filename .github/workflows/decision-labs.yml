@@ -1,5 +1,7 @@
 name: Decision Labs integration
 
+# Always-run gate for every pull request and every push to main: the catalog
+# on Windows and Linux, plus every workbench in parallel on the current LTS.
 on:
   push:
     branches: [main]
@@ -8,11 +10,20 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: decision-labs-ci-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
-  integration:
-    runs-on: ubuntu-latest
-    # All four suites run serially; Weekend Gap alone takes about ten minutes.
-    timeout-minutes: 20
+  catalog:
+    name: Catalog / ${{ matrix.os }} / Node ${{ matrix.node }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+        node: ["20.x", "24.x"]
     steps:
       - name: Check out exact source
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
@@ -21,9 +32,35 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
         with:
-          node-version: "20.x"
+          node-version: ${{ matrix.node }}
           package-manager-cache: false
-      - name: Test catalog launcher and every workbench
+      - name: Test catalog launcher and cross-app contracts
+        run: node scripts/test-catalog.mjs
+      - name: Check hub syntax, dashes, launcher guards and versions
+        run: node scripts/check-hub.mjs
+
+  apps:
+    name: App / ${{ matrix.app }}
+    runs-on: ubuntu-latest
+    # Weekend Gap alone takes about ten minutes on hosted runners.
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        app: [partnership-breakpoint, common-cart, smallest-agreement, weekend-gap]
+    steps:
+      - name: Check out exact source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - name: Set up Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        with:
+          node-version: "24.x"
+          package-manager-cache: false
+      - name: Run workbench tests
         run: npm test
-      - name: Check hub syntax and every workbench
+        working-directory: apps/${{ matrix.app }}
+      - name: Check workbench integrity and standalone build
         run: npm run check
+        working-directory: apps/${{ matrix.app }}

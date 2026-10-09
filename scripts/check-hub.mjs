@@ -2,22 +2,20 @@ import { readFileSync, readdirSync } from 'node:fs';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 
-import { APPS } from './apps.mjs';
+import { checkVersions } from './versions.mjs';
 
 const root = new URL('../', import.meta.url);
-const tests = readdirSync(new URL('../tests/', import.meta.url))
-  .filter((name) => name.endsWith('.mjs'))
-  .sort()
-  .map((name) => `tests/${name}`);
-const scripts = [
-  'scripts/apps.mjs',
-  'scripts/serve.mjs',
-  'scripts/run-apps.mjs',
-  'scripts/browser-smoke.mjs',
-  'scripts/check-hub.mjs',
-  ...tests,
-];
-const copy = ['index.html', '404.html', 'README.md', 'package.json', '.github/workflows/decision-labs.yml', ...scripts];
+// Discover every hub script, test and workflow so a new file cannot slip past
+// the syntax and dash checks because a fixed list was not updated.
+function listed(directory, extension) {
+  return readdirSync(new URL(`../${directory}/`, import.meta.url))
+    .filter((name) => name.endsWith(extension))
+    .sort()
+    .map((name) => `${directory}/${name}`);
+}
+const scripts = [...listed('scripts', '.mjs'), ...listed('tests', '.mjs')];
+const workflows = listed('.github/workflows', '.yml');
+const copy = ['index.html', '404.html', 'README.md', 'package.json', ...workflows, ...scripts];
 
 let failed = 0;
 for (const file of scripts) {
@@ -33,7 +31,6 @@ for (const file of copy) {
   }
 }
 
-const html = readFileSync(new URL('index.html', root), 'utf8');
 const serve = readFileSync(new URL('scripts/serve.mjs', root), 'utf8');
 const expectedCsp = "default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data:; connect-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'";
 if (!serve.includes(`CONTENT_SECURITY_POLICY = "${expectedCsp}"`)) {
@@ -54,17 +51,10 @@ if (!serve.includes("server.listen(port, '127.0.0.1'")) {
   console.error('scripts/serve.mjs: launcher must bind loopback only.');
   failed += 1;
 }
-const versionLine = html.match(/class="version-line">([^<]+)</)?.[1] ?? '';
-for (const { id, label } of APPS) {
-  const version = JSON.parse(readFileSync(new URL(`apps/${id}/package.json`, root), 'utf8')).version;
-  const escaped = version.replaceAll('.', '\\.');
-  const listed = new RegExp(`data-app="${id}">\\s*${escaped}\\s*<`).test(html);
-  const card = new RegExp(`data-app-version="${id}">\\s*${escaped}\\s*<`).test(html);
-  const line = versionLine.includes(`${label} ${version}`);
-  if (!listed || !card || !line) {
-    console.error(`index.html: ${id} should show version ${version} on the version list, catalog card, and print version line.`);
-    failed += 1;
-  }
+// One implementation of the version contract, shared with npm run versions:check.
+for (const problem of checkVersions()) {
+  console.error(problem);
+  failed += 1;
 }
 
 if (failed) {

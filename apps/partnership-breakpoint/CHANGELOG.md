@@ -1,3 +1,80 @@
+# Changelog
+
+## 1.9.0 - 2026-10-09
+
+Release identity, launch failures and danger button contrast in Partnership Breakpoint 1.9.0
+
+### Added
+
+- `node scripts/analyze.mjs --version` prints `partnership-breakpoint 1.9.0` and exits 0. Any extra argument is rejected. `--help` and CLI.md list it, and the bug report template asks for its output.
+- `standalone.html` now carries `<meta name="generator" content="Partnership Breakpoint 1.9.0" />`, written from `package.json` by the builder. A version bump makes `build-standalone --check` fail until the page is rebuilt. `renderStandalone()` takes the version as an optional input, so existing callers keep working. No model, UI or export format changes.
+
+### Fixed
+
+- The launcher exited 0 when the local server stopped before it began listening, for example on a busy port, so `launch-windows.cmd` and scripts treated a dead launch as success. It now exits with the server's code, or 1 when the server exited 0.
+- The danger button drew coral text at 3.68:1 on the paper colour, below WCAG AA. Its text, border and hover fill now use a text-safe `--coral-ink` (#ad3828): 5.02:1 on the tinted first-fail row and 6.23:1 for white text on the hover fill. Decorative coral marks are unchanged.
+
+### Changed
+
+- This changelog is back in SemVer order under one title. 1.8.1 through 1.8.4 moved from the end of the file to the top, and the 1.5.34 through 1.5.54 entries moved below 1.6.0, where their numbers belong. No entry text changed, and 1.5.18 was never recorded. The release test now reads the expected version from `package.json` instead of literal pins.
+
+## 1.8.4
+
+Roster CSV keeps an interior quotation mark in Partnership Breakpoint 1.8.4
+
+- `parseDelimited()` treated a quotation mark anywhere in a cell as the start of a quoted field and then discarded the marks. `Cafe "North"` imported as `Cafe North`. A quote now starts a quoted field only when it is the first character. An interior quotation mark stays in the name. A field that already starts with a quote still unquotes, and a doubled quote is still one quote. Deal terms are not read and are not changed.
+- `tests/roster-literal-quotes.test.mjs` imports a name with an interior quotation mark and still unquotes a properly quoted name.
+
+## 1.8.3
+
+Roster CSV and TSV keep Unicode line separators as separate rows in Partnership Breakpoint 1.8.3
+
+- `parseDelimited()` treated U+2028 and U+2029 as characters inside the cell. A roster separated by those breaks looked like it had no participant rows. They now end a record, the same way LF and CR do. A separator inside quotes stays in the name. TSV detection uses the same breaks for the first non-blank line. Deal terms are not read and are not changed.
+- `tests/roster-unicode-separators.test.mjs` imports a two-person CSV separated by U+2028 and by U+2029, keeps a quoted U+2028 inside a name, and imports a TSV separated only by U+2028.
+
+## 1.8.2
+
+Pasted roster TSV still imports when blank lines precede the header in Partnership Breakpoint 1.8.2
+
+- `detectRosterDelimiter()` looked at the first physical line. A leading blank line has no tab, so a spreadsheet TSV paste was read as CSV and the header became one unknown column. The first non-blank line now decides. A CSV that already starts with a blank line stays CSV. Deal terms are not read and are not changed.
+- `tests/roster-tsv-blank.test.mjs` pastes a two-person roster after a blank line, a CRLF blank line, spaces, and two blank lines, and checks that a leading blank line on CSV is still CSV.
+
+## 1.8.1
+
+One page title in Partnership Breakpoint 1.8.1
+
+- The viability card rendered its status line as a second `<h1>`: "Operating region holds" or "A participant exits" sat directly after that card's own `<h2>Partnership viability</h2>`. A document should have one page title, and a live status word is not one. The status is now an `<h2 class="status-line">` inside the same section, so it follows the card heading instead of outranking it. "Deal ledger" is the only `<h1>`.
+- The stylesheet rule that sized the status moves from `.status-card h1` to `.status-card h2.status-line` and pins `font-weight`, `letter-spacing`, and `text-transform` so the line renders exactly as before. No visible change, no model change, no export change, and `MODEL.md` is untouched.
+- New `tests/heading-structure.test.mjs` builds the real standalone bundle, runs the app module in a sandbox, and asserts the rendered markup: exactly one `<h1>`, that it is "Deal ledger", that the status line is a heading that follows the card's eyebrow heading, that no heading level is skipped going down, and that the stylesheet still sizes the status line. Three of the four fail against the old markup, where two `<h1>` were found.
+
+## 1.8.0
+
+Negotiation alternatives on a declared grid in Partnership Breakpoint 1.8.0
+
+- Optional `alternatives` exploration names fee levels, share modes (current, equal, stress-funded), an optional commitment-relief dimension, up to three single capacity investments, and a ranking objective (stress-holds or profit). Grids above 120 candidates are rejected with the count so the bound stays explicit.
+- `exploreNegotiationAlternatives` evaluates every grid point on the monthly model and the full stress grid under identical assumptions, reporting viability, stress holds, total profit, weakest binding, and per-participant gains and losses against the current case. Unfundable share modes are skipped with reasons, never invented. Ranking is explicit and deterministic; it is not an optimum over continuous terms.
+- The Negotiation alternatives panel edits the grid, ranks candidates, and applies one viable candidate at a time with undo support; pin a snapshot first to keep the baseline. Only fee, shares, commitments, capacity, and fixed costs change on apply.
+- Review constraints and negotiation room gains a Negotiation alternatives question under the same packet replay contract. CLI gains `alternatives [--csv]` and `apply-alternative`. Alternatives CSV separates candidates, skipped points, and the objective memo.
+- Tradeoffs are comparisons of declared inputs, not forecasts of negotiated outcomes.
+
+## 1.7.0
+
+Multi-period commercial planning in Partnership Breakpoint 1.7.0
+
+- Optional `plan` on the case carries 1 through 24 periods with per-period volume, fee, demand cap, and setup expense, plus optional per-participant cost, commitment, and capacity overrides that inherit omitted fields from the base case. Legacy cases without a plan stay valid.
+- The Commercial plan panel shows period profit per participant with exit flags, cumulative contribution, the first constrained period per participant, partnership totals, and a recovery verdict (recovered, none required, beyond the horizon with shortfall, or impossible). The cash schedule separates earned amounts from collections and payments through whole-period lags, with opening, movements, and closing cash, after-horizon receivables and payables, and the funding requirement that keeps every closing non-negative.
+- Review constraints and negotiation room gains a Multi-period commercial plan question under the same packet replay contract. CLI gains `plan INPUT [--csv|--brief]`. Export commercial brief and Export plan CSV download the reproducible record; the plan travels in case JSON, share links, and autosave.
+- Recovery and funding answers are deterministic comparisons of declared inputs, not forecasts or funding commitments.
+
+## 1.6.0
+
+Least-headroom versus first-breakpoint ranking explanation in Partnership Breakpoint 1.6.0
+
+- `calculatePartnership` now returns `rankingDisagreement`, a deterministic comparison of the two existing rankings: the participant with the least volume headroom and the participant ranked first by smallest relative adverse shock. When the two names differ, the reason states which participant is closest to its own limit in transaction distance, which shock kind is smallest as a percentage move, and why the two measures can disagree (absolute distance versus relative change across volume, fee and cost shocks).
+- The First breakpoint panel prints that reason under a "Not the least-headroom participant" heading when the rankings disagree, and notes the agreement in the same panel when they do not. No ranking logic changed: `weakestParticipant` keeps the volume-distance ordering and `firstBreakpoint` keeps the relative-change ordering.
+- Growth at a Cost is the built-in case that demonstrates the disagreement (least headroom: Liquidity Partner; first breakpoint: a Distributor fee shock). All other built-in starting points agree.
+- Review packets, solvers, stress grid, CSV roster and exports keep their documented formats. Analysis JSON has no timestamps. The ranking is not a forecast of who will exit.
+
 ## 1.5.54
 
 Bottle-hand cycling carnival, last-over-capacity remaining listed capacity copy, and last-over-capacity hide jump in Partnership Breakpoint 1.5.54
@@ -244,40 +321,6 @@ Cyclo-cross carnival, first-over-capacity volume copy, and first-over-capacity h
 - Added the Cyclo-cross carnival split starting point, a three-party carnival committee plus cyclo-cross club hire plus first-aid with different cost bases, distinct from Balanced, Thin Margin, Growth at a Cost, Creator take-rate, Three-party JV, Two-party 50/50 studio, Four-party marketplace, Licensor and distributor, Talent, agent, and platform, Three-party joint venture, Podcast host and network, Community hall split, Festival stall split, Pop-up cinema split, Community radio split, School concert split, Sports carnival split, Netball carnival, Swimming carnival split, Athletics carnival split, Cricket carnival split, Tennis carnival split, Basketball carnival split, Volleyball carnival split, Rugby carnival split, Hockey carnival split, Baseball carnival split, Softball carnival split, Lacrosse carnival split, Water polo carnival split, Rowing carnival split, Sailing carnival split, Canoeing carnival split, Kayaking carnival split, Dragon boat carnival split, Surf carnival split, Triathlon carnival split, Cycling carnival split, Mountain bike carnival split, and BMX carnival split. Monthly volume 5300, fee 8, addressable 6500, and listed capacities 6200, 7300, and 5300. Cyclo-cross is a cyclo-cross club or off-road barriers split. BMX remains a BMX club or pump-track split. Mountain bike remains a mountain-bike club or downhill trail split. Cycling remains a cycling club or velodrome split. Triathlon remains a triathlon club split. Surf remains a surf club split. Dragon boat remains a dragon boat club split. Kayaking remains kayak, whitewater, or slalom. Canoeing remains canoe or paddle club. Sailing remains boats or yacht. Swimming remains pool. It is a synthetic starting point, not a live roster and not live capacity. Counts remain counts. Ranking is not a forecast of who will exit.
 - Print one-pager includes first over-capacity volume-to-hold as one line when the case is valid. That line has been present since 1.5.31 and stays. The line is an honest empty when none are over listed capacity. Volume that is not a finite amount is named as such. The saved case is unchanged.
 - Copy first over-capacity volume-to-hold copies a one-line Markdown volume-to-hold amount for the first roster row currently over listed capacity, or an honest empty line when none. Keyboard `Shift+F7` copies that Markdown. Clipboard falls back to a textarea. It is distinct from last over-capacity volume-to-hold copy, last over-capacity remaining listed capacity copy, first over-capacity remaining listed capacity copy, last over-capacity participant label copy, first-zero-share volume-to-hold copy, last zero-share volume-to-hold copy, remaining-to-hold copy, and first-breakpoint volume-to-hold copy. It is organizer or planner copy, not a forecast of who will exit. Copy first over-capacity remaining listed capacity stays on `~` without `Shift+F7`. Copy last over-capacity remaining listed capacity stays on `Shift+F10`. Copy last over-capacity volume-to-hold stays available. Hide flags persist as booleans; older JSON omits them. Counts remain counts. Ranking is not a forecast of who will exit.
-
-## 1.8.0
-
-Negotiation alternatives on a declared grid in Partnership Breakpoint 1.8.0
-
-- Optional `alternatives` exploration names fee levels, share modes (current, equal, stress-funded), an optional commitment-relief dimension, up to three single capacity investments, and a ranking objective (stress-holds or profit). Grids above 120 candidates are rejected with the count so the bound stays explicit.
-- `exploreNegotiationAlternatives` evaluates every grid point on the monthly model and the full stress grid under identical assumptions, reporting viability, stress holds, total profit, weakest binding, and per-participant gains and losses against the current case. Unfundable share modes are skipped with reasons, never invented. Ranking is explicit and deterministic; it is not an optimum over continuous terms.
-- The Negotiation alternatives panel edits the grid, ranks candidates, and applies one viable candidate at a time with undo support; pin a snapshot first to keep the baseline. Only fee, shares, commitments, capacity, and fixed costs change on apply.
-- Review constraints and negotiation room gains a Negotiation alternatives question under the same packet replay contract. CLI gains `alternatives [--csv]` and `apply-alternative`. Alternatives CSV separates candidates, skipped points, and the objective memo.
-- Tradeoffs are comparisons of declared inputs, not forecasts of negotiated outcomes.
-
-# Changelog
-
-## 1.7.0
-
-Multi-period commercial planning in Partnership Breakpoint 1.7.0
-
-- Optional `plan` on the case carries 1 through 24 periods with per-period volume, fee, demand cap, and setup expense, plus optional per-participant cost, commitment, and capacity overrides that inherit omitted fields from the base case. Legacy cases without a plan stay valid.
-- The Commercial plan panel shows period profit per participant with exit flags, cumulative contribution, the first constrained period per participant, partnership totals, and a recovery verdict (recovered, none required, beyond the horizon with shortfall, or impossible). The cash schedule separates earned amounts from collections and payments through whole-period lags, with opening, movements, and closing cash, after-horizon receivables and payables, and the funding requirement that keeps every closing non-negative.
-- Review constraints and negotiation room gains a Multi-period commercial plan question under the same packet replay contract. CLI gains `plan INPUT [--csv|--brief]`. Export commercial brief and Export plan CSV download the reproducible record; the plan travels in case JSON, share links, and autosave.
-- Recovery and funding answers are deterministic comparisons of declared inputs, not forecasts or funding commitments.
-
-# Changelog
-
-## 1.6.0
-
-Least-headroom versus first-breakpoint ranking explanation in Partnership Breakpoint 1.6.0
-
-- `calculatePartnership` now returns `rankingDisagreement`, a deterministic comparison of the two existing rankings: the participant with the least volume headroom and the participant ranked first by smallest relative adverse shock. When the two names differ, the reason states which participant is closest to its own limit in transaction distance, which shock kind is smallest as a percentage move, and why the two measures can disagree (absolute distance versus relative change across volume, fee and cost shocks).
-- The First breakpoint panel prints that reason under a "Not the least-headroom participant" heading when the rankings disagree, and notes the agreement in the same panel when they do not. No ranking logic changed: `weakestParticipant` keeps the volume-distance ordering and `firstBreakpoint` keeps the relative-change ordering.
-- Growth at a Cost is the built-in case that demonstrates the disagreement (least headroom: Liquidity Partner; first breakpoint: a Distributor fee shock). All other built-in starting points agree.
-- Review packets, solvers, stress grid, CSV roster and exports keep their documented formats. Analysis JSON has no timestamps. The ranking is not a forecast of who will exit.
-
-# Changelog
 
 ## 1.5.33
 
@@ -717,33 +760,3 @@ Surf carnival, first-zero-share volume copy, and last-zero-share hide jump in Pa
 - Preserved v1 case imports and baseline calculations. Optional validated stress settings now travel with exported cases.
 - Added model and standalone interaction regression tests for compound failures, funding limits, operational constraints, invalid inputs, escaped names, and proposal application.
 - Rebuilt the no-install standalone GUI without new dependencies or network services.
-
-## 1.8.1
-
-One page title in Partnership Breakpoint 1.8.1
-
-- The viability card rendered its status line as a second `<h1>`: "Operating region holds" or "A participant exits" sat directly after that card's own `<h2>Partnership viability</h2>`. A document should have one page title, and a live status word is not one. The status is now an `<h2 class="status-line">` inside the same section, so it follows the card heading instead of outranking it. "Deal ledger" is the only `<h1>`.
-- The stylesheet rule that sized the status moves from `.status-card h1` to `.status-card h2.status-line` and pins `font-weight`, `letter-spacing`, and `text-transform` so the line renders exactly as before. No visible change, no model change, no export change, and `MODEL.md` is untouched.
-- New `tests/heading-structure.test.mjs` builds the real standalone bundle, runs the app module in a sandbox, and asserts the rendered markup: exactly one `<h1>`, that it is "Deal ledger", that the status line is a heading that follows the card's eyebrow heading, that no heading level is skipped going down, and that the stylesheet still sizes the status line. Three of the four fail against the old markup, where two `<h1>` were found.
-
-## 1.8.2
-
-Pasted roster TSV still imports when blank lines precede the header in Partnership Breakpoint 1.8.2
-
-- `detectRosterDelimiter()` looked at the first physical line. A leading blank line has no tab, so a spreadsheet TSV paste was read as CSV and the header became one unknown column. The first non-blank line now decides. A CSV that already starts with a blank line stays CSV. Deal terms are not read and are not changed.
-- `tests/roster-tsv-blank.test.mjs` pastes a two-person roster after a blank line, a CRLF blank line, spaces, and two blank lines, and checks that a leading blank line on CSV is still CSV.
-
-## 1.8.3
-
-Roster CSV and TSV keep Unicode line separators as separate rows in Partnership Breakpoint 1.8.3
-
-- `parseDelimited()` treated U+2028 and U+2029 as characters inside the cell. A roster separated by those breaks looked like it had no participant rows. They now end a record, the same way LF and CR do. A separator inside quotes stays in the name. TSV detection uses the same breaks for the first non-blank line. Deal terms are not read and are not changed.
-- `tests/roster-unicode-separators.test.mjs` imports a two-person CSV separated by U+2028 and by U+2029, keeps a quoted U+2028 inside a name, and imports a TSV separated only by U+2028.
-
-## 1.8.4
-
-Roster CSV keeps an interior quotation mark in Partnership Breakpoint 1.8.4
-
-- `parseDelimited()` treated a quotation mark anywhere in a cell as the start of a quoted field and then discarded the marks. `Cafe "North"` imported as `Cafe North`. A quote now starts a quoted field only when it is the first character. An interior quotation mark stays in the name. A field that already starts with a quote still unquotes, and a doubled quote is still one quote. Deal terms are not read and are not changed.
-- `tests/roster-literal-quotes.test.mjs` imports a name with an interior quotation mark and still unquotes a properly quoted name.
-
