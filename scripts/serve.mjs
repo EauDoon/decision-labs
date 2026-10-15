@@ -7,7 +7,8 @@ import { fileURLToPath } from 'node:url';
 import { APP_PATHS, catalogVersionLine } from './apps.mjs';
 
 const root = new URL('../', import.meta.url);
-const realRoot = realpathSync(root);
+// Match fs.promises.realpath's native spelling, including Windows short names.
+const realRoot = realpathSync.native(root);
 
 // Exact public surface. Add a path here only together with a launcher test.
 export const PUBLIC_PATHS = Object.freeze(['/', '/index.html', ...APP_PATHS]);
@@ -23,7 +24,7 @@ export { catalogVersionLine };
 
 export function notFoundPage() {
   try {
-    const target = realpathSync(new URL('404.html', root));
+    const target = realpathSync.native(new URL('404.html', root));
     if (target === resolve(realRoot, '404.html')) return readFileSync(target, 'utf8');
   } catch {
     // A missing or unreadable error page must not crash the request handler.

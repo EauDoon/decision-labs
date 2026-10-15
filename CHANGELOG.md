@@ -17,6 +17,8 @@ workbench keeps its own version and detailed notes in `apps/<id>/CHANGELOG.md`.
   another file. Private drafts and files outside the catalog are not served.
 - Missing, unreadable or redirected 404 pages use a safe text fallback rather
   than terminating the request handler or exposing a nonpublic file.
+- Consistent native path resolution keeps ordinary public files available when
+  Windows exposes the checkout through an equivalent short-name path.
 
 ## [1.0.0] - 2026-10-09
 

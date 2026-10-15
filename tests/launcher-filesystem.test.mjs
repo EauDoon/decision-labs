@@ -93,6 +93,41 @@ test('a linked checkout works even when Node preserves its symlink path', async 
   assert.equal(result.status, 0, result.stderr);
 });
 
+test('root, requests and error pages use the same canonical path spelling', async t => {
+  const { directory, root } = await fixture(t);
+  const alias = join(directory, 'short-root');
+  await symlink(root, alias, process.platform === 'win32' ? 'junction' : 'dir');
+  const url = pathToFileURL(join(root, 'scripts', 'serve.mjs')).href;
+  const result = spawnSync(process.execPath, ['--input-type=module', '--eval', `
+    import assert from 'node:assert/strict';
+    import fs from 'node:fs';
+    import { syncBuiltinESMExports } from 'node:module';
+    const original = fs.realpathSync;
+    const canonical = original.native(${JSON.stringify(root)});
+    // Model Windows short-name/canonical spelling differences without needing
+    // a Windows host. Both spellings refer to the same real checkout.
+    fs.realpathSync = Object.assign((path, options) => {
+      const resolved = original(path, options);
+      return resolved.startsWith(canonical)
+        ? ${JSON.stringify(alias)} + resolved.slice(canonical.length) : resolved;
+    }, { native: original.native });
+    syncBuiltinESMExports();
+    const { createLauncher, notFoundPage } = await import(${JSON.stringify(url)});
+    const server = createLauncher();
+    await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
+    try {
+      const response = await fetch('http://127.0.0.1:' + server.address().port + '/');
+      assert.equal(response.status, 200);
+      assert.match(await response.text(), /Public catalog/);
+      assert.match(notFoundPage(), /Public not found/);
+    } finally {
+      await new Promise(resolve => server.close(resolve));
+    }
+  `], { encoding: 'utf8', timeout: 10000 });
+  assert.ifError(result.error);
+  assert.equal(result.status, 0, result.stderr);
+});
+
 test('catalog rejects a public filename linked to a private file', { skip: process.platform === 'win32' }, async t => {
   const { root, call } = await fixture(t);
   await writeFile(join(root, 'draft.html'), 'private sentinel');
