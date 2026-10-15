@@ -1,11 +1,14 @@
 import { createServer } from 'node:http';
-import { readFileSync } from 'node:fs';
-import { readFile } from 'node:fs/promises';
+import { readFileSync, realpathSync } from 'node:fs';
+import { readFile, realpath } from 'node:fs/promises';
+import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { APP_PATHS, catalogVersionLine } from './apps.mjs';
 
 const root = new URL('../', import.meta.url);
+// Match fs.promises.realpath's native spelling, including Windows short names.
+const realRoot = realpathSync.native(root);
 
 // Exact public surface. Add a path here only together with a launcher test.
 export const PUBLIC_PATHS = Object.freeze(['/', '/index.html', ...APP_PATHS]);
@@ -20,7 +23,13 @@ export function publicFile(pathname) {
 export { catalogVersionLine };
 
 export function notFoundPage() {
-  return readFileSync(new URL('404.html', root), 'utf8');
+  try {
+    const target = realpathSync.native(new URL('404.html', root));
+    if (target === resolve(realRoot, '404.html')) return readFileSync(target, 'utf8');
+  } catch {
+    // A missing or unreadable error page must not crash the request handler.
+  }
+  return 'Not found';
 }
 
 // Serve only the launch page and generated self-contained applications.
@@ -56,7 +65,15 @@ export function createLauncher() {
       return;
     }
     try {
-      const content = await readFile(new URL(relative, root));
+      const target = await realpath(new URL(relative, root));
+      // The URL allowlist alone cannot stop an app-directory junction or a
+      // file symlink from serving private files under an allowed filename.
+      // Compare against the canonical root so a linked checkout still works.
+      if (target !== resolve(realRoot, relative)) {
+        finish(404, notFoundPage());
+        return;
+      }
+      const content = await readFile(target);
       finish(200, content);
     } catch {
       finish(404, notFoundPage());

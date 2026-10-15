@@ -67,6 +67,11 @@ standalone pages as `<app>-<version>.html`, ready to open without a clone.
   not a backup. Do not share drafts containing sensitive information.
 - Each app documents its formulas, units, assumptions, and non-goals beside
   its interface. The launcher does not serve source or model files.
+  It checks canonical file paths and rejects file symlinks or directory
+  junctions that redirect public filenames; a symlink to the whole checkout
+  is supported. This is a local development server, not a sandbox against
+  another process replacing files or directories during a request. Keep the
+  checkout under your control and stop the launcher before reorganizing it.
 
 ## Checks
 
