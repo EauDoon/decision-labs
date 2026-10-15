@@ -10,6 +10,14 @@ workbench keeps its own version and detailed notes in `apps/<id>/CHANGELOG.md`.
 
 ## [Unreleased]
 
+### Fixed
+
+- The catalog launcher checks canonical file paths as well as request paths,
+  refusing symlinks and directory junctions that redirect a public filename to
+  another file. Private drafts and files outside the catalog are not served.
+- Missing, unreadable or redirected 404 pages use a safe text fallback rather
+  than terminating the request handler or exposing a nonpublic file.
+
 ## [1.0.0] - 2026-10-09
 
 The first versioned catalog release. It ships Partnership Breakpoint 1.9.0,
