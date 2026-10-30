@@ -26,6 +26,10 @@ It is a working research prototype for a simple question: can shared demand crea
 
 *Built-in synthetic coffee scenario.*
 
+## Offer CSV round trip (v1.9.0)
+
+**Export offer CSV** now writes every offer term, so the file imports back without changing the decision. After the six template columns (`name,capacity,unit price,shipping,fulfillment,variants`) it adds `category`, `minimum`, `delivery`, `tiers` and `id`. A tiers cell lists `minimum@unit price` pairs separated by semicolons, for example `10@24; 18@20`, and is blank for an offer without quantity tiers. Earlier exports dropped those columns, so a re-import reset minimums to 1 and delivery to 7 days, removed every price tier and renumbered offers by row. Explicit ids now survive reordered rows; a blank id takes the first unused `O` number. Six-column files and the template import exactly as before. The CLI reads the same columns: `import --input scenario.json --kind offers --csv offers.csv`. The file still carries merchant terms only, never buyer labels, ids, budgets or allocations.
+
 ## Consolidated display (v1.7.0)
 
 Common Cart 1.7.0 is a maintainability release. It does not change the matching math. Peak allocations, settled totals, and scenario files are computed exactly as in 1.6.0.

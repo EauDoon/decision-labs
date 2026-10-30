@@ -683,7 +683,7 @@ function bindStaticEvents() {
   document.querySelector("#export-offers-csv").addEventListener("click", () => {
     try {
       downloadFile(createOfferCsv(scenario), "common-cart-offers.csv", "text/csv;charset=utf-8");
-      setStatus("Offer CSV exported. Formula-like text is escaped. Buyer labels, IDs, budgets, and allocations are omitted. Quantity tiers stay in JSON export.", true);
+      setStatus("Offer CSV exported with every offer term, including category, minimum, delivery, price tiers and offer ID, so it imports back unchanged. Formula-like text is escaped. Buyer labels, IDs, budgets, and allocations are omitted.", true);
     } catch (error) {
       setStatus(`Offer CSV export failed: ${messageOf(error)}`);
     }

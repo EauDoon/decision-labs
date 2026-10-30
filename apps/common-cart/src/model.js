@@ -2126,8 +2126,12 @@ function spreadsheetUnsafe(text) {
   return /^[\s\u0000-\u001f]*[=+@-]/u.test(text) || /^[\t\r\n]/u.test(text);
 }
 
+function formatCsvNumber(value) {
+  return String(Math.round(value * 1e8) / 1e8);
+}
+
 function escapeCsvCell(value) {
-  let text = typeof value === "number" ? String(Math.round(value * 1e8) / 1e8) : String(value);
+  let text = typeof value === "number" ? formatCsvNumber(value) : String(value);
   if (typeof value === "string" && spreadsheetUnsafe(text)) text = `'${text}`;
   return `"${text.replaceAll('"', '""')}"`;
 }
@@ -2320,8 +2324,14 @@ const OFFER_CSV_HEADERS = {
   minimum: "minimumUnits",
   "minimum units": "minimumUnits",
   delivery: "deliveryDays",
-  "delivery days": "deliveryDays"
+  "delivery days": "deliveryDays",
+  tiers: "tiers",
+  "price tiers": "tiers",
+  id: "id",
+  "offer id": "id"
 };
+
+const OFFER_CSV_EXPORT_HEADER = ["name", "capacity", "unit price", "shipping", "fulfillment", "variants", "category", "minimum", "delivery", "tiers", "id"];
 
 const REQUIRED_OFFER_CSV_FIELDS = ["merchant", "capacity", "unitPrice", "shippingPerBuyer", "fulfillment", "variant"];
 
@@ -2361,16 +2371,26 @@ export function parseOfferCsv(text, defaults = {}) {
   const categoryDefault = defaults?.category ?? "Product";
   const minimumDefault = defaults?.minimumUnits ?? 1;
   const deliveryDefault = defaults?.deliveryDays ?? 7;
-  return dataRows.map((row, index) => {
-    const prefix = `CSV offer ${index + 1}`;
+  const records = dataRows.map((row) => {
     const record = {};
     for (const [columnIndex, field] of columns.entries()) {
       if (!field) continue;
       record[field] = neutralizeSpreadsheetCell(row[columnIndex] ?? "");
     }
+    return record;
+  });
+  const offerIds = offerCsvIds(records);
+  return records.map((record, index) => {
+    const prefix = `CSV offer ${index + 1}`;
     const fulfillmentText = String(record.fulfillment ?? "").trim().toLowerCase();
+    let tiers;
+    try {
+      tiers = offerCsvTiers(record.tiers);
+    } catch (error) {
+      throw new ScenarioError(`${prefix}: ${error.message}`);
+    }
     const offer = {
-      id: `O${String(index + 1).padStart(2, "0")}`,
+      id: offerIds[index],
       merchant: record.merchant,
       category: String(record.category ?? "").trim() === "" ? categoryDefault : record.category,
       variant: record.variant,
@@ -2381,12 +2401,64 @@ export function parseOfferCsv(text, defaults = {}) {
       shippingPerBuyer: record.shippingPerBuyer,
       fulfillment: fulfillmentText
     };
+    if (tiers !== undefined) offer.tiers = tiers;
     try {
       return validateOffer(offer, index);
     } catch (error) {
       throw new ScenarioError(`${prefix}: ${error.message.replace(/^Offer \d+\s/u, "")}`);
     }
   });
+}
+
+/**
+ * Offer ids from an optional id column. A non-blank cell is kept (trimmed, as
+ * validateOffer stores it) and must be unique in the file. A blank or missing
+ * cell takes the first O-number that no explicit id uses, in row order, so a
+ * file without an id column still numbers its offers O01 to On.
+ */
+function offerCsvIds(records) {
+  const explicit = new Map();
+  records.forEach((record, index) => {
+    const id = String(record.id ?? "").trim();
+    if (id === "") return;
+    if (explicit.has(id)) {
+      throw new ScenarioError(`CSV offer ${index + 1}: id ${id} repeats CSV offer ${explicit.get(id) + 1}.`);
+    }
+    explicit.set(id, index);
+  });
+  let next = 1;
+  return records.map((record) => {
+    const id = String(record.id ?? "").trim();
+    if (id !== "") return record.id;
+    let generated = `O${String(next).padStart(2, "0")}`;
+    while (explicit.has(generated)) {
+      next += 1;
+      generated = `O${String(next).padStart(2, "0")}`;
+    }
+    next += 1;
+    return generated;
+  });
+}
+
+/**
+ * Price tiers from a `minimum@unit price` cell, pairs separated by `;` so a
+ * thousands separator such as `1,000@20` stays inside one pair. A blank cell
+ * means no tiers. validateOffer applies the numeric and ordering rules.
+ */
+function offerCsvTiers(cell) {
+  const text = String(cell ?? "").trim();
+  if (text === "") return undefined;
+  return text.split(";").map((pair, tierIndex) => {
+    const parts = pair.trim().split("@").map((part) => part.trim());
+    if (parts.length !== 2 || parts[0] === "" || parts[1] === "") {
+      throw new ScenarioError(`tier ${tierIndex + 1} must be minimum@unit price.`);
+    }
+    return { minimumUnits: parts[0], unitPrice: parts[1] };
+  });
+}
+
+function formatOfferCsvTiers(tiers) {
+  return (tiers ?? []).map((tier) => `${formatCsvNumber(tier.minimumUnits)}@${formatCsvNumber(tier.unitPrice)}`).join("; ");
 }
 
 export function importOffersFromCsv(rawScenario, text) {
@@ -2401,10 +2473,15 @@ export function offerCsvTemplate() {
   return "name,capacity,unit price,shipping,fulfillment,variants\r\n";
 }
 
-/** Merchant-facing offer rows. Formula-safe. Omits buyer IDs, labels, budgets, and allocations. */
+/**
+ * Merchant-facing offer rows with every offer term: the six template columns,
+ * then category, minimum, delivery, price tiers and offer id, so the file
+ * imports back unchanged. Formula-safe. Omits buyer IDs, labels, budgets, and
+ * allocations.
+ */
 export function createOfferCsv(rawScenario) {
   const scenario = validateScenario(rawScenario);
-  const rows = [["name", "capacity", "unit price", "shipping", "fulfillment", "variants"]];
+  const rows = [OFFER_CSV_EXPORT_HEADER];
   for (const offer of scenario.offers) {
     rows.push([
       offer.merchant,
@@ -2412,7 +2489,12 @@ export function createOfferCsv(rawScenario) {
       offer.unitPrice,
       offer.shippingPerBuyer,
       offer.fulfillment,
-      offer.variant
+      offer.variant,
+      offer.category,
+      offer.minimumUnits,
+      offer.deliveryDays,
+      formatOfferCsvTiers(offer.tiers),
+      offer.id
     ]);
   }
   return `${rows.map((row) => row.map(escapeCsvCell).join(",")).join("\r\n")}\r\n`;

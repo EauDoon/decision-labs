@@ -27,6 +27,16 @@ workbench keeps its own version and detailed notes in `apps/<id>/CHANGELOG.md`.
 - `npm run test:browser` reads a relative `PLAYWRIGHT_MODULE` directory from
   the current directory, as it already did for `AXE_MODULE`, instead of from
   `scripts/`, where the documented package directory was not found.
+- Common Cart: the exported offer CSV imports back without changing the
+  decision. It wrote only six columns, so a re-import reset every minimum to
+  1 and every delivery to 7 days, dropped all quantity price tiers and
+  renumbered offers by row; the winner changed on 56 of the 60 examples. The
+  export now adds `category`, `minimum`, `delivery`, `tiers` and `id` after
+  the original six columns. A tiers cell lists `minimum@unit price` pairs
+  separated by semicolons (`10@24; 18@20`), and a malformed pair names the
+  CSV offer and tier. A non-blank id is kept and must be unique; a blank id
+  takes the first unused `O` number. Six-column files and the template import
+  exactly as before, and the CLI `import --kind offers` reads the new columns.
 
 ## [1.0.0] - 2026-10-09
 
