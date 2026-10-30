@@ -6,6 +6,7 @@ import {
   AGREEMENT_REVIEW_TOOLS, MAX_CHANGE_COST, MAX_CLAUSES, previewLockedOption, summarizeRound, validateRound,
   formatDecisionBrief, formatEvidenceCsv, formatSupportMatrixCsv,
   formatParticipantGroupsCsv, formatClauseOptionsCsv, formatDiscussionWorksheetCsv,
+  parseSupportMatrixCsv, parseParticipantGroupsCsv, parseClauseOptionsCsv, parseWorkspaceJson, canonicalProposal,
 } from '../src/model.js';
 
 process.stdout.on('error', () => {
@@ -25,6 +26,8 @@ const usage = `Usage: node scripts/analyze.mjs <command> <input.json|-> [argumen
   rounds
   lock <clause ID> <option ID>
   export <brief|evidence|support|groups|options|worksheet>
+  import <support|groups|options> <table.csv|table.tsv|->
+    (applies an edited table; a workspace input keeps its rounds and settings)
 Without an input: --help prints this text, --version prints the workbench name and version.`;
 
 function localPath(path) {
@@ -79,6 +82,34 @@ function parseJson(text) {
   return value;
 }
 
+class TableError extends TypeError {
+  constructor(errors) {
+    super(errors.map(error => error.message).join(' '));
+    // Keep the stable fields only. Row numbers that some parsers give only in
+    // a path such as "row 3 weight" are surfaced as row.
+    this.errors = errors.map(({ code, message, row, column, path }) => {
+      const fromPath = typeof path === 'string' ? /^row (\d+)\b/iu.exec(path) : null;
+      const rowNumber = row ?? (fromPath ? Number(fromPath[1]) : undefined);
+      return { code, message, ...(rowNumber !== undefined ? { row: rowNumber } : {}), ...(column !== undefined ? { column } : {}) };
+    });
+  }
+}
+
+const importers = { support: parseSupportMatrixCsv, groups: parseParticipantGroupsCsv, options: parseClauseOptionsCsv };
+
+// Apply one edited table to the validated proposal. A version-1 workspace keeps
+// every other member, rounds and display settings included, unchanged.
+function importTable(raw, proposal, kind, tableText) {
+  const imported = importers[kind](tableText, proposal);
+  if (imported.status !== 'ok') throw new TableError(imported.errors);
+  const next = canonicalProposal(imported.proposal);
+  if (!Object.hasOwn(raw, 'format')) return next;
+  const workspace = { ...raw, proposal: next };
+  const verified = parseWorkspaceJson(JSON.stringify(workspace));
+  if (verified.status !== 'ok') throw new TableError(verified.errors);
+  return workspace;
+}
+
 function checked(value) {
   if (value.status === 'invalid') throw new TypeError(value.errors.map(error => error.message ?? error).join(' '));
   return value;
@@ -118,9 +149,11 @@ try {
     const { name, version } = JSON.parse(await readFile(new URL('../package.json', import.meta.url), 'utf8'));
     process.stdout.write(`${name} ${version}\n`);
   } else {
-    const arity = { solve: 0, evaluate: 1, stress: 2, compare: 1, review: 1, replay: 0, batch: 0, sweep: 2, lock: 2, export: 1, rounds: 0 };
+    const arity = { solve: 0, evaluate: 1, stress: 2, compare: 1, review: 1, replay: 0, batch: 0, sweep: 2, lock: 2, export: 1, rounds: 0, import: 2 };
     if (!Object.hasOwn(arity, command) || !path || args.length !== arity[command]) throw new TypeError(usage);
     if (command === 'compare' && path === '-' && args[0] === '-') throw new TypeError('Only one comparison input may use stdin.');
+    if (command === 'import' && path === '-' && args[1] === '-') throw new TypeError('Only one import input may use stdin.');
+    if (command === 'import' && !Object.hasOwn(importers, args[0])) throw new TypeError('Unknown import table. ' + usage);
     const inputText = await readText(path, ['replay', 'batch'].includes(command) ? 1048576 : 262144);
     const raw = command === 'batch' ? null : parseJson(inputText);
     const proposal = ['replay', 'batch'].includes(command) ? null : proposalFrom(raw);
@@ -168,6 +201,7 @@ try {
         output = { count: rounds.length, rounds: rounds.map((round) => ({ id: round.id, name: round.name ?? null, notes: round.notes ?? null, decision: round.decision ?? null, summary: summarizeRound(round.proposal) })) };
         break;
       }
+      case 'import': output = importTable(raw, proposal, args[0], await readText(args[1])); break;
       case 'compare': {
         const rightText = await readText(args[0]);
         const right = proposalFrom(parseJson(rightText));
@@ -178,6 +212,6 @@ try {
     process.stdout.write(command === 'export' ? output : (command === 'batch' ? output.map(row => JSON.stringify(row)).join('\n') : JSON.stringify(output)) + '\n');
   }
 } catch (error) {
-  process.stderr.write(JSON.stringify({ status: 'error', error: error.message }) + '\n');
+  process.stderr.write(JSON.stringify({ status: 'error', error: error.message, ...(error instanceof TableError ? { errors: error.errors } : {}) }) + '\n');
   process.exitCode = 2;
 }

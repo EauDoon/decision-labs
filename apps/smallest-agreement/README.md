@@ -7,7 +7,7 @@
 1. Open [standalone.html](standalone.html), or run `npm start` from this app directory with Node.js 20 or newer. No install is required.
 2. Load **Neighbourhood Plan**. Raise **Exact threshold (%)** from 68 to 75 and compare the recommendation with the original proposal. Scores, weights and costs are synthetic assumptions, not observed consent.
 3. Use **Export JSON** to preserve the proposal and **Import JSON** to reopen it. Export the brief for a readable explanation, or workspace JSON when the saved workspace settings matter.
-4. To edit in a spreadsheet, export the groups, support or options CSV, change it, and import it back. The groups CSV carries an `id` column after `veto`, so group ids survive the round trip and the support CSV, which is keyed by group id, still imports afterwards. A blank `id` cell takes an id generated from the name.
+4. To edit in a spreadsheet, export the groups, support or options CSV, change it, and import it back. The groups CSV carries an `id` column after `veto`, so group ids survive the round trip and the support CSV, which is keyed by group id, still imports afterwards. A blank `id` cell takes an id generated from the name. The analyst CLI applies the same edits offline: `node scripts/analyze.mjs import proposal.json groups groups.csv` prints the revised proposal, and a workspace input keeps its rounds. See [analyst commands](ANALYST.md#apply-spreadsheet-edits).
 
 Drafts stay in browser storage, which is not a backup. Shared fragments and exports disclose their contents. People define the rules and make the decision; the solver does not establish legitimacy. Use Tab and Enter for visible controls and the in-app help for current shortcuts.
 

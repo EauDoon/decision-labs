@@ -10,6 +10,17 @@ workbench keeps its own version and detailed notes in `apps/<id>/CHANGELOG.md`.
 
 ## [Unreleased]
 
+### Added
+
+- The Smallest Agreement: an analyst CLI `import` command,
+  `import <proposal.json|workspace.json|-> <support|groups|options> <table>`,
+  applies an edited support, groups or options table (CSV or TSV) offline
+  through the browser's validation. The CLI could export these tables but not
+  read them back, so spreadsheet edits could only be applied in a browser. A
+  workspace input keeps its rounds and display settings and only its
+  proposal is replaced. An invalid table exits 2 with no output and lists
+  every named error, with its row where known, on stderr.
+
 ### Fixed
 
 - The catalog launcher checks canonical file paths as well as request paths,
