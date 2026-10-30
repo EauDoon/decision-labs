@@ -336,3 +336,154 @@ test('only check takes --tag, and notes and assets take one argument', (t) => {
     assert.match(result.stderr, /^Usage: node scripts\/versions\.mjs/, args.join(' '));
   }
 });
+
+// A releaseFixture committed to its own git repository and tagged v2.3.4, so
+// check --since can compare a later commit with that release. Every call sets
+// its own identity and disables signing and line-ending conversion, so the
+// test runs the same on every runner and developer machine.
+function git(root, ...args) {
+  const result = spawnSync('git', [
+    '-c', 'user.name=Synthetic', '-c', 'user.email=synthetic@example.invalid',
+    '-c', 'commit.gpgsign=false', '-c', 'tag.gpgsign=false', '-c', 'core.autocrlf=false',
+    '-C', root, ...args,
+  ], { encoding: 'utf8' });
+  assert.equal(result.status, 0, `git ${args.join(' ')}: ${result.stderr}`);
+  return result.stdout;
+}
+
+function commitAll(root, message) {
+  git(root, 'add', '-A');
+  git(root, 'commit', '-q', '--allow-empty', '-m', message);
+}
+
+function write(root, file, text) {
+  mkdirSync(dirname(join(root, file)), { recursive: true });
+  writeFileSync(join(root, file), text);
+}
+
+function releasedRepo(t) {
+  const root = releaseFixture(t);
+  for (const { id } of APPS) {
+    write(root, `apps/${id}/src/model.js`, 'export const model = 1;\n');
+    write(root, `apps/${id}/tests/model.test.mjs`, '// synthetic\n');
+    write(root, `apps/${id}/MODEL.md`, '# Model\n');
+  }
+  git(root, 'init', '-q');
+  commitAll(root, 'release 2.3.4');
+  git(root, 'tag', '-a', 'v2.3.4', '-m', 'Decision Labs 2.3.4');
+  return root;
+}
+
+function bumpCatalog(root, version) {
+  setCatalogVersion(root, version);
+  edit(root, 'CHANGELOG.md', (text) => text.replace('## [Unreleased]\n', `## [Unreleased]\n\n## [${version}] - 2026-10-31\n\n### Fixed\n- Synthetic.\n`));
+}
+
+function bumpApp(root, id, version) {
+  setVersion(root, id, version);
+  prependEntry(root, id, `## ${version} - 2026-10-31`);
+  syncVersions(root);
+  restamp(root, id, version);
+}
+
+test('check --since passes when nothing changed since the release', (t) => {
+  const root = releasedRepo(t);
+  assert.deepEqual(checkVersions(root, { since: 'v2.3.4' }), []);
+  const result = run(root, 'check', '--since', 'v2.3.4');
+  assert.equal(result.status, 0, result.stderr);
+  assert.match(result.stdout, /nothing shipped changed since v2\.3\.4 without a version bump/);
+});
+
+test('check --since names a workbench whose shipped files changed without a bump', (t) => {
+  const root = releasedRepo(t);
+  edit(root, 'apps/smallest-agreement/src/model.js', () => 'export const model = 2;\n');
+  edit(root, 'apps/smallest-agreement/standalone.html', (text) => `${text}<!-- rebuilt -->\n`);
+  bumpCatalog(root, '2.4.0');
+  commitAll(root, 'change without bump');
+  const problems = checkVersions(root, { since: 'v2.3.4' });
+  assert.equal(problems.length, 1, problems.join('\n'));
+  const version = readVersions(root).apps['smallest-agreement'];
+  assert.equal(problems[0], `apps/smallest-agreement changed since v2.3.4 (src/model.js, standalone.html) but is still ${version}; bump its package version and add its changelog entry.`);
+  const result = run(root, 'check', '--since', 'v2.3.4');
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /apps\/smallest-agreement changed since v2\.3\.4/);
+  assert.match(result.stderr, /npm run versions:sync/);
+});
+
+test('check --since ignores app tests and Markdown, which no standalone page embeds', (t) => {
+  const root = releasedRepo(t);
+  edit(root, 'apps/weekend-gap/tests/model.test.mjs', () => '// changed\n');
+  edit(root, 'apps/weekend-gap/MODEL.md', () => '# Model\n\nClarified.\n');
+  bumpCatalog(root, '2.3.5');
+  commitAll(root, 'docs and tests only');
+  assert.deepEqual(checkVersions(root, { since: 'v2.3.4' }), []);
+});
+
+test('check --since passes once the changed workbench is bumped, synced and restamped', (t) => {
+  const root = releasedRepo(t);
+  edit(root, 'apps/common-cart/src/model.js', () => 'export const model = 2;\n');
+  write(root, 'apps/common-cart/src/café.js', 'export const name = 1;\n');
+  bumpCatalog(root, '2.4.0');
+  commitAll(root, 'change');
+  assert.match(checkVersions(root, { since: 'v2.3.4' }).join('\n'), /apps\/common-cart changed since v2\.3\.4 \(src\/café\.js, src\/model\.js\)/);
+  bumpApp(root, 'common-cart', '99.1.0');
+  commitAll(root, 'bump');
+  assert.deepEqual(checkVersions(root, { since: 'v2.3.4' }), []);
+});
+
+test('check --since rejects a workbench version lower than at the release', (t) => {
+  const root = releasedRepo(t);
+  bumpApp(root, 'weekend-gap', '0.0.1');
+  bumpCatalog(root, '2.4.0');
+  commitAll(root, 'downgrade');
+  // The changelog order rule also objects to the 0.0.1 entry; the drift rule
+  // names the downgrade against the release itself.
+  const drift = checkVersions(root, { since: 'v2.3.4' }).filter((problem) => !problem.includes('CHANGELOG.md'));
+  assert.equal(drift.length, 1, drift.join('\n'));
+  assert.match(drift[0], /^apps\/weekend-gap is 0\.0\.1, lower than \d+\.\d+\.\d+ at v2\.3\.4\.$/);
+});
+
+test('check --since requires a catalog bump for any change since the release', (t) => {
+  const root = releasedRepo(t);
+  edit(root, 'apps/common-cart/src/model.js', () => 'export const model = 2;\n');
+  bumpApp(root, 'common-cart', '99.1.0');
+  commitAll(root, 'app bump without catalog bump');
+  const problems = checkVersions(root, { since: 'v2.3.4' });
+  assert.deepEqual(problems, ['The catalog changed since v2.3.4 but package.json is still 2.3.4; bump the catalog version and add its CHANGELOG.md section.']);
+});
+
+test('check --since fails clearly for an unknown ref or a missing git', (t) => {
+  const root = releasedRepo(t);
+  const unknown = run(root, 'check', '--since', 'v9.9.9');
+  assert.equal(unknown.status, 1);
+  assert.equal(unknown.stdout, '');
+  assert.match(unknown.stderr, /Cannot resolve "v9\.9\.9" to a commit; fetch the release tags \(git fetch --tags\) or name an existing ref\./);
+  const plain = mkdtempSync(join(tmpdir(), 'decision-labs-no-git-'));
+  t.after(() => rmSync(plain, { recursive: true, force: true }));
+  cpSync(root, plain, { recursive: true, filter: (source) => !source.split(/[\\/]/).includes('.git') });
+  assert.match(checkVersions(plain, { since: 'v2.3.4' }).join('\n'), /Cannot resolve "v2\.3\.4" to a commit/);
+  const noGit = spawnSync(process.execPath, [script, 'check', '--since', 'v2.3.4', '--root', root], {
+    encoding: 'utf8', env: { SystemRoot: process.env.SystemRoot ?? '', PATH: '' },
+  });
+  assert.equal(noGit.status, 1);
+  assert.match(noGit.stderr, /git is not available, so check --since v2\.3\.4 cannot compare with the release\./);
+});
+
+test('check combines --since with --tag', (t) => {
+  const root = releasedRepo(t);
+  edit(root, 'apps/common-cart/src/model.js', () => 'export const model = 2;\n');
+  bumpApp(root, 'common-cart', '99.1.0');
+  bumpCatalog(root, '2.4.0');
+  commitAll(root, 'release 2.4.0');
+  const passed = run(root, 'check', '--tag', 'v2.4.0', '--since', 'v2.3.4');
+  assert.equal(passed.status, 0, passed.stderr);
+  assert.match(passed.stdout, /v2\.4\.0 names the catalog version, and nothing shipped changed since v2\.3\.4 without a version bump\./);
+  const wrongTag = run(root, 'check', '--tag', 'v2.4.1', '--since', 'v2.3.4');
+  assert.equal(wrongTag.status, 1);
+  assert.match(wrongTag.stderr, /Tag v2\.4\.1 does not match the catalog version 2\.4\.0/);
+  for (const args of [['sync', '--since', 'v2.3.4'], ['notes', 'v2.4.0', '--since', 'v2.3.4']]) {
+    const result = run(root, ...args);
+    assert.equal(result.status, 1, args.join(' '));
+    assert.match(result.stderr, /^Usage: node scripts\/versions\.mjs/, args.join(' '));
+  }
+});

@@ -133,3 +133,24 @@ the corresponding existing CSV formats without running a solver. These are
 raw Markdown or CSV, not JSON strings. CSV text cells retain the model's
 spreadsheet-formula neutralization and quoting. All exports contain declared
 participant information; none is a redaction or authorization to share it.
+
+## Apply spreadsheet edits
+
+```sh
+node scripts/analyze.mjs export proposal.json groups > groups.csv
+node scripts/analyze.mjs import proposal.json groups groups.csv > revised.json
+node scripts/analyze.mjs export workspace.json support | node scripts/analyze.mjs import workspace.json support - > revised-workspace.json
+```
+
+`import <proposal.json|workspace.json|-> <support|groups|options> <table>`
+applies an edited support, groups, or options table, CSV or TSV, through the
+same validation as the browser importers, and prints the result. An unchanged
+exported table imports back to the same proposal. A proposal input prints the
+canonical proposal JSON. A version-1 workspace input prints the same workspace
+with only its `proposal` member replaced, so rounds and display settings are
+carried over unchanged, and the result is checked as a workspace before it is
+printed. The table has the same 256 KiB UTF-8 limit as other inputs, and at
+most one of the two inputs may be `-`. An invalid table exits 2 with no
+stdout; stderr carries `status`, `error`, and an `errors` array listing every
+named CSV error with its `code`, `message`, and, where known, `row` and
+`column`. A partial table is never applied and neither input file is changed.

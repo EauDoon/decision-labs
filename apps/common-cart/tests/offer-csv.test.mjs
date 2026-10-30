@@ -89,7 +89,7 @@ test("offer CSV export is formula-safe and omits buyer private fields", () => {
   scenario.buyers[0].maxOrderTotal = 987654.32;
   scenario.offers[0].merchant = "=HYPERLINK(\"x\")";
   const csv = createOfferCsv(scenario);
-  assert.match(csv, /^"name","capacity","unit price","shipping","fulfillment","variants"\r\n/u);
+  assert.match(csv, /^"name","capacity","unit price","shipping","fulfillment","variants","category","minimum","delivery","tiers","id"\r\n/u);
   assert.match(csv, /"'=HYPERLINK\(""x""\)"/);
   assert.equal(csv.includes("SECRET_LABEL"), false);
   assert.equal(csv.includes("SECRET_ID"), false);
@@ -110,6 +110,7 @@ test("exported offer CSV round-trips through import without changing buyers", ()
   assert.deepEqual(imported.offers.map((offer) => offer.capacity), original.offers.map((offer) => offer.capacity));
   assert.deepEqual(imported.offers.map((offer) => offer.unitPrice), original.offers.map((offer) => offer.unitPrice));
   assert.deepEqual(imported.offers.map((offer) => offer.fulfillment), ["shipping", "shipping", "pickup"]);
+  assert.deepStrictEqual(imported.offers, validateScenario(original).offers);
   assert.deepEqual(imported.buyers.map((buyer) => buyer.id), original.buyers.map((buyer) => buyer.id));
   assert.equal(original.offers[0].merchant, "Forge & Co");
 });
@@ -121,4 +122,5 @@ test("the merchant table can export offer CSV", async () => {
   assert.match(html, /Export offer CSV/u);
   assert.match(app, /createOfferCsv\(/u);
   assert.match(app, /Buyer labels, IDs, budgets, and allocations are omitted/u);
+  assert.doesNotMatch(app, /Quantity tiers stay in JSON export/u);
 });

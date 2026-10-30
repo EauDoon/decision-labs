@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { ValidationError, clonePreset, redactConfiguration, validateConfiguration } from '../src/model.js';
 
-test('redactConfiguration replaces names, clears the deal title and notes, and keeps economics', () => {
+test('redactConfiguration replaces names and identifiers, clears the deal title and notes, and keeps economics', () => {
   const config = clonePreset('balanced');
   config.deal.title = 'Confidential JV';
   config.deal.notes = 'Do not circulate the counterparty list.';
@@ -16,7 +16,8 @@ test('redactConfiguration replaces names, clears the deal title and notes, and k
   assert.equal(Object.hasOwn(redacted.deal, 'notes'), false);
   assert.equal(redacted.deal.currency, 'USD');
   assert.deepEqual(redacted.participants.map((item) => item.name), ['Participant 1', 'Participant 2', 'Participant 3']);
-  assert.deepEqual(redacted.participants.map((item) => item.id), originalIds);
+  assert.deepEqual(redacted.participants.map((item) => item.id), ['participant-1', 'participant-2', 'participant-3']);
+  assert.deepEqual(config.participants.map((item) => item.id), originalIds);
   assert.deepEqual(redacted.participants.map((item) => item.revenueShare), originalShares);
   assert.equal(redacted.deal.monthlyVolume, config.deal.monthlyVolume);
   assert.deepEqual(redacted.stress, config.stress);
@@ -47,12 +48,18 @@ test('redacted cases preserve independent commercial plans, alternatives, and di
   const expected = JSON.parse(JSON.stringify(config));
   delete expected.deal.title;
   delete expected.deal.notes;
-  expected.participants.forEach((participant, index) => { participant.name = `Participant ${index + 1}`; });
+  expected.participants.forEach((participant, index) => {
+    participant.id = `participant-${index + 1}`;
+    participant.name = `Participant ${index + 1}`;
+  });
+  const platform = `participant-${config.participants.findIndex((participant) => participant.id === 'platform') + 1}`;
+  expected.plan.periods[0].participants = { [platform]: expected.plan.periods[0].participants.platform };
+  expected.alternatives.capacityInvestments[0].participantId = platform;
   const redacted = redactConfiguration(config);
   assert.deepEqual(redacted, expected);
   assert.equal(validateConfiguration(JSON.parse(JSON.stringify(redacted))).valid, true);
   assert.doesNotMatch(JSON.stringify(redacted), /Synthetic private/);
-  redacted.plan.periods[0].participants.platform.fixedMonthlyCost = 0;
+  redacted.plan.periods[0].participants[platform].fixedMonthlyCost = 0;
   redacted.alternatives.capacityInvestments[0].investmentCost = 0;
   redacted.alternatives.feeLevels[0] = 0;
   assert.deepEqual(config, original);

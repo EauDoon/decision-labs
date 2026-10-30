@@ -18,7 +18,10 @@ test('release workflow is read-only by default and writes only from its job', ()
 
 test('release workflow gates, packages and publishes in order', () => {
   const steps = [
-    'node scripts/versions.mjs check --tag "$TAG"',
+    'fetch-depth: 0',
+    `PREVIOUS=$(git describe --tags --abbrev=0 --match 'v[0-9]*.[0-9]*.[0-9]*' --exclude "$TAG" HEAD)`,
+    'echo "PREVIOUS=$PREVIOUS" >> "$GITHUB_ENV"',
+    'node scripts/versions.mjs check --tag "$TAG" --since "$PREVIOUS"',
     'node scripts/test-catalog.mjs',
     'npm run check',
     'node scripts/versions.mjs notes "$TAG" > "$RUNNER_TEMP/notes.md"',
@@ -28,6 +31,8 @@ test('release workflow gates, packages and publishes in order', () => {
   const positions = steps.map((step) => release.indexOf(step));
   for (const [index, position] of positions.entries()) assert.ok(position > 0, `missing step: ${steps[index]}`);
   assert.deepEqual([...positions].sort((a, b) => a - b), positions, 'steps run in order');
+  const resolve = release.slice(release.indexOf('- name: Resolve the release tag'), release.indexOf('- name: Verify the tag'));
+  assert.match(resolve, /if ! PREVIOUS=\$\(git describe [^\n]*\); then\n\s+echo "No earlier vX\.Y\.Z release tag is reachable from HEAD\." >&2\n\s+exit 1\n\s+fi/, 'the previous-tag lookup fails closed');
   const publish = release.slice(release.indexOf('- name: Publish the GitHub release'));
   assert.match(publish, /^ {8}if: github\.event_name == 'push' && startsWith\(github\.ref, 'refs\/tags\/v'\)$/m);
   assert.doesNotMatch(release, /\$\{\{\s*github\.ref_name\s*\}\}|\$\{\{\s*github\.event\./, 'refs reach the shell through the environment only');

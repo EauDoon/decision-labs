@@ -100,7 +100,7 @@ node scripts/analyze.mjs roster scenario.json > participants.csv
 node scripts/analyze.mjs roster scenario.json edited-roster.tsv > revised-scenario.json
 ```
 
-With one input, `roster` exports the existing import columns and escapes formula-like names. With a second file, it detects CSV or TSV, validates the whole replacement and emits a scenario with unchanged deal terms. The existing roster size, numeric and share validation applies. Invalid replacement produces no scenario. At most one input may be stdin. Roster import regenerates IDs from names, so retain the original scenario if later comparisons need original IDs. This is the same behavior as browser roster import.
+With one input, `roster` exports the existing import columns and escapes formula-like names. With a second file, it detects CSV or TSV, validates the whole replacement and emits a scenario with unchanged deal terms. The existing roster size, numeric and share validation applies. Invalid replacement produces no scenario. At most one input may be stdin. The exported CSV ends with an `id` column, so an unchanged export imports back with the same IDs and commercial-plan overrides or capacity investments that name a participant stay valid. Renaming a participant keeps its ID. A blank `id` cell, or a file without the column, generates the ID from the name as before. A duplicate or longer than 64 characters ID is rejected with its row. This is the same behavior as browser roster import.
 
 ## Remove labels before sharing
 
@@ -109,7 +109,7 @@ node scripts/analyze.mjs redact scenario.json > redacted-scenario.json
 node scripts/analyze.mjs review redacted-scenario.json slack > redacted-review.json
 ```
 
-Redaction removes the title and notes, replaces names with Participant 1 through N, and replaces custom IDs with `participant-1` through `participant-N`, including references in commercial-plan overrides and negotiation capacity investments. Economics, currency, stress settings, commercial plans, negotiation explorations and display preferences remain. This is label removal, not anonymization: amounts or circumstances may still identify a deal, so review the output before sharing. Generate any review packets or CSV from the redacted scenario, since existing artifacts are not rewritten. Remapped IDs prevent reliable alignment with the original roster by ID; roster position is preserved. No file is uploaded or changed.
+Redaction removes the title and notes, replaces names with Participant 1 through N, and replaces IDs with `participant-1` through `participant-N`, including references in commercial-plan overrides and negotiation capacity investments. The browser's redacted JSON export produces the same document. Economics, currency, stress settings, commercial plans, negotiation explorations and display preferences remain. This is label removal, not anonymization: amounts or circumstances may still identify a deal, so review the output before sharing. Generate any review packets or CSV from the redacted scenario, since existing artifacts are not rewritten. Remapped IDs prevent reliable alignment with the original roster by ID; roster position is preserved. No file is uploaded or changed.
 
 ## Batch checks for repeatable reviews
 

@@ -4805,7 +4805,7 @@ $("#matrix-import-file").addEventListener("change", async (event) => {
 $("#groups-export-button").addEventListener("click", () => {
   if (!validateProposal(state.proposal).valid) return notifyDraft("Fix the draft before exporting the groups CSV.");
   downloadText("smallest-agreement-groups.csv", "\uFEFF" + formatParticipantGroupsCsv(state.proposal), "text/csv;charset=utf-8");
-  notifyDraft("Groups CSV downloaded. Import it to replace participant groups, weights, optional floors and vetoes, and support scores.");
+  notifyDraft("Groups CSV downloaded. Import it to replace participant groups, weights, optional floors and vetoes, and support scores. The id column keeps group ids, so the support CSV still fits.");
 });
 $("#groups-import-button").addEventListener("click", () => $("#groups-import-file").click());
 $("#groups-import-file").addEventListener("change", async (event) => {

@@ -2227,18 +2227,32 @@ export function solveMinimumShareToHold(config, participantId) {
 }
 
 /**
- * Portable case JSON with participant display names replaced and the deal title and notes cleared.
- * All other fields, including plans, alternatives, and identifiers, are copied unchanged.
+ * Portable case JSON with participant display names replaced by Participant 1
+ * through N, identifiers replaced by participant-1 through participant-N, and
+ * the deal title and notes cleared. Commercial-plan overrides and capacity
+ * investments are re-keyed to the new identifiers, so the copy stays valid.
+ * Every other field is copied unchanged.
  * @param {PartnershipConfig} config
  */
 export function redactConfiguration(config) {
   const copy = JSON.parse(JSON.stringify(assertValidConfiguration(config)));
   delete copy.deal.title;
   delete copy.deal.notes;
+  const ids = new Map(copy.participants.map((item, index) => [item.id.trim(), `participant-${index + 1}`]));
+  const remap = (id) => ids.get(String(id).trim()) ?? id;
   copy.participants.forEach((item, index) => {
+    item.id = `participant-${index + 1}`;
     item.name = `Participant ${index + 1}`;
   });
-  return copy;
+  for (const period of copy.plan?.periods ?? []) {
+    if (period.participants) {
+      period.participants = Object.fromEntries(Object.entries(period.participants).map(([id, terms]) => [remap(id), terms]));
+    }
+  }
+  for (const investment of copy.alternatives?.capacityInvestments ?? []) {
+    investment.participantId = remap(investment.participantId);
+  }
+  return assertValidConfiguration(copy);
 }
 
 const CSV_COLUMNS = Object.freeze({
@@ -2250,6 +2264,7 @@ const CSV_COLUMNS = Object.freeze({
   capacity: Object.freeze(['capacity', 'capacity / month', 'capacity/month']),
   minimumCommitment: Object.freeze(['commitment', 'minimum commitment', 'min commitment']),
   riskCost: Object.freeze(['risk', 'risk cost', 'risk cost / month', 'riskcost']),
+  id: Object.freeze(['id', 'participant id']),
 });
 const CSV_REQUIRED_FIELDS = Object.freeze([
   'name', 'revenueShare', 'variableCostPerTransaction', 'fixedMonthlyCost', 'minimumAcceptableProfit', 'riskCost',
@@ -2433,7 +2448,10 @@ function idFromParticipantName(name, used) {
 /**
  * Builds a replacement roster from CSV. Deal terms are not read. Capacity and
  * commitment columns may be omitted; empty cells become null. Shares must still
- * sum to 1. Formula prefixes are treated as text.
+ * sum to 1. Formula prefixes are treated as text. A non-blank cell in the
+ * optional id column is kept as the participant id (trimmed, at most 64
+ * characters, unique in the file); a blank or missing id is generated from the
+ * name and never collides with an explicit one.
  * @param {unknown} text
  * @returns {ParticipantInput[]}
  */
@@ -2455,7 +2473,17 @@ export function participantsFromCsv(text) {
   const headerMap = mapCsvHeaders(rows[0], errors);
   if (errors.length) throw new ValidationError(errors);
 
+  const explicitIds = rows.map((row, index) => {
+    if (index === 0 || !Object.hasOwn(headerMap, 'id')) return '';
+    return neutralizeCsvCell(row[headerMap.id] ?? '').trim();
+  });
   const usedIds = new Set();
+  explicitIds.forEach((id, index) => {
+    if (id === '') return;
+    if (id.length > 64) errors.push(`Row ${index + 1} id must be no longer than 64 characters.`);
+    else if (usedIds.has(id)) errors.push(`Row ${index + 1} id must be unique.`);
+    usedIds.add(id);
+  });
   const participants = [];
   for (let index = 1; index < rows.length; index += 1) {
     const row = rows[index];
@@ -2475,7 +2503,7 @@ export function participantsFromCsv(text) {
       : null;
     if (!name) continue;
     participants.push({
-      id: idFromParticipantName(name, usedIds),
+      id: explicitIds[index] || idFromParticipantName(name, usedIds),
       name,
       revenueShare: revenueShare ?? Number.NaN,
       variableCostPerTransaction: variableCostPerTransaction ?? Number.NaN,
@@ -2518,14 +2546,15 @@ export function participantsFromRosterText(text) {
 }
 
 const PARTICIPANT_CSV_HEADER = Object.freeze([
-  'name', 'revenue share', 'variable cost', 'fixed cost', 'min profit', 'capacity', 'commitment', 'risk',
+  'name', 'revenue share', 'variable cost', 'fixed cost', 'min profit', 'capacity', 'commitment', 'risk', 'id',
 ]);
 
 /**
  * Writes the current roster using the same columns as participant CSV import.
  * Empty optional capacity and commitment cells round-trip to null. Formula-like
- * names are prefixed with an apostrophe. Identifiers are not exported because
- * import regenerates them from names.
+ * names and identifiers are prefixed with an apostrophe. The trailing id column
+ * lets import keep every participant id, so plan overrides and capacity
+ * investments that refer to participants stay valid.
  * @param {PartnershipConfig} config
  * @returns {string}
  */
@@ -2542,6 +2571,7 @@ export function participantsToCsv(config) {
       participant.capacity == null ? '' : participant.capacity,
       participant.minimumCommitment == null ? '' : participant.minimumCommitment,
       participant.riskCost,
+      participant.id,
     ]);
   }
   return `${rows.map((row) => row.map(escapeCsvCell).join(',')).join('\r\n')}\r\n`;

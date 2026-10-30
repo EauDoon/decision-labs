@@ -1,8 +1,10 @@
 name: Release
 
 # Pushing a catalog tag vX.Y.Z verifies that the tag, every package version,
-# every changelog and every standalone stamp agree, then publishes a GitHub
-# release with the four standalone pages attached as <app>-<version>.html.
+# every changelog and every standalone stamp agree, and that no workbench
+# changed since the previous vX.Y.Z tag without a version bump, then publishes
+# a GitHub release with the four standalone pages attached as
+# <app>-<version>.html.
 # A manual dispatch runs the same gates and packaging as a dry run and never
 # publishes, so a release can be rehearsed on main before the tag exists.
 on:
@@ -28,6 +30,8 @@ jobs:
       - name: Check out exact source
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
+          # Full history and tags, so the previous release can be compared.
+          fetch-depth: 0
           persist-credentials: false
       - name: Set up Node.js
         uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
@@ -43,8 +47,16 @@ jobs:
           fi
           echo "Release tag: $TAG"
           echo "TAG=$TAG" >> "$GITHUB_ENV"
-      - name: Verify the tag against packages, changelogs, catalog and stamps
-        run: node scripts/versions.mjs check --tag "$TAG"
+          # The newest earlier release tag reachable from this commit. --tags
+          # also counts a lightweight tag. Fail closed when there is none.
+          if ! PREVIOUS=$(git describe --tags --abbrev=0 --match 'v[0-9]*.[0-9]*.[0-9]*' --exclude "$TAG" HEAD); then
+            echo "No earlier vX.Y.Z release tag is reachable from HEAD." >&2
+            exit 1
+          fi
+          echo "Previous release: $PREVIOUS"
+          echo "PREVIOUS=$PREVIOUS" >> "$GITHUB_ENV"
+      - name: Verify the tag against packages, changelogs, catalog, stamps and the previous release
+        run: node scripts/versions.mjs check --tag "$TAG" --since "$PREVIOUS"
       - name: Test catalog launcher and cross-app contracts
         run: node scripts/test-catalog.mjs
       - name: Check hub and every workbench

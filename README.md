@@ -83,7 +83,10 @@ npm run check
 ```
 
 `npm test` runs the root catalog and all workbench tests. `npm run check`
-validates the catalog and each app's standalone build. See
+validates the catalog and each app's standalone build. Before a release,
+`node scripts/versions.mjs check --tag vX.Y.Z --since <previous tag>` also
+refuses a workbench whose shipped files changed since the previous release
+without a version bump, so one version never names two different builds. See
 [CONTRIBUTING.md](CONTRIBUTING.md) for the full local workflow.
 
 The optional [browser acceptance check](docs/BROWSER_CHECKS.md) exercises all

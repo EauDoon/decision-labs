@@ -10,6 +10,27 @@ workbench keeps its own version and detailed notes in `apps/<id>/CHANGELOG.md`.
 
 ## [Unreleased]
 
+### Added
+
+- The Smallest Agreement: an analyst CLI `import` command,
+  `import <proposal.json|workspace.json|-> <support|groups|options> <table>`,
+  applies an edited support, groups or options table (CSV or TSV) offline
+  through the browser's validation. The CLI could export these tables but not
+  read them back, so spreadsheet edits could only be applied in a browser. A
+  workspace input keeps its rounds and display settings and only its
+  proposal is replaced. An invalid table exits 2 with no output and lists
+  every named error, with its row where known, on stderr.
+- `node scripts/versions.mjs check --since <ref>` compares the committed
+  HEAD with a previous release and fails when a workbench's shipped files
+  changed without a version bump, when a version went backwards, or when
+  anything changed while the catalog version did not rise. App tests and
+  Markdown are ignored, because no standalone page embeds them. The Release
+  workflow now fetches full history and runs it against the newest earlier
+  `vX.Y.Z` tag, failing closed when there is none. Without it, The Smallest
+  Agreement's changes since 1.0.0 passed every check while its version stayed
+  1.7.0, so the next release would have attached a second, different
+  `smallest-agreement-1.7.0.html`.
+
 ### Fixed
 
 - The catalog launcher checks canonical file paths as well as request paths,
@@ -27,6 +48,46 @@ workbench keeps its own version and detailed notes in `apps/<id>/CHANGELOG.md`.
 - `npm run test:browser` reads a relative `PLAYWRIGHT_MODULE` directory from
   the current directory, as it already did for `AXE_MODULE`, instead of from
   `scripts/`, where the documented package directory was not found.
+- Weekend Gap's model limits no longer say that holidays are not simulated
+  and that other public holidays are outside the model, which the calendar
+  overrides added in 1.7.0 contradict. They now say the model has no holiday
+  calendar, the Monday and Saturday flags are synthetic, and any other
+  closure is declared as a calendar override. Documentation only; Weekend Gap
+  stays 1.9.0 and its standalone page is unchanged.
+- Common Cart: the exported offer CSV imports back without changing the
+  decision. It wrote only six columns, so a re-import reset every minimum to
+  1 and every delivery to 7 days, dropped all quantity price tiers and
+  renumbered offers by row; the winner changed on 56 of the 60 examples. The
+  export now adds `category`, `minimum`, `delivery`, `tiers` and `id` after
+  the original six columns. A tiers cell lists `minimum@unit price` pairs
+  separated by semicolons (`10@24; 18@20`), and a malformed pair names the
+  CSV offer and tier. A non-blank id is kept and must be unique; a blank id
+  takes the first unused `O` number. Six-column files and the template import
+  exactly as before, and the CLI `import --kind offers` reads the new columns.
+- Partnership Breakpoint: participant identifiers survive the roster CSV
+  round trip. Import rebuilt every identifier from the name, so re-importing
+  an unchanged export broke any commercial-plan override or capacity
+  investment that named a participant (`overrides unknown participant id`)
+  and split participants in `compare`; 46 of the 61 examples changed
+  identifiers. The export now ends with an `id` column. A non-blank id is
+  kept (at most 64 characters, unique in the file) and a renamed participant
+  keeps its id; a blank cell or a file without the column generates the id
+  from the name as before.
+- Partnership Breakpoint: the browser's redacted JSON export kept participant
+  identifiers, so an identifier derived from a real name, such as
+  `acme-bank`, travelled beside `Participant 1`. It now replaces identifiers
+  with `participant-1` through `participant-N` and re-keys plan overrides
+  and capacity investments, producing the same document as the CLI `redact`
+  command.
+- The Smallest Agreement: the participant groups CSV keeps group ids. Import
+  rebuilt every id from the name, so re-importing an unchanged export renamed
+  groups (Neighbourhood Plan's `stewards` became `park-stewards`) and the
+  support CSV of the same draft then failed with `Unknown group column`; 60
+  of the 61 examples renamed a group. The export now writes an `id` column
+  after `veto`. A non-blank id follows the JSON group id rule and may equal a
+  clause or option id; a bad or repeated id is a named `invalid_id` or
+  `duplicate_id` error with its row. A blank cell or a table without the
+  column generates the id from the name as before.
 
 ## [1.0.0] - 2026-10-09
 

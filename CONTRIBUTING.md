@@ -61,8 +61,15 @@ version in the root `package.json` names a release of all four together.
    release (a catalog-only change bumps the catalog alone) and add a
    `## [X.Y.Z] - YYYY-MM-DD` section to the root `CHANGELOG.md`, with its
    link reference.
-4. Run `npm test`, `npm run check` and
-   `node scripts/versions.mjs check --tag vX.Y.Z`.
+4. Commit the release, then run `npm test`, `npm run check` and
+   `node scripts/versions.mjs check --tag vX.Y.Z --since <previous tag>`.
+   `--since` compares the committed HEAD with the previous release tag and
+   fails when a workbench's shipped files changed without a version bump,
+   when a version went backwards, or when anything changed while the catalog
+   version did not rise. Changes under `apps/<id>/tests/` and Markdown files
+   are ignored, because no standalone page embeds them. It compares commits,
+   not the working tree, so commit first. The Release workflow runs the same
+   check against the newest earlier `vX.Y.Z` tag.
 5. Merge the pull request with a merge commit once its checks are green.
 6. Run the Release workflow on `main` from the Actions tab (or
    `gh workflow run release.yml --ref main`). A manual run is a dry run: it

@@ -6,7 +6,7 @@
 
 1. Open [standalone.html](standalone.html), or run `npm start` from this app directory with Node.js 20 or newer. No install is required.
 2. Load **Balanced**. Change **Fee / transaction** from 0.20 to 0.19. The Liquidity Partner falls below its profit floor although total monthly profit remains positive. The [worked case](../../docs/CASE_STUDY.md) gives reproducible inputs and results.
-3. Use **Export JSON** for a portable case, then **Import JSON** to reopen it. Use the redacted export when names and the deal title should be removed.
+3. Use **Export JSON** for a portable case, then **Import JSON** to reopen it. Use the redacted export when names, participant identifiers and the deal title should be removed. A participant CSV export ends with an `id` column, so editing it in a spreadsheet and importing it back keeps every participant identifier.
 
 Drafts stay in browser storage until deliberately shared or exported. Browser storage is not a backup. These are deterministic model thresholds, not forecasts or executed commercial decisions. Use visible controls with Tab and Enter; active shortcuts are in the app's help.
 

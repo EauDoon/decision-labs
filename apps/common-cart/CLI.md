@@ -154,10 +154,13 @@ Uses the app's existing CSV parsers and returns a validated scenario, ready for
 append or merge IDs. The other collection, title and currency stay intact.
 Buyer columns: `label,category,quantity,max unit price,latest delivery days,variants,max order total`.
 Offer columns: `name,capacity,unit price,shipping,fulfillment,variants`, optionally
-`category,minimum,delivery`. Offer imports generate IDs and default omitted
-category from the first buyer (then first offer, then Product), minimum to 1 and
-delivery to 7. CSV does not import price tiers. Use JSON for tiered offers and
-stable IDs. Quote cells containing commas. Each input has the same 1 MiB UTF-8
+`category,minimum,delivery,tiers,id`. The browser's **Export offer CSV** writes all
+eleven, so its file imports back to the same offers. A `tiers` cell lists
+`minimum@unit price` pairs separated by semicolons (`10@24; 18@20`); leave it blank
+for an offer without quantity tiers. A non-blank `id` is kept and must be unique;
+a blank or missing id takes the first unused `O` number in row order. Offer
+imports default omitted category from the first buyer (then first offer, then
+Product), minimum to 1 and delivery to 7. Quote cells containing commas. Each input has the same 1 MiB UTF-8
 limit; at most one can be stdin. Source files are preserved, including on failure.
 
 ## Analyze saved workspace rooms

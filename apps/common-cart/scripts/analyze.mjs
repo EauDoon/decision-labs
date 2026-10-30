@@ -25,6 +25,7 @@ Usage: node scripts/analyze.mjs market --input scenario.json [--output result.js
        node scripts/analyze.mjs sweep --input scenario.json --offer O01 --field capacity --values '[10,20,30]'
        node scripts/analyze.mjs batch --input scenarios.jsonl --output results.jsonl
        node scripts/analyze.mjs import --input scenario.json --kind buyers --csv buyers.csv --output updated.json
+       node scripts/analyze.mjs import --input scenario.json --kind offers --csv offers.csv --output updated-offers.json
        node scripts/analyze.mjs rooms --input workspace.json
        node scripts/analyze.mjs plan --input scenario.json
        node scripts/analyze.mjs contingency --input scenario.json --experiment '{"type":"withdraw","offerId":"O01"}'
