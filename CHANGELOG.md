@@ -48,6 +48,12 @@ workbench keeps its own version and detailed notes in `apps/<id>/CHANGELOG.md`.
 - `npm run test:browser` reads a relative `PLAYWRIGHT_MODULE` directory from
   the current directory, as it already did for `AXE_MODULE`, instead of from
   `scripts/`, where the documented package directory was not found.
+- Weekend Gap's model limits no longer say that holidays are not simulated
+  and that other public holidays are outside the model, which the calendar
+  overrides added in 1.7.0 contradict. They now say the model has no holiday
+  calendar, the Monday and Saturday flags are synthetic, and any other
+  closure is declared as a calendar override. Documentation only; Weekend Gap
+  stays 1.9.0 and its standalone page is unchanged.
 - Common Cart: the exported offer CSV imports back without changing the
   decision. It wrote only six columns, so a re-import reset every minimum to
   1 and every delivery to 7 days, dropped all quantity price tiers and

@@ -208,8 +208,8 @@ Explicit failure states include a closed issuer, bank or payout gate, zero reser
 
 - The model cannot prove the actual liquidity, reserves, redemption rights, compliance status or operating hours of any issuer or financial institution.
 - It does not represent a real bank, FX desk, off-ramp, blockchain, exchange, legal jurisdiction or payment scheme.
-- It assumes one aggregate queue and one settlement route. It does not simulate priority, partial fills across venues, credit lines, fees, counterparty default, holidays, queue cancellation, token transfers, market makers or arbitrage.
-- Business-day hours are illustrative local hours. The only holidays in the model are the optional synthetic Monday holiday and the optional Saturday holiday flag. Other public holidays and daylight-saving transitions remain outside the model.
+- It assumes one aggregate queue and one settlement route. It does not simulate priority, partial fills across venues, credit lines, fees, counterparty default, queue cancellation, token transfers, market makers or arbitrage.
+- Business-day hours are illustrative local hours. The model has no holiday calendar. The optional Monday and Saturday holiday flags are synthetic switches, and any other closure, including a public holiday, is declared as a `calendarOverrides` range that closes the affected gates for those hours. Daylight-saving transitions remain outside the model.
 - A cash reserve is treated as immediately available once all operating gates are open. This is an assumption, not a claim about custody or settlement finality.
 
 Use the simulator to compare assumptions and reason about dependencies, not to make a trading, redemption, investment, legal or operational decision.
