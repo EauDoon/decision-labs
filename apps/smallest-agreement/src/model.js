@@ -1441,6 +1441,16 @@ function neutralizeCsvCell(raw) {
   return text.startsWith("'") ? text.slice(1) : text;
 }
 
+/**
+ * Free text strips a leading apostrophe only where serializeCsv would have
+ * added one, before a formula prefix. Any other leading apostrophe belongs to
+ * the name, title, label or note and is kept.
+ */
+function csvTextCell(raw) {
+  const text = String(raw ?? "");
+  return text.startsWith("'") && FORMULA_CELL.test(text.slice(1)) ? text.slice(1) : text;
+}
+
 function namedCsvError(code, message, extra = {}) {
   return { code, message, ...extra };
 }
@@ -1809,7 +1819,7 @@ export function parseParticipantGroupsCsv(csvText, proposal) {
       errors.push(namedCsvError("truncated_row", `Row ${rowNumber} has ${record.length} cells, expected ${columns.length}.`, { row: rowNumber }));
       return;
     }
-    const nameRaw = neutralizeCsvCell(record[0]);
+    const nameRaw = csvTextCell(record[0]);
     if (FORMULA_CELL.test(nameRaw)) {
       errors.push(namedCsvError("formula_cell", `Row ${rowNumber} name looks like a spreadsheet formula.`, { row: rowNumber }));
       return;
@@ -4202,7 +4212,7 @@ function parseCsvIdentifier(raw, path) {
 }
 
 function parseCsvLabel(raw, path, code, maxLength) {
-  const neutralized = neutralizeCsvCell(raw);
+  const neutralized = csvTextCell(raw);
   if (FORMULA_CELL.test(neutralized)) {
     return { error: namedCsvError("formula_cell", `${path} looks like a spreadsheet formula and was not imported.`, { path, value: neutralized }) };
   }
@@ -4335,7 +4345,7 @@ export function parseClauseOptionsCsv(csvText, proposal) {
     }
     let note;
     if (noteIndex >= 0) {
-      const noteRaw = neutralizeCsvCell(record[noteIndex]);
+      const noteRaw = csvTextCell(record[noteIndex]);
       if (FORMULA_CELL.test(noteRaw)) {
         errors.push(namedCsvError("formula_cell", `Row ${rowNumber} note looks like a spreadsheet formula.`, { row: rowNumber }));
         return;
