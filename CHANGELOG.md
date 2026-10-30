@@ -52,6 +52,15 @@ workbench keeps its own version and detailed notes in `apps/<id>/CHANGELOG.md`.
   with `participant-1` through `participant-N` and re-keys plan overrides
   and capacity investments, producing the same document as the CLI `redact`
   command.
+- The Smallest Agreement: the participant groups CSV keeps group ids. Import
+  rebuilt every id from the name, so re-importing an unchanged export renamed
+  groups (Neighbourhood Plan's `stewards` became `park-stewards`) and the
+  support CSV of the same draft then failed with `Unknown group column`; 60
+  of the 61 examples renamed a group. The export now writes an `id` column
+  after `veto`. A non-blank id follows the JSON group id rule and may equal a
+  clause or option id; a bad or repeated id is a named `invalid_id` or
+  `duplicate_id` error with its row. A blank cell or a table without the
+  column generates the id from the name as before.
 
 ## [1.0.0] - 2026-10-09
 

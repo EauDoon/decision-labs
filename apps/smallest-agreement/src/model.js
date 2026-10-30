@@ -1756,8 +1756,11 @@ function groupIdFromName(name, used) {
 }
 
 /**
- * Replace participant groups from a CSV of name, weight, optional min_support and veto,
- * and one support column per existing clause option (`clauseId:optionId`).
+ * Replace participant groups from a CSV of name, weight, optional min_support, veto and id,
+ * and one support column per existing clause option (`clauseId:optionId`). A
+ * non-blank id is kept when it passes the JSON model's group id rule; a blank or
+ * missing id is generated from the name without reusing a clause, option or
+ * explicit group id.
  * Unknown columns are rejected. The first non-blank line that contains tabs is
  * treated as TSV and converted to CSV before the same validation. Does not mutate the supplied proposal.
  */
@@ -1768,7 +1771,7 @@ export function parseParticipantGroupsCsv(csvText, proposal) {
   if (parsed.status !== "ok") return parsed;
   const [header, ...body] = parsed.records;
   if (!header || header.length < 2) {
-    return { status: "invalid", errors: [namedCsvError("missing_header", "CSV needs a header row with name, weight, optional min_support and veto, and support columns.")] };
+    return { status: "invalid", errors: [namedCsvError("missing_header", "CSV needs a header row with name, weight, optional min_support, veto and id, and support columns.")] };
   }
   const columns = header.map((name) => neutralizeCsvCell(name).trim());
   if (columns.some((column) => FORMULA_CELL.test(column))) {
@@ -1787,6 +1790,7 @@ export function parseParticipantGroupsCsv(csvText, proposal) {
   const supportColumns = [];
   let minSupportIndex = -1;
   let vetoIndex = -1;
+  let idIndex = -1;
   columns.forEach((column, index) => {
     if (index < 2) return;
     if (column === "min_support") {
@@ -1795,6 +1799,10 @@ export function parseParticipantGroupsCsv(csvText, proposal) {
     }
     if (column === "veto") {
       vetoIndex = index;
+      return;
+    }
+    if (column === "id") {
+      idIndex = index;
       return;
     }
     if (expectedSet.has(column)) {
@@ -1812,6 +1820,30 @@ export function parseParticipantGroupsCsv(csvText, proposal) {
   const usedIds = new Set([
     ...proposal.clauses.flatMap((clause) => [clause.id, ...clause.options.map((option) => option.id)]),
   ]);
+  // Explicit ids follow only the JSON group id rule, so any valid proposal's
+  // export imports back. They may equal a clause or option id, as JSON allows.
+  const explicitIds = body.map((record, index) => {
+    if (idIndex < 0 || record.length !== columns.length) return "";
+    const rowNumber = index + 2;
+    const id = csvTextCell(record[idIndex]).trim();
+    if (id === "") return "";
+    if (!ID_PATTERN.test(id) || RESERVED_IDS.has(id)) {
+      errors.push(namedCsvError("invalid_id", `Row ${rowNumber} id must start with a letter or digit and use at most 64 letters, digits, dots, underscores or hyphens, and cannot be a reserved word.`, { row: rowNumber }));
+      return "";
+    }
+    return id;
+  });
+  const explicitRows = new Map();
+  explicitIds.forEach((id, index) => {
+    if (id === "") return;
+    if (explicitRows.has(id)) {
+      const rowNumber = index + 2;
+      errors.push(namedCsvError("duplicate_id", `Row ${rowNumber} id ${id} repeats row ${explicitRows.get(id)}.`, { row: rowNumber }));
+      return;
+    }
+    explicitRows.set(id, index + 2);
+  });
+  for (const id of explicitRows.keys()) usedIds.add(id);
   const groups = [];
   body.forEach((record, index) => {
     const rowNumber = index + 2;
@@ -1861,7 +1893,7 @@ export function parseParticipantGroupsCsv(csvText, proposal) {
       }
       supportByColumn[column] = parsedScore.score;
     }
-    const id = groupIdFromName(name, usedIds);
+    const id = explicitIds[index] || groupIdFromName(name, usedIds);
     groups.push({
       id,
       name,
@@ -1893,11 +1925,14 @@ export function parseParticipantGroupsCsv(csvText, proposal) {
   return { status: "ok", proposal: canonicalProposal(next), importedGroups: groups.length };
 }
 
-/** Export the participant-group CSV consumed by parseParticipantGroupsCsv. */
+/**
+ * Export the participant-group CSV consumed by parseParticipantGroupsCsv. The id
+ * column keeps group ids, so the support matrix CSV still fits after a re-import.
+ */
 export function formatParticipantGroupsCsv(proposal) {
   const p = canonicalProposal(proposal);
   const supportHeaders = p.clauses.flatMap((clause) => clause.options.map((option) => `${clause.id}:${option.id}`));
-  const header = ["name", "weight", "min_support", "veto", ...supportHeaders];
+  const header = ["name", "weight", "min_support", "veto", "id", ...supportHeaders];
   const rows = [header];
   for (const group of p.groups) {
     rows.push([
@@ -1905,6 +1940,7 @@ export function formatParticipantGroupsCsv(proposal) {
       group.weight,
       group.minSupport ?? "",
       group.veto === true ? "yes" : "no",
+      group.id,
       ...p.clauses.flatMap((clause) => clause.options.map((option) => option.support[group.id])),
     ]);
   }
