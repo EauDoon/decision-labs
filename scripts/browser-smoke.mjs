@@ -7,7 +7,9 @@ import { APP_ROUTES } from './apps.mjs';
 import { createLauncher, notFoundPage } from './serve.mjs';
 
 // Optional developer tooling only. The applications remain dependency-free.
-const { chromium } = createRequire(import.meta.url)(process.env.PLAYWRIGHT_MODULE || 'playwright');
+// PLAYWRIGHT_MODULE is a package directory read from the working directory,
+// like AXE_MODULE; require alone would read a relative path from scripts/.
+const { chromium } = createRequire(import.meta.url)(process.env.PLAYWRIGHT_MODULE ? resolve(process.env.PLAYWRIGHT_MODULE) : 'playwright');
 // AXE_MODULE optionally points at an axe-core package directory; when set,
 // every shipped page must report zero axe violations.
 const axeSource = process.env.AXE_MODULE ? readFileSync(resolve(process.env.AXE_MODULE, 'axe.min.js'), 'utf8') : null;

@@ -19,6 +19,9 @@ workbench keeps its own version and detailed notes in `apps/<id>/CHANGELOG.md`.
   than terminating the request handler or exposing a nonpublic file.
 - Consistent native path resolution keeps ordinary public files available when
   Windows exposes the checkout through an equivalent short-name path.
+- `npm run test:browser` reads a relative `PLAYWRIGHT_MODULE` directory from
+  the current directory, as it already did for `AXE_MODULE`, instead of from
+  `scripts/`, where the documented package directory was not found.
 
 ## [1.0.0] - 2026-10-09
 
