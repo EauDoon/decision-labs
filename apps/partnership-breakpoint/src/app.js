@@ -2704,7 +2704,7 @@ function exportRedactedFile() {
   }
   const redacted = redactConfiguration(state);
   downloadText(`${JSON.stringify(redacted, null, 2)}\n`, 'application/json', exportDownloadName('redacted', caseExportTitle()));
-  setNotice('Redacted JSON exported. Participant names are Participant 1 through N and the deal title is cleared. Identifiers and economics are unchanged.');
+  setNotice('Redacted JSON exported. Participant names are Participant 1 through N, identifiers are participant-1 through participant-N with plan and capacity references updated, and the deal title is cleared. Economics are unchanged.');
 }
 
 function importFile(file) {

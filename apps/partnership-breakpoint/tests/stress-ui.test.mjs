@@ -3678,7 +3678,7 @@ test('keyboard p prints the one-pager when valid and ignores focused inputs', as
   assert.equal(app.prints(), before + 1);
 });
 
-test('redacted export replaces names, clears the title, and keeps identifiers', async () => {
+test('redacted export replaces names and identifiers, clears the title, and re-keys references', async () => {
   const app = await workbench();
   app.edit('deal.title', 'Secret Alliance', { type: 'text' });
   app.edit('deal.notes', 'Synthetic private notes', { type: 'text' });
@@ -3691,10 +3691,17 @@ test('redacted export replaces names, clears the title, and keeps identifiers', 
   const parsed = JSON.parse(await file.blob.text());
   assert.equal(Object.hasOwn(parsed.deal, 'title'), false);
   assert.equal(Object.hasOwn(parsed.deal, 'notes'), false);
-  assert.deepEqual(parsed.plan, before.plan);
-  assert.deepEqual(parsed.alternatives, before.alternatives);
+  const ids = { platform: 'participant-1', distributor: 'participant-2', 'liquidity-partner': 'participant-3' };
+  const remapped = JSON.parse(JSON.stringify(before));
+  for (const period of remapped.plan.periods) {
+    if (period.participants) period.participants = Object.fromEntries(Object.entries(period.participants).map(([id, terms]) => [ids[id], terms]));
+  }
+  for (const investment of remapped.alternatives.capacityInvestments ?? []) investment.participantId = ids[investment.participantId];
+  assert.deepEqual(parsed.plan, remapped.plan);
+  assert.deepEqual(parsed.alternatives, remapped.alternatives);
   assert.deepEqual(parsed.participants.map((item) => item.name), ['Participant 1', 'Participant 2', 'Participant 3']);
-  assert.deepEqual(parsed.participants.map((item) => item.id), ['platform', 'distributor', 'liquidity-partner']);
+  assert.deepEqual(parsed.participants.map((item) => item.id), ['participant-1', 'participant-2', 'participant-3']);
+  assert.doesNotMatch(JSON.stringify(parsed), /platform|distributor|liquidity-partner/);
   assert.deepEqual(app.saved(), before);
   assert.match(app.markup(), /Export redacted JSON \(names replaced, title cleared\)/);
   app.edit('deal.monthlyVolume', '');

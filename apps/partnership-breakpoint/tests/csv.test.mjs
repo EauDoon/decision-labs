@@ -161,7 +161,7 @@ test('participantsToCsv uses import columns, formula-safe cells, and empty optio
   config.participants[1].minimumCommitment = 2000;
   const csv = participantsToCsv(config);
   const lines = csv.trim().split('\r\n');
-  assert.equal(lines[0], '"name","revenue share","variable cost","fixed cost","min profit","capacity","commitment","risk"');
+  assert.equal(lines[0], '"name","revenue share","variable cost","fixed cost","min profit","capacity","commitment","risk","id"');
   assert.ok(csv.includes('"\'=HYPERLINK(""bad"")"'));
   assert.match(lines[2], /"","2000"/);
   assert.doesNotMatch(csv, /probab/i);

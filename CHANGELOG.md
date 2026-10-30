@@ -37,6 +37,21 @@ workbench keeps its own version and detailed notes in `apps/<id>/CHANGELOG.md`.
   CSV offer and tier. A non-blank id is kept and must be unique; a blank id
   takes the first unused `O` number. Six-column files and the template import
   exactly as before, and the CLI `import --kind offers` reads the new columns.
+- Partnership Breakpoint: participant identifiers survive the roster CSV
+  round trip. Import rebuilt every identifier from the name, so re-importing
+  an unchanged export broke any commercial-plan override or capacity
+  investment that named a participant (`overrides unknown participant id`)
+  and split participants in `compare`; 46 of the 61 examples changed
+  identifiers. The export now ends with an `id` column. A non-blank id is
+  kept (at most 64 characters, unique in the file) and a renamed participant
+  keeps its id; a blank cell or a file without the column generates the id
+  from the name as before.
+- Partnership Breakpoint: the browser's redacted JSON export kept participant
+  identifiers, so an identifier derived from a real name, such as
+  `acme-bank`, travelled beside `Participant 1`. It now replaces identifiers
+  with `participant-1` through `participant-N` and re-keys plan overrides
+  and capacity investments, producing the same document as the CLI `redact`
+  command.
 
 ## [1.0.0] - 2026-10-09
 
