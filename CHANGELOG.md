@@ -24,6 +24,9 @@ workbench keeps its own version and detailed notes in `apps/<id>/CHANGELOG.md`.
   option label or note, such as `'s-Hertogenbosch`. Only an apostrophe that
   escapes a spreadsheet formula prefix is removed, which is the only place
   the exporters add one, so an exported table imports back unchanged.
+- `npm run test:browser` reads a relative `PLAYWRIGHT_MODULE` directory from
+  the current directory, as it already did for `AXE_MODULE`, instead of from
+  `scripts/`, where the documented package directory was not found.
 
 ## [1.0.0] - 2026-10-09
 

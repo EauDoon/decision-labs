@@ -2,7 +2,7 @@
 
 Run `npm run test:browser` from the repository root with a separately installed Playwright package and Chromium available. This optional developer check does not change the dependency-free applications or the existing Node test suite.
 
-When Playwright is installed outside this checkout, set `PLAYWRIGHT_MODULE` to its package directory (`playwright-core` is enough). Set `BROWSER_EXECUTABLE` to an installed Chrome/Chromium executable if the normal Playwright browser is unavailable. Set `AXE_MODULE` to an installed `axe-core` package directory to add the accessibility gate described below. `BROWSER_EVIDENCE_DIR` optionally saves four mobile viewport screenshots outside the source tree. No browser profile or account is reused.
+When Playwright is installed outside this checkout, set `PLAYWRIGHT_MODULE` to its package directory (`playwright-core` is enough). Set `BROWSER_EXECUTABLE` to an installed Chrome/Chromium executable if the normal Playwright browser is unavailable. Set `AXE_MODULE` to an installed `axe-core` package directory to add the accessibility gate described below. Relative `PLAYWRIGHT_MODULE` and `AXE_MODULE` directories are read from the current directory. `BROWSER_EVIDENCE_DIR` optionally saves four mobile viewport screenshots outside the source tree. No browser profile or account is reused.
 
 When `AXE_MODULE` is set, the script first opens `index.html`, `404.html` and the four generated `standalone.html` pages from files at 1280x900, injects axe-core on first load, and fails on any violation. It complements `tests/workbench-accessibility.test.mjs`, which computes text contrast from the source colours, because axe does not check hover states or every tinted row.
 
