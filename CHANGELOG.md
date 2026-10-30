@@ -20,6 +20,16 @@ workbench keeps its own version and detailed notes in `apps/<id>/CHANGELOG.md`.
   workspace input keeps its rounds and display settings and only its
   proposal is replaced. An invalid table exits 2 with no output and lists
   every named error, with its row where known, on stderr.
+- `node scripts/versions.mjs check --since <ref>` compares the committed
+  HEAD with a previous release and fails when a workbench's shipped files
+  changed without a version bump, when a version went backwards, or when
+  anything changed while the catalog version did not rise. App tests and
+  Markdown are ignored, because no standalone page embeds them. The Release
+  workflow now fetches full history and runs it against the newest earlier
+  `vX.Y.Z` tag, failing closed when there is none. Without it, The Smallest
+  Agreement's changes since 1.0.0 passed every check while its version stayed
+  1.7.0, so the next release would have attached a second, different
+  `smallest-agreement-1.7.0.html`.
 
 ### Fixed
 

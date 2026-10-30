@@ -3,13 +3,15 @@
 // package.json for the catalog's. Every other place a version appears is
 // written by `sync` or verified by `check`, including the order of every
 // changelog and the version stamped into each generated standalone.html.
-// The release workflow uses the same script to verify a tag, extract its
-// release notes and name the standalone files it attaches.
+// The release workflow uses the same script to verify a tag, refuse a
+// workbench that changed since the previous release without a version bump,
+// extract its release notes and name the standalone files it attaches.
 //
 //   node scripts/versions.mjs sync [--root <dir>]
-//   node scripts/versions.mjs check [--tag vX.Y.Z] [--root <dir>]
+//   node scripts/versions.mjs check [--tag vX.Y.Z] [--since <ref>] [--root <dir>]
 //   node scripts/versions.mjs notes vX.Y.Z [--root <dir>]
 //   node scripts/versions.mjs assets <dir> [--root <dir>]
+import { execFileSync } from 'node:child_process';
 import { copyFileSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -187,10 +189,75 @@ export function releaseNotes(text, tag) {
   return `${notes}\n`;
 }
 
+class GitUnavailable extends Error {}
+
+function git(root, args) {
+  try {
+    return execFileSync('git', ['-c', 'core.quotepath=off', '-C', root, ...args], {
+      encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'], maxBuffer: 64 * 1024 * 1024,
+    });
+  } catch (error) {
+    if (error.code === 'ENOENT') throw new GitUnavailable();
+    return null;
+  }
+}
+
+function versionAt(root, ref, file) {
+  const text = git(root, ['show', `${ref}:${file}`]);
+  if (text === null) return null;
+  return JSON.parse(text).version ?? null;
+}
+
+// Files a workbench release ships. Tests and Markdown are not embedded in any
+// standalone page, so a docs-only or test-only edit needs no new version.
+function shipped(id, file) {
+  return !file.startsWith(`apps/${id}/tests/`) && !/\.md$/i.test(file);
+}
+
+// Committed changes since a previous release, ref against HEAD. A workbench
+// whose shipped files changed must carry a higher version than it had at the
+// ref, no version may go backwards, and any change at all needs a higher
+// catalog version. A workbench that did not exist at the ref is new and is
+// skipped. This compares commits, not the working tree.
+export function releaseDriftProblems(root, since) {
+  try {
+    const resolved = git(root, ['rev-parse', '--verify', '--quiet', `${since}^{commit}`])?.trim();
+    if (!resolved) return [`Cannot resolve "${since}" to a commit; fetch the release tags (git fetch --tags) or name an existing ref.`];
+    const changedSince = (paths) => (git(root, ['diff', '--name-only', '-z', resolved, 'HEAD', '--', ...paths]) ?? '').split('\0').filter(Boolean);
+    const problems = [];
+    for (const { id } of APPS) {
+      const before = versionAt(root, resolved, `apps/${id}/package.json`);
+      const after = versionAt(root, 'HEAD', `apps/${id}/package.json`);
+      if (before === null || after === null || !SEMVER.test(String(before)) || !SEMVER.test(String(after))) continue;
+      const files = changedSince([`apps/${id}`]).filter((file) => shipped(id, file)).map((file) => file.slice(`apps/${id}/`.length));
+      if (compareVersions(after, before) < 0) {
+        problems.push(`apps/${id} is ${after}, lower than ${before} at ${since}.`);
+      } else if (files.length && after === before) {
+        const listed = files.length > 6 ? `${files.slice(0, 6).join(', ')} and ${files.length - 6} more` : files.join(', ');
+        problems.push(`apps/${id} changed since ${since} (${listed}) but is still ${after}; bump its package version and add its changelog entry.`);
+      }
+    }
+    const catalogBefore = versionAt(root, resolved, 'package.json');
+    const catalogAfter = versionAt(root, 'HEAD', 'package.json');
+    if (catalogBefore !== null && catalogAfter !== null && SEMVER.test(String(catalogBefore)) && SEMVER.test(String(catalogAfter))) {
+      if (compareVersions(catalogAfter, catalogBefore) < 0) {
+        problems.push(`The catalog is ${catalogAfter}, lower than ${catalogBefore} at ${since}.`);
+      } else if (catalogAfter === catalogBefore && changedSince([]).length) {
+        problems.push(`The catalog changed since ${since} but package.json is still ${catalogAfter}; bump the catalog version and add its CHANGELOG.md section.`);
+      }
+    }
+    return problems;
+  } catch (error) {
+    if (error instanceof GitUnavailable) return [`git is not available, so check --since ${since} cannot compare with the release.`];
+    throw error;
+  }
+}
+
 // Every disagreement between the package versions and the surfaces and
 // changelogs, as messages. With a tag, the tag must also name the catalog
-// version, which is how the release workflow gates a publish.
-export function checkVersions(root = DEFAULT_ROOT, { tag } = {}) {
+// version, which is how the release workflow gates a publish. With since, a
+// previous release ref, releaseDriftProblems applies as well.
+export function checkVersions(root = DEFAULT_ROOT, { tag, since } = {}) {
   const versions = readVersions(root);
   const problems = tag === undefined ? [] : tagProblems(tag, versions.catalog);
   if (versions.catalog !== null && !SEMVER.test(String(versions.catalog))) problems.push(`package.json: version "${versions.catalog}" is not x.y.z.`);
@@ -211,6 +278,7 @@ export function checkVersions(root = DEFAULT_ROOT, { tag } = {}) {
     problems.push(...standaloneStampProblems(`apps/${id}/standalone.html`, readText(root, `apps/${id}/standalone.html`), label, versions.apps[id]));
   }
   if (versions.catalog !== null) problems.push(...rootChangelogProblems(readText(root, 'CHANGELOG.md'), versions.catalog));
+  if (since !== undefined) problems.push(...releaseDriftProblems(root, since));
   return problems;
 }
 
@@ -229,17 +297,17 @@ export function writeReleaseAssets(dir, root = DEFAULT_ROOT) {
   });
 }
 
-const USAGE = 'Usage: node scripts/versions.mjs <sync | check [--tag vX.Y.Z] | notes vX.Y.Z | assets <dir>> [--root <dir>]';
+const USAGE = 'Usage: node scripts/versions.mjs <sync | check [--tag vX.Y.Z] [--since <ref>] | notes vX.Y.Z | assets <dir>> [--root <dir>]';
 
 function main(argv) {
   const { values, positionals } = parseArgs({
     args: argv,
     allowPositionals: true,
-    options: { root: { type: 'string' }, tag: { type: 'string' } },
+    options: { root: { type: 'string' }, tag: { type: 'string' }, since: { type: 'string' } },
   });
   const [command, ...extra] = positionals;
   const root = values.root ? resolve(values.root) : DEFAULT_ROOT;
-  if (values.tag !== undefined && command !== 'check') {
+  if ((values.tag !== undefined || values.since !== undefined) && command !== 'check') {
     console.error(USAGE);
     return 1;
   }
@@ -249,16 +317,19 @@ function main(argv) {
     return 0;
   }
   if (command === 'check' && extra.length === 0) {
-    const problems = checkVersions(root, { tag: values.tag });
+    const problems = checkVersions(root, { tag: values.tag, since: values.since });
     const tagIssues = values.tag === undefined ? [] : tagProblems(values.tag, readVersions(root).catalog);
     for (const problem of problems) console.error(problem);
     if (problems.length > tagIssues.length) {
       console.error('After changing a package version, run npm run versions:sync and npm run build:standalone, and put the matching entry at the top of that changelog, which stays in descending SemVer order.');
     }
     if (problems.length) return 1;
-    console.log(values.tag === undefined
-      ? 'Version surfaces, changelogs and standalone stamps match the packages.'
-      : `Version surfaces, changelogs and standalone stamps match the packages, and ${values.tag} names the catalog version.`);
+    const clauses = [];
+    if (values.tag !== undefined) clauses.push(`${values.tag} names the catalog version`);
+    if (values.since !== undefined) clauses.push(`nothing shipped changed since ${values.since} without a version bump`);
+    console.log(clauses.length
+      ? `Version surfaces, changelogs and standalone stamps match the packages, and ${clauses.join(', and ')}.`
+      : 'Version surfaces, changelogs and standalone stamps match the packages.');
     return 0;
   }
   if (command === 'notes' && extra.length === 1) {
