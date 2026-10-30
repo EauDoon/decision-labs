@@ -19,6 +19,11 @@ workbench keeps its own version and detailed notes in `apps/<id>/CHANGELOG.md`.
   than terminating the request handler or exposing a nonpublic file.
 - Consistent native path resolution keeps ordinary public files available when
   Windows exposes the checkout through an equivalent short-name path.
+- The Smallest Agreement: importing participant group or clause option CSV
+  keeps a leading apostrophe that belongs to a group name, clause title,
+  option label or note, such as `'s-Hertogenbosch`. Only an apostrophe that
+  escapes a spreadsheet formula prefix is removed, which is the only place
+  the exporters add one, so an exported table imports back unchanged.
 
 ## [1.0.0] - 2026-10-09
 
