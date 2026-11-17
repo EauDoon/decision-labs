@@ -76,14 +76,23 @@ function surfaces(versions) {
 }
 
 // Lines outside fenced code blocks, so example output cannot pass for a heading.
-function proseLines(text) {
-  let fenced = false;
-  const lines = [];
+function* classifiedLines(text) {
+  let marker = null;
   for (const line of text.split(/\r?\n/)) {
-    if (line.startsWith('```')) fenced = !fenced;
-    else if (!fenced) lines.push(line);
+    if (marker !== null) {
+      const close = line.match(/^ {0,3}(`+|~+)[ \t]*$/);
+      if (close && close[1][0] === marker[0] && close[1].length >= marker.length) marker = null;
+      yield { line, prose: false };
+    } else {
+      const open = line.match(/^ {0,3}(`{3,}|~{3,})(.*)$/);
+      if (open && !(open[1][0] === '`' && open[2].includes('`'))) marker = open[1];
+      yield { line, prose: marker === null };
+    }
   }
-  return lines;
+}
+
+function proseLines(text) {
+  return [...classifiedLines(text)].filter(item => item.prose).map(item => item.line);
 }
 
 // An app changelog has one "# Changelog" title on line 1 and "## x.y.z" entry
@@ -169,13 +178,10 @@ export function releaseNotes(text, tag) {
   const version = String(tag).match(TAG)?.[1];
   if (!version) throw new Error(`Tag "${tag}" is not a vX.Y.Z release tag.`);
   const heading = new RegExp(`^## \\[${escape(version)}\\](?: |$)`);
-  let fenced = false;
   let inside = false;
   let found = false;
   const body = [];
-  for (const line of text.split(/\r?\n/)) {
-    const prose = !fenced;
-    if (line.startsWith('```')) fenced = !fenced;
+  for (const { line, prose } of classifiedLines(text)) {
     if (prose && line.startsWith('## ')) {
       if (inside) break;
       inside = found = heading.test(line);

@@ -7,7 +7,7 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { APPS } from '../scripts/apps.mjs';
-import { checkVersions, readVersions, releaseNotes, syncVersions } from '../scripts/versions.mjs';
+import { appChangelogProblems, rootChangelogProblems, checkVersions, readVersions, releaseNotes, syncVersions } from '../scripts/versions.mjs';
 
 const repo = fileURLToPath(new URL('../', import.meta.url));
 const script = fileURLToPath(new URL('../scripts/versions.mjs', import.meta.url));
@@ -487,3 +487,14 @@ test('check combines --since with --tag', (t) => {
     assert.match(result.stderr, /^Usage: node scripts\/versions\.mjs/, args.join(' '));
   }
 });
+
+for (const [opening, inner, closing] of [['~~~~', '~~~', '~~~~'], ['````', '```', '`````'], ['  ~~~example', '```', '  ~~~']]) {
+  test(`changelog code samples preserve fence identity: ${opening}`, () => {
+    const sample = [opening, inner, '# Sample', '## [9.9.9] - 2026-01-01', '[sample]: https://example.com', closing].join('\n');
+    const root = `# Changelog\n\n## [1.0.0] - 2026-11-18\n\n${sample}\n\nKept after code.\n\n## [0.9.0] - 2026-01-01\nOld.\n`;
+    assert.deepEqual(rootChangelogProblems(root, '1.0.0'), []);
+    assert.equal(releaseNotes(root, 'v1.0.0'), `${sample.trimStart()}\n\nKept after code.\n`);
+    const app = `# Changelog\n\n## 1.0.0\n${sample}\n\n## 0.9.0\nOlder.\n`;
+    assert.deepEqual(appChangelogProblems('example.md', app, '1.0.0'), []);
+  });
+}

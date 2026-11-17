@@ -12,6 +12,8 @@ workbench keeps its own version and detailed notes in `apps/<id>/CHANGELOG.md`.
 
 ### Local maintenance
 
+- Changelog validation and release-note extraction respect tilde fences, longer backtick fences and indented fences; code examples no longer invent releases or truncate notes.
+
 - Read-only standalone artifact manifest CLI with per-workbench versions, exact byte sizes and SHA-256 digests.
 
 
