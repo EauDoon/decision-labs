@@ -29,15 +29,15 @@ test('CLI emits machine-readable JSON and rejects unexpected arguments', () => {
   assert.equal(invalid.status, 2);
   assert.equal(invalid.stdout, '');
 });
-test('a missing standalone fails instead of returning a partial manifest', async () => {
+for (const missing of APPS) test(`missing ${missing.id} fails without returning a partial manifest`, async () => {
   const root = mkdtempSync(join(tmpdir(), 'manifest fixture '));
   try {
     writeFileSync(join(root, 'package.json'), JSON.stringify({ version: '1.0.0' }));
-    for (const [index, app] of APPS.entries()) {
+    for (const app of APPS) {
       const dir = join(root, 'apps', app.id);
       mkdirSync(dir, { recursive: true });
       writeFileSync(join(dir, 'package.json'), JSON.stringify({ version: '1.0.0' }));
-      if (index < APPS.length - 1) writeFileSync(join(dir, 'standalone.html'), '<html></html>');
+      if (app.id !== missing.id) writeFileSync(join(dir, 'standalone.html'), '<html></html>');
     }
     mkdirSync(join(root, 'scripts'));
     for (const file of ['manifest.mjs', 'apps.mjs']) copyFileSync(new URL(`../scripts/${file}`, import.meta.url), join(root, 'scripts', file));

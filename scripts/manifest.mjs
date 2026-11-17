@@ -6,13 +6,16 @@ import { APPS } from './apps.mjs';
 
 export async function artifactManifest(base = new URL('../', import.meta.url)) {
   const catalog = JSON.parse(await readFile(new URL('package.json', base), 'utf8'));
-  const apps = await Promise.all(APPS.map(async ({ id, label }) => {
+  const apps = [];
+  // Complete each artifact before starting the next. A missing or invalid file
+  // must not reject while other reads still hold files open (notably on Windows).
+  for (const { id, label } of APPS) {
     const metadata = JSON.parse(await readFile(new URL(`apps/${id}/package.json`, base), 'utf8'));
     const path = `apps/${id}/standalone.html`;
     const bytes = await readFile(new URL(path, base));
-    return { id, label, version: metadata.version, path, bytes: bytes.length,
-      sha256: createHash('sha256').update(bytes).digest('hex') };
-  }));
+    apps.push({ id, label, version: metadata.version, path, bytes: bytes.length,
+      sha256: createHash('sha256').update(bytes).digest('hex') });
+  }
   return { schemaVersion: 1, catalogVersion: catalog.version, apps };
 }
 
