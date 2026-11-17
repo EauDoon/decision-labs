@@ -10,6 +10,11 @@ workbench keeps its own version and detailed notes in `apps/<id>/CHANGELOG.md`.
 
 ## [Unreleased]
 
+### Local maintenance
+
+- Read-only standalone artifact manifest CLI with per-workbench versions, exact byte sizes and SHA-256 digests.
+
+
 ### Added
 
 - The Smallest Agreement: an analyst CLI `import` command,

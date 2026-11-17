@@ -94,3 +94,12 @@ four actual standalone pages, including JSON round trips and unavailable storage
 It uses separately installed browser tooling and adds no application dependency.
 
 The repository is released under the [MIT License](LICENSE).
+
+## Portable artifact manifest
+
+Run `node scripts/manifest.mjs > manifest.json` to record the catalog and
+workbench versions, standalone paths, byte sizes and SHA-256 digests. This
+offline, read-only command emits deterministic JSON and fails if an artifact
+is missing. Compare manifests when moving standalone files between devices.
+A matching digest establishes byte equality, not provenance, model validity
+or a successful build; run the checks above before distributing artifacts.
