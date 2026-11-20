@@ -247,6 +247,17 @@ test('exit volume and adverse-shock thresholds match the documented formulas', (
   assert.equal(Math.round(result.firstBreakpoint.shock.changePct * 10) / 10, 4);
 });
 
+test('exit volume has no solution when a positive commitment requires loss-making transactions', () => {
+  const participant = {
+    revenueShare: 0.25, variableCostPerTransaction: 0.5,
+    minimumAcceptableProfit: 0, fixedMonthlyCost: 0, riskCost: 0, minimumCommitment: 10,
+  };
+  assert.equal(exitVolume(participant, 1), null);
+  assert.equal(exitVolume({ ...participant, minimumCommitment: 0 }, 1), 0);
+  assert.equal(exitVolume({ ...participant, variableCostPerTransaction: 0.25 }, 1), 10);
+  assert.equal(exitVolume({ ...participant, variableCostPerTransaction: 0.25, fixedMonthlyCost: 1 }, 1), null);
+});
+
 test('a deal already at an exit volume reports an at-breakpoint shock of zero', () => {
   const config = clonePreset('balanced');
   const liquidity = config.participants.find((participant) => participant.id === 'liquidity-partner');

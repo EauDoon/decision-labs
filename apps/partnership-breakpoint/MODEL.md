@@ -55,7 +55,7 @@ Profit exit volume is:
 (M + K + R) / contributionPerTransaction
 ```
 
-when contribution per transaction is positive. The displayed exit volume is the greater of this profit threshold and any minimum commitment. When the threshold cannot be met by volume, it is marked impossible.
+when contribution per transaction is positive. The displayed exit volume is the greater of this profit threshold and any minimum commitment. If contribution is zero and overhead and the profit floor are zero, the exit volume is the commitment. If contribution is negative and overhead and the profit floor are zero, only zero volume clears the profit test, so a positive commitment makes the threshold impossible. Non-positive contribution cannot cover a positive overhead or profit floor. Capacity and addressable demand are evaluated separately.
 
 A participant holds only if all three tests pass:
 
@@ -85,7 +85,7 @@ net_t = sum of participant profit_t - setupExpense_t
 cumulativeNet_t = sum of net_1..t
 ```
 
-Recovery compares cumulative operating contribution against cumulative setup expense. With no setup expense there is nothing to recover. Otherwise the first period with non-negative cumulative net recovers; when no such period exists within the horizon, recovery is impossible if the best single-period net is non-positive (repeating the stated economics can never close the gap), and beyond the horizon otherwise, reporting the shortfall.
+Recovery compares cumulative operating contribution against cumulative setup expense. With no setup expense there is nothing to recover. Otherwise payback starts at the earliest period at or after the last planned setup expense where cumulative net is non-negative and remains so through the end of the plan. Earlier positive periods that precede an outlay or another deficit do not qualify. If the plan ends short, recovery is classified as impossible if the best single-period net is non-positive (repeating the stated economics can never close the gap), and beyond the horizon otherwise. The reported shortfall is the ending deficit.
 
 Cash timing is a separate view of the same earned amounts. With whole-period collection and payment lags:
 

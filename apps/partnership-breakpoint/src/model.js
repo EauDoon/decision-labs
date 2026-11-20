@@ -1109,11 +1109,12 @@ export function breakEvenVolume(participant, feePerTransaction) {
 export function exitVolume(participant, feePerTransaction) {
   const contribution = contributionPerTransaction(participant, feePerTransaction);
   const requiredProfit = participant.minimumAcceptableProfit + participant.fixedMonthlyCost + participant.riskCost;
-  let profitVolume;
-  if (contribution > 0) profitVolume = requiredProfit / contribution;
-  else if (requiredProfit === 0) profitVolume = 0;
-  else return null;
-  return Math.max(profitVolume, participant.minimumCommitment ?? 0);
+  const commitment = participant.minimumCommitment ?? 0;
+  if (contribution > 0) return Math.max(requiredProfit / contribution, commitment);
+  // With negative contribution and no overhead or profit floor, only zero
+  // volume meets the profit test. A positive commitment rules that out.
+  if (requiredProfit > 0 || (contribution < 0 && commitment > 0)) return null;
+  return commitment;
 }
 
 function economicConstraint(participant, feePerTransaction, exitThreshold) {
@@ -1996,9 +1997,13 @@ export function evaluateCommercialPlan(config) {
   if (totalSetup <= 0) {
     recovery = { status: 'none-required', period: null, cumulativeNet, shortfall: 0, reason: 'The plan carries no setup expense, so there is nothing to recover.' };
   } else {
-    const recoveredAt = periodTotals.find((row) => row.cumulativeNet >= -EPSILON);
+    // Payback cannot precede the final scheduled setup expense or be
+    // reversed by any later period in the plan.
+    const lastSetup = periodTotals.findLastIndex((row) => row.setupExpense > 0);
+    const lastDeficit = periodTotals.findLastIndex((row) => row.cumulativeNet < -EPSILON);
+    const recoveredAt = periodTotals[Math.max(lastSetup, lastDeficit + 1)];
     if (recoveredAt) {
-      recovery = { status: 'recovered', period: recoveredAt.period, cumulativeNet, shortfall: 0, reason: `Cumulative operating contribution covers setup expense from period ${recoveredAt.period}.` };
+      recovery = { status: 'recovered', period: recoveredAt.period, cumulativeNet, shortfall: 0, reason: `Cumulative net covers all scheduled setup expense from period ${recoveredAt.period} through the end of the plan.` };
     } else if (bestPeriodNet <= EPSILON) {
       recovery = { status: 'impossible', period: null, cumulativeNet, shortfall: -cumulativeNet, reason: 'No single period earns more than its setup share, so repeating the stated economics can never recover the setup expense.' };
     } else {

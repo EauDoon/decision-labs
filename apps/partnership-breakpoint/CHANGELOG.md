@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.9.1 - 2026-11-20
+
+### Fixed
+
+- Schedule setup payback no earlier than the final setup expense and only when cumulative net remains non-negative through the plan.
+- Report no feasible exit volume when a positive commitment would require loss-making transactions and cannot meet the profit floor.
+
 ## 1.9.0 - 2026-10-09
 
 Release identity, launch failures and danger button contrast in Partnership Breakpoint 1.9.0
