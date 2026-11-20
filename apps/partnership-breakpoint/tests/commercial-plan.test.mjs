@@ -58,6 +58,40 @@ test('recovery distinguishes none-required, beyond-horizon, and impossible', () 
   assert.equal(impossible.recovery.status, 'impossible');
 });
 
+test('setup recovery accounts for later expenses and a durable payback within the horizon', () => {
+  const config = twoParticipantCase();
+  delete config.plan.periods[0].setupExpense;
+  config.plan.periods[1].setupExpense = 2000;
+  const short = evaluateCommercialPlan(config);
+  assert.deepEqual(short.periodTotals.map((row) => row.cumulativeNet), [550, -900]);
+  assert.equal(short.recovery.status, 'beyond-horizon');
+  assert.equal(short.recovery.period, null);
+  assert.equal(short.recovery.shortfall, 900);
+
+  config.plan.periods[1].setupExpense = 100;
+  assert.equal(evaluateCommercialPlan(config).recovery.period, 2);
+
+  config.plan.periods[1] = { volume: 1000, feePerTransaction: 0, setupExpense: 200 };
+  config.plan.periods.push(
+    { volume: 0, feePerTransaction: 1 },
+    { volume: 1000, feePerTransaction: 1 },
+  );
+  const recovered = evaluateCommercialPlan(config);
+  assert.deepEqual(recovered.periodTotals.map((row) => row.cumulativeNet), [550, -100, -250, 300]);
+  assert.equal(recovered.recovery.status, 'recovered');
+  assert.equal(recovered.recovery.period, 4);
+  assert.equal(recovered.recovery.shortfall, 0);
+});
+
+test('a loss after the last setup expense invalidates a temporary recovery', () => {
+  const config = twoParticipantCase();
+  config.plan.periods[1] = { volume: 0, feePerTransaction: 1 };
+  const short = evaluateCommercialPlan(config);
+  assert.deepEqual(short.periodTotals.map((row) => row.cumulativeNet), [50, -100]);
+  assert.equal(short.recovery.status, 'beyond-horizon');
+  assert.equal(short.recovery.shortfall, 100);
+});
+
 test('first constrained period names the period an exit test fails', () => {
   const config = twoParticipantCase();
   config.plan.periods[1] = { volume: 1000, feePerTransaction: 0.1, addressableVolume: 1000 };
