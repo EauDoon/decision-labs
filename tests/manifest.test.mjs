@@ -29,6 +29,39 @@ test('CLI emits machine-readable JSON and rejects unexpected arguments', () => {
   assert.equal(invalid.status, 2);
   assert.equal(invalid.stdout, '');
 });
+test('verify compares the entire manifest without trusting its paths or key order', async () => {
+  const script = fileURLToPath(new URL('../scripts/manifest.mjs', import.meta.url));
+  const dir = mkdtempSync(join(tmpdir(), 'manifest verification '));
+  const file = join(dir, 'manifest.json');
+  const check = (record) => {
+    writeFileSync(file, '\uFEFF' + JSON.stringify(record));
+    return spawnSync(process.execPath, [script, '--verify', file], { encoding: 'utf8' });
+  };
+  try {
+    const manifest = await artifactManifest();
+    assert.equal(check({ apps: manifest.apps, catalogVersion: manifest.catalogVersion, schemaVersion: 1 }).status, 0);
+    for (const change of [m => m.apps.pop(), m => m.apps.reverse(), m => { m.apps[0].sha256 = '0'.repeat(64); },
+      m => { m.apps[0].path = '../not-a-file'; }, m => { m.catalogVersion += '.9'; }, m => { m.extra = true; }]) {
+      const candidate = structuredClone(manifest);
+      change(candidate);
+      const result = check(candidate);
+      assert.equal(result.status, 1);
+      assert.equal(result.stdout, '');
+      assert.match(result.stderr, /does not match/);
+    }
+  } finally { rmSync(dir, { recursive: true, force: true }); }
+});
+
+test('invalid catalog version cannot produce a successful incomplete manifest', async () => {
+  const dir = mkdtempSync(join(tmpdir(), 'manifest version '));
+  try {
+    for (const metadata of [{}, { version: '1.2' }, { version: false }]) {
+      writeFileSync(join(dir, 'package.json'), JSON.stringify(metadata));
+      await assert.rejects(artifactManifest(pathToFileURL(`${dir}/`)), /catalog must declare/);
+    }
+  } finally { rmSync(dir, { recursive: true, force: true }); }
+});
+
 for (const missing of APPS) test(`missing ${missing.id} fails without returning a partial manifest`, async () => {
   const root = mkdtempSync(join(tmpdir(), 'manifest fixture '));
   try {
