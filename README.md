@@ -100,6 +100,6 @@ The repository is released under the [MIT License](LICENSE).
 Run `node scripts/manifest.mjs > manifest.json` to record the catalog and
 workbench versions, standalone paths, byte sizes and SHA-256 digests. This
 offline, read-only command emits deterministic JSON and fails if an artifact
-is missing. Compare manifests when moving standalone files between devices.
+is missing or a version is malformed. For the next catalog release, verify a transferred checkout with `node scripts/manifest.mjs --verify manifest.json`. It exits 0 only when the independently saved inventory matches every expected artifact and its metadata, or 1 on mismatch or unreadable input. Paths in the saved manifest are never opened.
 A matching digest establishes byte equality, not provenance, model validity
 or a successful build; run the checks above before distributing artifacts.
