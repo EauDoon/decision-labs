@@ -55,6 +55,13 @@ function run(root, ...args) {
   return spawnSync(process.execPath, [script, ...args, '--root', root], { encoding: 'utf8' });
 }
 
+test('valid adjacent version components retain exact ordering above the safe integer range', () => {
+  const first = '1.0.9007199254740993';
+  const second = '1.0.9007199254740992';
+  assert.deepEqual(appChangelogProblems('fixture', `# Changelog\n## ${first}\n## ${second}`, first), []);
+  assert.equal(appChangelogProblems('fixture', `# Changelog\n## ${second}\n## ${first}`, second).length, 1);
+});
+
 test('the real tree already matches its package versions', (t) => {
   assert.deepEqual(checkVersions(repo), []);
   const root = fixture(t);

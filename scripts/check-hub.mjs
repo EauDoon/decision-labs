@@ -15,7 +15,7 @@ function listed(directory, extension) {
 }
 const scripts = [...listed('scripts', '.mjs'), ...listed('tests', '.mjs')];
 const workflows = listed('.github/workflows', '.yml');
-const copy = ['index.html', '404.html', 'README.md', 'package.json', ...workflows, ...scripts];
+const copy = ['index.html', 'architecture.html', '404.html', 'README.md', 'package.json', ...workflows, ...scripts];
 
 let failed = 0;
 for (const file of scripts) {

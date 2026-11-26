@@ -20,6 +20,8 @@ model, draft storage, version, standalone build, documentation, and tests.
 | [The Smallest Agreement](apps/smallest-agreement/) | 1.7.0 | What is the lowest-cost set of clause changes that crosses an approval threshold while respecting floors, locks, and a change budget? | **Neighbourhood Plan** |
 | [Weekend Gap](apps/weekend-gap/) | 1.9.0 | How does synthetic AUD redemption demand move from Friday to Monday when reserves and settlement windows do not fully overlap? | **Normal Friday**, 72-hour case |
 
+The architecture directory includes a local analyst command for replaying each workbench's JSON export from the checkout root.
+
 Source model notes: [Partnership Breakpoint MODEL.md](apps/partnership-breakpoint/MODEL.md), [Common Cart MODEL.md](apps/common-cart/MODEL.md), [The Smallest Agreement MODEL.md](apps/smallest-agreement/MODEL.md), and [Weekend Gap MODEL.md](apps/weekend-gap/MODEL.md).
 
 ## Quickstart
@@ -30,7 +32,7 @@ interface, styles, and model in one file. Open it directly in a browser; it
 makes no network requests. Use **Export JSON** when a draft needs to move to
 another person or device.
 
-The optional local launcher serves only the catalog and the four standalone
+The optional local launcher serves the catalog, the architecture page and the four standalone
 pages on loopback:
 
 ```bash
@@ -40,6 +42,13 @@ npm start
 Or run the launcher directly: `node scripts/serve.mjs`. Node.js 20 or newer is
 needed for the launcher and checks. There are no runtime package dependencies
 and no `npm install` step.
+
+Open [Workbench architecture](architecture.html) from disk or the catalog to trace each
+workbench from model and interface through its standalone builder, browser page and analyst CLI.
+Select a component to follow its dependencies, jump to the source file or copy the **Link to this view** address.
+The four starting cases and written build relationships work with JavaScript disabled.
+The JSON inspector shows the selected workbench as a local read-only `data.workbench` projection.
+The page requires no installation or network access. Source and model-note links open GitHub when selected.
 
 For a worked example, read the [CASE_STUDY.md repository documentation](https://github.com/EauDoon/decision-labs/blob/main/docs/CASE_STUDY.md).
 
@@ -100,6 +109,6 @@ The repository is released under the [MIT License](LICENSE).
 Run `node scripts/manifest.mjs > manifest.json` to record the catalog and
 workbench versions, standalone paths, byte sizes and SHA-256 digests. This
 offline, read-only command emits deterministic JSON and fails if an artifact
-is missing or a version is malformed. For the next catalog release, verify a transferred checkout with `node scripts/manifest.mjs --verify manifest.json`. It exits 0 only when the independently saved inventory matches every expected artifact and its metadata, or 1 on mismatch or unreadable input. Paths in the saved manifest are never opened.
+is missing or a version is malformed. For the next catalog release, verify a transferred checkout with `node scripts/manifest.mjs --verify manifest.json`. It exits 0 only when the independently saved inventory matches every expected artifact and its metadata, or 1 on mismatch or unreadable input. A mismatch identifies the catalog field or workbench record to inspect. Paths in the saved manifest are never opened.
 A matching digest establishes byte equality, not provenance, model validity
 or a successful build; run the checks above before distributing artifacts.

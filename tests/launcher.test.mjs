@@ -69,6 +69,10 @@ test('launcher serves the catalog and four standalone workbenches with security 
   assert.match(page.body, /The workbenches/);
   assert.equal([...page.body.matchAll(/class="open" href="apps\//g)].length, 4);
   assert.match(page.body, /Trust and limits/);
+  const architecture = await call(server, '/architecture.html');
+  assert.equal(architecture.status, 200);
+  assert.equal(architecture.headers['content-security-policy'], CONTENT_SECURITY_POLICY);
+  assert.match(architecture.body, /Workbench directory/);
   assert.match(page.headers['content-security-policy'], /connect-src 'none'/);
   assert.equal(page.headers['content-security-policy'], CONTENT_SECURITY_POLICY);
   assert.equal(page.headers['x-content-type-options'], 'nosniff');
@@ -86,7 +90,7 @@ test('launcher serves the catalog and four standalone workbenches with security 
 
 test('launcher allowlist, methods, hosts, queries, and HEAD semantics stay closed', async (t) => {
   const server = await runningServer(t);
-  assert.deepEqual(PUBLIC_PATHS, ['/', '/index.html', ...APP_PATHS]);
+  assert.deepEqual(PUBLIC_PATHS, ['/', '/index.html', '/architecture.html', ...APP_PATHS]);
   assert.equal(publicFile('/'), 'index.html');
   assert.equal(publicFile('/index.html'), 'index.html');
   assert.equal(publicFile('/apps/weekend-gap/standalone.html'), 'apps/weekend-gap/standalone.html');

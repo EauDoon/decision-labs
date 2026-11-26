@@ -39,6 +39,12 @@ test('verify compares the entire manifest without trusting its paths or key orde
   };
   try {
     const manifest = await artifactManifest();
+    const altered = structuredClone(manifest);
+    altered.apps[2].sha256 = 'synthetic-mismatch';
+    const mismatch = check(altered);
+    assert.equal(mismatch.status, 1);
+    assert.match(mismatch.stderr, /smallest-agreement \(sha256\)/);
+    assert.doesNotMatch(mismatch.stderr, /synthetic-mismatch/);
     assert.equal(check({ apps: manifest.apps, catalogVersion: manifest.catalogVersion, schemaVersion: 1 }).status, 0);
     for (const change of [m => m.apps.pop(), m => m.apps.reverse(), m => { m.apps[0].sha256 = '0'.repeat(64); },
       m => { m.apps[0].path = '../not-a-file'; }, m => { m.catalogVersion += '.9'; }, m => { m.extra = true; }]) {

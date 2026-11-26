@@ -17,7 +17,7 @@ const browser = await chromium.launch({ headless: true, executablePath: process.
 const server = createLauncher();
 await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
 const origin = `http://127.0.0.1:${server.address().port}`;
-const AXE_PAGES = ['index.html', '404.html', ...APP_ROUTES];
+const AXE_PAGES = ['index.html', '404.html', 'architecture.html', ...APP_ROUTES];
 const cases = [
   { id: 'common-cart', field: 'input[data-field="quantity"]', value: '3', alternate: '4', metric: '#metric-units', result: /^15$/, dismiss: '#coach-dismiss', export: '#export-button', import: '#import-file', status: '#status', share: '#share-button' },
   { id: 'partnership-breakpoint', field: '[data-path="deal.feePerTransaction"]', value: '0.19', alternate: '0.18', metric: '.status-line', result: /exit|fail|not|break/i, dismiss: '[data-action="dismiss-coach"]', export: '[data-action="export"]', import: '[data-action="import"]', status: '#notice' },
@@ -101,9 +101,51 @@ async function catalogJourney() {
   await context.close();
 }
 
+async function architectureJourney() {
+  for (const url of [new URL('../index.html', import.meta.url).href, origin + '/']) {
+    const context = await browser.newContext({ viewport: { width: 390, height: 844 }, reducedMotion: 'reduce', hasTouch: true });
+    const page = await context.newPage();
+    const { errors, remoteRequests } = watch(page);
+    await page.goto(url);
+    await page.getByRole('link', { name: 'Workbench architecture' }).click();
+    await page.locator('#bench').selectOption('common-cart');
+    await page.locator('#part').selectOption('builder');
+    const location = await page.locator('#permalink').getAttribute('href');
+    await page.goto(new URL(location, page.url()).href);
+    await page.reload();
+    assert.equal(await page.locator('#bench').inputValue(), 'common-cart');
+    assert.equal(await page.locator('#part').inputValue(), 'builder');
+    await page.getByRole('button', { name: 'Uses Model' }).tap();
+    assert.equal(await page.locator('#part').inputValue(), 'model');
+    const shape = page.locator('#scene polygon').first();
+    const initial = await shape.getAttribute('points');
+    await page.getByRole('button', { name: 'Rotate left' }).press('Enter');
+    assert.notEqual(await shape.getAttribute('points'), initial);
+    await page.getByRole('button', { name: 'Reset view' }).tap();
+    assert.equal(await shape.getAttribute('points'), initial);
+    assert.equal(await page.locator('#open').getAttribute('href'), APP_ROUTES[1]);
+    const graph = JSON.parse(await page.locator('#query-result').textContent()).data.workbench;
+    assert.equal(graph.id, 'common-cart');
+    assert.equal(graph.nodes.length, 5);
+    assert.equal(graph.edges.length, 5);
+    assert.ok((await pageWidth(page)).width <= 391);
+    assert.deepEqual(errors, []);
+    assert.deepEqual(remoteRequests, []);
+    await context.close();
+  }
+  const context = await browser.newContext({ javaScriptEnabled: false });
+  const page = await context.newPage();
+  await page.goto(origin + '/architecture.html');
+  assert.equal(await page.locator('#components li:visible').count(), 5);
+  assert.deepEqual(await page.getByRole('link', { name: 'Open workbench' }).evaluateAll(items => items.map(item => item.getAttribute('href'))), [...APP_ROUTES]);
+  await context.close();
+  console.log('PASS architecture: file and launcher entry, touch, keyboard, restored deep link, 390px, static fallback, no external requests');
+}
+
 try {
   if (axeSource) await axePass();
   await catalogJourney();
+  await architectureJourney();
   for (const item of cases) {
     const storageKeys = item.id === 'partnership-breakpoint'
       ? ['partnership-breakpoint.v1', 'partnership-breakpoint.cases.v1']
