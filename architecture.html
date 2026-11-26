@@ -10,16 +10,16 @@
     * { box-sizing: border-box; }
     body { margin: 0; border-top: 6px solid var(--accent); }
     main, header { max-width: 1200px; margin: auto; padding-inline: clamp(16px, 5vw, 64px); }
-    header { padding-block: 18px; border-bottom: 1px solid var(--line); }
+    header { padding-block: 12px; border-bottom: 1px solid var(--line); }
     a { color: #005744; text-underline-offset: 3px; }
     header a { font-weight: 700; }
     main { padding-bottom: 4rem; }
     h1, h2, h3, p { margin: 0; }
-    h1, h2 { font: 500 clamp(2.5rem, 6vw, 5.2rem)/1.02 Georgia, serif; letter-spacing: -.045em; }
+    h1, h2 { font: 500 clamp(2rem, 4.5vw, 3.7rem)/1.02 Georgia, serif; letter-spacing: -.045em; }
     h2 { font-size: clamp(1.8rem, 4vw, 2.8rem); }
     h3 { line-height: 1.2; }
-    .intro { max-width: 50rem; padding: 3rem 0 1.7rem; }
-    .intro p { margin-top: .8rem; color: var(--muted); }
+    .intro { padding: clamp(1.3rem, 3vw, 2.4rem) 0 1.2rem; }
+    .intro p { max-width: 62ch; margin-top: .55rem; color: var(--muted); }
     [hidden] { display: none !important; }
     button, select { font: inherit; min-height: 44px; border: 1px solid var(--line); color: var(--ink); background: #fff; border-radius: .3rem; padding: .3rem .7rem; }
     button { cursor: pointer; }
@@ -28,25 +28,36 @@
     .skip { position: absolute; left: 1rem; top: -6rem; }
     .skip:focus { top: 1rem; background: white; padding: .6rem; z-index: 5; }
     .picker, .controls, .links { display: flex; flex-wrap: wrap; gap: .55rem; align-items: center; }
-    .picker { margin-bottom: .8rem; }
+    .picker { display: grid; grid-template-columns: minmax(185px, 260px) minmax(175px, 235px) 1fr; gap: .85rem; padding: .8rem 0 1rem; border-top: 1px solid var(--line); }
+    .field { display: grid; gap: .24rem; min-width: 0; }
+    .field label { font-size: .83rem; color: var(--muted); }
+    .field select { width: 100%; }
+    #open { justify-self: end; align-self: end; display: inline-flex; align-items: center; justify-content: center; gap: .4rem; min-height: 44px; padding: .4rem .9rem; background: #0c5947; color: white; text-decoration: none; font-weight: 650; border-radius: .3rem; }
+    #open:hover { background: #074232; }
     label { font-weight: 650; }
     select { max-width: 100%; }
     .layout { display: grid; grid-template-columns: minmax(0, 1.9fr) minmax(225px, 1fr); border: 1px solid var(--line); border-radius: .6rem; overflow: hidden; background: #fff; }
-    .plot { background: #102924; color: #f4f7e8; min-width: 0; padding: .75rem; }
-    .plot svg { display: block; width: 100%; height: auto; overflow: hidden; touch-action: pan-y; cursor: grab; }
+    .plot { display: flex; flex-direction: column; justify-content: center; background: #102924; color: #f4f7e8; min-width: 0; padding: .75rem; }
+    .plot svg { display: block; width: 100%; height: auto; aspect-ratio: 560 / 290; overflow: hidden; touch-action: pan-y; cursor: grab; }
     .plot svg:active { cursor: grabbing; }
     .plot svg text { pointer-events: none; }
-    @media (max-width: 520px) { .plot svg text { font-size: 23px; }
-    } .plot .hint { color: #c0d7c9; font-size: .82rem; margin: .5rem 0; }
+    .plot [data-node]:hover polygon { stroke: #dbedce; }
+    .plot .hint { color: #c0d7c9; font-size: .82rem; margin: .5rem 0; }
+    .plot-footer { border-top: 1px solid #375548; margin-top: .25rem; }
+    .controls { gap: .4rem; }
     .controls button { background: #193930; color: #f4f7e8; border-color: #688778; font-size: .85rem; }
     .controls button:hover { background: #295047; }
     .detail { padding: 1.3rem; min-width: 0; }
-    .detail select { width: 100%; margin: .3rem 0 1rem; }
+    .detail { border-left: 1px solid var(--line); }
+    .detail-title { display: flex; align-items: center; gap: .55rem; font-size: clamp(1.5rem, 3vw, 2.1rem); }
+    .detail-title::before { content: ""; width: .62rem; height: .62rem; flex: none; background: #bc7840; transform: rotate(45deg); }
+    .detail .source { display: block; margin: .65rem 0 1rem; }
+    .detail .view-link { display: inline-block; margin-top: .7rem; padding: .35rem 0; }
     .detail p { color: var(--muted); margin: .5rem 0; }
     .detail .source { font: .9rem/1.45 ui-monospace, monospace; overflow-wrap: anywhere; }
     .links { margin-top: .8rem; font-size: .9rem; }
     .detail .connections-heading { font-family: inherit; font-weight: 700; letter-spacing: normal; margin-top: .85rem; font-size: .85rem; color: var(--muted); }
-    .detail .links button { min-height: 40px; }
+    .detail .links button { min-height: 44px; }
     .reference { margin-top: 2.5rem; }
     .reference > p { color: var(--muted); margin-block: .5rem 1rem; }
     .cases { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); border-top: 1px solid var(--line); }
@@ -60,10 +71,27 @@
     code, pre { font: .88rem/1.5 ui-monospace, monospace; }
     pre { white-space: pre-wrap; overflow-wrap: anywhere; background: #edf2e9; padding: .8rem; }
     details ul { padding-left: 1.3rem; }
-    @media (max-width: 740px) { .layout, .cases { grid-template-columns: minmax(0, 1fr); }
-    .intro { padding-top: 2rem; }
-    .detail { padding: 1rem; }
-    } @media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior: auto !important; }
+    @media (max-width: 740px) {
+      .layout, .cases { grid-template-columns: minmax(0, 1fr); }
+      .picker { grid-template-columns: 1fr 1fr; }
+      #open { justify-self: start; }
+      .detail { border-left: 0; border-top: 1px solid var(--line); padding: 1rem; }
+    }
+    @media (max-width: 520px) {
+      header { padding-block: .65rem; }
+      .intro { padding-block: .95rem .8rem; }
+      .intro p { font-size: .92rem; }
+      .picker { grid-template-columns: 1fr; gap: .4rem; padding-block: .65rem; }
+      .field { grid-template-columns: 4.7rem minmax(0, 1fr); align-items: center; }
+      .field select { font-size: .88rem; padding-inline: .45rem; }
+      #open { justify-self: stretch; min-height: 44px; font-size: .9rem; }
+      .controls { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+      .controls button { padding-inline: .15rem; font-size: .78rem; }
+      .plot { padding: .55rem; }
+      .plot svg { aspect-ratio: 560 / 410; }
+      .plot .hint { font-size: .78rem; }
+    }
+    @media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior: auto !important; }
     }
   </style>
 </head>
@@ -71,18 +99,22 @@
 <a class="skip" href="#reference">Skip to workbench directory</a>
 <header><a href="index.html">Decision Labs</a> / Architecture</header>
 <main>
-  <div class="intro"><h1>Workbench architecture</h1><p>Follow one decision model into its browser workbench and analyst command line. Each of the four tools builds and runs independently.</p></div>
+  <div class="intro"><h1>Workbench architecture</h1><p>Trace the source files behind each offline workbench and its analyst CLI.</p></div>
   <section id="explorer" aria-label="Interactive architecture map" hidden>
-    <div class="picker"><label for="bench">Workbench</label><select id="bench"></select></div>
+    <div class="picker">
+      <div class="field"><label for="bench">Workbench</label><select id="bench"></select></div>
+      <div class="field"><label for="part">Component</label><select id="part"></select></div>
+      <a id="open" href="index.html">Open workbench <span aria-hidden="true">→</span></a>
+    </div>
     <div class="layout">
       <div class="plot"><svg id="scene" viewBox="0 0 560 335" aria-hidden="true"></svg>
-        <p class="hint">Drag to rotate. Tap a block or choose a component to inspect its connections.</p>
-        <div class="controls" aria-label="Graph view"><button id="left" type="button">Rotate left</button><button id="right" type="button">Rotate right</button><button id="reset" type="button">Reset view</button></div>
+        <div class="plot-footer"><p class="hint">Arrows show what each component feeds. Drag to rotate or tap a block.</p>
+        <div class="controls" aria-label="Graph view"><button id="left" type="button">Rotate left</button><button id="right" type="button">Rotate right</button><button id="reset" type="button">Reset view</button></div></div>
       </div>
-      <div class="detail"><label for="part">Component</label><select id="part"></select>
+      <div class="detail"><h2 class="detail-title" id="detail-title"></h2>
         <p id="description"></p><a class="source" id="source" href="#reference"></a>
-        <h2 class="connections-heading">Connected components</h2><div class="links" id="connections"></div>
-        <p class="links"><a id="open" href="index.html">Open workbench</a><a id="permalink" href="#reference">Link to this view</a></p>
+        <h3 class="connections-heading">Connected components</h3><div class="links" id="connections"></div>
+        <a class="view-link" id="permalink" href="#reference">Link to this view</a>
       </div>
     </div>
     <details id="query"><summary>Inspect the selected model as JSON</summary><p>This fixed read-only selection describes the workbench graph returned from the page.</p><pre>query Workbench($id: ID!) {
@@ -125,6 +157,7 @@ const edges = parts.flatMap(part => part.feeds.map(to => ({ from: part.id, to })
 const scene = byId('scene');
 const layout = { model: [-104, -34, 36], ui: [-73, 78, 30], builder: [21, 35, 49], portable: [115, 65, 60], cli: [65, -81, 38] };
 const shortNames = { model: 'Model', ui: 'Interface', builder: 'Builder', portable: 'Workbench', cli: 'Analyst CLI' };
+const compactView = window.matchMedia('(max-width: 520px)');
 let angle = -0.28;
 function el(tag, attrs, parent = scene) {
   const node = document.createElementNS('http://www.w3.org/2000/svg', tag);
@@ -134,9 +167,11 @@ function el(tag, attrs, parent = scene) {
 }
 function project(x, z, height = 0) {
   const depth = x * Math.sin(angle) + z * Math.cos(angle);
-  return [280 + (x * Math.cos(angle) - z * Math.sin(angle)) * 1.62, 182 + depth * .68 - height * 1.15];
+  const screenX = 280 + (x * Math.cos(angle) - z * Math.sin(angle)) * 1.62;
+  const screenY = compactView.matches ? 206 + depth * 1.24 - height * 1.36 : 160 + depth * .68 - height * 1.15;
+  return [screenX, screenY];
 }
-function line(a, b, attrs) { el('line', { x1: a[0], y1: a[1], x2: b[0], y2: b[1], ...attrs }); }
+function line(a, b, attrs, parent = scene) { el('line', { x1: a[0], y1: a[1], x2: b[0], y2: b[1], ...attrs }, parent); }
 function draw() {
   scene.replaceChildren();
   for (let n = -140; n <= 140; n += 28) {
@@ -144,15 +179,13 @@ function draw() {
     line(project(-140, n), project(140, n), { stroke: '#244237' });
   }
   const selected = byId('part').value;
-  for (const { from, to } of edges) {
-    const active = selected === from || selected === to;
-    line(project(...layout[from].slice(0, 2)), project(...layout[to].slice(0, 2)), { stroke: active ? '#a3d9a5' : '#577569', 'stroke-width': active ? 3 : 1.8 });
-  }
+  const paths = el('g', {});
+  const blocks = el('g', {});
   const sorted = [...parts].sort((a, b) => project(...layout[a.id].slice(0, 2))[1] - project(...layout[b.id].slice(0, 2))[1]);
   for (const part of sorted) {
     const [x, z, h] = layout[part.id];
     const active = part.id === selected;
-    const group = el('g', { 'data-node': part.id, cursor: 'pointer' });
+    const group = el('g', { 'data-node': part.id, cursor: 'pointer' }, blocks);
     const corners = [[-12, -12], [12, -12], [12, 12], [-12, 12]];
     const bottom = corners.map(([dx, dz]) => project(x + dx, z + dz));
     const top = corners.map(([dx, dz]) => project(x + dx, z + dz, h));
@@ -163,14 +196,45 @@ function draw() {
     }
     el('polygon', { points: top.join(' '), fill: active ? '#ffd09b' : '#b3d8b4', stroke: active ? '#ffe3bc' : '#d3e5bd' }, group);
     const [cx, cy] = project(x, z, h);
-    const tag = el('text', { x: cx, y: cy - 19, fill: active ? '#ffdbb0' : '#f4f8e5', 'text-anchor': 'middle', 'font-size': 14, 'font-family': 'system-ui,sans-serif', 'font-weight': 600, stroke: '#102924', 'stroke-width': 4, 'paint-order': 'stroke' }, group);
+    const tag = el('text', { x: cx, y: cy - 19, fill: active ? '#ffdbb0' : '#f4f8e5', 'text-anchor': 'middle', 'font-size': compactView.matches ? 26 : 14, 'font-family': 'system-ui,sans-serif', 'font-weight': 600, stroke: '#102924', 'stroke-width': 4, 'paint-order': 'stroke' }, group);
     tag.textContent = shortNames[part.id];
   }
+  const bounds = Array.from(blocks.children, node => node.getBBox());
+  for (const { from, to } of edges) {
+    const active = selected === from || selected === to;
+    const start = project(...layout[from].slice(0, 2));
+    const end = project(...layout[to].slice(0, 2));
+    const color = active ? '#bde7aa' : '#739787';
+    line(start, end, { stroke: color, 'stroke-width': active ? 3.4 : 1.8 }, paths);
+    // Place the directional mark between the blocks so it stays clear of their faces.
+    const dx = end[0] - start[0];
+    const dy = end[1] - start[1];
+    const fraction = [.55, .36, .72, .25].find(t => {
+      const x = start[0] + dx * t;
+      const y = start[1] + dy * t;
+      return !bounds.some(box => x >= box.x - 6 && x <= box.x + box.width + 6 &&
+        y >= box.y - 6 && y <= box.y + box.height + 6);
+    }) ?? .55;
+    const x = start[0] + dx * fraction;
+    const y = start[1] + dy * fraction;
+    const heading = Math.atan2(dy, dx) * 180 / Math.PI;
+    el('path', { d: 'M -7 -5 L 4 0 L -7 5', fill: 'none', stroke: color,
+      'stroke-width': active ? 3.4 : 2, 'stroke-linecap': 'round', 'stroke-linejoin': 'round',
+      transform: 'translate(' + x + ' ' + y + ') rotate(' + heading + ')' }, paths);
+  }
+  // Keep the camera centered on the projected nodes and labels. Reserve a
+  // fixed plot box in CSS so rotating never moves the controls on the page.
+  const box = blocks.getBBox();
+  const width = Math.max(560, box.width + 24);
+  const height = Math.max(compactView.matches ? 410 : 290, box.height + 24);
+  scene.setAttribute('viewBox', [box.x + (box.width - width) / 2,
+    box.y + (box.height - height) / 2, width, height].join(' '));
 }
 function render() {
   const bench = benches.find(item => item.id === byId('bench').value);
   const part = parts.find(item => item.id === byId('part').value);
   const base = 'apps/' + bench.id + '/';
+  byId('detail-title').textContent = part.name;
   byId('description').textContent = part.note;
   byId('source').textContent = base + part.path;
   byId('source').href = 'https://github.com/EauDoon/decision-labs/blob/main/' + base + part.path;
@@ -220,9 +284,10 @@ scene.addEventListener('pointerup', event => {
   drag = undefined;
 });
 scene.addEventListener('lostpointercapture', () => { drag = undefined; });
+compactView.addEventListener('change', draw);
 window.addEventListener('hashchange', followLink);
-followLink();
 byId('explorer').hidden = false;
+followLink();
 </script>
 </body>
 </html>
