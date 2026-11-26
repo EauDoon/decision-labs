@@ -6,6 +6,7 @@ on:
   pull_request:
     paths:
       - "index.html"
+      - "architecture.html"
       - "404.html"
       - "apps/*/standalone.html"
       - "scripts/apps.mjs"

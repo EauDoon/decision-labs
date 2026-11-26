@@ -10,6 +10,13 @@ workbench keeps its own version and detailed notes in `apps/<id>/CHANGELOG.md`.
 
 ## [Unreleased]
 
+### Catalog architecture
+
+- Explore the model, interface, builder, standalone artifact and analyst CLI for each decision workbench in an offline 3D graph. Follow connected components, open their source, inspect a JSON graph and share a component link. The script-free directory includes the command to analyze each exported case and a written dependency list.
+- Manifest verification reports which known workbench or catalog field differs, so a reviewer can identify the artifact to recopy.
+
+- Corrected release checks that treated distinct numeric version components above JavaScript's safe integer limit as equal.
+
 ### Local maintenance
 
 - Verify the exact portable catalog offline against a saved manifest with `--verify`; invalid or missing version metadata can no longer produce a successful partial inventory.

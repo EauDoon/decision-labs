@@ -11,7 +11,7 @@ const root = new URL('../', import.meta.url);
 const realRoot = realpathSync.native(root);
 
 // Exact public surface. Add a path here only together with a launcher test.
-export const PUBLIC_PATHS = Object.freeze(['/', '/index.html', ...APP_PATHS]);
+export const PUBLIC_PATHS = Object.freeze(['/', '/index.html', '/architecture.html', ...APP_PATHS]);
 
 export const CONTENT_SECURITY_POLICY = "default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data:; connect-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'";
 

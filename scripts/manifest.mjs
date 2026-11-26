@@ -28,6 +28,26 @@ export async function artifactManifest(base = new URL('../', import.meta.url)) {
   return { schemaVersion: 1, catalogVersion, apps };
 }
 
+// Name only known fields and workbenches. A saved manifest may contain arbitrary text.
+function changedManifestParts(actual, expected) {
+  if (!expected || typeof expected !== 'object' || Array.isArray(expected)) return ['manifest structure'];
+  const changes = [];
+  for (const field of ['schemaVersion', 'catalogVersion']) {
+    if (actual[field] !== expected[field]) changes.push(field);
+  }
+  if (!isDeepStrictEqual(Object.keys(actual).sort(), Object.keys(expected).sort())) changes.push('manifest fields');
+  if (!Array.isArray(expected.apps) || expected.apps.length !== actual.apps.length) changes.push('workbench list');
+  if (Array.isArray(expected.apps)) {
+    for (const [index, app] of actual.apps.entries()) {
+      const saved = expected.apps[index];
+      if (isDeepStrictEqual(app, saved)) continue;
+      const fields = Object.keys(app).filter(key => app[key] !== saved?.[key]);
+      changes.push(`${app.id} (${fields.join(', ') || 'record fields'})`);
+    }
+  }
+  return changes;
+}
+
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const args = process.argv.slice(2);
   const verify = args.length === 2 && args[0] === '--verify';
@@ -41,7 +61,9 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
       else {
         // Enumerate only the checkout's known artifacts. Expected paths are data, not inputs to read.
         const expected = JSON.parse((await readFile(args[1], 'utf8')).replace(/^\uFEFF/, ''));
-        if (!isDeepStrictEqual(actual, expected)) throw new Error('Manifest does not match the catalog and its four artifacts.');
+        if (!isDeepStrictEqual(actual, expected)) {
+          throw new Error('Manifest does not match: ' + changedManifestParts(actual, expected).join('; ') + '.');
+        }
         console.log('Verified catalog and all four standalone artifacts.');
       }
     } catch (error) { console.error(`Artifact manifest: ${error.message}`); process.exitCode = 1; }

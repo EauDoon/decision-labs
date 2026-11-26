@@ -41,9 +41,12 @@ export function readVersions(root = DEFAULT_ROOT) {
 }
 
 export function compareVersions(left, right) {
-  const a = left.match(SEMVER).slice(1).map(Number);
-  const b = right.match(SEMVER).slice(1).map(Number);
-  return a[0] - b[0] || a[1] - b[1] || a[2] - b[2];
+  const a = left.match(SEMVER).slice(1).map(BigInt);
+  const b = right.match(SEMVER).slice(1).map(BigInt);
+  for (let i = 0; i < a.length; i++) {
+    if (a[i] !== b[i]) return a[i] < b[i] ? -1 : 1;
+  }
+  return 0;
 }
 
 export function versionList(versions) {

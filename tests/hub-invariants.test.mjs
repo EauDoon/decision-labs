@@ -36,7 +36,7 @@ test('catalog IDs are unique and all local hrefs stay in the intended surface', 
   const repositoryCaseStudy = 'https://github.com/EauDoon/decision-labs/blob/main/docs/CASE_STUDY.md';
   const repositoryReadme = 'https://github.com/EauDoon/decision-labs/blob/main/README.md';
   const repositoryDocs = new Set([repositoryCaseStudy, repositoryReadme]);
-  const localRoutes = new Set(APP_ROUTES);
+  const localRoutes = new Set([...APP_ROUTES, 'architecture.html']);
   assert.equal(hrefs.filter((href) => href === repositoryCaseStudy).length, 2);
   assert.equal(hrefs.filter((href) => href === repositoryReadme).length, 1);
   for (const href of hrefs) {
