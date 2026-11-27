@@ -282,3 +282,16 @@ test("demand profiles conserve volume and change arrival timing", () => {
   assert.equal(sanitizeScenario({demandProfile:"unknown"}).scenario.demandProfile,"flat");
   for (const hours of [Infinity,NaN,0,-1,1.5,10000000]) assert.throws(()=>buildDemandSchedule(1,hours),RangeError);
 });
+
+test("an out-of-range reserve is not reported as exceeding nominal liquidity", () => {
+  const cap = "reserveCashAud cannot exceed nominalLiquidityAud.";
+  const negative = sanitizeScenario({ ...DEFAULT_SCENARIO, reserveCashAud: -5 });
+  assert.equal(negative.scenario.reserveCashAud, 0);
+  assert.deepEqual(negative.errors, ["reserveCashAud was clamped to its allowed range."]);
+  const capped = sanitizeScenario({ ...DEFAULT_SCENARIO, nominalLiquidityAud: 20000, reserveCashAud: 50000 });
+  assert.equal(capped.scenario.reserveCashAud, 20000);
+  assert.deepEqual(capped.errors, [cap]);
+  const defaulted = sanitizeScenario({ nominalLiquidityAud: 20000 });
+  assert.equal(defaulted.scenario.reserveCashAud, 20000);
+  assert.deepEqual(defaulted.errors, [cap]);
+});
