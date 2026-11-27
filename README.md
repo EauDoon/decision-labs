@@ -1,3 +1,5 @@
+<p align="center"><img src=".github/assets/banner.svg" alt="Decision Labs. Four independent, offline browser workbenches: Partnership Breakpoint, Common Cart, The Smallest Agreement and Weekend Gap. Change an input, inspect the effect, and carry a JSON export into the discussion. Shown as four blocks of columns that rise and fall." width="100%"></p>
+
 # Decision Labs
 
 [![build](https://img.shields.io/github/actions/workflow/status/EauDoon/decision-labs/decision-labs.yml?branch=main)](https://github.com/EauDoon/decision-labs/actions/workflows/decision-labs.yml)
