@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.9.2 - 2026-11-27
+
+### Fixed
+
+- The Jump in results navigation always listed Three-snapshot compare, a link that went nowhere until a saved case was pinned. The link now appears only while that section is rendered.
+
 ## 1.9.1 - 2026-11-20
 
 ### Fixed

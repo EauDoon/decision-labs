@@ -1251,7 +1251,7 @@ function resultsPanel(result) {
       <a href="#viability-heading">Viability</a>
       <a href="#first-breakpoint">First breakpoint</a>
       <a href="#fee-guidance-title">Fee guide</a>
-      <a href="#three-compare-title">Three-snapshot compare</a>
+      ${caseLibrary.some((item) => item.id === pinFirstId || item.id === pinSecondId) ? '<a href="#three-compare-title">Three-snapshot compare</a>' : ''}
       ${importedCompare ? '<a href="#imported-compare-title">Imported JSON compare</a>' : ''}
       <a href="#charts-title">Charts</a>
       <a href="#tornado-title">Tornado</a>
