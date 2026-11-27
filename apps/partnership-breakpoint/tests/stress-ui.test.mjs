@@ -536,6 +536,19 @@ test('snapshot comparison reports participant deltas without mutating the curren
   app.click('clear-comparison'); assert.doesNotMatch(app.markup(), /Compare with Baseline/);
 });
 
+test('results jump nav links to three-snapshot compare only while that section is rendered', async () => {
+  const app = await workbench();
+  assert.doesNotMatch(app.markup(), /id="three-compare-title"/);
+  assert.doesNotMatch(app.markup(), /href="#three-compare-title"/);
+  app.nameCase('Baseline');
+  app.click('save-case');
+  app.click('pin-first', { caseId: 'case-1' });
+  assert.match(app.markup(), /id="three-compare-title"/);
+  assert.match(app.markup(), /href="#three-compare-title">Three-snapshot compare<\/a>/);
+  app.click('clear-three-compare');
+  assert.doesNotMatch(app.markup(), /href="#three-compare-title"/);
+});
+
 test('three-snapshot compare pins two library cases and flags roster mismatches', async () => {
   const app = await workbench();
   app.nameCase('Baseline');
