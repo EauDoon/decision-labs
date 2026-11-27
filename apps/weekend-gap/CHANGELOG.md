@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.9.1 - 2026-11-27
+
+### Fixed
+
+- A reserve outside its allowed range, such as a negative amount, was also reported as exceeding nominal liquidity. That notice now appears only when the reserve is actually capped to nominal liquidity.
+
 ## 1.9.0 - 2026-10-09
 
 Release identity, PORT validation, port failures and a top-level landmark in Weekend Gap 1.9.0

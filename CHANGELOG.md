@@ -49,6 +49,11 @@ workbench keeps its own version and detailed notes in `apps/<id>/CHANGELOG.md`.
 
 ### Fixed
 
+- Weekend Gap 1.9.1: a reserve outside its allowed range is no longer also
+  reported as exceeding nominal liquidity.
+- Partnership Breakpoint 1.9.2: the Jump in results navigation lists
+  Three-snapshot compare only while that section is rendered, so the link
+  always has a target.
 - The catalog launcher checks canonical file paths as well as request paths,
   refusing symlinks and directory junctions that redirect a public filename to
   another file. Private drafts and files outside the catalog are not served.

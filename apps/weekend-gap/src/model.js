@@ -583,8 +583,11 @@ export function sanitizeScenario(raw = {}) {
     }
   }
 
-  scenario.reserveCashAud = Math.min(scenario.reserveCashAud, scenario.nominalLiquidityAud);
-  if (scenario.reserveCashAud !== finiteNumber(source.reserveCashAud, DEFAULT_SCENARIO.reserveCashAud)) {
+  // Compare with the range-clamped value, not the raw input, so a reserve that
+  // was only out of range is not also reported as exceeding nominal liquidity.
+  const boundedReserveAud = scenario.reserveCashAud;
+  scenario.reserveCashAud = Math.min(boundedReserveAud, scenario.nominalLiquidityAud);
+  if (scenario.reserveCashAud !== boundedReserveAud) {
     errors.push("reserveCashAud cannot exceed nominalLiquidityAud.");
   }
 
